@@ -262,7 +262,8 @@ async function main() {
         body.scene === "beast-weather" ||
         body.scene === "tavern-chronicle" ||
         body.scene === "airship-paladin" ||
-        body.scene === "dwarf-elf"
+        body.scene === "dwarf-elf" ||
+        body.scene === "abyss-guild"
       ) {
         state.chapter1Build = state.chapter1Build || "thick_bark";
         const stats = (state.stats ?? {}) as NonNullable<typeof state.stats>;
@@ -1230,6 +1231,66 @@ async function main() {
             fullBoards: 3,
             totalGold: 6240,
             lastCommission: null,
+          };
+        }
+        if (body.scene === "abyss-guild") {
+          // WL-18 视觉自检/E2E：厨师（钓鱼）40 级（可下前三层），3 级「黄金头盔潜装」（氧气 185、可下到第 3 层），
+          // 今天第 1 层已下潜 1 次；升 4 级潜装的金币齐备、染布差 6 块。公会战累计勋章 60（银徽骑手），
+          // 本周已击败第 1 席、用掉 2 次挑战；战斗技能全 40 级，可以挑战第 2 席
+          const { abyssDayKey, abyssDayIndex, getAbyssRuin, guildWarWeekKey, guildWarWeekIndex, generateGuildWarOpponent } =
+            require("./progression2") as typeof import("./progression2");
+          const seedNow = new Date();
+          state.settings = {
+            ...(state.settings || {}),
+            characterCreated: true,
+            tutorialDone: true,
+          } as any;
+          state.inventory.gold = Math.max(state.inventory.gold || 0, 30000);
+          const chef = (state.skills as any).skill_chef;
+          if (chef) chef.level = Math.max(Number(chef.level) || 1, 40);
+          (state as any).combatSkills = defaultCombatSkills(40);
+          for (const [itemId, qty] of Object.entries({ dyed_cloth: 10, ingot_6: 14, crystal_2: 3 })) {
+            state.inventory[itemId] = Math.max(state.inventory[itemId] || 0, qty);
+          }
+          const dayIndex = abyssDayIndex(seedNow);
+          const r1 = getAbyssRuin(dayIndex, 1);
+          (state as any).abyssDive = {
+            dayKey: abyssDayKey(seedNow),
+            gearLevel: 3,
+            oxygenUsed: r1.oxygenCost,
+            divesToday: { "1": 1 },
+            totalDives: 23,
+            totalSalvage: 214,
+            deepestLayer: 3,
+            lastDive: {
+              layer: 1,
+              itemId: r1.itemId,
+              qty: 13,
+              current: r1.current,
+              oxygen: r1.oxygenCost,
+              at: new Date(seedNow.getTime() - 20 * 60_000).toISOString(),
+            },
+          };
+          const weekKey = guildWarWeekKey(seedNow);
+          const o1 = generateGuildWarOpponent(guildWarWeekIndex(seedNow), 1);
+          (state as any).guildWar = {
+            weekKey,
+            attemptsUsed: 2,
+            cleared: [1],
+            totalMedals: 60,
+            totalDuels: 14,
+            totalWins: 9,
+            sweeps: 0,
+            lastDuel: {
+              weekKey,
+              seat: 1,
+              rivalId: o1.rivalId,
+              opponentName: o1.name,
+              won: true,
+              timeout: false,
+              medals: o1.medals,
+              at: new Date(seedNow.getTime() - 40 * 60_000).toISOString(),
+            },
           };
         }
         if (body.scene === "chapter2-build" || body.scene === "chapter4-build") {

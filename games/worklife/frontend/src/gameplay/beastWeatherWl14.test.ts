@@ -114,7 +114,7 @@ describe("WL-14 frontend art contract, navigation IA, zero-SVG/Emoji guard and B
 
     const headerSrc = readFileSync(path.join(frontendSrcRoot, "components/GameHeader.tsx"), "utf8");
     assert.equal(headerSrc.includes('data-testid="header-beast-weather-btn"'), true);
-    assert.equal(headerSrc.includes('ranch: "契约魔兽牧场与天候观星塔"'), true);
+    assert.equal(headerSrc.includes('ranch: "牧场天候"'), true);
     const ngiSrc = readFileSync(path.join(frontendSrcRoot, "components/NewGameInterface.tsx"), "utf8");
     assert.equal(ngiSrc.includes("<BeastWeatherPanel"), true);
 

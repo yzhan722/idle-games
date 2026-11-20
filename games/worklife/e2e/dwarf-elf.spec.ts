@@ -20,7 +20,7 @@ async function apiGet(page: Page, p: string) {
 
 async function openMinePanel(page: Page) {
   await page.locator(".header-menu-btn").click();
-  const entry = page.getByRole("menuitem", { name: "矮人地底矿脉与精灵林地驿站" });
+  const entry = page.getByRole("menuitem", { name: "矿脉驿站" });
   await entry.scrollIntoViewIfNeeded();
   await entry.click();
   await expect(page.locator('[data-testid="tavern-chronicle-panel"]')).toBeVisible({ timeout: 20_000 });
@@ -69,7 +69,7 @@ test.describe("WL-17 dwarf mine & elf waystation", () => {
     expect(await page.locator('header [data-testid*="mine"], header [class*="dwarf"], header [class*="waystation"]').count()).toBe(0);
 
     await openMinePanel(page);
-    await expect(page.locator(".prog-title")).toContainText("矮人地底矿脉与精灵林地驿站");
+    await expect(page.locator(".prog-title")).toContainText("矮人地底矿脉");
     await expect(page.locator('[data-testid="tavern-tab-mine"]')).toHaveClass(/active/);
     await expect(page.locator('[data-testid="mine-depth-name"]')).toContainText("隔热石拱矿道");
     await expect(page.locator('[data-testid="mine-cart-capacity"]')).toHaveText("12");
@@ -100,7 +100,7 @@ test.describe("WL-17 dwarf mine & elf waystation", () => {
     // 精灵驿站 tab: hand in the stocked gather commission and the reached expedition commission
     await page.locator('[data-testid="tavern-tab-waystation"]').click();
     await expect(page.locator('[data-testid="elf-waystation-view"]')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator(".prog-title")).toContainText("矮人地底矿脉与精灵林地驿站");
+    await expect(page.locator(".prog-title")).toContainText("精灵林地驿站");
     await expect(page.locator('[data-testid="elf-favor-name"]')).toContainText("树语之友");
     await expect(page.locator('[data-testid="elf-favor-total"]')).toHaveText("120");
     await expect(page.locator('[data-testid="elf-bonuses"]')).toContainText("采集速度 +2%");
@@ -129,7 +129,7 @@ test.describe("WL-17 dwarf mine & elf waystation", () => {
     expect(errors, errors.join("\n")).toEqual([]);
   });
 
-  test("WL17-02 phone 390: header keeps 5 visible buttons and all six panel tabs stay on screen and clickable", async ({ page }) => {
+  test("WL17-02 phone 390: header keeps 5 visible buttons and all panel tabs (8 since WL-18) stay on screen and clickable", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await seeded(page);
     const visible = await page.locator(".header-right > button").evaluateAll((els) =>
@@ -138,8 +138,8 @@ test.describe("WL-17 dwarf mine & elf waystation", () => {
     expect(visible).toBe(5);
     await openMinePanel(page);
     const tabs = page.locator(".tv-tab-bar .prog-filter-btn");
-    await expect(tabs).toHaveCount(6);
-    for (let i = 0; i < 6; i++) {
+    await expect(tabs).toHaveCount(8);
+    for (let i = 0; i < 8; i++) {
       const box = await tabs.nth(i).boundingBox();
       expect(box, `tab ${i}`).not.toBeNull();
       expect(box!.x).toBeGreaterThanOrEqual(0);

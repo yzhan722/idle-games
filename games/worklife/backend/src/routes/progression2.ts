@@ -115,6 +115,12 @@ import {
   deliverElfCommission,
   MINE_LAYERS,
   ELF_BOARD_SLOTS,
+  getAbyssGuildInfo,
+  diveAbyssRuin,
+  upgradeAbyssGear,
+  challengeGuildWar,
+  ABYSS_RUINS,
+  GUILD_SEATS,
 } from "../progression2";
 
 /**
@@ -1796,5 +1802,92 @@ export async function progression2Routes(
     "commission",
     (state, body, now) => deliverElfCommission(state, contentPack, body.slot, now, body.dayKey),
     "elf_commission_rejected"
+  );
+
+  /* ----------------------- 深海遗迹潜航 & 冒险者行会公会战 (WL-18) ----------------------- */
+
+  const abyssKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+  app.get("/progression2/abyss", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+    const now = new Date();
+    const state = await storage.getOrCreatePlayerState(userId, ver);
+    const next = await storage.simulateToNow({ userId, state, now, contentPack });
+    const snapshot = (s: EnhancedPlayerState) => JSON.stringify([s.abyssDive ?? null, s.guildWar ?? null, s.logs?.length ?? 0]);
+    const before = snapshot(next);
+    const info = getAbyssGuildInfo(next, contentPack, now);
+    // 首次领装备 / 入会、按显式 now 换日或翻周时落库，避免氧气、遗迹进度与本周战绩在视图与存档间漂移
+    const saved = snapshot(next) !== before ? await storage.savePlayerState(userId, next) : next;
+    return reply.send({ ...info, stateRevision: saved.stateRevision });
+  });
+
+  const abyssCommand = (
+    path: string,
+    schema: z.ZodTypeAny,
+    resultKey: string,
+    apply: (state: EnhancedPlayerState, body: any, now: Date) => { ok: boolean; reason?: string },
+    rejectCode: string
+  ) => {
+    app.post(path, async (req: FastifyRequest, reply: FastifyReply) => {
+      const userId = (req as any).userId as string;
+      if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+
+      const body = schema.parse((req.body ?? {}) as unknown);
+      try {
+        const now = new Date();
+        const outcome = await runCommand(userId, body, (state) => {
+          const res = apply(state, body, now);
+          if (!res.ok) throw new PlayerCommandRejected(res.reason || rejectCode);
+          return res;
+        });
+        return reply.send({
+          ok: true,
+          [resultKey]: outcome.result,
+          inventory: outcome.state.inventory,
+          abyss: getAbyssGuildInfo(outcome.state, contentPack, now),
+          stateRevision: outcome.state.stateRevision,
+        });
+      } catch (error) {
+        return commandFail(reply, error);
+      }
+    });
+  };
+
+  abyssCommand(
+    "/progression2/abyss/dive",
+    z
+      .object({
+        layer: z.number().int().min(1).max(ABYSS_RUINS.length),
+        dayKey: abyssKeySchema.optional(),
+        ...revisionSchema,
+      })
+      .strict(),
+    "dive",
+    (state, body, now) => diveAbyssRuin(state, contentPack, body.layer, now, body.dayKey),
+    "abyss_dive_rejected"
+  );
+
+  abyssCommand(
+    "/progression2/abyss/gear",
+    z.object({ ...revisionSchema }).strict(),
+    "gear",
+    (state, _body, now) => upgradeAbyssGear(state, contentPack, now),
+    "abyss_gear_rejected"
+  );
+
+  abyssCommand(
+    "/progression2/guild-war/challenge",
+    z
+      .object({
+        seat: z.number().int().min(1).max(GUILD_SEATS.length),
+        weekKey: abyssKeySchema.optional(),
+        ...revisionSchema,
+      })
+      .strict(),
+    "challenge",
+    (state, body, now) => challengeGuildWar(state, contentPack, body.seat, now, body.weekKey),
+    "guild_war_rejected"
   );
 }

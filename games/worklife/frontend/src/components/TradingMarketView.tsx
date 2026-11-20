@@ -90,19 +90,19 @@ export function TradingMarketView({
           <div className="page-header">
             <h2 className="section-title">交易行</h2>
             <div className="page-info">
-              <p>玩家之间买卖任何物品：直接吃掉最优挂单，或按自己的价格挂出售单 / 收购单。商会补给站亦常年以高于店价的溢价供应基础资源，保障新手起步循环。成交按卖方所得收 5% 税。</p>
+              <p>玩家间买卖物品：直接成交最优挂单，或自己挂出售 / 收购单；成交收卖方 5% 税。</p>
             </div>
           </div>
           {onOpenCaravan && (
-            <section className="caravan-trade-banner" aria-label="异世界远征商队贸易航路与工坊特批契约柜台">
+            <section className="caravan-trade-banner" aria-label="远征商队与契约柜台">
               <div className="caravan-trade-banner-left">
                 <T1Art kind="skills" id="caravan_hub_banner" className="caravan-trade-banner-icon" fallback="" alt="" />
                 <div className="caravan-trade-banner-copy">
                   <strong>
-                    远征商队贸易航路 · 工坊特批契约柜台（商队 Lv.{caravanRepInfo.current.level} {caravanRepInfo.current.title}）
+                    远征商队 · 特批契约柜台（商队 Lv.{caravanRepInfo.current.level} {caravanRepInfo.current.title}）
                   </strong>
                   <small>
-                    派遣闲置物资前往凛风冰港 / 赤砂绿洲 / 星坠秘塔赚取城镇紧缺溢价（1.15x~1.85x），结算异域星晶尘（当前 {caravanDust}）、稀有锻造徽记与商队永久加成（加急通行证 {caravanPermits} 张）。
+                    闲置物资运往紧缺城镇可得 1.15x~1.85x 溢价 · 星晶尘 {caravanDust} · 加急通行证 {caravanPermits} 张
                   </small>
                 </div>
               </div>

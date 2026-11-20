@@ -130,6 +130,19 @@ import {
   type ElfWaystationBonuses,
   type MineGradeId,
 } from '../gameplay/dwarfElf';
+import {
+  abyssCurrentTone,
+  abyssDayIndexFromKey,
+  formatAbyssCurrent,
+  formatGuildStats,
+  getAbyssRuinMap,
+  guildWarWeekIndexFromKey,
+  planAbyssDive,
+  planGuildWarChallenge,
+  type AbyssCurrentId,
+  type GuildStats,
+  type GuildWarBonuses,
+} from '../gameplay/abyssGuild';
 import './ProgressionPanels.css';
 import './SystemPanels.css';
 import './AdvancementPanels.css';
@@ -1161,7 +1174,7 @@ export function HeritageWorkshopPanel({
 
   return (
     <PanelModal
-      title="传世铭纹附魔台与跨职业共鸣图鉴"
+      title="铭纹附魔台与共鸣图鉴"
       icon={<T1Art kind="skills" id="rune_altar_core" className="hw-modal-title-icon" fallback="" alt="" />}
       onClose={onClose}
     >
@@ -1180,7 +1193,7 @@ export function HeritageWorkshopPanel({
               <div className="hw-hero-copy">
                 <div className="hw-hero-title">传世槽位附魔 · 跨职业百工共鸣</div>
                 <div className="hw-hero-sub">
-                  铭纹绑定武器 / 防具 / 工具槽位，更换装备或转生均永久保留；跨职业造物一经采集或制作即永久收录图鉴。
+                  铭纹绑定武器 / 防具 / 工具槽位，换装或转生都保留；跨职业造物采集或制作后即收录图鉴。
                 </div>
               </div>
             </div>
@@ -2031,7 +2044,7 @@ export function CaravanTradePanel({
 
   return (
     <PanelModal
-      title="远征商队贸易航路与工坊特批契约柜台"
+      title="远征商队与契约柜台"
       icon={<T1Art kind="skills" id="caravan_hub_banner" className="hw-modal-title-icon" fallback="" alt="" />}
       onClose={onClose}
     >
@@ -2053,7 +2066,7 @@ export function CaravanTradePanel({
                   {info.bonuses.ledgerRank > 0 ? ` · 宗师商典 ${info.bonuses.ledgerRank} 阶` : ''}
                 </div>
                 <div className="hw-hero-sub">
-                  装载闲置物资发往紧缺城镇结算异域星晶尘、稀有锻造徽记与商队声望（穿戴中装备自动锁定保护，转生永久保留声望与商典）。
+                  把闲置物资运往紧缺城镇，换取星晶尘、锻造徽记与商队声望；穿戴中的装备自动锁定，声望与商典转生保留。
                 </div>
               </div>
             </div>
@@ -2978,7 +2991,7 @@ export function AlchemyCauldronPanel({
 
   return (
     <PanelModal
-      title="奇美拉炼金魔药釜与深渊试炼双共鸣药剂槽"
+      title="奇美拉魔药釜与共鸣槽"
       icon={<T1Art kind="skills" id="alchemy_cauldron_hub" className="hw-modal-title-icon" fallback="" alt="" />}
       onClose={onClose}
     >
@@ -2999,10 +3012,10 @@ export function AlchemyCauldronPanel({
                   <span className="hw-hero-title">
                     炼金宗师等阶 Lv.{info.cauldronTier.level} · {info.cauldronTier.title}
                   </span>
-                  <span className="qm-equipped-pill">宗师图谱与等阶转生永久保留</span>
+                  <span className="qm-equipped-pill" title="宗师图谱与等阶转生永久保留">转生保留</span>
                 </div>
                 <div className="hw-hero-sub">
-                  每日免费萃取炼金原液、投入基础采集素材或异域星晶尘即可炼制四大秘药充能；双槽并列装填不同魔药即刻触发 6 组「炼金双生共鸣」（仅讨伐首领胜利消耗 1 份充能，日常采集/制作/普通战斗零损耗常驻加成）。
+                  萃取原液或投入素材为四大秘药充能；双槽装不同魔药触发共鸣，只有首领战胜利消耗 1 份充能。
                 </div>
               </div>
             </div>
@@ -3088,7 +3101,7 @@ export function AlchemyCauldronPanel({
               className={`prog-filter-btn ${tab === 'cauldron' ? 'active' : ''}`}
               onClick={() => setTab('cauldron')}
             >
-              奇美拉魔药釜与双共鸣槽（{activeSlotsCount}/2 生效）
+              双共鸣槽（{activeSlotsCount}/2 生效）
             </button>
             <button
               type="button"
@@ -3096,7 +3109,7 @@ export function AlchemyCauldronPanel({
               className={`prog-filter-btn ${tab === 'codex' ? 'active' : ''}`}
               onClick={() => setTab('codex')}
             >
-              炼金双生共鸣图谱与宗师阶位（6组共鸣）
+              共鸣图谱与宗师阶位
             </button>
           </div>
 
@@ -3108,7 +3121,7 @@ export function AlchemyCauldronPanel({
                   <div className="ac-rack-header-left">
                     <T1Art kind="skills" id="alchemy_resonance_rack" className="ac-rack-art" fallback="" alt="深渊试炼双共鸣药剂槽" />
                     <div>
-                      <div className="ac-rack-title">深渊试炼双共鸣药剂槽（Twin Resonance Potion Slots）</div>
+                      <div className="ac-rack-title">深渊试炼双共鸣药剂槽</div>
                       <div className="ac-rack-sub">
                         同时装填 2 种不同秘药且储备充能大于 0 时，自动激活对应「炼金双生共鸣」组合技！
                       </div>
@@ -3750,7 +3763,7 @@ export function AstralRelicsPanel({
 
   return (
     <PanelModal
-      title="星界远古遗迹勘探队与传世圣物陈列馆"
+      title="遗迹勘探与圣物陈列馆"
       icon={<T1Art kind="skills" id="astral_ruin_compass" className="hw-modal-title-icon" fallback="" alt="" />}
       onClose={onClose}
     >
@@ -3771,10 +3784,10 @@ export function AstralRelicsPanel({
                   <span className="hw-hero-title">
                     陈列馆长阶位 Lv.{info.curatorTier.level} · {info.curatorTier.title}
                   </span>
-                  <span className="qm-equipped-pill">圣物基座·残片·馆长阶位转生永久保留</span>
+                  <span className="qm-equipped-pill" title="圣物基座·残片·馆长阶位转生永久保留">转生保留</span>
                 </div>
                 <div className="hw-hero-sub">
-                  派遣勘探队探索三层星界远古遗迹（每日免费勘探 / 金币补给 / 异域星晶尘深掘），收集「远古圣物残片」修复四大传世圣物基座（Lv.1~5）并点亮全馆四圣共鸣！
+                  派勘探队探索三层星界遗迹收集圣物残片，修复四座圣物基座（Lv.1~5）并点亮全馆共鸣。
                 </div>
                 <div className="ct-rep-meta">
                   <span>
@@ -3844,7 +3857,7 @@ export function AstralRelicsPanel({
               className={`prog-filter-btn ${tab === 'hall' ? 'active' : ''}`}
               onClick={() => setTab('hall')}
             >
-              星界遗迹勘探队 & 四圣基座陈列厅
+              遗迹勘探与陈列厅
             </button>
             <button
               type="button"
@@ -3852,7 +3865,7 @@ export function AstralRelicsPanel({
               className={`prog-filter-btn ${tab === 'resonance' ? 'active' : ''}`}
               onClick={() => setTab('resonance')}
             >
-              全馆四圣共鸣（Lv.1~5） & 馆长阶位录（Lv.1~6）
+              四圣共鸣与馆长阶位
             </button>
           </div>
 
@@ -4429,7 +4442,7 @@ export function SkyForgePanel({
 
   return (
     <PanelModal
-      title="天空锻炉星辰神兵谱与公会秘境试炼契约阵"
+      title="天空锻炉与秘境契约"
       icon={<T1Art kind="skills" id="sky_forge" className="hw-modal-title-icon" fallback="" alt="" />}
       onClose={onClose}
     >
@@ -4449,10 +4462,10 @@ export function SkyForgePanel({
                   <span className="hw-hero-title" data-testid="sky-forge-tier-title">
                     锻炉 {info.forgeTier.tier} 阶 · {info.forgeTier.title}
                   </span>
-                  <span className="qm-equipped-pill">纹章等阶与已签契约转生永久保留</span>
+                  <span className="qm-equipped-pill" title="纹章等阶与已签契约转生永久保留">转生保留</span>
                 </div>
                 <div className="hw-hero-sub">
-                  以遗迹圣物馆的「远古圣物残片」与「异域星晶尘」淬炼四大星辰传世神兵纹章（Lv.0~5）；神兵谱总阶解锁公会秘境试炼契约与契约阵位。
+                  用圣物残片与星晶尘淬炼四大神兵纹章（Lv.0~5）；神兵谱总阶解锁秘境契约与契约阵位。
                 </div>
                 <div className="ct-rep-progress-meta sf-progress-meta">
                   <span>
@@ -5124,7 +5137,7 @@ export function HarborDerbyPanel({ onClose, onChange }: { onClose: () => void; o
 
   return (
     <PanelModal
-      title="港湾垂钓大赛与海港水族馆收藏图鉴"
+      title="港湾垂钓大赛与水族馆"
       icon={<T1Art kind="skills" id="fishing_trophy" className="hw-modal-title-icon" fallback="" alt="" />}
       onClose={onClose}
     >
@@ -5144,7 +5157,7 @@ export function HarborDerbyPanel({ onClose, onChange }: { onClose: () => void; o
                   <span className="hw-hero-title" data-testid="harbor-ground-title">
                     本周鱼场 · {info.ground.name}
                   </span>
-                  <span className="qm-equipped-pill">水族馆收藏、奖杯与配方转生永久保留</span>
+                  <span className="qm-equipped-pill" title="水族馆收藏、奖杯与配方转生永久保留">转生保留</span>
                 </div>
                 <div className="hw-hero-sub">{info.ground.subtitle}</div>
                 <div className="ct-rep-progress-meta hd-progress-meta">
@@ -5535,7 +5548,7 @@ export function HarborDerbyPanel({ onClose, onChange }: { onClose: () => void; o
                     {info.aquarium.tier.current.title} · 收藏 {info.aquarium.collectedCount} / {info.aquarium.totalSpecies} 种
                   </div>
                   <div className="hw-hero-sub">
-                    参赛渔获自动入缸展出（转生永久保留）。收藏进度解锁主题展缸，并加成钓鱼速度（钓鱼行动）、料理品质（烹饪精品出锅）与金币收益（生产与战斗金币）。
+                    参赛渔获自动入缸（转生保留）；收藏进度解锁主题展缸，加成钓鱼速度、料理品质与金币收益。
                   </div>
                   <div className="ct-rep-progress-meta">
                     <span>
@@ -6026,7 +6039,7 @@ export function AcademyFestivalPanel({ onClose, onChange }: { onClose: () => voi
                   <span className="hw-hero-title" data-testid="academy-badge-name">
                     冒险者学院 · {info.academy.badge.current.name}
                   </span>
-                  <span className="qm-equipped-pill">学分、徽章与纪念章转生永久保留</span>
+                  <span className="qm-equipped-pill" title="学分、徽章与纪念章转生永久保留">转生保留</span>
                 </div>
                 <div className="ct-rep-progress-meta af-progress-meta">
                   <span>
@@ -6808,7 +6821,7 @@ export function SkyArenaTownPanel({ onClose, onChange }: { onClose: () => void; 
                   <span className="hw-hero-title" data-testid="arena-division-name">
                     天空竞技场 · {info.arena.division ? `${info.arena.division.name}段位` : '未定级'}
                   </span>
-                  <span className="qm-equipped-pill">称号、勋章与城镇转生永久保留</span>
+                  <span className="qm-equipped-pill" title="称号、勋章与城镇转生永久保留">转生保留</span>
                 </div>
                 <div className="ct-rep-progress-meta at-progress-meta">
                   <span>
@@ -7585,7 +7598,7 @@ export function BeastWeatherPanel({ onClose, onChange }: { onClose: () => void; 
                   <span className="hw-hero-title" data-testid="ranch-bond-name">
                     契约魔兽牧场 · {info.ranch.bond.name}
                   </span>
-                  <span className="qm-equipped-pill">魔兽、等级与观星阅历转生永久保留</span>
+                  <span className="qm-equipped-pill" title="魔兽、等级与观星阅历转生永久保留">转生保留</span>
                 </div>
                 <div className="bw-hero-meta">
                   <span>
@@ -8199,10 +8212,22 @@ function chronicleDateLabel(iso: string | null): string {
 }
 
 /**
- * 酒馆面板的六个分页：WL-15 酒馆 / 编年史 + WL-16 飞艇商路 / 荣誉试炼 + WL-17 矮人矿脉 / 精灵驿站
- * （并入既有面板，顶栏不再加胶囊）。
+ * 酒馆面板的八个分页：WL-15 酒馆 / 编年史 + WL-16 飞艇商路 / 荣誉试炼 + WL-17 矮人矿脉 / 精灵驿站
+ * + WL-18 遗迹潜航 / 公会战（并入既有面板，顶栏不再加胶囊）。
  */
-export type TavernPanelTab = 'tavern' | 'chronicle' | 'airship' | 'trial' | 'mine' | 'waystation';
+export type TavernPanelTab = 'tavern' | 'chronicle' | 'airship' | 'trial' | 'mine' | 'waystation' | 'dive' | 'guildwar';
+
+/** 面板标题显示当前分页的完整名称；分页按钮只用短名，英雄卡不再重复设施名。 */
+const TAVERN_TAB_TITLES: Record<TavernPanelTab, string> = {
+  tavern: '吟游诗人酒馆',
+  chronicle: '冒险者编年史',
+  airship: '浮空飞艇商路',
+  trial: '圣骑士团荣誉试炼',
+  mine: '矮人地底矿脉',
+  waystation: '精灵林地驿站',
+  dive: '深海遗迹潜航',
+  guildwar: '冒险者行会公会战',
+};
 
 export function BardTavernChroniclePanel({
   onClose,
@@ -8222,6 +8247,7 @@ export function BardTavernChroniclePanel({
   const [tab, setTab] = useState<TavernPanelTab>(initialTab ?? 'tavern');
   const wl16Tab = tab === 'airship' || tab === 'trial';
   const wl17Tab = tab === 'mine' || tab === 'waystation';
+  const wl18Tab = tab === 'dive' || tab === 'guildwar';
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [serveVisitorId, setServeVisitorId] = useState<TavernVisitorId | null>(null);
   // undefined = 自动（优先点单那份），null = 这一项不上，string = 指定菜品
@@ -8356,11 +8382,19 @@ export function BardTavernChroniclePanel({
 
   return (
     <PanelModal
-      title={wl17Tab ? '矮人地底矿脉与精灵林地驿站' : wl16Tab ? '浮空飞艇商路与圣骑士团荣誉试炼' : '吟游诗人酒馆与冒险者编年史'}
+      title={TAVERN_TAB_TITLES[tab]}
       icon={
         <T1Art
           kind="skills"
-          id={wl17Tab ? (tab === 'waystation' ? 'elf_waystation' : 'dwarf_mine') : wl16Tab ? 'trade_airship' : 'bard_tavern'}
+          id={
+            wl18Tab
+              ? tab === 'guildwar' ? 'guild_war' : 'abyss_dive'
+              : wl17Tab
+              ? tab === 'waystation' ? 'elf_waystation' : 'dwarf_mine'
+              : wl16Tab
+              ? tab === 'trial' ? 'paladin_trial' : 'trade_airship'
+              : tab === 'chronicle' ? 'chronicle_book' : 'bard_tavern'
+          }
           className="hw-modal-title-icon"
           fallback=""
           alt=""
@@ -8381,7 +8415,7 @@ export function BardTavernChroniclePanel({
               className={`prog-filter-btn ${tab === 'tavern' ? 'active' : ''}`}
               onClick={() => setTab('tavern')}
             >
-              吟游诗人酒馆{waiting.length > 0 ? `（待招待 ${waiting.length}）` : ''}
+              酒馆{waiting.length > 0 ? `（待招待 ${waiting.length}）` : ''}
             </button>
             <button
               type="button"
@@ -8389,7 +8423,7 @@ export function BardTavernChroniclePanel({
               className={`prog-filter-btn ${tab === 'chronicle' ? 'active' : ''}`}
               onClick={() => setTab('chronicle')}
             >
-              冒险者编年史{inscribable > 0 ? `（可编撰 ${inscribable}）` : ''}
+              编年史{inscribable > 0 ? `（可编撰 ${inscribable}）` : ''}
             </button>
             <button
               type="button"
@@ -8397,7 +8431,7 @@ export function BardTavernChroniclePanel({
               className={`prog-filter-btn ${tab === 'airship' ? 'active' : ''}`}
               onClick={() => setTab('airship')}
             >
-              浮空飞艇商路
+              飞艇商路
             </button>
             <button
               type="button"
@@ -8405,7 +8439,7 @@ export function BardTavernChroniclePanel({
               className={`prog-filter-btn ${tab === 'trial' ? 'active' : ''}`}
               onClick={() => setTab('trial')}
             >
-              圣骑士团试炼
+              荣誉试炼
             </button>
             <button
               type="button"
@@ -8423,13 +8457,31 @@ export function BardTavernChroniclePanel({
             >
               精灵驿站
             </button>
+            <button
+              type="button"
+              data-testid="tavern-tab-dive"
+              className={`prog-filter-btn ${tab === 'dive' ? 'active' : ''}`}
+              onClick={() => setTab('dive')}
+            >
+              遗迹潜航
+            </button>
+            <button
+              type="button"
+              data-testid="tavern-tab-guildwar"
+              className={`prog-filter-btn ${tab === 'guildwar' ? 'active' : ''}`}
+              onClick={() => setTab('guildwar')}
+            >
+              公会战
+            </button>
           </div>
 
           {wl16Tab && <AirshipPaladinView view={tab === 'trial' ? 'trial' : 'airship'} onChange={onChange} />}
 
           {wl17Tab && <DwarfElfView view={tab === 'waystation' ? 'waystation' : 'mine'} onChange={onChange} />}
 
-          {!wl16Tab && !wl17Tab && (
+          {wl18Tab && <AbyssGuildView view={tab === 'guildwar' ? 'guildwar' : 'dive'} onChange={onChange} />}
+
+          {tab === 'tavern' && (
           <div className="hw-hero-card tv-hero-card">
             <div className="hw-hero-top">
               <div className="hw-hero-emblem tv-hero-emblem">
@@ -8438,20 +8490,20 @@ export function BardTavernChroniclePanel({
               <div className="tv-hero-copy">
                 <div className="ac-hero-title-row">
                   <span className="hw-hero-title" data-testid="tavern-fame-name">
-                    吟游诗人酒馆 · {info.tavern.fame.name}
+                    酒馆名望 · {info.tavern.fame.name}
                   </span>
-                  <span className="qm-equipped-pill">名望与编年史转生永久保留</span>
+                  <span className="qm-equipped-pill" title="酒馆名望与编年史转生永久保留">
+                    转生保留
+                  </span>
                 </div>
                 <div className="tv-hero-meta">
                   <span>
-                    酒馆名望 <strong data-testid="tavern-fame-total">{info.tavern.fame.total}</strong>
                     {info.tavern.fame.next
-                      ? ` · 距「${info.tavern.fame.next.name}」还差 ${info.tavern.fame.next.minFame - info.tavern.fame.total}`
-                      : ' · 名望已满'}{' '}
+                      ? `距「${info.tavern.fame.next.name}」还差 ${info.tavern.fame.next.minFame - info.tavern.fame.total} 名望`
+                      : '名望已满'}{' '}
                     · 累计招待 {info.tavern.totalServed} 位（完美 {info.tavern.totalPerfect}）· 小费 {info.tavern.tipsEarned} 金币
                   </span>
                   <span className="tv-day-line" data-testid="tavern-day-line">
-                    今日 {formatWeatherDayLabel(info.tavern.dayKey)} · 来访 {info.tavern.visitorsPerDay} 位，已招待 {info.tavern.servedToday} 位 ·{' '}
                     {formatAcademyCountdown(dayLeft)}后换一批客人
                   </span>
                 </div>
@@ -8464,7 +8516,7 @@ export function BardTavernChroniclePanel({
             <div className="ac-wallet-badges tv-wallet-row">
               <span className="ac-wallet-badge tv-fame-badge">
                 <T1Art kind="skills" id="fame_laurel" className="ac-badge-icon" fallback="" alt="" />
-                名望：<strong>{info.tavern.fame.total}</strong>
+                名望 <strong data-testid="tavern-fame-total">{info.tavern.fame.total}</strong>
               </span>
               <span className="ac-wallet-badge tv-served-badge">
                 <T1Art kind="skills" id="ale_mug" className="ac-badge-icon" fallback="" alt="" />
@@ -8509,8 +8561,7 @@ export function BardTavernChroniclePanel({
           {tab === 'tavern' && (
             <div className="tv-tavern-view">
               <div className="ac-rack-title">
-                今日来访的冒险者（东八区每日轮换；每位每日招待 1 次，合点单名望 ×{info.tavern.matchPct / 100}，料理与饮品全合再 +
-                {info.tavern.perfectBonus}）
+                今日来访（合点单名望 ×{info.tavern.matchPct / 100}，料理与饮品全合再 +{info.tavern.perfectBonus}）
               </div>
               <div className="tv-visitor-grid">
                 {info.tavern.visitors.map((v) => (
@@ -8574,9 +8625,7 @@ export function BardTavernChroniclePanel({
                   </div>
                   <div className="tv-bar-copy">
                     <strong>吧台{serveVisitor ? ` · 招待「${serveVisitor.title} · ${serveVisitor.name}」` : ''}</strong>
-                    <span className="tv-rule-note">
-                      从背包里挑一份料理和一杯饮品端上（至少一样）；点到的菜品高亮，再点一次可以撤下。
-                    </span>
+                    <span className="tv-rule-note">从背包选一份料理和一杯饮品（至少一样），再点一次可撤下。</span>
                   </div>
                 </div>
                 {!serveVisitor ? (
@@ -8661,7 +8710,7 @@ export function BardTavernChroniclePanel({
               </div>
 
               <div className="ac-rack-title">
-                吟游诗人点唱（每日 {info.tavern.balladsPerDay} 首，同一时间只演唱一首；增益只作用于生活职业的速度、产出、经验与金币）
+                吟游诗人点唱（每日 {info.tavern.balladsPerDay} 首，同时只唱一首；增益只作用于生活职业）
               </div>
               {balladLive && info.ballad.name && (
                 <div className="tv-stage-banner" data-testid="tavern-active-ballad">
@@ -8705,7 +8754,7 @@ export function BardTavernChroniclePanel({
                 ))}
               </div>
 
-              <div className="ac-rack-title">酒馆名望（累计名望只增不减，等级加成永久生效）</div>
+              <div className="ac-rack-title">酒馆名望等级（名望只增不减，加成永久生效）</div>
               <div className="tv-fame-row" data-testid="tavern-fame-tiers">
                 {info.tavern.fame.tiers.map((t) => (
                   <div
@@ -8732,7 +8781,7 @@ export function BardTavernChroniclePanel({
                 ))}
               </div>
               <div className="tv-rule-note">
-                来访名单与点单由东八区日期确定性生成、全服一致；菜单只收真实的烹饪成品（料理与饮品），名望等级与编年史加成永久计入生产与战斗公式。
+                每天东八区 0 点换一批客人（全服相同），每位每天招待 1 次；菜单只收烹饪做出的料理与饮品。
               </div>
             </div>
           )}
@@ -8745,8 +8794,9 @@ export function BardTavernChroniclePanel({
                 </div>
                 <div className="tv-chronicle-copy">
                   <strong>
-                    冒险者编年史 · 已编撰 {info.chronicle.inscribedCount} / {info.chronicle.chapterCount} 卷 · 里程碑{' '}
-                    {info.chronicle.entriesDone} / {info.chronicle.entriesTotal}
+                    已编撰 {info.chronicle.inscribedCount} / {info.chronicle.chapterCount} 卷 · 里程碑 {info.chronicle.entriesDone} /{' '}
+                    {info.chronicle.entriesTotal}
+                    {info.chronicle.equippedTitleName ? ` · 称号「${info.chronicle.equippedTitleName}」` : ' · 未佩戴称号'}
                   </strong>
                   <div className="ct-rep-bar tv-chronicle-bar">
                     <div
@@ -8754,9 +8804,7 @@ export function BardTavernChroniclePanel({
                       style={{ width: `${Math.round((info.chronicle.entriesDone * 100) / Math.max(1, info.chronicle.entriesTotal))}%` }}
                     />
                   </div>
-                  <span className="tv-rule-note">
-                    编年史直接读取存档里的真实记录：首领讨伐、遗迹勘探与商队远征、垂钓大赛与水族馆、学院与节庆、天空竞技场、契约魔兽、酒馆名望与转生。三条里程碑全部达成即可编撰，解锁称号与小幅永久加成。
-                  </span>
+                  <span className="tv-rule-note">每卷三条里程碑全部达成即可编撰，解锁称号与小幅永久加成（转生保留）。</span>
                   <div className="tv-chip-row">
                     {formatTavernStats(info.bonuses.chronicleStats).length === 0 ? (
                       <span className="tv-chip muted">编撰第一卷后，这里会列出编年史的永久加成</span>
@@ -9203,9 +9251,11 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
             <div className="as-hero-copy">
               <div className="ac-hero-title-row">
                 <span className="hw-hero-title" data-testid="airship-hull-name">
-                  浮空飞艇 · {a.hull.name}
+                  船体 · {a.hull.name}
                 </span>
-                <span className="qm-equipped-pill">航线与船体转生永久保留</span>
+                <span className="qm-equipped-pill" title="航线、航线等级与船体转生永久保留；货舱特产转生时清空">
+                  转生保留
+                </span>
               </div>
               <div className="as-hero-meta">
                 <span data-testid="airship-status">
@@ -9215,8 +9265,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
                   {!voyage && a.arrivedVia ? ` · 经「${a.arrivedVia.name}」Lv.${a.arrivedVia.level} 抵港，收购价 +${a.sellBonusPct}%` : ''}
                 </span>
                 <span className="as-day-line">
-                  今日 {formatWeatherDayLabel(a.dayKey)} 行情 · {formatAcademyCountdown(dayLeft)}后换行情、补满存货 · 船体 Lv.{a.hull.level}（航程 -
-                  {a.hull.speedPct}%）
+                  {formatAcademyCountdown(dayLeft)}后换行情、补满存货 · 船体 Lv.{a.hull.level}（航程 -{a.hull.speedPct}%）
                 </span>
               </div>
               <div className="ct-rep-bar as-cargo-bar">
@@ -9263,7 +9312,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
         )}
 
         <div className="ac-rack-title">
-          {a.location.name}集市 · 今日行情（东八区每日 0 点换行情；每种特产每日 {a.dailyStock} 件存货）
+          {a.location.name}集市 · 今日行情（每种特产每日 {a.dailyStock} 件）
         </div>
         <div className="as-market-here" data-testid="airship-market-here">
           <div className="as-market-col">
@@ -9405,7 +9454,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
           </div>
         </div>
 
-        <div className="ac-rack-title">航线（双向通航；载货航程积累航线经验，升级缩短航程并提高抵港后的收购价）</div>
+        <div className="ac-rack-title">航线（双向通航；载货航行升级航线，缩短航程、提高抵港收购价）</div>
         <div className="as-route-grid" data-testid="airship-routes">
           {a.routes.map((r) => (
             <div
@@ -9468,7 +9517,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
           ))}
         </div>
 
-        <div className="ac-rack-title">船坞 · 船体升级（金币 + 真实生活职业成品；航行中不能进坞）</div>
+        <div className="ac-rack-title">船坞 · 船体升级（航行中不能进坞）</div>
         <div className="as-hull-card" data-testid="airship-hull">
           <div className="as-hull-emblem">
             <T1Art kind="skills" id="airship_dock" className="as-hull-icon" fallback="" alt="飞艇船坞" />
@@ -9518,7 +9567,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
           </button>
         </div>
 
-        <div className="ac-rack-title">全图行情（各港今日收购价，未含航线加成；产地不收购本地特产）</div>
+        <div className="ac-rack-title">全图行情（各港今日收购价，未含航线加成）</div>
         <div className="as-town-grid" data-testid="airship-market-all">
           {a.market.map((m) => {
             const town = a.towns.find((x) => x.id === m.townId);
@@ -9557,8 +9606,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
           })}
         </div>
         <div className="tv-rule-note">
-          城镇沿用公会城镇与远征商队的三座航路城镇，特产都是内容包里的真实物品（基准价即物品价值）；行情按东八区日期确定性生成、全服一致。
-          航线、航线等级与船体转生永久保留，货舱里的特产会在转生时清空。
+          行情每天东八区 0 点轮换（全服相同），产地不收购本地特产。航线、航线等级与船体转生永久保留，货舱特产转生时清空。
           {a.lastArrival ? ` 最近抵港：沿「${a.lastArrival.routeName}」到${a.lastArrival.toName}，载货 ${a.lastArrival.cargoUnits} 件，航线经验 +${a.lastArrival.xpGained}。` : ''}
           {a.lastSale ? ` 最近成交：在${a.lastSale.townName}卖出「${a.lastSale.name}」×${a.lastSale.qty}，${formatAirshipProfit(a.lastSale.profit)}。` : ''}
         </div>
@@ -9576,15 +9624,16 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
           <div className="ht-hero-copy">
             <div className="ac-hero-title-row">
               <span className="hw-hero-title" data-testid="paladin-theme">
-                圣骑士团荣誉试炼 · 本周「{t.theme.name}」
+                本周「{t.theme.name}」
               </span>
-              <span className="qm-equipped-pill">勋章与誓言转生永久保留</span>
+              <span className="qm-equipped-pill" title="荣誉勋章与圣骑士誓言转生永久保留">
+                转生保留
+              </span>
             </div>
             <div className="ht-hero-meta">
               <span>{t.theme.description}</span>
               <span className="ht-week-line">
-                本周 {formatWeatherDayLabel(t.weekKey)} 起 · {formatAcademyCountdown(weekLeft)}后轮换为「{t.nextWeekTheme.name}」 · 荣誉位阶「
-                {t.honor.name}」
+                {formatAcademyCountdown(weekLeft)}后轮换为「{t.nextWeekTheme.name}」 · 荣誉位阶「{t.honor.name}」
                 {t.honor.next ? `，距「${t.honor.next.name}」还差 ${t.honor.next.minMedals - t.totalMedals} 枚` : '（已满）'}
               </span>
             </div>
@@ -9623,7 +9672,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
 
       {t.player && (
         <div className="ht-build-line" data-testid="paladin-build">
-          你的试炼构建：攻击 {t.player.atk} · 防御 {t.player.def} · 生命 {t.player.hp} · 出手间隔 {(t.player.intervalMs / 1000).toFixed(2)} 秒（满血、无临时增益，与天空竞技场同一沙盒）
+          你的试炼属性：攻击 {t.player.atk} · 防御 {t.player.def} · 生命 {t.player.hp} · 出手间隔 {(t.player.intervalMs / 1000).toFixed(2)} 秒（满血、不含临时增益）
         </div>
       )}
 
@@ -9738,7 +9787,7 @@ function AirshipPaladinView({ view, onChange }: { view: 'airship' | 'trial'; onC
         ))}
       </div>
       <div className="tv-rule-note">
-        幻影的战斗属性逐项取自内容包里的真实魔物，再乘本周誓约倍率；对决直接跑天空竞技场同一个 hp_combat 沙盒（满血、无临时增益、10 分钟上限），面板预演与实战结算一致。
+        幻影属性取自真实魔物并乘本周倍率；对决与天空竞技场规则相同（满血、不含临时增益、10 分钟未分胜负判负），预演与实战结果一致。
         历史最佳第 {t.bestStage} 关 · 全通 {t.weeksFullCleared} 周 · 胜 {t.totalWins} / 负 {t.totalLosses}。
         {t.lastDuel
           ? ` 最近一战：第 ${t.lastDuel.stage} 关「${t.lastDuel.opponentName}」${t.lastDuel.won ? `胜，勋章 +${t.lastDuel.medals}` : '负'}。`
@@ -10051,19 +10100,20 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
             <div className="dm-hero-copy">
               <div className="ac-hero-title-row">
                 <span className="hw-hero-title" data-testid="mine-depth-name">
-                  矮人地底矿脉 · {m.depth.name}
+                  矿道 {m.depth.level} 层 · {m.depth.name}
                 </span>
-                <span className="qm-equipped-pill">矿道与矿车转生永久保留</span>
+                <span className="qm-equipped-pill" title="矿道深度、矿车与累计记录转生永久保留">
+                  转生保留
+                </span>
               </div>
               <div className="dm-hero-meta">
                 <span data-testid="mine-status">
                   {haul
                     ? `矿车在第 ${haul.layer} 层「${haul.layerName}」· ${haulLeft > 0 ? `还有 ${formatAirshipDuration(haulLeft)}回到井口` : '正在出井…'}`
-                    : `矿车停在井口 · 今日已出车 ${m.haulsToday} 车`}
+                    : '矿车停在井口'}
                 </span>
                 <span className="dm-day-line">
-                  今日 {formatWeatherDayLabel(m.dayKey)} 矿脉 · {formatAcademyCountdown(mineDayLeft)}后换新矿脉 · 竖井深 {m.depth.meters} 米 · 铁匠采矿 Lv.
-                  {m.miningLevel}
+                  {formatAcademyCountdown(mineDayLeft)}后换新矿脉 · 竖井深 {m.depth.meters} 米 · 铁匠采矿 Lv.{m.miningLevel}
                 </span>
               </div>
               <div className="ct-rep-bar dm-depth-bar">
@@ -10111,7 +10161,7 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
         )}
 
         <div className="ac-rack-title">
-          今日矿脉图（东八区每日 0 点换矿脉、全服一致；每层每日 {m.haulsPerLayer} 车；矿石与伴生材料直接入背包，用于锻造冶炼）
+          今日矿脉（每层每日 {m.haulsPerLayer} 车，矿石与伴生材料直接入背包）
         </div>
         <div className="dm-layer-grid" data-testid="mine-layers">
           {m.layers.map((l) => {
@@ -10134,7 +10184,7 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
                       第 {l.layer} 层 · {l.name}
                     </strong>
                     <span>
-                      深 {l.meters} 米 · 需采矿 Lv.{l.minMiningLevel} · 今日剩 {l.haulsLeft} / {m.haulsPerLayer} 车
+                      深 {l.meters} 米 · 需采矿 Lv.{l.minMiningLevel}
                     </span>
                   </div>
                 </div>
@@ -10144,17 +10194,17 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
                 </span>
                 <span className="dm-layer-desc">{l.description}</span>
                 <span className="dm-layer-meta">
-                  每车「{l.vein.oreName}」×{l.yield?.oreQty ?? 0}
+                  每车 ×{l.yield?.oreQty ?? 0}
                   {(l.yield?.byproductQty ?? 0) > 0 ? ` + 伴生「${l.byproduct.name}」×${l.yield?.byproductQty}` : ''} · 出车 {formatAirshipDuration(l.durationMs)}
                 </span>
                 <div className="as-mat-row">
                   <span className="as-mini-chip">
                     <T1ItemIcon itemId={ore.id} className="ac-badge-icon" fallback="" alt="" />
-                    {ore.smelt ? `冶炼「${ore.smelt.name}」锻造 Lv.${ore.smelt.level}` : ore.name} · 背包 {ore.have}
+                    {ore.smelt ? `冶炼「${ore.smelt.name}」Lv.${ore.smelt.level}` : ore.name} · 背包 {ore.have}
                   </span>
-                  <span className="as-mini-chip">
+                  <span className="as-mini-chip" title={l.byproduct.forge ? `用于锻造「${l.byproduct.forge.name}」` : undefined}>
                     <T1ItemIcon itemId={l.byproduct.id} className="ac-badge-icon" fallback="" alt="" />
-                    伴生「{l.byproduct.name}」{l.byproduct.forge ? `用于「${l.byproduct.forge.name}」` : ''} · 背包 {l.byproduct.have}
+                    伴生「{l.byproduct.name}」· 背包 {l.byproduct.have}
                   </span>
                 </div>
                 <span className="dm-layer-next">
@@ -10175,7 +10225,7 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
           })}
         </div>
 
-        <div className="ac-rack-title">矿道与矿车（金币 + 真实生活职业成品；矿车在井下时不能升级）</div>
+        <div className="ac-rack-title">矿道与矿车（矿车在井下时不能升级）</div>
         <div className="dm-upgrade-grid">
           <div className="dm-upgrade-card" data-testid="mine-depth">
             <div className="dm-upgrade-emblem">
@@ -10275,9 +10325,8 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
           </div>
         </div>
         <div className="tv-rule-note">
-          矿脉按东八区日期确定性生成：每层在两种真实矿石中定出今天的矿种与品位（贫 70% / 中 100% / 富 135% / 极品 180%，富矿与极品另带伴生锻造材料），
-          明天的矿脉今天就能预告。矿石与伴生材料直接入背包，可在锻造技能里冶炼成锭或打造装备。矿道深度、矿车与累计记录转生永久保留，
-          但下到深层仍需本世的铁匠采矿等级；转生时在途矿车里的矿石会散去。
+          矿脉每天东八区 0 点轮换（全服相同）。品位产量：贫 70% / 中 100% / 富 135% / 极品 180%，富矿与极品另带伴生锻造材料。
+          矿道、矿车与累计记录转生永久保留，但深层仍需本世的铁匠采矿等级；在途矿车的矿石转生时散去。
           {m.lastHaul
             ? ` 最近一车：第 ${m.lastHaul.layer} 层「${m.lastHaul.layerName}」${m.lastHaul.gradeName}，带回「${m.lastHaul.oreName}」×${m.lastHaul.oreQty}${
                 m.lastHaul.byproductQty > 0 ? `、「${m.lastHaul.byproductName}」×${m.lastHaul.byproductQty}` : ''
@@ -10298,19 +10347,18 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
           <div className="ew-hero-copy">
             <div className="ac-hero-title-row">
               <span className="hw-hero-title" data-testid="elf-favor-name">
-                精灵林地驿站 · {e.favor.name}
+                林地好感 · {e.favor.name}
               </span>
-              <span className="qm-equipped-pill">林地好感转生永久保留</span>
+              <span className="qm-equipped-pill" title="林地好感只增不减、转生永久保留">
+                转生保留
+              </span>
             </div>
             <div className="ew-hero-meta">
               <span>
-                林地好感 {e.favor.total}
-                {e.favor.next ? ` · 距「${e.favor.next.name}」还差 ${e.favor.next.minFavor - e.favor.total}` : ' · 好感已满'} · 累计完成委托 {e.totals.commissions} 张（全清{' '}
-                {e.totals.fullBoards} 天）
+                {e.favor.next ? `距「${e.favor.next.name}」还差 ${e.favor.next.minFavor - e.favor.total} 好感` : '好感已满'} · 累计完成委托{' '}
+                {e.totals.commissions} 张（全清 {e.totals.fullBoards} 天）
               </span>
-              <span className="ew-day-line">
-                今日 {formatWeatherDayLabel(e.dayKey)} 委托板（按「{e.boardTierName}」张贴）· {formatAcademyCountdown(elfDayLeft)}后换新委托
-              </span>
+              <span className="ew-day-line">{formatAcademyCountdown(elfDayLeft)}后换新委托</span>
             </div>
             <div className="ct-rep-bar ew-favor-bar">
               <div className="ct-rep-bar-fill ew-favor-fill" style={{ width: `${e.favor.progressPct}%` }} />
@@ -10338,7 +10386,7 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
       </div>
 
       <div className="ac-rack-title">
-        今日委托板（两张采集委托 + 一张远征委托；全部完成额外 +{e.fullBoardBonus} 好感）
+        今日委托板（按「{e.boardTierName}」张贴；全部完成额外 +{e.fullBoardBonus} 好感）
       </div>
       <div className="ew-board" data-testid="elf-board">
         {e.commissions.map((c) => {
@@ -10377,8 +10425,8 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
               </div>
               <span className="ew-commission-meta">
                 {c.kind === 'gather'
-                  ? `来源：${c.skillName}「${c.actionName}」（Lv.${c.level}）· 背包 ${c.have} / ${c.qty}`
-                  : `读数：${c.source}（张贴时 ${c.base} → 现在 ${c.current}）· 进度 ${c.progress} / ${c.target}`}
+                  ? `${c.skillName.replace(/技能$/, '')}「${c.actionName}」Lv.${c.level} · 背包 ${c.have}/${c.qty}`
+                  : `${c.source} · 进度 ${c.progress}/${c.target}`}
               </span>
               <div className="ct-rep-bar ew-commission-bar">
                 <div className="ct-rep-bar-fill ew-commission-fill" style={{ width: `${pct}%` }} />
@@ -10409,7 +10457,7 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
         })}
       </div>
 
-      <div className="ac-rack-title">林地好感等级（永久加成只作用于采集行动；封顶 {capLine}）</div>
+      <div className="ac-rack-title">林地好感等级（加成只作用于采集行动）</div>
       <div className="ew-tier-grid" data-testid="elf-tiers">
         {e.favor.tiers.map((t) => {
           const chips = formatElfStats(t.stats);
@@ -10428,7 +10476,7 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
         })}
       </div>
 
-      <div className="ac-rack-title">远征读数（直接读取存档里已有的真实记录，不新增计数器）</div>
+      <div className="ac-rack-title">远征读数（委托板张贴时记下基线）</div>
       <div className="ew-source-row" data-testid="elf-sources">
         {e.sources.map((s) => (
           <span key={s.id} className="as-mini-chip ew-source-chip">
@@ -10438,10 +10486,503 @@ function DwarfElfView({ view, onChange }: { view: 'mine' | 'waystation'; onChang
         ))}
       </div>
       <div className="tv-rule-note">
-        驿站每个东八区日按张贴时的好感等级换一块委托板：采集委托要交出内容包里真实采集行动的产出，远征委托只认委托板张贴后新完成的远征商队返航、
-        星界遗迹勘探或浮空飞艇抵港。林地好感只增不减、转生永久保留，好感等级的采集速度 / 产出效率 / 经验加成逐项封顶。
+        委托板每天东八区 0 点按当时的好感等级换新；远征委托只计张贴后新完成的商队返航、遗迹勘探或飞艇抵港。林地好感只增不减、转生永久保留；好感加成封顶 {capLine}。
         {e.lastCommission
           ? ` 最近完成：「${e.lastCommission.client}」的委托 ${e.lastCommission.name}，好感 +${e.lastCommission.favor}、金币 +${e.lastCommission.gold}。`
+          : ''}
+      </div>
+    </div>
+  );
+}
+
+/* ============================ 深海遗迹潜航 & 冒险者行会公会战 (WL-18) ============================ */
+// 并入酒馆面板的两个分页（顶栏不加胶囊）：遗迹层、海流、打捞品与氧气预算都来自前后端逐字对称的 abyssGuild 镜像，
+// 公会战对手阵容由周序号确定性生成，挑战结果以服务器的竞技沙盒结算为准。
+
+interface AbyssLayerView {
+  layer: number;
+  name: string;
+  meters: number;
+  description: string;
+  minChefLevel: number;
+  salvage: Array<{ id: string; name: string; have: number; use: string | null }>;
+  ruin: { itemId: string; itemName: string; current: AbyssCurrentId; currentName: string; oxygenCost: number; qty: number };
+  gearOk: boolean;
+  levelOk: boolean;
+  divesUsed: number;
+  divesLeft: number;
+  canDive: boolean;
+  block: string | null;
+}
+
+interface GuildSeatView {
+  seat: number;
+  seatName: string;
+  monsterId: string;
+  name: string;
+  foeName: string;
+  level: number;
+  hp: number;
+  atk: number;
+  def: number;
+  attackIntervalMs: number;
+  isBoss: boolean;
+  medals: number;
+  reward: number;
+  cleared: boolean;
+  isTarget: boolean;
+  canChallenge: boolean;
+  block: string | null;
+}
+
+interface AbyssGuildInfo {
+  nowMs: number;
+  bonuses: GuildWarBonuses;
+  dive: {
+    dayKey: string;
+    dayEndsAtMs: number;
+    gold: number;
+    chefLevel: number;
+    oxygen: { budget: number; used: number; left: number };
+    divesPerLayer: number;
+    gear: {
+      level: number;
+      name: string;
+      oxygen: number;
+      salvagePct: number;
+      maxLayer: number;
+      maxLevel: number;
+      next: { level: number; name: string; oxygen: number; salvagePct: number; maxLayer: number; costGold: number } | null;
+      materials: Array<{ itemId: string; name: string; need: number; have: number }>;
+      canUpgrade: boolean;
+      block: string | null;
+      steps: Array<{ level: number; name: string; oxygen: number; reached: boolean }>;
+    };
+    layers: AbyssLayerView[];
+    totals: { dives: number; salvage: number; deepest: number };
+    lastDive: { layer: number; layerName: string; itemName: string; qty: number; currentName: string; oxygen: number; at: string } | null;
+  };
+  guild: {
+    weekKey: string;
+    weekEndsAtMs: number;
+    rival: { id: string; name: string; motto: string; hpPct: number; atkPct: number; defPct: number; intervalPct: number };
+    nextRival: { id: string; name: string };
+    attemptsUsed: number;
+    attemptsLeft: number;
+    attemptsPerWeek: number;
+    sweepBonus: number;
+    clearedCount: number;
+    seats: GuildSeatView[];
+    rank: {
+      totalMedals: number;
+      rank: number;
+      name: string;
+      stats: GuildStats;
+      next: { rank: number; name: string; minMedals: number; stats: GuildStats } | null;
+      progressPct: number;
+      ranks: Array<{ rank: number; name: string; minMedals: number; stats: GuildStats; reached: boolean }>;
+    };
+    caps: Required<GuildStats>;
+    totals: { duels: number; wins: number; sweeps: number };
+    lastDuel: { seat: number; opponentName: string; won: boolean; timeout: boolean; medals: number; at: string } | null;
+  };
+}
+
+function AbyssGuildView({ view, onChange }: { view: 'dive' | 'guildwar'; onChange?: () => void }) {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
+  const [info, setInfo] = useState<AbyssGuildInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  // 服务器时钟偏移：换日 / 翻周倒计时按「服务器 nowMs + 本地流逝」推算
+  const [clientAnchor, setClientAnchor] = useState(() => Date.now());
+  const [tick, setTick] = useState(() => Date.now());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      apiClient.clearCache();
+      const res: any = await apiClient.getAbyssGuild();
+      setInfo(res);
+      setClientAnchor(Date.now());
+      return res as AbyssGuildInfo;
+    } catch (e: any) {
+      toastRef.current.error(e?.message || '加载深海遗迹潜航与冒险者行会公会战失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setTick(Date.now()), 15_000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const runAction = async (key: string, call: () => Promise<any>, onOk: (res: any) => void, failText: string) => {
+    setBusyKey(key);
+    try {
+      const res: any = await call();
+      if (res?.abyss?.dive) {
+        setInfo(res.abyss);
+        setClientAnchor(Date.now());
+      } else {
+        await load();
+      }
+      onOk(res);
+      onChange?.();
+    } catch (e: any) {
+      toastRef.current.error(e?.message || failText);
+      await load();
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  if (loading && !info) return <div className="prog-empty">正在检查潜水装备、翻开公会战对阵表…</div>;
+  if (!info) return <div className="prog-empty">暂无深海遗迹潜航与冒险者行会公会战数据</div>;
+
+  const d = info.dive;
+  const g = info.guild;
+  const serverNow = info.nowMs + Math.max(0, tick - clientAnchor);
+  const dayIndex = abyssDayIndexFromKey(d.dayKey) ?? 0;
+  const weekIndex = guildWarWeekIndexFromKey(g.weekKey) ?? 0;
+  const dayLeft = Math.max(0, d.dayEndsAtMs - serverNow);
+  const weekLeft = Math.max(0, g.weekEndsAtMs - serverNow);
+  const divesMap: Record<string, number> = Object.fromEntries(d.layers.map((l) => [String(l.layer), l.divesUsed]));
+  const tomorrow = getAbyssRuinMap(dayIndex + 1);
+  const oxygenPct = Math.round((d.oxygen.left * 100) / Math.max(1, d.oxygen.budget));
+  const bonusChips = formatGuildStats(info.bonuses);
+  const capLine = formatGuildStats(g.caps).join(' · ');
+
+  const handleDive = (l: AbyssLayerView) =>
+    runAction(
+      `dive:${l.layer}`,
+      () => apiClient.diveAbyssRuin({ layer: l.layer, dayKey: d.dayKey }),
+      (res) =>
+        toastRef.current.success(
+          `下潜「${l.name}」：打捞到「${l.ruin.itemName}」×${res?.dive?.qty ?? l.ruin.qty}，消耗氧气 ${res?.dive?.oxygenCost ?? l.ruin.oxygenCost}`
+        ),
+      '下潜失败'
+    );
+  const handleGear = () =>
+    runAction(
+      'gear',
+      () => apiClient.upgradeAbyssGear(),
+      (res) => toastRef.current.success(`换上新潜装：每日氧气 ${res?.gear?.oxygen ?? ''}`),
+      '潜水装备升级失败'
+    );
+  const handleChallenge = (s: GuildSeatView) =>
+    runAction(
+      `challenge:${s.seat}`,
+      () => apiClient.challengeGuildWar({ seat: s.seat, weekKey: g.weekKey }),
+      (res) => {
+        const r = res?.challenge;
+        if (r?.won) {
+          toastRef.current.success(`击败「${s.name}」！行会勋章 +${r.medals}${r.sweep ? '（五席全胜）' : ''}${r.rankUp ? '，位阶提升！' : ''}`);
+        } else {
+          toastRef.current.info(`${r?.timeout ? '10 分钟未分胜负' : '落败'}：「${s.name}」，本周还剩 ${r?.attemptsLeft ?? ''} 次`);
+        }
+      },
+      '公会战挑战失败'
+    );
+
+  if (view === 'dive') {
+    return (
+      <div className="ad-view" data-testid="abyss-dive-view">
+        <div className="hw-hero-card ad-hero-card">
+          <div className="hw-hero-top">
+            <div className="hw-hero-emblem ad-hero-emblem">
+              <T1Art kind="skills" id="abyss_dive" className="hw-hero-core-icon" fallback="" alt="深海遗迹潜航" />
+            </div>
+            <div className="ad-hero-copy">
+              <div className="ac-hero-title-row">
+                <span className="hw-hero-title" data-testid="abyss-gear-name">
+                  潜装 Lv.{d.gear.level} · {d.gear.name}
+                </span>
+                <span className="qm-equipped-pill" title="潜水装备与累计记录转生永久保留">
+                  转生保留
+                </span>
+              </div>
+              <div className="ad-hero-meta">
+                <span data-testid="abyss-oxygen-line">
+                  可下潜到第 {d.gear.maxLayer} 层 · 打捞 ×{d.gear.salvagePct}% · 厨师 Lv.{d.chefLevel}
+                </span>
+                <span className="ad-day-line">{formatAcademyCountdown(dayLeft)}后遗迹换新、氧气补满</span>
+              </div>
+              <div className="ct-rep-bar ad-oxygen-bar">
+                <div className="ct-rep-bar-fill ad-oxygen-fill" style={{ width: `${oxygenPct}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="ac-wallet-badges ad-wallet-row">
+            <span className="ac-wallet-badge ad-oxygen-badge">
+              <T1Art kind="skills" id="oxygen_tank" className="ac-badge-icon" fallback="" alt="" />
+              氧气 <strong data-testid="abyss-oxygen-left">{d.oxygen.left}</strong> / {d.oxygen.budget}
+            </span>
+            <span className="ac-wallet-badge ad-gold-badge">
+              <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+              金币 <strong>{d.gold}</strong>
+            </span>
+            <span className="ac-wallet-badge ad-total-badge">
+              <T1Art kind="skills" id="abyss_dive" className="ac-badge-icon" fallback="" alt="" />
+              累计 <strong data-testid="abyss-total-dives">{d.totals.dives}</strong> 潜 · 打捞 {d.totals.salvage} 件
+            </span>
+          </div>
+        </div>
+
+        <div className="ac-rack-title">今日遗迹（每层每日 {d.divesPerLayer} 次，打捞品直接入背包）</div>
+        <div className="dm-layer-grid ad-layer-grid" data-testid="abyss-layers">
+          {d.layers.map((l) => {
+            const probe = planAbyssDive(dayIndex, l.layer, d.gear.level, d.chefLevel, divesMap, d.oxygen.used);
+            const canDive = probe.ok && l.canDive;
+            const item = l.salvage.find((x) => x.id === l.ruin.itemId) ?? l.salvage[0];
+            const next = tomorrow[l.layer - 1];
+            const nextItem = l.salvage.find((x) => x.id === next?.itemId);
+            const key = `dive:${l.layer}`;
+            return (
+              <div
+                key={l.layer}
+                data-testid={`abyss-layer-${l.layer}`}
+                className={`dm-layer-card ad-layer-card ${l.gearOk ? 'reached' : 'locked'} ${l.gearOk && l.levelOk ? '' : 'dim'} current-${abyssCurrentTone(l.ruin.current)}`}
+              >
+                <div className="dm-layer-head">
+                  <T1ItemIcon itemId={l.ruin.itemId} className="dm-ore-icon" fallback="" alt={l.ruin.itemName} />
+                  <div className="dm-layer-title">
+                    <strong>
+                      第 {l.layer} 层 · {l.name}
+                    </strong>
+                    <span>
+                      深 {l.meters} 米 · 需厨师 Lv.{l.minChefLevel}
+                    </span>
+                  </div>
+                </div>
+                <span className={`ad-current-chip ${abyssCurrentTone(l.ruin.current)}`} data-testid={`abyss-current-${l.layer}`}>
+                  <T1Art kind="skills" id="oxygen_tank" className="ac-badge-icon" fallback="" alt="" />
+                  {formatAbyssCurrent(l.ruin.current)}
+                </span>
+                <span className="dm-layer-desc">{l.description}</span>
+                <span className="dm-layer-meta">
+                  打捞「{l.ruin.itemName}」×{l.ruin.qty} · 氧气 {l.ruin.oxygenCost}
+                </span>
+                <div className="as-mat-row">
+                  <span className="as-mini-chip" title={item.use ? `用于「${item.use}」` : undefined}>
+                    <T1ItemIcon itemId={item.id} className="ac-badge-icon" fallback="" alt="" />
+                    {item.use ? `用于「${item.use}」` : item.name} · 背包 {item.have}
+                  </span>
+                </div>
+                <span className="dm-layer-next">明日预告：{next ? `${next.currentName}「${nextItem?.name ?? next.itemId}」` : '—'}</span>
+                <button
+                  type="button"
+                  data-testid={`abyss-dive-btn-${l.layer}`}
+                  className="prog-claim-btn af-action-btn ad-dive-btn"
+                  disabled={!canDive || Boolean(busyKey)}
+                  onClick={() => handleDive(l)}
+                >
+                  <T1Art kind="skills" id="abyss_dive" className="ac-badge-icon" fallback="" alt="" />
+                  {busyKey === key ? '下潜中…' : canDive ? `下潜（剩 ${l.divesLeft} 次）` : l.block || '暂不可下潜'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="ac-rack-title">潜水装备</div>
+        <div className="dm-upgrade-grid ad-upgrade-grid">
+          <div className="dm-upgrade-card" data-testid="abyss-gear">
+            <div className="dm-upgrade-emblem">
+              <T1Art kind="skills" id="diving_gear" className="dm-upgrade-icon" fallback="" alt="潜水装备" />
+            </div>
+            <div className="dm-upgrade-copy">
+              <strong>
+                「{d.gear.name}」Lv.{d.gear.level} / {d.gear.maxLevel} · 氧气 {d.gear.oxygen}
+              </strong>
+              {d.gear.next ? (
+                <>
+                  <span className="dm-upgrade-next">
+                    下一级「{d.gear.next.name}」：氧气 {d.gear.next.oxygen} · 打捞 ×{d.gear.next.salvagePct}% · 可下到第 {d.gear.next.maxLayer} 层
+                  </span>
+                  <div className="as-mat-row">
+                    <span className={`as-mat-chip ${d.gold >= d.gear.next.costGold ? 'ok' : 'short'}`}>
+                      <T1Art kind="ui" id="gold" className="ac-badge-icon" fallback="" alt="" />
+                      {d.gear.next.costGold}
+                    </span>
+                    {d.gear.materials.map((x) => (
+                      <span key={x.itemId} className={`as-mat-chip ${x.have >= x.need ? 'ok' : 'short'}`}>
+                        <T1ItemIcon itemId={x.itemId} className="ac-badge-icon" fallback="" alt="" />
+                        {x.name} {x.have}/{x.need}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <span className="dm-upgrade-next">潜水装备已是最高等级</span>
+              )}
+              <div className="as-hull-steps">
+                {d.gear.steps.map((s) => (
+                  <span key={s.level} className={`as-hull-step ${s.reached ? 'reached' : ''} ${s.level === d.gear.level ? 'current' : ''}`}>
+                    Lv.{s.level} {s.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              data-testid="abyss-gear-btn"
+              className="prog-claim-btn af-action-btn ad-gear-btn"
+              disabled={!d.gear.canUpgrade || Boolean(busyKey)}
+              onClick={handleGear}
+            >
+              <T1Art kind="skills" id="diving_gear" className="ac-badge-icon" fallback="" alt="" />
+              {busyKey === 'gear' ? '换装中…' : d.gear.canUpgrade ? '升级潜水装备' : d.gear.block || '暂不可升级'}
+            </button>
+          </div>
+        </div>
+        <div className="tv-rule-note">
+          遗迹每天东八区 0 点轮换（全服相同）。海流：平静 ×100% / 暗涌 氧气 ×125%、打捞 ×130% / 沉船潮 氧气 ×90%、打捞 ×160%。
+          潜水装备与累计记录转生永久保留，但深层仍需本世的厨师（钓鱼）等级。
+          {d.lastDive
+            ? ` 最近一潜：第 ${d.lastDive.layer} 层「${d.lastDive.layerName}」${d.lastDive.currentName}，打捞「${d.lastDive.itemName}」×${d.lastDive.qty}。`
+            : ''}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="gw-view" data-testid="guild-war-view">
+      <div className="hw-hero-card gw-hero-card">
+        <div className="hw-hero-top">
+          <div className="hw-hero-emblem gw-hero-emblem">
+            <T1Art kind="skills" id="guild_war" className="hw-hero-core-icon" fallback="" alt="冒险者行会公会战" />
+          </div>
+          <div className="gw-hero-copy">
+            <div className="ac-hero-title-row">
+              <span className="hw-hero-title" data-testid="guild-rank-name">
+                行会位阶 · {g.rank.name}
+              </span>
+              <span className="qm-equipped-pill" title="行会勋章只增不减、转生永久保留">
+                转生保留
+              </span>
+            </div>
+            <div className="gw-hero-meta">
+              <span>
+                {g.rank.next ? `距「${g.rank.next.name}」还差 ${g.rank.next.minMedals - g.rank.totalMedals} 枚勋章` : '位阶已满'} · 累计胜 {g.totals.wins} 场
+                {g.totals.sweeps > 0 ? `（全胜 ${g.totals.sweeps} 周）` : ''}
+              </span>
+              <span className="gw-week-line">
+                {formatAcademyCountdown(weekLeft)}后换对手（下周：{g.nextRival.name}）
+              </span>
+            </div>
+            <div className="ct-rep-bar gw-rank-bar">
+              <div className="ct-rep-bar-fill gw-rank-fill" style={{ width: `${g.rank.progressPct}%` }} />
+            </div>
+          </div>
+        </div>
+        <div className="ac-wallet-badges gw-wallet-row">
+          <span className="ac-wallet-badge gw-medal-badge">
+            <T1Art kind="skills" id="guild_medal" className="ac-badge-icon" fallback="" alt="" />
+            行会勋章 <strong data-testid="guild-medals">{g.rank.totalMedals}</strong>
+          </span>
+          <span className="ac-wallet-badge gw-attempt-badge">
+            <T1Art kind="skills" id="rival_banner" className="ac-badge-icon" fallback="" alt="" />
+            本周挑战 <strong data-testid="guild-attempts-left">{g.attemptsLeft}</strong> / {g.attemptsPerWeek}
+          </span>
+          <span className="ac-wallet-badge gw-bonus-badge" data-testid="guild-bonuses">
+            <T1Art kind="skills" id="guild_war" className="ac-badge-icon" fallback="" alt="" />
+            {bonusChips.length > 0 ? bonusChips.join(' · ') : '累积勋章解锁永久加成'}
+          </span>
+        </div>
+      </div>
+
+      <div className="gw-rival-card" data-testid="guild-rival">
+        <T1Art kind="skills" id="rival_banner" className="gw-rival-icon" fallback="" alt="" />
+        <div className="gw-rival-copy">
+          <strong>本周对手：{g.rival.name}</strong>
+          <span>
+            {g.rival.motto} · 生命 ×{g.rival.hpPct}% · 攻击 ×{g.rival.atkPct}% · 防御 ×{g.rival.defPct}% · 出手间隔 ×{g.rival.intervalPct}%
+          </span>
+        </div>
+      </div>
+
+      <div className="ac-rack-title">五席对阵（按顺序挑战，胜负都消耗 1 次；五席全胜再 +{g.sweepBonus}）</div>
+      <div className="ht-stage-grid gw-seat-grid" data-testid="guild-seats">
+        {g.seats.map((s) => {
+          const probe = planGuildWarChallenge(
+            weekIndex,
+            s.seat,
+            g.seats.filter((x) => x.cleared).map((x) => x.seat),
+            g.attemptsUsed
+          );
+          const canChallenge = probe.ok && s.canChallenge;
+          return (
+            <div
+              key={s.seat}
+              data-testid={`guild-seat-${s.seat}`}
+              className={`ht-stage-card gw-seat-card ${s.cleared ? 'cleared' : ''} ${s.isTarget ? 'next' : ''} ${s.isBoss ? 'boss' : ''}`}
+            >
+              <div className="ht-stage-head">
+                <div className="ht-stage-portrait">
+                  <T1Art kind="monster" id={s.monsterId} className="ht-stage-art" fallback="" alt={s.name} />
+                </div>
+                <div className="ht-stage-title">
+                  <span className="ht-stage-no">
+                    第 {s.seat} 席 · {s.seatName}
+                  </span>
+                  <strong>{s.foeName}</strong>
+                  <span className="ht-stage-stats">
+                    Lv.{s.level} · 生命 {s.hp} · 攻击 {s.atk} · 防御 {s.def} · 间隔 {(s.attackIntervalMs / 1000).toFixed(1)} 秒
+                  </span>
+                </div>
+              </div>
+              <div className="ht-stage-foot">
+                <span className="ht-reward">
+                  <T1Art kind="skills" id="guild_medal" className="ac-badge-icon" fallback="" alt="" />
+                  勋章 +{s.medals}
+                  {s.reward > s.medals ? ` · 全胜 +${s.reward - s.medals}` : ''}
+                </span>
+                <span className={`ht-preview ${s.cleared ? 'done' : ''}`}>{s.cleared ? '本周已击败' : s.isTarget ? '' : s.block ?? ''}</span>
+              </div>
+              {s.isTarget && (
+                <button
+                  type="button"
+                  data-testid="guild-challenge-btn"
+                  className="prog-claim-btn af-action-btn gw-challenge-btn"
+                  disabled={!canChallenge || Boolean(busyKey)}
+                  onClick={() => handleChallenge(s)}
+                >
+                  <T1Art kind="skills" id="rival_banner" className="ac-badge-icon" fallback="" alt="" />
+                  {busyKey === `challenge:${s.seat}` ? '交战中…' : canChallenge ? `挑战第 ${s.seat} 席` : s.block || '暂不可挑战'}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="ac-rack-title">行会位阶（加成封顶 {capLine}）</div>
+      <div className="ew-tier-grid gw-rank-grid" data-testid="guild-ranks">
+        {g.rank.ranks.map((r) => (
+          <div key={r.rank} className={`ew-tier-card ${r.reached ? 'reached' : ''} ${r.rank === g.rank.rank ? 'current' : ''}`}>
+            <span className="ew-tier-head">
+              <T1Art kind="skills" id="guild_medal" className="ac-badge-icon" fallback="" alt="" />
+              <strong>{r.name}</strong>
+            </span>
+            <span className="ew-tier-need">{r.minMedals} 枚</span>
+            <span className="ew-tier-stats">{formatGuildStats(r.stats).join(' · ') || '无加成'}</span>
+          </div>
+        ))}
+      </div>
+      <div className="tv-rule-note">
+        对手行会每周一东八区 0 点轮换，五席成员取自真实魔物的战斗属性；对决按竞技场规则结算（满血、禁用补给与临时增益、10 分钟判负）。行会勋章只增不减、转生永久保留。
+        {g.lastDuel
+          ? ` 最近一战：第 ${g.lastDuel.seat} 席「${g.lastDuel.opponentName}」${g.lastDuel.won ? `获胜，勋章 +${g.lastDuel.medals}` : g.lastDuel.timeout ? '10 分钟未分胜负' : '落败'}。`
           : ''}
       </div>
     </div>

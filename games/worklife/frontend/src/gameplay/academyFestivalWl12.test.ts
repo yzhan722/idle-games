@@ -107,7 +107,7 @@ describe("WL-12 frontend art contract, navigation IA, zero-SVG/Emoji guard and A
 
     const headerSrc = readFileSync(path.join(frontendSrcRoot, "components/GameHeader.tsx"), "utf8");
     assert.equal(headerSrc.includes('data-testid="header-academy-festival-btn"'), true);
-    assert.equal(headerSrc.includes('academy: "冒险者学院与四季节庆"'), true);
+    assert.equal(headerSrc.includes('academy: "学院节庆"'), true);
     const ngiSrc = readFileSync(path.join(frontendSrcRoot, "components/NewGameInterface.tsx"), "utf8");
     assert.equal(ngiSrc.includes("<AcademyFestivalPanel"), true);
 

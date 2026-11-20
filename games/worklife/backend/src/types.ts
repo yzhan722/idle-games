@@ -361,6 +361,12 @@ export type EnhancedPlayerState = PlayerState & {
   // 异世界林地：精灵林地驿站（东八区每日采集 / 远征委托、林地好感与封顶的采集永久加成；转生永久保留）
   elfWaystation?: ElfWaystationState;
 
+  // 异世界深海：深海遗迹潜航（东八区日确定性遗迹层与氧气预算、潜水装备，打捞品直接入背包接入既有材料；转生永久保留）
+  abyssDive?: AbyssDiveState;
+
+  // 异世界行会：冒险者行会公会战（东八区按周轮换的对手行会、竞技沙盒结算、行会勋章与封顶的永久加成；转生永久保留）
+  guildWar?: GuildWarState;
+
   // MWI 任务板：按冷却逐个发放的技能任务、任务代币与代币商店
   tasksState?: TaskState;
 
@@ -1257,6 +1263,60 @@ export type ElfWaystationState = {
   fullBoards: number;
   totalGold: number;
   lastCommission: ElfCommissionRecord | null;
+};
+
+// ===== 异世界深海与行会：深海遗迹潜航与冒险者行会公会战 (WL-18) =====
+export type AbyssCurrentId = "calm" | "surge" | "wreck";
+
+export type GuildRivalId = "iron_fang" | "silver_tide" | "stone_wall" | "crimson_owl";
+
+export type AbyssDiveRecord = {
+  layer: number;
+  itemId: string;
+  qty: number;
+  current: AbyssCurrentId;
+  /** 本次消耗的氧气。 */
+  oxygen: number;
+  at: string;
+};
+
+export type AbyssDiveState = {
+  /** 遗迹图所在的东八区日期（YYYY-MM-DD）；仅显式传入 now 时才会换日（新遗迹图、补满氧气与各层次数）。 */
+  dayKey: string;
+  gearLevel: number;
+  /** 今日已消耗的氧气（不超过当前装备的每日预算）。 */
+  oxygenUsed: number;
+  /** 今日各层已下潜次数（键为层号字符串，每层每日 2 次）。 */
+  divesToday: Record<string, number>;
+  totalDives: number;
+  totalSalvage: number;
+  deepestLayer: number;
+  lastDive: AbyssDiveRecord | null;
+};
+
+export type GuildWarDuelRecord = {
+  weekKey: string;
+  seat: number;
+  rivalId: GuildRivalId;
+  opponentName: string;
+  won: boolean;
+  timeout: boolean;
+  medals: number;
+  at: string;
+};
+
+export type GuildWarState = {
+  /** 本周周一（东八区）日期键；仅显式传入 now 时才会翻周（换对手行会、补满次数、清空本周战绩）。 */
+  weekKey: string;
+  attemptsUsed: number;
+  /** 本周已击败的席位（从第 1 席起连续）。 */
+  cleared: number[];
+  /** 累计行会勋章（只增不减，决定行会位阶与永久加成）。 */
+  totalMedals: number;
+  totalDuels: number;
+  totalWins: number;
+  sweeps: number;
+  lastDuel: GuildWarDuelRecord | null;
 };
 
 // ===== 转生系统 =====

@@ -4069,7 +4069,7 @@
 }
 
 @media (max-width: 480px) {
-  /* 手机顶栏已有 4 枚快捷胶囊：港湾大赛改由「生涯 → 远期 → 港湾垂钓大赛」进入，避免挤压活动状态框 */
+  /* 手机顶栏已有 4 枚快捷胶囊：港湾大赛改由「生涯 → 远期 → 港湾大赛」进入，避免挤压活动状态框 */
   .header-harbor-pill {
     display: none;
   }
@@ -4883,7 +4883,7 @@
 }
 
 @media (max-width: 480px) {
-  /* 手机顶栏空间有限：学院节庆改由「生涯 → 远期 → 冒险者学院与四季节庆」进入（与 WL-11 港湾大赛一致） */
+  /* 手机顶栏空间有限：学院节庆改由「生涯 → 远期 → 学院节庆」进入（与 WL-11 港湾大赛一致） */
   .header-academy-pill {
     display: none;
   }
@@ -8651,6 +8651,216 @@
   }
   .dm-haul-banner {
     align-items: flex-start;
+  }
+}
+
+/* =================================================================
+   异世界深海与行会「深海遗迹潜航」与冒险者行会公会战样式 (WL-18)
+   并入酒馆面板的两个分页 + 「生涯 → 远期」入口；顶栏胶囊数不变
+   ================================================================= */
+
+.ad-view,
+.gw-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ad-view img.t1-art.ac-badge-icon,
+.gw-view img.t1-art.ac-badge-icon {
+  width: 18px;
+  height: 18px;
+  max-width: 18px;
+  max-height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* ---- 潜航 hero ---- */
+.ad-hero-card {
+  background: linear-gradient(140deg, rgba(8, 145, 178, 0.4), rgba(12, 74, 110, 0.88) 55%, rgba(15, 23, 42, 0.96));
+  border-color: rgba(103, 232, 249, 0.4);
+}
+.ad-hero-emblem {
+  background: radial-gradient(circle, rgba(103, 232, 249, 0.3), rgba(12, 74, 110, 0.35));
+  border-color: rgba(103, 232, 249, 0.55);
+}
+.ad-hero-copy,
+.gw-hero-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ad-hero-meta,
+.gw-hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #e0f2fe;
+}
+.ad-day-line {
+  color: #a5f3fc;
+}
+.ad-oxygen-bar .ad-oxygen-fill {
+  background: linear-gradient(90deg, #22d3ee, #38bdf8);
+}
+.ad-wallet-row,
+.gw-wallet-row {
+  align-items: center;
+}
+.ad-oxygen-badge {
+  border-color: rgba(103, 232, 249, 0.5);
+  background: rgba(8, 145, 178, 0.3);
+  color: #ecfeff;
+}
+.ad-gold-badge {
+  border-color: rgba(253, 230, 138, 0.5);
+  background: rgba(120, 53, 15, 0.34);
+  color: #fef3c7;
+}
+.ad-total-badge {
+  border-color: rgba(125, 211, 252, 0.45);
+  background: rgba(12, 74, 110, 0.4);
+  color: #e0f2fe;
+}
+
+/* ---- 遗迹层 ---- */
+.ad-layer-card {
+  border-color: rgba(103, 232, 249, 0.28);
+  background: linear-gradient(165deg, rgba(12, 74, 110, 0.7), rgba(15, 23, 42, 0.96));
+}
+.ad-layer-card.current-surge {
+  border-color: rgba(129, 140, 248, 0.55);
+}
+.ad-layer-card.current-wreck {
+  border-color: rgba(250, 204, 21, 0.55);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.18) inset, 0 0 12px rgba(250, 204, 21, 0.12);
+}
+.ad-current-chip {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 10px;
+  line-height: 1.35;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(103, 232, 249, 0.45);
+  background: rgba(8, 47, 73, 0.8);
+  color: #cffafe;
+  box-sizing: border-box;
+}
+.ad-current-chip.surge {
+  border-color: rgba(165, 180, 252, 0.6);
+  background: rgba(49, 46, 129, 0.55);
+  color: #e0e7ff;
+}
+.ad-current-chip.wreck {
+  border-color: rgba(250, 204, 21, 0.6);
+  background: rgba(113, 63, 18, 0.5);
+  color: #fef9c3;
+}
+.ad-dive-btn:not(:disabled),
+.ad-gear-btn:not(:disabled) {
+  background: linear-gradient(135deg, #0e7490 0%, #1e3a8a 100%);
+  border-color: rgba(103, 232, 249, 0.75);
+  color: #ecfeff;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.6);
+}
+.ad-upgrade-grid {
+  grid-template-columns: 1fr;
+}
+
+/* ---- 公会战 hero ---- */
+.gw-hero-card {
+  background: linear-gradient(140deg, rgba(153, 27, 27, 0.4), rgba(69, 26, 3, 0.85) 55%, rgba(15, 23, 42, 0.96));
+  border-color: rgba(252, 165, 165, 0.4);
+}
+.gw-hero-emblem {
+  background: radial-gradient(circle, rgba(252, 165, 165, 0.28), rgba(127, 29, 29, 0.35));
+  border-color: rgba(252, 165, 165, 0.55);
+}
+.gw-week-line {
+  color: #fecaca;
+}
+.gw-rank-bar .gw-rank-fill {
+  background: linear-gradient(90deg, #f87171, #fbbf24);
+}
+.gw-medal-badge {
+  border-color: rgba(253, 230, 138, 0.55);
+  background: rgba(120, 53, 15, 0.38);
+  color: #fef3c7;
+}
+.gw-attempt-badge {
+  border-color: rgba(252, 165, 165, 0.5);
+  background: rgba(127, 29, 29, 0.35);
+  color: #fee2e2;
+}
+.gw-bonus-badge {
+  border-color: rgba(134, 239, 172, 0.45);
+  background: rgba(20, 83, 45, 0.35);
+  color: #dcfce7;
+}
+.gw-rival-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(252, 165, 165, 0.35);
+  background: linear-gradient(120deg, rgba(127, 29, 29, 0.42), rgba(15, 23, 42, 0.92));
+  min-width: 0;
+}
+.gw-rival-card img.t1-art.gw-rival-icon,
+.gw-rival-icon {
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  max-height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.gw-rival-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: #fff1f2;
+}
+.gw-rival-copy span {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #fecdd3;
+}
+/* 八个分页：桌面收紧左右内边距保持一行（手机由 WL-15 末尾的 480px 断点接管） */
+.tv-tab-bar .prog-filter-btn {
+  padding-left: 11px;
+  padding-right: 11px;
+}
+.gw-challenge-btn:not(:disabled) {
+  background: linear-gradient(135deg, #b91c1c 0%, #78350f 100%);
+  border-color: rgba(253, 230, 138, 0.75);
+  color: #fff7ed;
+  text-shadow: 0 1px 2px rgba(15, 23, 42, 0.6);
+}
+
+@media (max-width: 1279px) {
+  .ad-layer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .ad-layer-grid {
+    grid-template-columns: 1fr;
   }
 }
 

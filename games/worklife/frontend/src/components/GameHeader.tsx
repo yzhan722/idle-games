@@ -20,8 +20,10 @@ export type ProgPanelId =
   | "tavern"
   | "airship"
   | "mine"
+  | "abyss"
   | "prestige";
 
+// 菜单名与顶栏胶囊同名（≤4 字），完整名称见各面板标题
 const LABELS: Record<ProgPanelId, string> = {
   daily: "每日任务",
   achievements: "成就",
@@ -29,16 +31,17 @@ const LABELS: Record<ProgPanelId, string> = {
   reputation: "声望军需",
   workshop: "铭纹图鉴",
   caravan: "远征商队",
-  cauldron: "奇美拉魔药釜",
-  relics: "遗迹圣物馆",
+  cauldron: "魔药釜",
+  relics: "圣物馆",
   forge: "天空锻炉",
-  harbor: "港湾垂钓大赛",
-  academy: "冒险者学院与四季节庆",
-  arena: "天空竞技场与公会城镇",
-  ranch: "契约魔兽牧场与天候观星塔",
-  tavern: "吟游诗人酒馆与冒险者编年史",
-  airship: "浮空飞艇商路与圣骑士团荣誉试炼",
-  mine: "矮人地底矿脉与精灵林地驿站",
+  harbor: "港湾大赛",
+  academy: "学院节庆",
+  arena: "竞技城镇",
+  ranch: "牧场天候",
+  tavern: "酒馆编年",
+  airship: "飞艇试炼",
+  mine: "矿脉驿站",
+  abyss: "潜航会战",
   prestige: "转生",
   settings: "设置",
 };
@@ -325,7 +328,7 @@ export function GameHeader(props: Props) {
               data-testid="header-beast-weather-btn"
               className="header-ranch-pill"
               onClick={() => props.onOpenProg("ranch")}
-              title="契约魔兽牧场与天候观星占卜塔"
+              title="契约魔兽牧场与天候观星塔"
             >
               <T1Art kind="skills" id="beast_ranch" alt="" className="header-caravan-pill-icon" />
               <span>牧场天候</span>
@@ -355,7 +358,7 @@ export function GameHeader(props: Props) {
               data-testid="header-harbor-derby-btn"
               className="header-harbor-pill"
               onClick={() => props.onOpenProg("harbor")}
-              title="港湾垂钓大赛与海港水族馆收藏图鉴"
+              title="港湾垂钓大赛与水族馆"
             >
               <T1Art kind="skills" id="fishing_trophy" alt="" className="header-caravan-pill-icon" />
               <span>港湾大赛</span>
@@ -365,7 +368,7 @@ export function GameHeader(props: Props) {
               data-testid="header-sky-forge-btn"
               className="header-forge-pill"
               onClick={() => props.onOpenProg("forge")}
-              title="天空锻炉星辰神兵谱与公会秘境试炼契约阵"
+              title="天空锻炉与秘境契约"
             >
               <T1Art kind="skills" id="sky_forge" alt="" className="header-caravan-pill-icon" />
               <span>天空锻炉</span>
@@ -375,7 +378,7 @@ export function GameHeader(props: Props) {
               data-testid={props.activeTab === "adventure" ? "header-relics-shortcut-btn" : "open-astral-relics-btn"}
               className="header-relics-pill"
               onClick={() => props.onOpenProg("relics")}
-              title="星界远古遗迹勘探队与传世圣物陈列馆"
+              title="遗迹勘探与圣物陈列馆"
             >
               <T1Art kind="skills" id="astral_ruin_compass" alt="" className="header-caravan-pill-icon" />
               <span>圣物馆</span>
@@ -385,7 +388,7 @@ export function GameHeader(props: Props) {
               data-testid={props.activeTab === "alchemy" ? "header-cauldron-shortcut-btn" : "open-alchemy-cauldron-btn"}
               className="header-cauldron-pill"
               onClick={() => props.onOpenProg("cauldron")}
-              title="奇美拉炼金魔药釜与深渊试炼双共鸣药剂槽"
+              title="奇美拉魔药釜与共鸣槽"
             >
               <T1Art kind="skills" id="alchemy_cauldron_hub" alt="" className="header-caravan-pill-icon" />
               <span>魔药釜</span>
@@ -395,7 +398,7 @@ export function GameHeader(props: Props) {
               data-testid={props.activeTab === "trading" ? "header-caravan-shortcut-btn" : "open-caravan-trade-btn"}
               className="header-caravan-pill"
               onClick={() => props.onOpenProg("caravan")}
-              title="远征商队贸易航路与工坊特批契约柜台"
+              title="远征商队与契约柜台"
             >
               <T1Art kind="skills" id="caravan_hub_banner" alt="" className="header-caravan-pill-icon" />
               <span>远征商队</span>

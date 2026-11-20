@@ -194,6 +194,12 @@ P1 MISSING 0
 - `skills/elf_waystation` PRODUCTION (webp)
 - `skills/elf_favor` PRODUCTION (webp)
 - `skills/forest_commission` PRODUCTION (webp)
+- `skills/abyss_dive` PRODUCTION (webp)
+- `skills/diving_gear` PRODUCTION (webp)
+- `skills/oxygen_tank` PRODUCTION (webp)
+- `skills/guild_war` PRODUCTION (webp)
+- `skills/guild_medal` PRODUCTION (webp)
+- `skills/rival_banner` PRODUCTION (webp)
 - `materials/ore_1` PRODUCTION (webp)
 - `materials/ingot_1` PRODUCTION (webp)
 - `materials/fiber_1` PRODUCTION (webp)
@@ -753,8 +759,8 @@ P1 MISSING 0
 - `ui/avatar_animal_cat` PRODUCTION (webp)
 
 ```
-P2 REQUIRED 703
-P2 PRODUCTION 703
+P2 REQUIRED 709
+P2 PRODUCTION 709
 P2 PLACEHOLDER 0
 P2 MISSING 0
 ```
@@ -877,8 +883,9 @@ Checked: transparency, silhouette, crop, hierarchy, desktop 1440×900, mobile 39
 | `skills/bard_tavern` `skills/bard_lute` `skills/ale_mug` `skills/chronicle_book` `skills/quill_inkwell` `skills/fame_laurel` | generated (2026-11-18) | PRODUCTION_PRESENT | **PRODUCTION_ACCEPTED** | P2 WL-15 Bard Tavern, Bard Lute (ballad stage), Tavern Ale Mug (bar counter), Adventurer Chronicle book, Chronicle Quill & Inkwell (inscribe) and Tavern Fame Laurel (512×512 RGBA WebP, cohesive warm hand-drawn guild style; visiting adventurers reuse the existing character avatars and the menu reuses real dish / drink item art). Screenshot-checked in the WL-15 panel at 1600, 1440×900, 1280, 1024 and 390×844 (cache token `?v=20261118wl15`). |
 | `skills/airship_dock` `skills/trade_airship` `skills/cargo_crate` `skills/paladin_trial` `skills/honor_medal` `skills/trial_banner` | generated (2026-11-18) | PRODUCTION_PRESENT | **PRODUCTION_ACCEPTED** | P2 WL-16 Airship Dock (hull upgrades / routes), Trade Airship (voyages), Cargo Crate (hold), Paladin Order Trial crest, Honor Medal (vows) and Trial Banner (weekly attempts) (512×512 RGBA WebP, cohesive warm hand-drawn guild style; towns reuse the WL-13 guild town and WL-7 caravan route art, specialties / hull materials reuse real item art and trial phantoms reuse the real monster art). Shown inside the existing WL-15 tavern panel (two new tabs, no new header pill). Screenshot-checked at 1440×900 and 390×844 (cache token `?v=20261118wl16`). |
 | `skills/dwarf_mine` `skills/mine_cart` `skills/ore_vein` `skills/elf_waystation` `skills/elf_favor` `skills/forest_commission` | reused copy (2026-11-18) — **复用待补** | PRODUCTION_PRESENT | **复用待补**（暂用，非专属美术） | P2 WL-17 Dwarf Underground Mine (depth / shaft), Mine Cart (hauls / cart upgrades), Ore Vein (daily vein grade), Elf Forest Waystation, Forest Favor and Waystation Commission. Image quota was exhausted, so these six keys are **byte copies of existing accepted art** under the new canonical names: `dwarf_mine` ← `skills/relic_titan_anvil`, `mine_cart` ← `skills/qm_supply_chest`, `ore_vein` ← `skills/relic_shard_crystal`, `elf_waystation` ← `skills/festival_shop_tent`, `elf_favor` ← `skills/potion_elven_bounty`, `forest_commission` ← `skills/workshop_contract_ledger` (512×512 RGBA WebP, transparent). Dedicated hand-drawn art should replace them at the same paths (no code change). Ores / forging by-products / gather items reuse real item art and expedition sources reuse the WL-7 / WL-9 / WL-16 art. Shown inside the existing tavern panel (two new tabs + one 生涯 → 远期 entry, no new header pill). Screenshot-checked at 1440×900 and 390×844 (cache token `?v=20261118wl17`). |
+| `skills/abyss_dive` `skills/diving_gear` `skills/oxygen_tank` `skills/guild_war` `skills/guild_medal` `skills/rival_banner` | reused copy (2026-11-20) — **复用待补** | PRODUCTION_PRESENT | **复用待补**（暂用，非专属美术） | P2 WL-18 Deep-Sea Ruin Dive (hero / dive button), Diving Gear (gear upgrades), Oxygen Tank (daily oxygen / sea currents), Adventurer Guild War crest, Guild Medal (ranks / seat rewards) and Rival Guild Banner (weekly rival / challenge). Image quota was exhausted, so these six keys are **byte copies of existing accepted art** under the new canonical names: `abyss_dive` ← `skills/fish_abyss_lantern`, `diving_gear` ← `skills/harbor_aquarium`, `oxygen_tank` ← `skills/star_dust_vial`, `guild_war` ← `skills/guild_honor_crest`, `guild_medal` ← `skills/arena_medal`, `rival_banner` ← `skills/trial_banner` (512×512 RGBA WebP, transparent corners). Dedicated hand-drawn art should replace them at the same paths (no code change); no copy is shown next to its source art in the same view. Salvage / gear materials reuse real item art and guild-war seats reuse the real monster art. Shown inside the existing tavern panel (two new tabs + one 远期 entry, no new header pill). Screenshot-checked at 1440×900 and 390×844 (cache token `?v=20261120wl18`). |
 
-P0 visual: **19 PRODUCTION_ACCEPTED** (7 drop-01 + 12 generated). P1: **4 PRODUCTION_ACCEPTED** (generated). P2: **260 PRODUCTION_ACCEPTED** (generated) + **6 复用待补** (WL-17 reused copies, file lane PRODUCTION_PRESENT). Every item any recipe ≤ skill level **35** yields or consumes, every forest / swamp / snow drop and every task-shop reward now has art (`gold` renders through `ui/gold`), and every gather action ≤ 35 has its own scene (`python scripts/art-gaps.py 35 --gather` → 0 gather cards; the only items it still lists are rare drops of T8–T12 monsters). `python scripts/art-gaps.py 20` confirms it: the only ids it still lists are 25 rare drops of zones far past the mine (T4–T12 monsters such as `swamp_boss` … `omega_boss`), which no early-game surface can display.
+P0 visual: **19 PRODUCTION_ACCEPTED** (7 drop-01 + 12 generated). P1: **4 PRODUCTION_ACCEPTED** (generated). P2: **260 PRODUCTION_ACCEPTED** (generated) + **12 复用待补** (WL-17 / WL-18 reused copies, file lane PRODUCTION_PRESENT). Every item any recipe ≤ skill level **35** yields or consumes, every forest / swamp / snow drop and every task-shop reward now has art (`gold` renders through `ui/gold`), and every gather action ≤ 35 has its own scene (`python scripts/art-gaps.py 35 --gather` → 0 gather cards; the only items it still lists are rare drops of T8–T12 monsters). `python scripts/art-gaps.py 20` confirms it: the only ids it still lists are 25 rare drops of zones far past the mine (T4–T12 monsters such as `swamp_boss` … `omega_boss`), which no early-game surface can display.
 
 P1 was started on 2026-09-03 by explicit instruction ("整体评估，有需要就执行"). P0 reached 19/19 on 2026-09-06 when the owner asked for the missing art to be generated in-repo and the Forest Boss master threshold was lowered to the generator's native 1024px.
 

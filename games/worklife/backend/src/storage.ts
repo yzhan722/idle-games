@@ -68,6 +68,9 @@ import {
   ensureDwarfMine,
   ensureElfWaystation,
   getElfWaystationBonuses,
+  ensureAbyssDive,
+  ensureGuildWar,
+  getGuildWarBonuses,
 } from "./progression2";
 import { enhancementStatMultiplier } from "./enhancement_math";
 import { ensureProgression } from './progression_state';
@@ -650,6 +653,13 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   if (player.elfWaystation) {
     ensureElfWaystation(player);
   }
+  // WL-18 深海遗迹潜航 / 冒险者行会公会战：旧存档缺省保持（首次打开面板再补齐）；已有则无参净化，绝不按墙钟换日或翻周
+  if (player.abyssDive) {
+    ensureAbyssDive(player);
+  }
+  if (player.guildWar) {
+    ensureGuildWar(player);
+  }
   return player;
 }
 
@@ -1012,6 +1022,8 @@ export function getActionRates(
   const paladinMods = getPaladinTrialBonuses(player);
   // WL-17 精灵林地驿站：林地好感等级的永久加成（采集速度 / 采集产出效率 / 采集经验，逐项封顶），只作用于采集行动
   const elfMods = getElfWaystationBonuses(player);
+  // WL-18 冒险者行会公会战：行会位阶的永久经验 / 金币（逐项封顶 4%）
+  const guildWarMods = getGuildWarBonuses(player);
   const lane = isCombatAct ? "combatSpeed" : hasConsumesAct ? "craftSpeed" : "gatherSpeed";
   const buffSpeed = (buffEff as any)[lane] as number;
   const setSpeed = (setBuffs as any)[lane] as number;
@@ -1208,7 +1220,8 @@ export function getActionRates(
   const tavernXpMul = (1 + tavernMods.xpGainPct / 100) * (1 + (balladStats.xpGainPct || 0) / 100);
   const paladinXpMul = 1 + paladinMods.xpGainPct / 100;
   const elfXpMul = isGatherAct ? 1 + elfMods.gatherXpPct / 100 : 1;
-  const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul * hwXpMul * relicXpMul * forgeXpMul * academyXpMul * townXpMul * beastXpMul * tavernXpMul * paladinXpMul * elfXpMul;
+  const guildWarXpMul = 1 + guildWarMods.xpGainPct / 100;
+  const xpMul = (buffEff.xpGain || 1) * setBuffs.xpGain * repBuffs.xpGain * prestigeMul * houseXpMul * hwXpMul * relicXpMul * forgeXpMul * academyXpMul * townXpMul * beastXpMul * tavernXpMul * paladinXpMul * elfXpMul * guildWarXpMul;
   // 金币收益受 goldGain Buff 影响；战斗金币额外受装备 DEF 加成；并接入公会词缀、铭纹共鸣、远征商队、奇美拉魔药釜与传世圣物陈列馆金币倍率
   const affixGoldMul = 1 + affixMods.goldGainPct / 100;
   const hwGoldMul = 1 + hwMods.goldGainPct / 100;
@@ -1222,7 +1235,8 @@ export function getActionRates(
   const beastGoldMul = 1 + beastMods.goldGainPct / 100;
   const tavernGoldMul = (1 + tavernMods.goldGainPct / 100) * (1 + (balladStats.goldGainPct || 0) / 100);
   const paladinGoldMul = 1 + paladinMods.goldGainPct / 100;
-  const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul * affixGoldMul * hwGoldMul * caravanGoldMul * alchemyGoldMul * relicGoldMul * forgeGoldMul * harborGoldMul * academyGoldMul * townGoldMul * beastGoldMul * tavernGoldMul * paladinGoldMul;
+  const guildWarGoldMul = 1 + guildWarMods.goldGainPct / 100;
+  const goldMul = (buffEff.goldGain || 1) * defGoldMul * setBuffs.goldGain * repBuffs.goldGain * prestigeMul * affixGoldMul * hwGoldMul * caravanGoldMul * alchemyGoldMul * relicGoldMul * forgeGoldMul * harborGoldMul * academyGoldMul * townGoldMul * beastGoldMul * tavernGoldMul * paladinGoldMul * guildWarGoldMul;
   return { isCombatAct, hasConsumesAct, speedMul, effectiveDurationMs, efficiencyPct, speedSources, efficiencySources, xpMul, goldMul, defGoldMul, setBuffs, repBuffs, prestigeMul, wornToolId: toolApplies ? toolId : undefined };
 }
 

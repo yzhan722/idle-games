@@ -30,12 +30,13 @@ export const CAREER_GROUPS: Array<{
     | "tavern"
     | "airship"
     | "mine"
+    | "abyss"
     | "prestige"
     | "settings"
   >;
 }> = [
   { title: "进度", items: ["daily", "achievements"] },
   { title: "日常", items: ["checkin"] },
-  { title: "远期", items: ["reputation", "workshop", "caravan", "cauldron", "relics", "forge", "harbor", "academy", "arena", "ranch", "tavern", "airship", "mine", "prestige"] },
+  { title: "远期", items: ["reputation", "workshop", "caravan", "cauldron", "relics", "forge", "harbor", "academy", "arena", "ranch", "tavern", "airship", "mine", "abyss", "prestige"] },
   { title: "系统", items: ["settings"] },
 ];
