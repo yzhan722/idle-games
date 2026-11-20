@@ -95,6 +95,15 @@ export const WL17_DWARF_ELF_ART_IDS = [
   "forest_commission",
 ] as const;
 
+export const WL18_ABYSS_GUILD_ART_IDS = [
+  "abyss_dive",
+  "diving_gear",
+  "oxygen_tank",
+  "guild_war",
+  "guild_medal",
+  "rival_banner",
+] as const;
+
 export const WL16_AIRSHIP_PALADIN_ART_IDS = [
   "airship_dock",
   "trade_airship",

@@ -811,13 +811,13 @@ export function AdventurePanel({
       ) : (
         <div className="adventure-content">
           {chapterDone && onOpenRelics && (
-            <section className="astral-relics-banner" aria-label="星界远古遗迹勘探队与传世圣物陈列馆">
+            <section className="astral-relics-banner" aria-label="遗迹勘探与圣物陈列馆">
               <div className="caravan-trade-banner-left">
                 <T1Art kind="skills" id="astral_ruin_compass" className="caravan-trade-banner-icon" fallback="" alt="" />
                 <div className="caravan-trade-banner-copy">
-                  <strong>星界远古遗迹勘探队 · 传世圣物陈列馆</strong>
+                  <strong>遗迹勘探 · 圣物陈列馆</strong>
                   <small>
-                    派遣勘探队深入三层星界远古遗迹（每日免费勘探 / 金币补给 / 异域星晶尘深掘），修复并升阶转生永久保留的四大传世圣物基座（Lv.1~5）与全馆共鸣！
+                    每日免费勘探星界遗迹，收集残片修复四座圣物基座（Lv.1~5，转生保留）。
                   </small>
                 </div>
               </div>

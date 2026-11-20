@@ -49,8 +49,8 @@ const frontendSrcRoot = path.resolve(here, "..");
 const T = Date.parse("2026-11-18T02:00:00.000Z");
 
 describe("WL-17 frontend art contract, merged entry (no new header pill), zero-SVG/Emoji guard and Dwarf Mine / Elf Waystation helpers", () => {
-  it("registers the 6 WL-17 512x512 RGBA .webp icons in the T1 contract, bumps cache version to 20261118wl17 and only uses real ore / item / expedition art", () => {
-    assert.equal(T1_ASSET_CACHE_VERSION, "20261118wl17");
+  it("registers the 6 WL-17 512x512 RGBA .webp icons in the T1 contract, keeps a dated wl cache version and only uses real ore / item / expedition art", () => {
+    assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL17_DWARF_ELF_ART_IDS], ["dwarf_mine", "mine_cart", "ore_vein", "elf_waystation", "elf_favor", "forest_commission"]);
     for (const id of WL17_DWARF_ELF_ART_IDS) {
       const key = t1KeyFor("skills", id)!;
@@ -65,7 +65,7 @@ describe("WL-17 frontend art contract, merged entry (no new header pill), zero-S
       assert.equal(size?.width, 512);
       assert.equal(size?.height, 512);
     }
-    assert.equal(withAssetCacheVersion("/assets/dwarf_mine.webp"), "/assets/dwarf_mine.webp?v=20261118wl17");
+    assert.equal(withAssetCacheVersion("/assets/dwarf_mine.webp"), `/assets/dwarf_mine.webp?v=${T1_ASSET_CACHE_VERSION}`);
     const items = packJson.items as Array<{ id: string }>;
     const art = (id: string) => existsSync(path.join(t1Root, `${t1KeyFor("item", id)}.webp`));
     for (const l of MINE_LAYERS) {
@@ -93,7 +93,7 @@ describe("WL-17 frontend art contract, merged entry (no new header pill), zero-S
     assert.equal(CAREER_GROUPS.length, 4);
 
     const headerSrc = readFileSync(path.join(frontendSrcRoot, "components/GameHeader.tsx"), "utf8");
-    assert.equal(headerSrc.includes('mine: "矮人地底矿脉与精灵林地驿站"'), true);
+    assert.equal(headerSrc.includes('mine: "矿脉驿站"'), true);
     const pills = [...headerSrc.matchAll(/className="header-([a-z]+)-pill"/g)].map((m) => m[1]);
     assert.deepEqual(pills, ["tavern", "ranch", "arena", "academy", "harbor", "forge", "relics", "cauldron", "caravan"], "still exactly 9 header pills");
     assert.equal(/header-(mine|dwarf|elf|waystation)/.test(headerSrc), false, "no WL-17 header pill");
@@ -110,7 +110,7 @@ describe("WL-17 frontend art contract, merged entry (no new header pill), zero-S
     }
     assert.equal(tavern.includes("<DwarfElfView"), true, "WL-17 renders inside the existing panel");
     assert.equal(tavern.includes("view={tab === 'waystation' ? 'waystation' : 'mine'}"), true);
-    assert.equal(advSrc.includes("export type TavernPanelTab = 'tavern' | 'chronicle' | 'airship' | 'trial' | 'mine' | 'waystation';"), true);
+    assert.equal(advSrc.includes("export type TavernPanelTab = 'tavern' | 'chronicle' | 'airship' | 'trial' | 'mine' | 'waystation'"), true);
     const slice = advSrc.slice(advSrc.lastIndexOf("矮人地底矿脉 & 精灵林地驿站 (WL-17)"));
     assert.ok(slice.length > 5000);
     assert.equal(/<svg[\s>]/i.test(slice), false, "no inline <svg>");

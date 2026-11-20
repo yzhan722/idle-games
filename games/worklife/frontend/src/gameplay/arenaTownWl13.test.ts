@@ -100,7 +100,7 @@ describe("WL-13 frontend art contract, navigation IA, zero-SVG/Emoji guard and S
 
     const headerSrc = readFileSync(path.join(frontendSrcRoot, "components/GameHeader.tsx"), "utf8");
     assert.equal(headerSrc.includes('data-testid="header-arena-town-btn"'), true);
-    assert.equal(headerSrc.includes('arena: "天空竞技场与公会城镇"'), true);
+    assert.equal(headerSrc.includes('arena: "竞技城镇"'), true);
     const ngiSrc = readFileSync(path.join(frontendSrcRoot, "components/NewGameInterface.tsx"), "utf8");
     assert.equal(ngiSrc.includes("<SkyArenaTownPanel"), true);
 

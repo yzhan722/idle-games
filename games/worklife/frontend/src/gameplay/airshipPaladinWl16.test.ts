@@ -103,7 +103,7 @@ describe("WL-16 frontend art contract, merged entry (no new header pill), zero-S
     assert.equal(CAREER_GROUPS.length, 4);
 
     const headerSrc = readFileSync(path.join(frontendSrcRoot, "components/GameHeader.tsx"), "utf8");
-    assert.equal(headerSrc.includes('airship: "浮空飞艇商路与圣骑士团荣誉试炼"'), true);
+    assert.equal(headerSrc.includes('airship: "飞艇试炼"'), true);
     const pills = [...headerSrc.matchAll(/className="header-([a-z]+)-pill"/g)].map((m) => m[1]);
     assert.deepEqual(pills, ["tavern", "ranch", "arena", "academy", "harbor", "forge", "relics", "cauldron", "caravan"], "still exactly 9 header pills");
     assert.equal(/header-(airship|paladin|trial)/.test(headerSrc), false, "no WL-16 header pill");

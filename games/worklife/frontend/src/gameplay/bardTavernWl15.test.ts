@@ -106,7 +106,7 @@ describe("WL-15 frontend art contract, navigation IA, header fit, zero-SVG/Emoji
 
     const headerSrc = readFileSync(path.join(frontendSrcRoot, "components/GameHeader.tsx"), "utf8");
     assert.equal(headerSrc.includes('data-testid="header-tavern-chronicle-btn"'), true);
-    assert.equal(headerSrc.includes('tavern: "吟游诗人酒馆与冒险者编年史"'), true);
+    assert.equal(headerSrc.includes('tavern: "酒馆编年"'), true);
     assert.ok(headerSrc.indexOf("header-tavern-chronicle-btn") < headerSrc.indexOf("header-beast-weather-btn"), "newest pill first");
     const ngiSrc = readFileSync(path.join(frontendSrcRoot, "components/NewGameInterface.tsx"), "utf8");
     assert.equal(ngiSrc.includes("<BardTavernChroniclePanel"), true);

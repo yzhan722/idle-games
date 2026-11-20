@@ -625,6 +625,18 @@ class ApiClient {
   async deliverElfCommission(payload: { slot: number; dayKey?: string }) {
     return this.post('/progression2/elf/commission', payload);
   }
+  async getAbyssGuild() {
+    return this.get('/progression2/abyss');
+  }
+  async diveAbyssRuin(payload: { layer: number; dayKey?: string }) {
+    return this.post('/progression2/abyss/dive', payload);
+  }
+  async upgradeAbyssGear() {
+    return this.post('/progression2/abyss/gear', {});
+  }
+  async challengeGuildWar(payload: { seat: number; weekKey?: string }) {
+    return this.post('/progression2/guild-war/challenge', payload);
+  }
 
   async startHpCombat(monsterId: string) {
     return this.post('/combat/hp/start', { monsterId, autoRepeat: true });

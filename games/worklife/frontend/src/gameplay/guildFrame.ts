@@ -1,4 +1,4 @@
-export const T1_ASSET_CACHE_VERSION = "20261118wl17";
+export const T1_ASSET_CACHE_VERSION = "20261120wl18";
 
 export function withAssetCacheVersion(url: string): string {
   if (!url || url.startsWith("data:") || url.startsWith("blob:")) return url;

@@ -334,6 +334,16 @@ export interface PlayerState {
     favor?: number;
     boardTier?: number;
   };
+  abyssDive?: {
+    dayKey?: string;
+    gearLevel?: number;
+    oxygenUsed?: number;
+  };
+  guildWar?: {
+    weekKey?: string;
+    totalMedals?: number;
+    attemptsUsed?: number;
+  };
   weatherTower?: {
     dayKey?: string;
     forecasts?: Array<{

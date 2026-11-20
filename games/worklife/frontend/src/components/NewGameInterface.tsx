@@ -128,7 +128,7 @@ export default function NewGameInterface() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('logging')
 
   // 进度系统弹窗：成就 / 每日任务 / 设置 / 签到 / 声望军需 / 转生
-  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'reputation' | 'workshop' | 'caravan' | 'cauldron' | 'relics' | 'forge' | 'harbor' | 'academy' | 'arena' | 'ranch' | 'tavern' | 'airship' | 'mine' | 'prestige'>(null)
+  const [progPanel, setProgPanel] = useState<null | 'achievements' | 'daily' | 'settings' | 'checkin' | 'reputation' | 'workshop' | 'caravan' | 'cauldron' | 'relics' | 'forge' | 'harbor' | 'academy' | 'arena' | 'ranch' | 'tavern' | 'airship' | 'mine' | 'abyss' | 'prestige'>(null)
   // 顶栏角标：可领取数量
   const [claimableCount, setClaimableCount] = useState(0)
   // 顶栏角标：今日是否可签到
@@ -1357,13 +1357,13 @@ export default function NewGameInterface() {
         <ProductionTeaBar playerState={playerState} refreshPlayerState={refreshPlayerState} />
         {tab === 'alchemy' && (
           <>
-            <section className="alchemy-cauldron-banner" aria-label="奇美拉炼金魔药釜与深渊试炼双共鸣药剂槽">
+            <section className="alchemy-cauldron-banner" aria-label="奇美拉魔药釜与共鸣槽">
               <div className="caravan-trade-banner-left">
                 <T1Art kind="skills" id="alchemy_cauldron_hub" className="caravan-trade-banner-icon" fallback="" alt="" />
                 <div className="caravan-trade-banner-copy">
-                  <strong>奇美拉炼金魔药釜 · 深渊试炼双共鸣药剂槽</strong>
+                  <strong>奇美拉魔药釜 · 双共鸣槽</strong>
                   <small>
-                    研习转生永久保留的四大炼金宗师图谱（Lv.1~5），免费萃取炼金原液或投入采集素材炼制魔药充能，双槽并列激活 6 组「炼金双生共鸣」！
+                    研习宗师图谱（Lv.1~5，转生保留），为秘药充能，双槽装不同魔药触发共鸣。
                   </small>
                 </div>
               </div>
@@ -1393,7 +1393,7 @@ export default function NewGameInterface() {
                 className={`alchemy-branch-tab ${alchemyBranch === 'coinify' ? 'active' : ''}`}
                 onClick={() => setAlchemyBranch('coinify')}
               >
-                <GoldIcon /> 点石成金（Coinify 转化金币）
+                <GoldIcon /> 点石成金（转化金币）
               </button>
             </div>
           </>
@@ -2672,6 +2672,17 @@ export default function NewGameInterface() {
       {progPanel === 'mine' && (
         <BardTavernChroniclePanel
           initialTab="mine"
+          onClose={() => setProgPanel(null)}
+          onChange={() => {
+            apiClient.clearCache();
+            void refreshPlayerState();
+            void refreshClaimable();
+          }}
+        />
+      )}
+      {progPanel === 'abyss' && (
+        <BardTavernChroniclePanel
+          initialTab="dive"
           onClose={() => setProgPanel(null)}
           onChange={() => {
             apiClient.clearCache();

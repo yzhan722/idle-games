@@ -100,7 +100,7 @@ describe("WL-11 frontend art contract, navigation IA, zero-SVG/Emoji guard and H
 
     const headerSrc = readFileSync(path.join(frontendSrcRoot, "components/GameHeader.tsx"), "utf8");
     assert.equal(headerSrc.includes('data-testid="header-harbor-derby-btn"'), true);
-    assert.equal(headerSrc.includes('harbor: "港湾垂钓大赛"'), true);
+    assert.equal(headerSrc.includes('harbor: "港湾大赛"'), true);
     const ngiSrc = readFileSync(path.join(frontendSrcRoot, "components/NewGameInterface.tsx"), "utf8");
     assert.equal(ngiSrc.includes("<HarborDerbyPanel"), true);
 

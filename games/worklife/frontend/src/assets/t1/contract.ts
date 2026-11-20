@@ -278,6 +278,9 @@ const P2_SKILL_ICONS: Array<[string, string]> = [
   ["skills/dwarf_mine","矮人地底矿脉"], ["skills/mine_cart","矮人矿车"],
   ["skills/ore_vein","矿脉品位"], ["skills/elf_waystation","精灵林地驿站"],
   ["skills/elf_favor","林地好感"], ["skills/forest_commission","驿站委托"],
+  ["skills/abyss_dive","深海遗迹潜航"], ["skills/diving_gear","潜水装备"],
+  ["skills/oxygen_tank","潜航氧气"], ["skills/guild_war","冒险者行会公会战"],
+  ["skills/guild_medal","行会勋章"], ["skills/rival_banner","对手行会战旗"],
 ];
 for (const [key, name] of P2_SKILL_ICONS) {
   T1_ASSET_CONTRACT.push(
