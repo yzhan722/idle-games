@@ -1,5 +1,21 @@
 import { SkinPalette } from './HumanoidModels';
 import { ThemeId } from './SceneThemes';
+import { KAMIKAZE_DMG_RATIO, PLASMA_CHARGED_RATE_PER_RANK } from './CombatTables';
+import {
+  SHARE_ID_PATTERN,
+  WRITE_KEY_PATTERN,
+  clipPlayerName,
+  compareByPeakStage,
+  compareByPlayTime,
+  createPlayerId,
+  createShareId,
+  createWriteKey,
+  leaderboardRetryDelayMs,
+  rankLeaderboard,
+  type RankedLeaderboardRow,
+  type ReportReasonCode,
+} from './Leaderboard';
+import { isNameBlocked } from './nameFilter.mjs';
 import {
   BOBO_TECH_ART,
   BOBO_TECH_HUD_ART,
@@ -113,7 +129,7 @@ export const CANNON_CORE_MODS: Record<CannonCoreModId, CannonCoreModSpec> = {
       const eff = Math.max(1, lvl);
       const everyShots = Math.max(2, 4 - Math.floor(eff / 2));
       const splitCount = eff >= 3 ? 3 : 2;
-      const dmgPct = 15 + eff * 6;
+      const dmgPct = 5 + eff * 4;
       return `每${everyShots}发折射${splitCount}枚棱镜充能波波 · 棱镜伤害+${dmgPct}%`;
     },
   },
@@ -386,7 +402,7 @@ export const PET_COMPANIONS: Record<PetCompanionId, PetCompanionSpec> = {
     shortName: '小海马',
     role: '连击电花',
     subtitle: '连击 · 闪电链 · 弹射电花',
-    desc: '尾巴卷着电花的小海马为波波连击充能：周期或每累计数次击杀释放闪电链，在红军、水母与珊瑚之间弹射造成伤害',
+    desc: '尾巴卷着电花的小海马为波波连击充能：周期或每累计数次击退释放闪电链，在抓捕队、水母与珊瑚之间弹射造成伤害',
     accentColor: '#fb923c',
     accentHex: 0xfb923c,
     pearlCosts: [2, 3, 4, 5, 7],
@@ -394,7 +410,7 @@ export const PET_COMPANIONS: Record<PetCompanionId, PetCompanionSpec> = {
     maxLevel: PET_COMPANION_MAX_LEVEL,
     statText: (lvl) => {
       const n = computePetCompanionNumbers('spark_seahorse', Math.max(1, lvl));
-      return `每${n.sparkIntervalSec.toFixed(1)}s或每${n.comboKillsPerSpark}连杀放闪电链 · 弹射${n.sparkChainTargets}目标 · 每跳${n.sparkDmg}伤害`;
+      return `每${n.sparkIntervalSec.toFixed(1)}s或每${n.comboKillsPerSpark}连击放闪电链 · 弹射${n.sparkChainTargets}目标 · 每跳${n.sparkDmg}伤害`;
     },
   },
 };
@@ -490,7 +506,7 @@ export const HALL_TROPHIES: Record<HallTrophyId, HallTrophySpec> = {
   airship_medal: {
     id: 'airship_medal',
     name: '飞艇徽章奖杯',
-    sourceLabel: '云端飞艇母舰护航',
+    sourceLabel: '云端飞艇护航',
     metricLabel: '累计飞艇徽章',
     unit: '枚',
     thresholds: [3, 8, 16],
@@ -567,7 +583,7 @@ export const HALL_TROPHIES: Record<HallTrophyId, HallTrophySpec> = {
   stardust_badge: {
     id: 'stardust_badge',
     name: '星尘徽章奖杯',
-    sourceLabel: '星际陨石带护盾突围',
+    sourceLabel: '星空陨石带护盾突围',
     metricLabel: '累计星尘徽章',
     unit: '枚',
     thresholds: [3, 8, 16],
@@ -1011,10 +1027,10 @@ export const TACTIC_CARDS: Record<TacticCardId, TacticCardSpec> = {
     category: 'rush',
     trigger: 'start',
     value: 0.15,
-    durationSec: 4,
+    durationSec: 6,
     currency: 'gold',
-    cost: 1500,
-    desc: '开局 1 秒：波波行进速度 +15%，持续 4 秒',
+    cost: 1000,
+    desc: '开局 1 秒：波波行进速度 +15%，持续 6 秒',
     iconUrl: TACTIC_CARD_ICON_URL.rush,
   },
   rush_half: {
@@ -1023,10 +1039,10 @@ export const TACTIC_CARDS: Record<TacticCardId, TacticCardSpec> = {
     category: 'rush',
     trigger: 'half',
     value: 0.2,
-    durationSec: 5,
+    durationSec: 6,
     currency: 'stardust',
     cost: 3,
-    desc: '进度过半：波波行进速度 +20%，持续 5 秒',
+    desc: '进度过半：波波行进速度 +20%，持续 6 秒',
     iconUrl: TACTIC_CARD_ICON_URL.rush,
   },
   rush_final: {
@@ -1035,10 +1051,10 @@ export const TACTIC_CARDS: Record<TacticCardId, TacticCardSpec> = {
     category: 'rush',
     trigger: 'final',
     value: 0.25,
-    durationSec: 5,
+    durationSec: 6,
     currency: 'lava',
     cost: 3,
-    desc: '终局冲刺：波波行进速度 +25%，持续 5 秒',
+    desc: '终局冲刺：波波行进速度 +25%，持续 6 秒',
     iconUrl: TACTIC_CARD_ICON_URL.rush,
   },
   crowd_open: {
@@ -1436,10 +1452,10 @@ export const TACTICAL_SUBWEAPONS: Record<TacticalSubWeaponId, TacticalSubWeaponS
     icon: TACTICAL_SUBWEAPON_ART.electro_net,
     hudIcon: TACTICAL_SUBWEAPON_HUD_ART.electro_net,
     inlineIcon: TACTICAL_SUBWEAPON_INLINE_ART.electro_net,
-    name: '电磁网弹',
-    shortName: '电磁网',
+    name: '静电网弹',
+    shortName: '静电网',
     subtitle: '电弧麻痹 · 剥离塔盾',
-    desc: '发射范围青蓝电磁网弹，麻痹减速红方集群并直接剥离敌方据点与副塔护盾',
+    desc: '发射范围青蓝静电网弹，麻痹减速抓捕队并直接剥离对面据点与副塔护盾',
     accentColor: '#22d3ee',
     baseCost: 220,
     costMult: 1.55,
@@ -1458,7 +1474,7 @@ export const TACTICAL_SUBWEAPONS: Record<TacticalSubWeaponId, TacticalSubWeaponS
     name: '糖浆减速泡',
     shortName: '糖浆泡',
     subtitle: '琥珀粉泡 · 减速易伤',
-    desc: '在桥面铺设琥珀粉红黏稠糖浆泡区，大幅迟滞红方推进并使其承受伤害放大',
+    desc: '在桥面铺设琥珀粉红黏稠糖浆泡区，大幅迟滞抓捕队推进并使其承受伤害放大',
     accentColor: '#f472b6',
     baseCost: 240,
     costMult: 1.55,
@@ -1801,8 +1817,8 @@ export const SQUAD_FINISH_CATALOG: SquadFinishSpec[] = [
     id: 'brass_steam',
     name: '黄铜蒸汽甲',
     tag: '重装金属',
-    desc: '抛光赤铜与皇家黄铜蒸汽装甲镀层，战车冲角与炮管闪耀金属光泽',
-    bonusText: '冲角与攻城伤害 +10%',
+    desc: '抛光赤铜与皇家黄铜蒸汽镀层，花车撞角与炮管闪耀金属光泽',
+    bonusText: '撞角与攻城伤害 +10%',
     costGold: 3600,
     costShards: 0,
     milestoneEscortClears: 0,
@@ -1855,14 +1871,14 @@ export const SQUAD_FINISH_CATALOG: SquadFinishSpec[] = [
     id: 'starlight_prism',
     name: '星芒幻彩棱镜',
     tag: '护送荣耀',
-    desc: '全息虹彩星芒棱镜镀膜，随视角流转紫金青极光，战车推进速度飙升',
-    bonusText: '全军战力 +5% · 战车推进 +12%',
+    desc: '全息虹彩星芒棱镜镀膜，随视角流转紫金青极光，花车推进速度飙升',
+    bonusText: '全军战力 +5% · 花车推进 +12%',
     costGold: 12000,
     costShards: 5,
     milestoneEscortClears: 1,
     milestoneEscortPct: 60,
     milestoneBarricades: 0,
-    milestoneHint: '战车护送推进 ≥60% 或通关 1 次免费解锁',
+    milestoneHint: '花车护送推进 ≥60% 或通关 1 次免费解锁',
     previewGradient: 'linear-gradient(135deg, #a855f7 0%, #ec4899 48%, #facc15 100%)',
     badgeColor: '#e879f9',
     modeIndex: 3,
@@ -2097,6 +2113,12 @@ export interface WeaponSpec {
   desc: string;
   bannerDesc: string;
   fireRateMult: number;
+  /** 每炮并排出兵数（散弹走扇形分支，这里只作记录）。 */
+  baseVolley: number;
+  /** 额外的高能波波概率（与种族、强化相加，封顶 100%）。 */
+  chargedBonus: number;
+  /** 每炮给领队大招的充能倍率。 */
+  energyMult: number;
   accentColor: number;
 }
 
@@ -2109,6 +2131,9 @@ export const WEAPON_SPECS: Record<WeaponMode, WeaponSpec> = {
     desc: '经典高射速蒸汽连发泡泡炮',
     bannerDesc: '经典高射速蒸汽炮 · 稳定连发稳健推线',
     fireRateMult: 1.0,
+    baseVolley: 1,
+    chargedBonus: 0,
+    energyMult: 1,
     accentColor: 0x38bdf8,
   },
   scatter: {
@@ -2118,7 +2143,10 @@ export const WEAPON_SPECS: Record<WeaponMode, WeaponSpec> = {
     shortName: '散弹',
     desc: '三向扇形弹幕 + 路缘二次弹射压制',
     bannerDesc: '弹射散弹泡泡炮 · 三发扇形齐射并可弹墙折射穿插倍率门',
-    fireRateMult: 0.78,
+    fireRateMult: 0.62,
+    baseVolley: 3,
+    chargedBonus: 0,
+    energyMult: 1,
     accentColor: 0x22d3ee,
   },
   rainbow: {
@@ -2127,8 +2155,11 @@ export const WEAPON_SPECS: Record<WeaponMode, WeaponSpec> = {
     name: '蓄力彩虹贯通炮',
     shortName: '彩虹',
     desc: '每4发蓄力释放贯穿全线的彩虹光束与精英泡泡',
-    bannerDesc: '蓄力彩虹贯通炮 · 周期贯穿彩虹光束击穿红军并充能倍率门',
-    fireRateMult: 0.88,
+    bannerDesc: '蓄力彩虹贯通炮 · 周期贯穿彩虹光束击穿抓捕队并充能倍率门',
+    fireRateMult: 0.78,
+    baseVolley: 1,
+    chargedBonus: 0,
+    energyMult: 1,
     accentColor: 0xf472b6,
   },
   twin: {
@@ -2138,17 +2169,23 @@ export const WEAPON_SPECS: Record<WeaponMode, WeaponSpec> = {
     shortName: '双管',
     desc: '双发并行脉冲速射压制两翼',
     bannerDesc: '双管脉冲炮 · 左右并行发射覆盖宽阔门阵',
-    fireRateMult: 0.9,
+    fireRateMult: 0.65,
+    baseVolley: 2,
+    chargedBonus: 0,
+    energyMult: 1,
     accentColor: 0x60a5fa,
   },
   plasma: {
     id: 'plasma',
     icon: WEAPON_MODE_ART.plasma,
-    name: '高能等离子炮',
-    shortName: '等离子',
-    desc: '高伤重装泡泡弹 + 强化倍率充能',
-    bannerDesc: '高能等离子炮 · 发射高攻重装波波并加快能量积累',
+    name: '高压汽水炮',
+    shortName: '汽水',
+    desc: '常出高能重装波波 · 大招充能更快',
+    bannerDesc: '高压汽水炮 · 发射高攻重装波波并加快能量积累',
     fireRateMult: 0.8,
+    baseVolley: 1,
+    chargedBonus: 0.2,
+    energyMult: 1.25,
     accentColor: 0xc084fc,
   },
 };
@@ -2227,7 +2264,7 @@ export const SKILL_TREE_BRANCHES: SkillBranchSpec[] = [
     unitName: '水滴波波',
     heroName: '波波领队',
     modelDesc: '纯白头带 · 双持荧光棒',
-    subtitle: '极速分裂 · 退场自爆 · 基地孵兵',
+    subtitle: '极速分裂 · 退场爆泡 · 基地孵兵',
     accentColor: '#25c4f8',
     hammerMorphName: '重锤召唤',
     hammerMorphDesc: '跃击震地召唤波波小队，领队退场分裂多只水滴波波',
@@ -2262,12 +2299,12 @@ export const SKILL_TREE_BRANCHES: SkillBranchSpec[] = [
         branchId: 'swarm',
         tier: 3,
         icon: SKILL_NODE_SVGS.swarm_t3,
-        name: '退场自爆',
+        name: '退场爆泡',
         desc: '波波兵与领队退场时炸开泡泡，对周围敌人造成范围伤害',
         maxRank: 3,
         pointCost: 2,
         prereq: 'swarm_t2',
-        statText: (r) => `退场范围伤 ${28 + r * 22}% · 领队分裂${4 + r * 2}兵`,
+        statText: (r) => `退场范围伤 ${20 + r * 15}% · 领队分裂${4 + r * 2}兵`,
       },
       {
         id: 'swarm_t4',
@@ -2293,7 +2330,7 @@ export const SKILL_TREE_BRANCHES: SkillBranchSpec[] = [
     unitName: '巨型布丁',
     heroName: '布丁大王',
     modelDesc: '焦糖皇冠 · 华夫大木槌',
-    subtitle: '巨化重装 · 范围顺劈 · 吞噬合体',
+    subtitle: '巨化重装 · 范围顺劈 · 抱团合体',
     accentColor: '#e87e24',
     hammerMorphName: '震地合体',
     hammerMorphDesc: '连环震地破防，震波令周围友军布丁合体升阶',
@@ -2384,11 +2421,11 @@ export const SKILL_TREE_BRANCHES: SkillBranchSpec[] = [
         tier: 2,
         icon: SKILL_NODE_SVGS.gate_t2,
         name: '高阶蓝门',
-        desc: '突破蓝门+4上限至最高+7！满级时所有+N门固定额外+1兵',
+        desc: '突破蓝门+5上限至最高+8！满级时所有+N门固定额外+1兵',
         maxRank: 3,
         pointCost: 1,
         prereq: 'gate_t1',
-        statText: (r) => `蓝门上限升至+${4 + r}${r >= 3 ? ' · 所有+N门额外+1兵' : ''}`,
+        statText: (r) => `蓝门上限升至+${5 + r}${r >= 3 ? ' · 所有+N门额外+1兵' : ''}`,
       },
       {
         id: 'gate_t3',
@@ -2442,7 +2479,7 @@ export const SKILL_TREE_BRANCHES: SkillBranchSpec[] = [
         desc: '蒸汽炮高概率射出黄金电音兵，并提升电音兵的暴击伤害与移速',
         maxRank: 3,
         pointCost: 1,
-        statText: (r) => `电音兵率+${r * 22}% · 电音暴伤+${r * 16}%`,
+        statText: (r) => `电音兵率+${Math.round(r * PLASMA_CHARGED_RATE_PER_RANK * 100)}% · 电音暴伤+${r * 16}%`,
       },
       {
         id: 'plasma_t2',
@@ -2454,7 +2491,7 @@ export const SKILL_TREE_BRANCHES: SkillBranchSpec[] = [
         maxRank: 3,
         pointCost: 1,
         prereq: 'plasma_t1',
-        statText: (r) => `50%弹射${r + 1}道电弧(${40 + r * 12}%伤) · 跃击+${r * 3}道雷`,
+        statText: (r) => `50%弹射${r + 1}道电弧(${30 + r * 10}%伤) · 跃击+${r * 3}道雷`,
       },
       {
         id: 'plasma_t3',
@@ -2736,7 +2773,9 @@ export interface RewardOption {
 }
 
 export interface LeaderboardEntry {
+  /** 旧服务端才会返回；新服务端只给 publicId。 */
   playerId?: string;
+  publicId?: string;
   name: string;
   bestStage: number;
   totalKills: number;
@@ -2748,7 +2787,7 @@ export interface LeaderboardEntry {
 }
 
 export const DEFAULT_LEADERBOARD: LeaderboardEntry[] = [
-  { name: '好男人未来', bestStage: 28, totalKills: 48620, playTimeSeconds: 14820, skinName: '梦幻偶像舞台', badgeColor: '#ee5c9c', isBot: true },
+  { name: '薄荷小号手', bestStage: 28, totalKills: 48620, playTimeSeconds: 14820, skinName: '梦幻偶像舞台', badgeColor: '#ee5c9c', isBot: true },
   { name: '星梦应援团长', bestStage: 23, totalKills: 36410, playTimeSeconds: 11580, skinName: '皇家焦糖布丁', badgeColor: '#d99016', isBot: true },
   { name: '焦糖布丁大王', bestStage: 19, totalKills: 29850, playTimeSeconds: 9420, skinName: '皇家焦糖布丁', badgeColor: '#d99016', isBot: true },
   { name: '电音喵喵DJ', bestStage: 16, totalKills: 23190, playTimeSeconds: 7650, skinName: '葡萄星梦冻', badgeColor: '#a86cf5', isBot: true },
@@ -2778,6 +2817,8 @@ export interface SaveState {
   ownedFinishes?: SquadFinishId[];
   equippedFinish?: SquadFinishId;
   playerId?: string;
+  leaderboardWriteKey?: string;
+  shareId?: string;
   playerName?: string;
   bestStageCleared?: number;
   bestEndlessWave?: number;
@@ -2990,8 +3031,10 @@ export class GameState {
   public claimedReferralFrom = '';
 
   // Commander Profile & Leaderboard Stats
-  public playerId = `cmd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-  public playerName = `指挥官${Math.floor(1000 + Math.random() * 9000)}`;
+  public playerId = createPlayerId();
+  public leaderboardWriteKey = createWriteKey();
+  public shareId = createShareId();
+  public playerName = `应援团长${Math.floor(1000 + Math.random() * 9000)}`;
   public bestStageCleared = 0;
   public bestEndlessWave = 0;
   public bestEscortProgressPct = 0;
@@ -3180,6 +3223,9 @@ export class GameState {
   public remoteLeaderboard: LeaderboardEntry[] = [...DEFAULT_LEADERBOARD];
   public remoteActiveLeaderboard: LeaderboardEntry[] = [...DEFAULT_LEADERBOARD];
   public remoteRealPlayerCount = 0;
+  /** 服务端回的本人公开编号，只在内存里，用来在榜单里认出自己那一行。 */
+  private remoteSelfPublicId = '';
+  private leaderboardRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Post-stage Rogue-lite Buff Stacks & Defeat Affliction Debuffs
   public buffStacks: Partial<Record<BuffId, number>> = {};
@@ -3252,8 +3298,15 @@ export class GameState {
       if (typeof parsed.playerId === 'string' && parsed.playerId.trim()) {
         this.playerId = parsed.playerId.trim().slice(0, 40);
       }
-      if (typeof parsed.playerName === 'string' && parsed.playerName.trim()) {
-        this.playerName = parsed.playerName.trim().slice(0, 14);
+      if (typeof parsed.leaderboardWriteKey === 'string' && WRITE_KEY_PATTERN.test(parsed.leaderboardWriteKey)) {
+        this.leaderboardWriteKey = parsed.leaderboardWriteKey;
+      }
+      if (typeof parsed.shareId === 'string' && SHARE_ID_PATTERN.test(parsed.shareId)) {
+        this.shareId = parsed.shareId;
+      }
+      if (typeof parsed.playerName === 'string' && clipPlayerName(parsed.playerName)) {
+        // 旧版自动生成的默认昵称换成本作说法；玩家自己起的名字不动
+        this.playerName = clipPlayerName(parsed.playerName).replace(/^指挥官(\d{4})$/, '应援团长$1');
       }
       if (typeof parsed.bestStageCleared === 'number') {
         this.bestStageCleared = Math.max(0, parsed.bestStageCleared);
@@ -3750,6 +3803,10 @@ export class GameState {
         this.claimedReferralFrom = parsed.claimedReferralFrom;
       }
       this.sanitizeSkillTreeState();
+      // 旧存档第一次补出密钥 / 分享编号时立刻落盘：同时开着的其他标签页读到同一份，不会各绑各的
+      if (parsed.leaderboardWriteKey !== this.leaderboardWriteKey || parsed.shareId !== this.shareId) {
+        this.save();
+      }
     } catch {
       // Ignore storage errors
     }
@@ -3801,6 +3858,8 @@ export class GameState {
         ownedFinishes: this.ownedFinishes,
         equippedFinish: this.equippedFinish,
         playerId: this.playerId,
+        leaderboardWriteKey: this.leaderboardWriteKey,
+        shareId: this.shareId,
         playerName: this.playerName,
         bestStageCleared: this.bestStageCleared,
         bestEndlessWave: this.bestEndlessWave,
@@ -4016,11 +4075,13 @@ export class GameState {
 
   public setPlayerName(newName: string): {
     ok: boolean;
-    reason?: 'empty' | 'same' | 'insufficient_gold';
+    reason?: 'empty' | 'same' | 'blocked' | 'insufficient_gold';
   } {
-    const cleaned = newName.trim().slice(0, 14);
+    const cleaned = clipPlayerName(newName);
     if (!cleaned) return { ok: false, reason: 'empty' };
     if (cleaned === this.playerName) return { ok: false, reason: 'same' };
+    // 和 Worker 用同一份词表（nameBlocklist.mjs）；命中不扣金币
+    if (isNameBlocked(cleaned)) return { ok: false, reason: 'blocked' };
     if (this.gold < RENAME_GOLD_COST) {
       return { ok: false, reason: 'insufficient_gold' };
     }
@@ -4063,11 +4124,12 @@ export class GameState {
     try {
       const params = new URLSearchParams(window.location.search);
       const refId = (params.get('ref') || '').trim();
-      const fromName = (params.get('from') || '星际战友').trim().slice(0, 14);
+      const fromRaw = clipPlayerName(params.get('from') || '');
+      const fromName = fromRaw && !isNameBlocked(fromRaw) ? fromRaw : '应援伙伴';
       if (params.has('ref') || params.has('from')) {
         window.history.replaceState({}, '', window.location.pathname);
       }
-      if (!refId || refId === this.playerId || this.claimedReferralFrom) {
+      if (!refId || refId === this.shareId || refId === this.playerId || this.claimedReferralFrom) {
         return null;
       }
       this.claimedReferralFrom = refId;
@@ -4085,20 +4147,22 @@ export class GameState {
     text: string;
   } {
     const baseUrl = window.location.origin || 'https://mob-control.yinosites.com';
-    const url = `${baseUrl}/?ref=${encodeURIComponent(this.playerId)}&from=${encodeURIComponent(this.playerName)}`;
+    // 旧存档里可能还留着词表上线前起的名字：分享链接里不带（对方看到「应援伙伴」）
+    const fromName = isNameBlocked(this.playerName) ? '' : this.playerName;
+    const url = `${baseUrl}/?ref=${encodeURIComponent(this.shareId)}${fromName ? `&from=${encodeURIComponent(fromName)}` : ''}`;
     const branch = this.getCommittedSkillBranch();
     const branchTag = branch ? `【${branch.name}】` : '';
     if (contextStage && clearTimeSec) {
-      const speedTag = clearTimeSec < 10 ? `⚡${clearTimeSec.toFixed(1)}秒极速闪击` : `${clearTimeSec.toFixed(1)}秒`;
+      const speedTag = clearTimeSec < 10 ? `⚡${clearTimeSec.toFixed(1)}秒极速` : `${clearTimeSec.toFixed(1)}秒`;
       return {
         url,
-        text: `🔥 我在《星际狂潮：克隆防线》用${branchTag} ${speedTag}攻破第 ${contextStage} 关（累计歼敌 ${this.lifetimeKills.toLocaleString()}）！免下载点开即玩，新指挥官进场直接领 2,000⚡ 补给：${url}`,
+        text: `🔥 我在《波波应援团》用${branchTag} ${speedTag}攻破第 ${contextStage} 关（累计击退 ${this.lifetimeKills.toLocaleString()}）！免下载点开即玩，新团长进场直接领 2,000⚡ 补给：${url}`,
       };
     }
     const stageStr = Math.max(1, this.bestStageCleared);
     return {
       url,
-      text: `🏆 我在《星际狂潮：克隆防线》已打到第 ${stageStr} 关（游戏时长 ${this.formatPlayTime()} · 歼敌 ${this.lifetimeKills.toLocaleString()}）！免下载3D倍增门暴兵爽游，点开直接领 2,000⚡ 战友补给：${url}`,
+      text: `🏆 我在《波波应援团》已打到第 ${stageStr} 关（游戏时长 ${this.formatPlayTime()} · 击退 ${this.lifetimeKills.toLocaleString()}）！网页 3D 倍增门推线，点开直接领 2,000⚡ 应援补给：${url}`,
     };
   }
 
@@ -4136,11 +4200,21 @@ export class GameState {
     return Math.max(60, Math.round((e.bestStage || 1) * 145 + (e.totalKills || 0) * 0.15));
   }
 
-  public getTop10Leaderboard(): { top10: LeaderboardEntry[]; selfRank: number | null; realCount: number } {
+  private isOwnRemoteRow(e: LeaderboardEntry): boolean {
+    if (e.publicId && this.remoteSelfPublicId) return e.publicId === this.remoteSelfPublicId;
+    return e.name === this.playerName || (Boolean(e.playerId) && e.playerId === this.playerId);
+  }
+
+  public getTop10Leaderboard(): {
+    top10: RankedLeaderboardRow[];
+    selfRank: number | null;
+    realCount: number;
+    hasReal: boolean;
+  } {
     this.ensureWeeklyLeaderboardCycle();
     const skin = this.getEquippedSkin();
     const others: LeaderboardEntry[] = this.remoteLeaderboard
-      .filter((e) => e.name !== this.playerName && (!e.playerId || e.playerId !== this.playerId))
+      .filter((e) => !this.isOwnRemoteRow(e))
       .map((e) => ({ ...e, playTimeSeconds: this.getEntryPlayTime(e), isSelf: false }));
 
     const realEntries = others.filter((e) => !e.isBot);
@@ -4148,7 +4222,7 @@ export class GameState {
 
     if (this.weeklyBestStage > 0 || this.weeklyKills > 0) {
       realEntries.push({
-        playerId: this.playerId,
+        publicId: this.remoteSelfPublicId || undefined,
         name: this.playerName,
         bestStage: this.weeklyBestStage,
         totalKills: this.weeklyKills,
@@ -4160,27 +4234,27 @@ export class GameState {
       });
     }
 
-    realEntries.sort((a, b) => b.bestStage - a.bestStage || b.totalKills - a.totalKills);
-    const topReal = realEntries.slice(0, 10);
-    const neededBots = Math.max(0, 10 - topReal.length);
-    const combined = [...topReal, ...botEntries.slice(0, neededBots)];
-
-    combined.sort((a, b) => b.bestStage - a.bestStage || b.totalKills - a.totalKills);
-    const selfIdx = combined.findIndex((e) => e.isSelf);
+    const { rows, selfRank, hasReal } = rankLeaderboard(realEntries, botEntries, compareByPeakStage);
     return {
-      top10: combined.slice(0, 10),
-      selfRank: selfIdx >= 0 ? selfIdx + 1 : null,
+      top10: rows,
+      selfRank,
       realCount: Math.max(this.remoteRealPlayerCount, realEntries.length),
+      hasReal,
     };
   }
 
-  public getTop10ActiveLeaderboard(): { top10: LeaderboardEntry[]; selfRank: number | null; realCount: number } {
+  public getTop10ActiveLeaderboard(): {
+    top10: RankedLeaderboardRow[];
+    selfRank: number | null;
+    realCount: number;
+    hasReal: boolean;
+  } {
     this.ensureWeeklyLeaderboardCycle();
     const skin = this.getEquippedSkin();
     const sourceList =
       this.remoteActiveLeaderboard.length > 0 ? this.remoteActiveLeaderboard : this.remoteLeaderboard;
     const others: LeaderboardEntry[] = sourceList
-      .filter((e) => e.name !== this.playerName && (!e.playerId || e.playerId !== this.playerId))
+      .filter((e) => !this.isOwnRemoteRow(e))
       .map((e) => ({ ...e, playTimeSeconds: this.getEntryPlayTime(e), isSelf: false }));
 
     const realEntries = others.filter((e) => !e.isBot);
@@ -4188,7 +4262,7 @@ export class GameState {
 
     if (this.weeklyBestStage > 0 || this.weeklyKills > 0 || this.weeklyPlayTimeSeconds >= 10) {
       realEntries.push({
-        playerId: this.playerId,
+        publicId: this.remoteSelfPublicId || undefined,
         name: this.playerName,
         bestStage: this.weeklyBestStage,
         totalKills: this.weeklyKills,
@@ -4200,36 +4274,55 @@ export class GameState {
       });
     }
 
-    realEntries.sort(
-      (a, b) => (b.playTimeSeconds || 0) - (a.playTimeSeconds || 0) || b.bestStage - a.bestStage
-    );
-    const topReal = realEntries.slice(0, 10);
-    const neededBots = Math.max(0, 10 - topReal.length);
-    const combined = [...topReal, ...botEntries.slice(0, neededBots)];
-
-    combined.sort(
-      (a, b) => (b.playTimeSeconds || 0) - (a.playTimeSeconds || 0) || b.bestStage - a.bestStage
-    );
-    const selfIdx = combined.findIndex((e) => e.isSelf);
+    const { rows, selfRank, hasReal } = rankLeaderboard(realEntries, botEntries, compareByPlayTime);
     return {
-      top10: combined.slice(0, 10),
-      selfRank: selfIdx >= 0 ? selfIdx + 1 : null,
+      top10: rows,
+      selfRank,
       realCount: Math.max(this.remoteRealPlayerCount, realEntries.length),
+      hasReal,
     };
   }
 
-  public async syncRemoteLeaderboard(pushSelf = false): Promise<void> {
+  /** 上报被限频 / 编号冲突时补发一次，免得最后一关的成绩停在本地；补发本身不再排下一次。 */
+  private scheduleLeaderboardRetry(reason: string | undefined): void {
+    const delayMs = leaderboardRetryDelayMs(reason);
+    if (delayMs <= 0 || this.leaderboardRetryTimer !== null) return;
+    this.leaderboardRetryTimer = setTimeout(() => {
+      this.leaderboardRetryTimer = null;
+      void this.syncRemoteLeaderboard(true, true);
+    }, delayMs);
+  }
+
+  /** 举报榜上一行的昵称：带自己的写入密钥（服务端只认本周上榜的人），返回服务端结果码；断网时 reason 为 offline。 */
+  public async reportLeaderboardName(publicId: string, reason: ReportReasonCode): Promise<{ ok: boolean; reason?: string }> {
+    try {
+      const resp = await fetch('/api/leaderboard/report', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ writeKey: this.leaderboardWriteKey, publicId, reason }),
+      });
+      const data = (await resp.json()) as { ok?: boolean; reason?: string };
+      return { ok: Boolean(data.ok), reason: typeof data.reason === 'string' ? data.reason : undefined };
+    } catch {
+      return { ok: false, reason: 'offline' };
+    }
+  }
+
+  public async syncRemoteLeaderboard(pushSelf = false, isRetry = false): Promise<void> {
     try {
       this.ensureWeeklyLeaderboardCycle();
       const skin = this.getEquippedSkin();
       const hasScore = this.weeklyBestStage > 0 || this.weeklyKills > 0 || this.weeklyPlayTimeSeconds >= 30;
       const shouldPost = pushSelf && hasScore;
+      // 密钥要先落盘再上报：服务端首次写入就绑定，没存住的话本周就改不动自己的成绩了
+      if (shouldPost) this.save();
       const resp = await fetch('/api/leaderboard', {
         method: shouldPost ? 'POST' : 'GET',
         headers: shouldPost ? { 'content-type': 'application/json' } : undefined,
         body: shouldPost
           ? JSON.stringify({
               playerId: this.playerId,
+              writeKey: this.leaderboardWriteKey,
               name: this.playerName,
               bestStage: this.weeklyBestStage,
               totalKills: this.weeklyKills,
@@ -4244,7 +4337,18 @@ export class GameState {
         top10?: LeaderboardEntry[];
         activeTop10?: LeaderboardEntry[];
         realPlayerCount?: number;
+        selfPublicId?: string;
+        reason?: string;
       };
+      if (typeof data.selfPublicId === 'string') {
+        this.remoteSelfPublicId = data.selfPublicId;
+      }
+      if (shouldPost && data.reason === 'key_mismatch') {
+        // 这个编号已绑定了别的密钥（旧版编号曾公开）：换一个新编号，补发时照常上榜
+        this.playerId = createPlayerId();
+        this.save();
+      }
+      if (shouldPost && !isRetry) this.scheduleLeaderboardRetry(data.reason);
       if (typeof data.realPlayerCount === 'number') {
         this.remoteRealPlayerCount = data.realPlayerCount;
       }
@@ -4572,7 +4676,7 @@ export class GameState {
     pct = this.bestEscortProgressPct,
     clears = this.escortClears
   ): { tier: string; label: string; color: string } {
-    if (clears >= 3) return { tier: 'SSS', label: '传奇蒸汽统帅', color: '#facc15' };
+    if (clears >= 3) return { tier: 'SSS', label: '传奇蒸汽总车长', color: '#facc15' };
     if (clears >= 1 || pct >= 100) return { tier: 'S', label: '王牌破障车长', color: '#38bdf8' };
     if (pct >= 60) return { tier: 'A', label: '重装先锋护卫', color: '#f59e0b' };
     if (pct >= 25) return { tier: 'B', label: '蒸汽护航队员', color: '#cbd5e1' };
@@ -4998,7 +5102,7 @@ export class GameState {
       hpMult: 0.86, // Slightly lighter per body, compensated by massive clone count & kamikaze splash
       dmgMult: 0.88,
       gateExtraCloneChance: s2 * 0.15,
-      kamikazeDmgRatio: s3 > 0 ? 0.28 + s3 * 0.22 : 0, // 50% / 72% / 94% AOE plasma detonation on death
+      kamikazeDmgRatio: s3 > 0 ? KAMIKAZE_DMG_RATIO(s3) : 0, // 35% / 50% / 65% AOE plasma detonation on death
       killMitosisChance: s4 > 0 ? 0.18 : 0,
     };
   }
@@ -5166,7 +5270,7 @@ export class GameState {
 
   public getChargedCritChance(): number {
     if (this.getSkillNodeRank('plasma_t4') > 0) return 1.0;
-    const plasmaCap = this.getSkillNodeRank('plasma_t1') * 0.22;
+    const plasmaCap = this.getSkillNodeRank('plasma_t1') * PLASMA_CHARGED_RATE_PER_RANK;
     const tycoonBullion = this.getSkillNodeRank('tycoon_t3') * 0.1;
     return Math.min(1.0, this.getBuffStack('plasma_crit') * 0.1 + plasmaCap + tycoonBullion);
   }
@@ -5201,7 +5305,7 @@ export class GameState {
   }
 
   public getMaxBlueGateCap(): number {
-    return 4 + this.getSkillNodeRank('gate_t2');
+    return 5 + this.getSkillNodeRank('gate_t2');
   }
 
   public getSiegeDamageMultiplier(): number {
@@ -5373,7 +5477,7 @@ export class GameState {
       {
         id: 'war_plunder',
         icon: REWARD_BUFF_ART.war_plunder,
-        title: '赏金掠夺',
+        title: '赏金加成',
         rarity,
         rarityLabel,
         stacksGranted: stacks,
@@ -5612,7 +5716,7 @@ export class GameState {
     if (rf > 0) badges.push({ icon: UI_ART.flame, text: `射速+${rf * 5}%`, rarity: this.stackToBadgeRarity(rf) });
 
     const hg = this.getBuffStack('hyper_gene');
-    if (hg > 0) badges.push({ icon: UI_ART.sword, text: `基因+${hg * 6}%`, rarity: this.stackToBadgeRarity(hg) });
+    if (hg > 0) badges.push({ icon: UI_ART.sword, text: `战力+${hg * 6}%`, rarity: this.stackToBadgeRarity(hg) });
 
     const sc = this.getBuffStack('split_chamber');
     if (sc > 0)
@@ -5623,7 +5727,7 @@ export class GameState {
       });
 
     const gr = this.getGateBonusAdd();
-    if (gr > 0) badges.push({ icon: UI_ART.arrowUp, text: `门脉+${gr}`, rarity: gr >= 2 ? 'legendary' : 'epic' });
+    if (gr > 0) badges.push({ icon: UI_ART.arrowUp, text: `横幅+${gr}`, rarity: gr >= 2 ? 'legendary' : 'epic' });
 
     const pc = this.getBuffStack('plasma_crit');
     if (pc > 0)
@@ -5651,7 +5755,7 @@ export class GameState {
     if (ba > 0) badges.push({ icon: UI_ART.shield, text: `基地+${ba * 10}%`, rarity: this.stackToBadgeRarity(ba) });
 
     const wp = this.getBuffStack('war_plunder');
-    if (wp > 0) badges.push({ icon: UI_ART.coin, text: `掠夺+${wp * 7}%`, rarity: this.stackToBadgeRarity(wp) });
+    if (wp > 0) badges.push({ icon: UI_ART.coin, text: `赏金+${wp * 7}%`, rarity: this.stackToBadgeRarity(wp) });
 
     return badges;
   }
@@ -6366,7 +6470,7 @@ export class GameState {
     let accentColor = '#7dd3fc';
     if (rawMedals >= 16) {
       tier = 3;
-      rankTitle = '黄金母舰统帅';
+      rankTitle = '黄金飞艇船长';
       accentColor = '#facc15';
     } else if (rawMedals >= 8) {
       tier = 2;
@@ -6407,8 +6511,8 @@ export class GameState {
     const escortTier = Math.min(8, 1 + clears);
     return {
       escortTier,
-      title: `云端飞艇母舰护航战 · 第 ${escortTier} 阶`,
-      subtitle: '拔除沿途防空副塔充能空投舱 · 降临超级波波冲击兵突破敌方要塞',
+      title: `云端飞艇护航战 · 第 ${escortTier} 阶`,
+      subtitle: '拔除沿途拦截副塔充能空投舱 · 降临超级波波冲破总厂',
       medalRewardBase: 3 + Math.min(4, Math.floor((escortTier + 1) / 2)),
       coinsRewardBase: 400 + (escortTier - 1) * 90,
       cardsRewardBase: 2 + Math.floor(escortTier / 2),
@@ -6656,7 +6760,7 @@ export class GameState {
       overdriveExtraBursts: isOverdrive ? (effLvl >= 4 ? 2 : 1) : 0,
       prismEveryShots: isPrism ? Math.max(2, 4 - Math.floor(effLvl / 2)) : 0,
       prismSplitCount: isPrism ? (effLvl >= 3 ? 3 : 2) : 0,
-      prismDmgMult: isPrism ? 1.15 + effLvl * 0.06 : 1.0,
+      prismDmgMult: isPrism ? 1.05 + effLvl * 0.04 : 1.0,
       mortarEveryShots: isMortar ? Math.max(3, 5 - Math.floor(effLvl / 2)) : 0,
       mortarHpMult: isMortar ? 1.45 + effLvl * 0.12 : 1.0,
       mortarSiegeMult: isMortar ? 1.65 + effLvl * 0.18 : 1.0,
@@ -6745,7 +6849,7 @@ export class GameState {
     return {
       raidTier,
       title: `彩虹糖果列车突袭战 · 第 ${raidTier} 阶`,
-      subtitle: '拦截环线装甲糖果货运列车 · 击破车厢夺取列车金章',
+      subtitle: '拦截环线糖果货运列车 · 击破车厢夺取列车金章',
       medalRewardBase: 2 + Math.min(3, Math.floor((raidTier + 1) / 2)),
       coinsRewardBase: 450 + (raidTier - 1) * 100,
     };
@@ -8081,7 +8185,7 @@ export class GameState {
     let nextThreshold = 3;
     if (rawBadges >= 16) {
       tier = 3;
-      rankTitle = '黄金星际突围王';
+      rankTitle = '黄金星空突围王';
       accentColor = '#facc15';
       nextThreshold = 0;
     } else if (rawBadges >= 8) {
@@ -8129,8 +8233,8 @@ export class GameState {
     const asteroidTier = Math.min(8, 1 + clears);
     return {
       asteroidTier,
-      title: `星际陨石带护盾突围 · 第 ${asteroidTier} 阶`,
-      subtitle: '低重力星轨漂浮突进 · 躲陨石落点与陨石带 · 穿护盾充能门 · 冲进跃迁门',
+      title: `星空陨石带护盾突围 · 第 ${asteroidTier} 阶`,
+      subtitle: '低重力星轨漂浮突进 · 躲陨石落点与陨石带 · 穿护盾充能门 · 冲进星光门',
       badgeRewardBase: 2 + Math.min(3, Math.floor((asteroidTier + 1) / 2)),
       coinsRewardBase: 420 + (asteroidTier - 1) * 90,
     };

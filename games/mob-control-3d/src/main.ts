@@ -93,11 +93,13 @@ import {
   TacticalSubWeaponId,
 } from './game/State';
 import {
+  ART_LOADING,
   BOBO_TECH_ART,
   CANNON_MOD_ART,
   CANNON_MOD_INLINE_ART,
   PET_COMPANION_ART,
   PET_COMPANION_INLINE_ART,
+  RACE_MASCOT_THUMB,
   RELIC_BANNER_ART,
   RELIC_BANNER_INLINE_ART,
   SKIN_CARD_ART,
@@ -107,10 +109,16 @@ import {
   TACTICAL_SUBWEAPON_HUD_ART,
   TACTICAL_SUBWEAPON_INLINE_ART,
   UI_ART,
+  raceThumbUrl,
   replaceEmojiWithArt,
 } from './game/SkillIcons';
-import { World3D } from './game/World3D';
+import { World3DFull } from './game/World3DFull';
+import { PROMPT_UNAVAILABLE_TEXT, REPORT_REASONS, askText, escapeHtml, parseReportChoice, reportResultText } from './game/Leaderboard';
+import { bindLegalLinks } from './legal/LegalModal';
 import { sound } from './audio/SoundManager';
+import { artUrl, artUrlsIn, installLazyArt, warmArt } from './ui/LazyArt';
+
+installLazyArt();
 
 const state = new GameState();
 
@@ -177,9 +185,9 @@ function syncCannonModHudBadge(): void {
   if (key === lastCannonModHudKey) return;
   lastCannonModHudKey = key;
   const iconMap: Record<CannonCoreModId, string> = {
-    overdrive_breech: '/assets/icons/mod_overdrive_breech.png?v=35',
-    prism_splitter: '/assets/icons/mod_prism_splitter.png?v=35',
-    heavy_mortar: '/assets/icons/mod_heavy_mortar.png?v=35',
+    overdrive_breech: '/assets/icons/mod_overdrive_breech.png?v=36',
+    prism_splitter: '/assets/icons/mod_prism_splitter.png?v=36',
+    heavy_mortar: '/assets/icons/mod_heavy_mortar.png?v=36',
   };
   if (cannonModHudIconEl) {
     cannonModHudIconEl.src = iconMap[activeModSpec.id];
@@ -627,8 +635,17 @@ const btnModalShare = document.getElementById('btn-modal-share') as HTMLButtonEl
 const btnModalNext = document.getElementById('btn-modal-next') as HTMLButtonElement;
 const globalToastEl = document.getElementById('global-toast') as HTMLElement | null;
 
-const world = new World3D(canvas, labelsContainer, state);
+const world = new World3DFull(canvas, labelsContainer, state);
 (window as unknown as Record<string, unknown>).__mc3dWorld = world;
+
+// MC-1～MC-18 引擎内自检单独一个 chunk，只有自动化测试（webdriver）才下载；玩家流程不会调用
+async function loadSelfChecks(): Promise<void> {
+  const { attachSelfChecks } = await import('./game/World3DSelfChecks');
+  attachSelfChecks(world);
+}
+(window as unknown as Record<string, unknown>).__mc3dLoadSelfChecks = loadSelfChecks;
+if (navigator.webdriver) void loadSelfChecks();
+
 if (lobbyTrophyCanvas) {
   world.mountTrophyPedestal(lobbyTrophyCanvas);
 }
@@ -681,7 +698,7 @@ async function handleShareGame(contextStage?: number, clearTimeSec?: number): Pr
       `🎁 已复制挑战链接！今日首享 +${reward.goldAwarded.toLocaleString()}🪙 & +${reward.shardsAwarded}【${reward.skinName}】碎片`
     );
   } else {
-    showGlobalToast('✅ 战报与邀请链接已复制，快发给好友比拼吧！');
+    showGlobalToast('✅ 成绩与邀请链接已复制，快发给好友比拼吧！');
   }
 }
 
@@ -863,7 +880,7 @@ function renderMainMenu(): void {
   const activeRacePts = state.getBranchSpentPoints(activeRace.id);
 
   if (brandCrestImgEl) {
-    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=35`;
+    brandCrestImgEl.src = `/assets/icons/race_${activeRace.id}.png?v=36`;
   }
   if (commanderRankTagEl) {
     commanderRankTagEl.textContent = getCommanderRankTitle(state.bestStageCleared);
@@ -987,7 +1004,7 @@ function renderMainMenu(): void {
     airshipEscortSubEl.textContent =
       state.airshipEscortClears > 0
         ? `${airshipMilestone.summaryText} · 已护航 ${state.airshipEscortClears} 次`
-        : '拔除防空副塔 · 空投超级波波攻破要塞';
+        : '拔除拦截副塔 · 空投超级波波冲破总厂';
   }
   if (airshipEscortBadgeEl) {
     airshipEscortBadgeEl.style.borderColor = airshipMilestone.accentColor;
@@ -1054,7 +1071,7 @@ function renderMainMenu(): void {
     asteroidDashSubEl.textContent =
       state.asteroidDashClears > 0
         ? `${starMs.summaryText} · 最快 ${state.bestAsteroidFinishSec.toFixed(1)}s`
-        : '躲陨石落点 · 穿护盾门 · 冲进跃迁门';
+        : '躲陨石落点 · 穿护盾门 · 冲进星光门';
   }
   if (asteroidDashBadgeEl) {
     asteroidDashBadgeEl.style.borderColor = starMs.accentColor;
@@ -1152,7 +1169,7 @@ function renderMainMenu(): void {
     candyTrainSubEl.textContent =
       state.candyTrainRaidClears > 0
         ? `${trainMilestone.summaryText} · 已劫车 ${state.candyTrainRaidClears} 次`
-        : '击破装甲车厢 · 夺取列车金章';
+        : '击破铁皮车厢 · 夺取列车金章';
   }
   if (candyTrainBadgeEl) {
     candyTrainBadgeEl.style.borderColor = trainMilestone.accentColor;
@@ -1403,7 +1420,7 @@ function renderMainMenu(): void {
     cannonModResources.innerHTML = `${UI_ART.airshipWingMedal} 飞艇护航徽章 ${state.airshipWingMedals} · 护航突破 ${state.airshipEscortClears} 次 · 累计空投 ${state.totalAirshipDropPods} 舱`;
   }
   if (cannonModMilestoneBanner) {
-    cannonModMilestoneBanner.innerHTML = `<span>${UI_ART.airshipWingMedal} 护航勋阶全局加成：${airshipBonusInfo.summaryText}</span><span>累计拔除防空塔 ${state.totalAntiAirTurretsCleared} 座</span>`;
+    cannonModMilestoneBanner.innerHTML = `<span>${UI_ART.airshipWingMedal} 护航勋阶全局加成：${airshipBonusInfo.summaryText}</span><span>累计拔除拦截塔 ${state.totalAntiAirTurretsCleared} 座</span>`;
   }
   if (cannonModGrid) {
     cannonModGrid.innerHTML = '';
@@ -1669,7 +1686,7 @@ function renderMainMenu(): void {
   const overlordSpec = state.getMechaOverlordSpec();
   const mechaMs = state.getMechaMilestoneStatus();
   if (mechaHangarMkPill) {
-    mechaHangarMkPill.innerHTML = `${UI_ART.mechaCore} 双联重炮领主 · ${overlordSpec.mkLabel}`;
+    mechaHangarMkPill.innerHTML = `${UI_ART.mechaCore} 双管大机偶 · ${overlordSpec.mkLabel}`;
   }
   if (mechaHangarStats) {
     mechaHangarStats.innerHTML = `${UI_ART.mechaOverlord} 降临 ${state.totalMechaSummons} 次 · 重炮轰碎 ${state.totalMechaSmashes}`;
@@ -1697,10 +1714,10 @@ function renderMainMenu(): void {
           <div class="finish-swatch" style="background: radial-gradient(circle, #67e8f9 0%, #0369a1 100%)">${UI_ART.mechaCoreArt}</div>
           <div class="finish-meta">
             <span class="finish-name">合体超压炉芯 Lv.${coreLvl}/${coreMax}</span>
-            <span class="finish-tag" style="color: #67e8f9">装甲生命 +${Math.round((overlordSpec.hpMult - 1) * 100)}% · 开局充能 ${overlordSpec.startingCharge}%</span>
+            <span class="finish-tag" style="color: #67e8f9">机身生命 +${Math.round((overlordSpec.hpMult - 1) * 100)}% · 开局充能 ${overlordSpec.startingCharge}%</span>
           </div>
         </div>
-        <div class="finish-bonus">每级提升机甲领主装甲 +12% · 初始充能 +4%</div>
+        <div class="finish-bonus">每级提升大机偶机身 +12% · 初始充能 +4%</div>
         <button type="button" id="btn-upg-mecha-core" class="finish-action-btn ${coreLvl >= coreMax ? 'btn-equipped' : 'btn-buy'}" ${!canCore ? 'disabled' : ''}>
           ${coreLvl >= coreMax ? `${UI_ART.check} MAX 满级` : `${UI_ART.coin} ${coreCost.toLocaleString()} 升级炉芯`}
         </button>
@@ -1722,7 +1739,7 @@ function renderMainMenu(): void {
         <div class="finish-card-top">
           <div class="finish-swatch" style="background: radial-gradient(circle, #f5d0fe 0%, #7e22ce 100%)">${UI_ART.mechaOverlordArt}</div>
           <div class="finish-meta">
-            <span class="finish-name">领主降临勋章 (${mechaMs.tier}/${mechaMs.maxTier})</span>
+            <span class="finish-name">大机偶登场勋章 (${mechaMs.tier}/${mechaMs.maxTier})</span>
             <span class="finish-tag" style="color: #f0abfc">合体增幅 +${Math.round(overlordSpec.fusionPerUnitBonus * 100)}%/兵 · 永久全阶+10%</span>
           </div>
         </div>
@@ -1760,7 +1777,7 @@ function renderMainMenu(): void {
         sound.playUpgrade();
         spawnMenuUpgradeBurst(
           btnMs,
-          `领主勋章 +${claim.goldAwarded}金 +${claim.shardsAwarded}碎片!`,
+          `大机偶勋章 +${claim.goldAwarded}金 +${claim.shardsAwarded}碎片!`,
           '#e879f9'
         );
         refreshUpgradeUI();
@@ -2017,7 +2034,7 @@ function renderMainMenu(): void {
 
   if (leaderboardListEl) {
     const isActiveMode = leaderboardMode === 'active';
-    const { top10, selfRank } = isActiveMode
+    const { top10, selfRank, hasReal } = isActiveMode
       ? state.getTop10ActiveLeaderboard()
       : state.getTop10Leaderboard();
     if (leaderboardSelfStatusEl) {
@@ -2028,7 +2045,7 @@ function renderMainMenu(): void {
         : `${state.weeklyBestStage} 关`;
       const resetHint = state.getWeeklyResetCountdownText();
       leaderboardSelfStatusEl.innerHTML =
-        `<span class="lb-self-name">${state.playerName}</span>` +
+        `<span class="lb-self-name">${escapeHtml(state.playerName)}</span>` +
         `<span class="lb-self-rank-pill ${isRanked ? 'is-ranked' : ''}">${rankStr}</span>` +
         `<span class="lb-self-metric-pill">${metricStr}</span>` +
         `<span class="lb-self-reset">${resetHint}</span>`;
@@ -2037,13 +2054,20 @@ function renderMainMenu(): void {
       const canAffordRename = state.gold >= RENAME_GOLD_COST;
       btnEditName.classList.toggle('is-unaffordable', !canAffordRename);
       btnEditName.title = canAffordRename
-        ? '花费 100,000 金币修改指挥官昵称 [N]'
+        ? '花费 100,000 金币修改昵称 [N]'
         : `改名需 100,000 金币（还差 ${Math.max(0, RENAME_GOLD_COST - Math.floor(state.gold)).toLocaleString()} 金币）`;
     }
 
     leaderboardListEl.innerHTML = '';
+    if (!hasReal) {
+      const hint = document.createElement('div');
+      hint.className = 'lb-empty-hint';
+      hint.textContent = '本周还没有真人上榜，打一关就是第一名';
+      leaderboardListEl.appendChild(hint);
+    }
     top10.forEach((entry, idx) => {
-      const rank = idx + 1;
+      // 陪练（机器人）不占名次：名次列留空，行内挂「陪练」小标
+      const rank = entry.rank ?? 0;
       const rankBadge =
         rank === 1
           ? UI_ART.medal1
@@ -2051,20 +2075,29 @@ function renderMainMenu(): void {
             ? UI_ART.medal2
             : rank === 3
               ? UI_ART.medal3
-              : `${rank}`;
+              : rank > 0
+                ? `${rank}`
+                : '–';
+      const roleTag = entry.isBot
+        ? '<span class="lb-role-tag lb-role-bot">陪练</span>'
+        : entry.isSelf
+          ? '<span class="lb-role-tag lb-role-self">我</span>'
+          : entry.publicId
+            ? `<button type="button" class="lb-report-btn" data-report-id="${escapeHtml(entry.publicId)}" data-report-name="${escapeHtml(entry.name)}" title="举报昵称" aria-label="举报昵称">⚑</button>`
+            : '';
       const row = document.createElement('div');
-      row.className = `lb-row ${isActiveMode ? 'lb-active-mode' : ''} ${rank <= 3 ? `lb-top-${rank}` : ''} ${entry.isSelf ? 'lb-self-row' : ''}`;
+      row.className = `lb-row ${isActiveMode ? 'lb-active-mode' : ''} ${rank >= 1 && rank <= 3 ? `lb-top-${rank}` : ''} ${entry.isSelf ? 'lb-self-row' : ''} ${entry.isBot ? 'lb-bot-row' : ''}`;
       row.style.setProperty('--stagger-i', `${idx}`);
       const lbRaceOrder = ['swarm', 'titan', 'gate', 'plasma', 'orbital', 'bastion', 'tycoon'];
       const avatarRace = lbRaceOrder[idx % lbRaceOrder.length];
-      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="/assets/icons/race_${avatarRace}.png?v=35" alt="" draggable="false" /></div>`;
+      const avatarHtml = `<div class="lb-avatar-box"><img class="art-icon-img lb-avatar-img" src="${raceThumbUrl(avatarRace)}" alt="" loading="${ART_LOADING}" draggable="false" /></div>`;
       if (isActiveMode) {
         const timeStr = state.formatPlayTime(entry.playTimeSeconds);
         row.innerHTML = `
           <span class="lb-rank">${rankBadge}</span>
           ${avatarHtml}
           <div class="lb-player">
-            <span class="lb-name">${entry.name}</span>
+            <span class="lb-name">${escapeHtml(entry.name)}</span>${roleTag}
           </div>
           <strong class="lb-time">${UI_ART.clock} ${timeStr}</strong>
         `;
@@ -2073,7 +2106,7 @@ function renderMainMenu(): void {
           <span class="lb-rank">${rankBadge}</span>
           ${avatarHtml}
           <div class="lb-player">
-            <span class="lb-name">${entry.name}</span>
+            <span class="lb-name">${escapeHtml(entry.name)}</span>${roleTag}
           </div>
           <strong class="lb-stage">${UI_ART.trophy} ${entry.bestStage} 关</strong>
         `;
@@ -2366,7 +2399,7 @@ function renderSkillTreePanel(): void {
     pedestalBtn.style.setProperty('--branch-color', branch.accentColor);
     pedestalBtn.title = `切换上阵角色：${branch.raceName} (${branchPts}/16 点技能${isActiveRace ? '生效中' : '待命'})`;
     pedestalBtn.innerHTML = `
-      <span class="kr-pedestal-icon">${branch.icon}</span>
+      <span class="kr-pedestal-icon">${RACE_MASCOT_THUMB[branch.id]}</span>
       <span class="kr-pedestal-name">${branch.raceName.slice(0, 2)}</span>
     `;
     pedestalBtn.addEventListener('click', () => {
@@ -2455,6 +2488,24 @@ function enterWorkshopFromTitle(): void {
   }
 }
 
+/** 封面出来、页面加载完以后，空闲时先取大厅要看到的图。 */
+function warmLobbyArt(): void {
+  warmArt([
+    artUrl(state.getActiveRaceBranch().icon),
+    ...artUrlsIn('#menu-panel-launch img:not([src*="/race_"])'),
+    ...[UI_ART.medal1, UI_ART.medal2, UI_ART.medal3, UI_ART.sparkle].map(artUrl),
+    ...Object.values(RACE_MASCOT_THUMB).map(artUrl),
+  ]);
+}
+
+/** 进了大厅再取主战役 HUD 与常见机关标签的图；各模式、工坊、天赋、皮肤页的图等玩家点开才下载。 */
+function warmBattleArt(): void {
+  warmArt([
+    ...artUrlsIn('.hud-top-row img, #top-tools-drawer img, #cannon-mod-hud-badge img, #active-buffs-bar img, .hud-bottom img'),
+    ...[UI_ART.barrel, UI_ART.shield, UI_ART.belt, UI_ART.spring, UI_ART.heart, UI_ART.warning, UI_ART.boom].map(artUrl),
+  ]);
+}
+
 function openMainMenu(): void {
   isTitleScreenOpen = false;
   topToolsDrawer?.classList.add('hidden');
@@ -2472,6 +2523,7 @@ function openMainMenu(): void {
   labelsContainer.style.display = 'none';
   mainMenu.classList.remove('hidden');
   renderMainMenu();
+  warmBattleArt();
   void state.syncRemoteLeaderboard(true).then(() => renderMainMenu());
 }
 
@@ -2508,10 +2560,10 @@ function launchEndlessDefense(): void {
   if (stagePlaqueSubEl) {
     stagePlaqueSubEl.textContent = lvl.subtitle;
   }
-  bossNameEl.innerHTML = `${UI_ART.endlessShield} 深渊突变裂隙`;
+  bossNameEl.innerHTML = `${UI_ART.endlessShield} 失控总锅炉`;
   showBanner(
     `${UI_ART.endlessShield} 无尽工坊保卫战开启！`,
-    `${UI_ART.endlessMedal} 抵御红军狂潮与突变巨汉 · 冲击个人最佳勋章`
+    `${UI_ART.endlessMedal} 挡住抓捕队和大块头 · 冲击个人最佳勋章`
   );
   refreshMechaUI();
   refreshUpgradeUI();
@@ -2541,7 +2593,7 @@ function startBonusHeist(milestoneStage: number, nextCampaignIdx: number): void 
   bossNameEl.innerHTML = `${UI_ART.candyVault} 至尊糖果总金库`;
   showBanner(
     `${UI_ART.candyVault} 糖果金库大劫案（25s 暴爽奖励关）`,
-    `零红军干扰！穿过高倍门轰碎 5 座糖果金库塔，狂爆金币与时装碎片！`
+    `没有抓捕队干扰！穿过高倍门轰碎 5 座糖果金库塔，爆出金币与时装碎片！`
   );
   refreshMechaUI();
   refreshUpgradeUI();
@@ -2563,16 +2615,16 @@ function launchPayloadEscort(): void {
   const lvl = generatePayloadEscortLevel(tier);
   world.loadLevel(lvl);
   if (stageBadge) {
-    stageBadge.textContent = `战车护送 · 推进 0%`;
+    stageBadge.textContent = `花车护送 · 推进 0%`;
   }
   const stagePlaqueSubEl = document.getElementById('stage-plaque-sub');
   if (stagePlaqueSubEl) {
     stagePlaqueSubEl.textContent = lvl.subtitle;
   }
-  bossNameEl.innerHTML = `${UI_ART.escortCart} 战车护送进度`;
+  bossNameEl.innerHTML = `${UI_ART.escortCart} 花车护送进度`;
   showBanner(
-    `${UI_ART.escortCart} 蒸汽装甲战车护送发车！`,
-    `${UI_ART.barricade} 派遣波波团环绕战车充能超载 · 冲撞碾碎路障直捣黑铁终极据点`
+    `${UI_ART.escortCart} 蒸汽花车护送发车！`,
+    `${UI_ART.barricade} 派遣波波团环绕花车充能超载 · 撞开路障直达黑铁终点站`
   );
   refreshMechaUI();
   refreshUpgradeUI();
@@ -2683,11 +2735,11 @@ function launchAirshipEscort(): void {
   if (stagePlaqueSubEl) {
     stagePlaqueSubEl.textContent = lvl.subtitle;
   }
-  bossNameEl.innerHTML = `${UI_ART.airshipEscort} 母舰护航进度`;
+  bossNameEl.innerHTML = `${UI_ART.airshipEscort} 飞艇护航进度`;
   airshipEscortHudEl?.classList.remove('hidden');
   showBanner(
-    `${UI_ART.airshipEscort} 云端飞艇母舰护航战 · 第 ${airSpec.escortTier} 阶`,
-    `${UI_ART.airshipWingMedal} 拔除防空副塔并护卫母舰充能，投送超级波波空投舱轰破要塞！`
+    `${UI_ART.airshipEscort} 云端飞艇护航战 · 第 ${airSpec.escortTier} 阶`,
+    `${UI_ART.airshipWingMedal} 拔除拦截副塔并护卫飞艇充能，投送超级波波空投舱冲破总厂！`
   );
   refreshMechaUI();
   refreshSubWeaponHUD();
@@ -2742,11 +2794,11 @@ function launchCandyTrainRaid(): void {
 // ============================================================================
 
 function TROPHY_CUP_IMG(tier: number, extraCls = ''): string {
-  return `<img class="art-icon-img trophy-cup-img tier-${tier} ${extraCls}" src="/assets/icons/trophy_gold_cup.png?v=35" alt="" draggable="false" />`;
+  return `<img class="art-icon-img trophy-cup-img tier-${tier} ${extraCls}" src="/assets/icons/trophy_gold_cup.png?v=36" alt="" loading="${ART_LOADING}" draggable="false" />`;
 }
 
 function displayPedestalImg(): string {
-  return `<img class="art-icon-img trophy-pedestal-img" src="/assets/icons/display_pedestal.png?v=35" alt="" draggable="false" />`;
+  return `<img class="art-icon-img trophy-pedestal-img" src="/assets/icons/display_pedestal.png?v=36" alt="" loading="${ART_LOADING}" draggable="false" />`;
 }
 
 function afterTrophyHallChange(anchor: HTMLElement | null, label: string, accent: string): void {
@@ -2863,7 +2915,7 @@ function renderTrophyHall(): void {
         <div class="finish-card-top">
           <div class="finish-swatch trophy-cabinet-swatch">
             ${TROPHY_CUP_IMG(info.tier, 'trophy-cabinet-cup')}
-            <img class="art-icon-img trophy-cabinet-source" src="${spec.iconUrl}" alt="" draggable="false" />
+            <img class="art-icon-img trophy-cabinet-source" src="${spec.iconUrl}" alt="" loading="${ART_LOADING}" draggable="false" />
           </div>
           <div class="finish-meta">
             <span class="finish-name">${spec.name} · ${HALL_TROPHY_TIER_NAMES[info.tier]}</span>
@@ -3006,8 +3058,8 @@ function launchAsteroidDash(): void {
   asteroidDashHudEl?.classList.remove('hidden');
   const starMs = state.getStardustMilestoneBonus();
   showBanner(
-    `${UI_ART.asteroidDash} 星际陨石带护盾突围 · 第 ${astSpec.asteroidTier} 阶`,
-    `左右拖动操控漂浮的波波团 · 躲开红色陨石落点圈、从陨石带的绿色缺口穿过 · 青色护盾门可挡下撞击 · 限时 ${lvl.asteroidCourse?.timeLimitSec ?? 40}s 冲进跃迁门！${
+    `${UI_ART.asteroidDash} 星空陨石带护盾突围 · 第 ${astSpec.asteroidTier} 阶`,
+    `左右拖动操控漂浮的波波团 · 躲开红色陨石落点圈、从陨石带的绿色缺口穿过 · 青色护盾门可挡下撞击 · 限时 ${lvl.asteroidCourse?.timeLimitSec ?? 40}s 冲进星光门！${
       starMs.asteroidBonusBobos > 0 ? ` 徽章加成：起步波波 +${starMs.asteroidBonusBobos}` : ''
     }`
   );
@@ -3028,11 +3080,11 @@ function decorThemeArtImg(id: DecorThemeId, extraCls = ''): string {
   const filter = spec.iconHue
     ? ` style="filter: hue-rotate(${spec.iconHue}deg) saturate(1.1) drop-shadow(0 3px 5px rgba(0,0,0,0.45))"`
     : '';
-  return `<img class="art-icon-img decor-theme-art ${extraCls}" src="${spec.iconUrl}" alt="" draggable="false"${filter} />`;
+  return `<img class="art-icon-img decor-theme-art ${extraCls}" src="${spec.iconUrl}" alt="" loading="${ART_LOADING}" draggable="false"${filter} />`;
 }
 
 function decorPropArtImg(id: DecorPropId, extraCls = ''): string {
-  return `<img class="art-icon-img decor-prop-art ${extraCls}" src="${DECOR_PROPS[id].iconUrl}" alt="" draggable="false" />`;
+  return `<img class="art-icon-img decor-prop-art ${extraCls}" src="${DECOR_PROPS[id].iconUrl}" alt="" loading="${ART_LOADING}" draggable="false" />`;
 }
 
 function afterDecorChange(anchor: HTMLElement | null, label: string, accent: string): void {
@@ -3216,7 +3268,7 @@ function tacticCurrencyArt(cur: TacticCurrency): string {
 }
 
 function tacticCardImg(id: TacticCardId, extraCls = ''): string {
-  return `<img class="art-icon-img tactic-card-art ${extraCls}" src="${TACTIC_CARDS[id].iconUrl}" alt="" draggable="false" />`;
+  return `<img class="art-icon-img tactic-card-art ${extraCls}" src="${TACTIC_CARDS[id].iconUrl}" alt="" loading="${ART_LOADING}" draggable="false" />`;
 }
 
 function launchPumpkinNight(): void {
@@ -3679,7 +3731,7 @@ function launchLavaJump(): void {
 function gachaSkinArtImg(id: GachaSkinId, extraCls = ''): string {
   const spec = GACHA_SKINS[id];
   const hue = spec.id === 'royal_crown' ? '' : ` style="filter: hue-rotate(${spec.capsuleHue}deg) saturate(1.15) drop-shadow(0 3px 5px rgba(0,0,0,0.45))"`;
-  return `<img class="art-icon-img gacha-skin-art ${extraCls}" src="${spec.iconUrl}" alt="" draggable="false"${hue} />`;
+  return `<img class="art-icon-img gacha-skin-art ${extraCls}" src="${spec.iconUrl}" alt="" loading="${ART_LOADING}" draggable="false"${hue} />`;
 }
 
 function renderGachaResultTray(): void {
@@ -3987,7 +4039,7 @@ function renderActiveBuffsBar(): void {
     const dropPct = Math.round(ship.dropCharge);
     const aaLeft = world.getAliveAntiAirTurretCount();
     pills.push(
-      `<span class="buff-pill rarity-legendary">${UI_ART.airshipEscort} 飞艇护航 ${pct}% · ${world.getAirshipStateLabel()} · 空投充能 ${dropPct}% · 防空塔 ${aaLeft}/${world.antiAirTurrets.length}</span>`
+      `<span class="buff-pill rarity-legendary">${UI_ART.airshipEscort} 飞艇护航 ${pct}% · ${world.getAirshipStateLabel()} · 空投充能 ${dropPct}% · 拦截塔 ${aaLeft}/${world.antiAirTurrets.length}</span>`
     );
   } else if (world.currentLevel.isBonusHeist) {
     pills.push(
@@ -4044,13 +4096,13 @@ function renderActiveBuffsBar(): void {
     const spec = state.getMechaOverlordSpec();
     const hpPct = Math.max(1, Math.round((mo.hp / Math.max(1, mo.maxHp)) * 100));
     pills.push(
-      `<span class="buff-pill rarity-legendary" title="双联重炮合体机甲领主在场推进中">${UI_ART.mechaOverlord} 机甲${spec.mkLabel} ${hpPct}% · ${Math.ceil(mo.lifeTimer)}s</span>`
+      `<span class="buff-pill rarity-legendary" title="双管合体大机偶在场推进中">${UI_ART.mechaOverlord} 机偶${spec.mkLabel} ${hpPct}% · ${Math.ceil(mo.lifeTimer)}s</span>`
     );
   }
 
   if (world.syrupZone?.active) {
     pills.push(
-      `<span class="buff-pill rarity-epic" title="糖浆减速泡持续迟滞并放大红军所受伤害">${TACTICAL_SUBWEAPON_INLINE_ART.syrup_bubble} 糖浆泡 ${Math.ceil(world.syrupZone.timer)}s</span>`
+      `<span class="buff-pill rarity-epic" title="糖浆减速泡持续迟滞并放大抓捕队所受伤害">${TACTICAL_SUBWEAPON_INLINE_ART.syrup_bubble} 糖浆泡 ${Math.ceil(world.syrupZone.timer)}s</span>`
     );
   }
 
@@ -4062,7 +4114,7 @@ function renderActiveBuffsBar(): void {
 
   if (world.bossShieldActive) {
     pills.push(
-      `<span class="buff-pill rarity-epic" title="大Boss虚空力场护盾：减伤88%，需集火${world.bossShieldHitsRemaining}次或用轰炸/炸药桶瞬间击碎">${UI_ART.shield} 虚空护盾(${world.bossShieldHitsRemaining})</span>`
+      `<span class="buff-pill rarity-epic" title="大Boss超压护盾：减伤88%，需集火${world.bossShieldHitsRemaining}次或用轰炸/炸药桶瞬间击碎">${UI_ART.shield} 超压护盾(${world.bossShieldHitsRemaining})</span>`
     );
   }
 
@@ -4070,7 +4122,7 @@ function renderActiveBuffsBar(): void {
   if (aliveSubTowers > 0) {
     const drPct = aliveSubTowers >= 2 ? 76 : 42;
     pills.push(
-      `<span class="buff-pill rarity-epic" title="双侧蒸汽护盾副塔正为母巢供能减伤 ${drPct}%！向左右侧翼发射兵潮优先拔除副塔可破盾重创母巢">${UI_ART.shield} 蒸汽副塔(${aliveSubTowers}/2 · 减伤${drPct}%)</span>`
+      `<span class="buff-pill rarity-epic" title="双侧蒸汽护盾副塔正为厂房供能减伤 ${drPct}%！往左右两侧出兵，先拔掉副塔就能破盾重创厂房">${UI_ART.shield} 蒸汽副塔(${aliveSubTowers}/2 · 减伤${drPct}%)</span>`
     );
   }
 
@@ -4081,17 +4133,17 @@ function renderActiveBuffsBar(): void {
         ? `${laneName}蒸汽预警(${Math.max(0.1, world.bossSteamSweep.timer).toFixed(1)}s)`
         : `${laneName}高压横扫中`;
     pills.push(
-      `<span class="buff-pill debuff-pill" title="母巢正在向${laneName}喷射高压蒸汽波，立即拖动炮车切换至另一侧半桥规避！">${UI_ART.warning} ${statusLabel}</span>`
+      `<span class="buff-pill debuff-pill" title="厂房正在向${laneName}喷射高压蒸汽波，立即拖动炮车切换至另一侧半桥规避！">${UI_ART.warning} ${statusLabel}</span>`
     );
   }
 
   if (world.bossBerserkTriggered) {
-    pills.push(`<span class="buff-pill debuff-pill" title="母巢狂暴阶段">${UI_ART.warning} 狂暴</span>`);
+    pills.push(`<span class="buff-pill debuff-pill" title="厂房暴走阶段">${UI_ART.warning} 暴走</span>`);
   }
 
   if (world.adrenalineTimer > 0) {
     pills.push(
-      `<span class="buff-pill rarity-legendary" title="连杀狂暴：全军射速移速+22%">${UI_ART.flame} ${world.adrenalineTimer.toFixed(0)}s</span>`
+      `<span class="buff-pill rarity-legendary" title="连击热潮：全军射速移速+22%">${UI_ART.flame} ${world.adrenalineTimer.toFixed(0)}s</span>`
     );
   }
 
@@ -4295,7 +4347,7 @@ world.onStageEnd = (victory: boolean) => {
   // Reset modal button defaults before branching by mode
   tournamentChestSection?.classList.add('hidden');
   btnModalReplay.style.display = 'inline-block';
-  btnModalReplay.innerHTML = `<img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=35" alt="" draggable="false" /><span>重玩</span><kbd class="kbd-hint">P</kbd>`;
+  btnModalReplay.innerHTML = `<img class="art-icon-img inline-art-img" src="/assets/icons/ui_dice.png?v=36" alt="" loading="${ART_LOADING}" draggable="false" /><span>重玩</span><kbd class="kbd-hint">P</kbd>`;
   btnModalNext.classList.remove('btn-bonus-heist-cta');
   // Medal-run modes keep the modal line short and park the per-hazard / medal breakdown in this tooltip
   modalDesc.title = '';
@@ -4556,7 +4608,7 @@ world.onStageEnd = (victory: boolean) => {
       world.triggerScreenFlash('#a78bfa', 0.7);
       const baseBadges = rec.badgesAwarded - rec.timeBonusBadges - rec.survivorBonusBadges;
       modalBadge.innerHTML = `${UI_ART.asteroidDash} ASTEROID DASH · 第 ${rec.asteroidTierCleared} 阶突围成功`;
-      modalTitle.innerHTML = `${UI_ART.stardustBadge} 波波团冲进跃迁门！`;
+      modalTitle.innerHTML = `${UI_ART.stardustBadge} 波波团冲进星光门！`;
       modalDesc.innerHTML = `${rec.isNewSpeedRecord ? '新纪录 · ' : ''}损失 ${world.asteroidBobosLost} · 星尘徽章 +${rec.badgesAwarded} ${UI_ART.stardustBadge} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}${milestoneTxt}`;
       modalDesc.title = `护盾挡下 ${world.asteroidShieldBlocks} 次 · 加人门 ${world.asteroidGatesPassed}\n徽章：基础 ${baseBadges} + 时速 ${rec.timeBonusBadges} + 幸存 ${rec.survivorBonusBadges} · 段位 ${starMs.rankTitle}`;
       btnModalReplay.style.display = 'inline-block';
@@ -4807,8 +4859,8 @@ world.onStageEnd = (victory: boolean) => {
     if (victory) {
       world.triggerScreenFlash('#38bdf8', 0.72);
       modalBadge.innerHTML = `${UI_ART.airshipEscort} AIRSHIP ESCORT · 第 ${rec.escortTierCleared} 阶护航大捷`;
-      modalTitle.innerHTML = `${UI_ART.airshipWingMedal} 蒸汽飞艇母舰轰破苍穹要塞！`;
-      modalDesc.innerHTML = `拔除防空塔 ${world.antiAirTurretsCleared}/${world.antiAirTurrets.length} · 空投舱 ${world.airshipDropPodsDeployed} 舱 · 飞艇护航徽章 +${rec.medalsAwarded} ${UI_ART.airshipWingMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin} · 碎片卡 +${rec.cardsAwarded} ${UI_ART.shard}`;
+      modalTitle.innerHTML = `${UI_ART.airshipWingMedal} 蒸汽飞艇冲破云顶总厂！`;
+      modalDesc.innerHTML = `拔除拦截塔 ${world.antiAirTurretsCleared}/${world.antiAirTurrets.length} · 空投舱 ${world.airshipDropPodsDeployed} 舱 · 飞艇护航徽章 +${rec.medalsAwarded} ${UI_ART.airshipWingMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin} · 碎片卡 +${rec.cardsAwarded} ${UI_ART.shard}`;
       modalDesc.title = `段位 ${milestone.rankTitle}`;
       btnModalReplay.style.display = 'inline-block';
       btnModalReplay.innerHTML = `${UI_ART.modOverdrive} <span>前往母炮改装台</span><kbd class="kbd-hint">P</kbd>`;
@@ -4820,8 +4872,8 @@ world.onStageEnd = (victory: boolean) => {
       modalTitle.innerHTML = `${UI_ART.warning} 飞艇编队受阻返航 · 零战败扣罚`;
       modalDesc.innerHTML =
         rec.medalsAwarded > 0
-          ? `本局拔除防空塔 ${world.antiAirTurretsCleared} 座，发放护航津贴：飞艇护航徽章 +${rec.medalsAwarded} ${UI_ART.airshipWingMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}！前往工坊改装母炮核心模组再战！`
-          : `推进进度 ${pct}% · 零金币扣罚！优先派遣波波拔除两翼防空副塔即可触发超级波波空投舱！`;
+          ? `本局拔除拦截塔 ${world.antiAirTurretsCleared} 座，发放护航津贴：飞艇护航徽章 +${rec.medalsAwarded} ${UI_ART.airshipWingMedal} · 金币 +${rec.coinsAwarded} ${UI_ART.coin}！前往工坊改装母炮核心模组再战！`
+          : `推进进度 ${pct}% · 零金币扣罚！优先派遣波波拔除两翼拦截副塔即可触发超级波波空投舱！`;
       btnModalNext.style.display = 'none';
       btnModalReplay.innerHTML = `${UI_ART.airshipEscort} <span>重战飞艇护航</span><kbd class="kbd-hint">P</kbd>`;
     }
@@ -4936,8 +4988,8 @@ world.onStageEnd = (victory: boolean) => {
     }
     modalBadge.innerHTML = `${UI_ART.escortCart} PAYLOAD ESCORT · ${rank.label}`;
     modalTitle.innerHTML = victory
-      ? `${UI_ART.escortCart} 蒸汽装甲战车攻破终极据点！`
-      : `${UI_ART.escortCart} 战车护送结算 · 推进 ${pct}%`;
+      ? `${UI_ART.escortCart} 蒸汽花车冲进终点站！`
+      : `${UI_ART.escortCart} 花车护送结算 · 推进 ${pct}%`;
     modalDesc.innerHTML = `${victory ? `${UI_ART.clock} 通关用时 ${clearSec.toFixed(1)}s${rec.isNewSpeedRecord ? `（${UI_ART.sparkle}新纪录）` : ''}` : `个人最佳推进：${rec.bestProgressPct}%`} · ${UI_ART.barricade} 撞碎路障 ${world.escortBarricadesBroken}/${world.escortBarricades.length} · 狂揽 +${state.stageGoldEarned} ${UI_ART.coin}${world.escortShardsEarned > 0 ? ` · 碎片 +${world.escortShardsEarned} ${UI_ART.shard}` : ''} · 零战败损耗`;
     rewardSection.classList.add('hidden');
     penaltySection.classList.add('hidden');
@@ -4986,7 +5038,7 @@ world.onStageEnd = (victory: boolean) => {
       ? `${UI_ART.bolt} SPEED CLEAR ${clearSec.toFixed(1)}s (<10s)`
       : `${UI_ART.trophy} STAGE ${stageNum} VICTORY`;
     modalTitle.innerHTML = isSpeedSkipEligible
-      ? `${UI_ART.bolt} 第 ${stageNum} 关极速闪击突破！`
+      ? `${UI_ART.bolt} 第 ${stageNum} 关极速突破！`
       : `${UI_ART.sparkle} 第 ${stageNum} 关完美谢幕！`;
     const parts: string[] = [
       `${UI_ART.clock} 用时 ${clearSec.toFixed(1)}s${isSpeedSkipEligible ? ` (${UI_ART.bolt}跳2关+奖励×3)` : ''}`,
@@ -5131,7 +5183,7 @@ function refreshUpgradeUI(): void {
   const pwrPct = Math.max(0, Math.min(100, Math.round((curKills / Math.max(1, costPwr)) * 100)));
   lvlPower.textContent = `Lv.${state.powerLevel}`;
   if (statPower) statPower.textContent = `×${state.getPowerMultiplier().toFixed(2)}`;
-  costPower.textContent = `${Math.min(curKills, costPwr)}/${costPwr}击杀`;
+  costPower.textContent = `${Math.min(curKills, costPwr)}/${costPwr}击退`;
   upgPower.disabled = curKills < costPwr;
   upgPower.style.setProperty('--upg-pct', `${pwrPct}%`);
   upgPower.classList.toggle('is-near-ready', curKills < costPwr && pwrPct >= 75);
@@ -5323,7 +5375,7 @@ function updateLiveHUD(): void {
     if (hudKey !== lastEscortHudKey) {
       lastEscortHudKey = hudKey;
       if (stageBadge) {
-        stageBadge.textContent = `战车护送 · 推进 ${pct}%`;
+        stageBadge.textContent = `花车护送 · 推进 ${pct}%`;
       }
       bossHpTextEl.textContent = `${pct}% · ${stLbl} (${spd}m/s)`;
       bossBarFillEl.style.width = `${pct}%`;
@@ -5529,7 +5581,7 @@ function updateLiveHUD(): void {
       }
       if (astHudCourseEl && astHudCourseTextEl) {
         astHudCourseEl.classList.toggle('is-stumbled', ast.state === 'stumbled');
-        astHudCourseTextEl.textContent = `跃迁门 ${Math.round(ast.distance)}/${ast.courseLength}m · 闪避 ${world.asteroidHazardsDodged}`;
+        astHudCourseTextEl.textContent = `星光门 ${Math.round(ast.distance)}/${ast.courseLength}m · 闪避 ${world.asteroidHazardsDodged}`;
       }
       const pillKey = `${pct}_${bobos}_${stLbl}`;
       if (pillKey !== lastAstPillKey) {
@@ -5682,7 +5734,7 @@ function updateLiveHUD(): void {
       bossBarFillEl.style.width = `${pct}%`;
 
       if (airshipHudHullEl && airshipHudHullTextEl) {
-        airshipHudHullTextEl.textContent = `母舰耐久 ${hp} · 护盾 ${sh}`;
+        airshipHudHullTextEl.textContent = `飞艇耐久 ${hp} · 护盾 ${sh}`;
       }
       if (airshipHudDropEl && airshipHudDropTextEl) {
         airshipHudDropEl.classList.toggle('is-dropping', ship.state === 'dropping_pod');
@@ -5691,7 +5743,7 @@ function updateLiveHUD(): void {
       if (airshipHudAaEl && airshipHudAaTextEl) {
         airshipHudAaEl.classList.toggle('is-broken', aaAlive === 0);
         airshipHudAaTextEl.textContent =
-          aaAlive > 0 ? `防空副塔 ${aaAlive}/${world.antiAirTurrets.length}` : '防空副塔 已全拔除';
+          aaAlive > 0 ? `拦截副塔 ${aaAlive}/${world.antiAirTurrets.length}` : '拦截副塔 已全拔除';
       }
       renderActiveBuffsBar();
     }
@@ -5951,24 +6003,47 @@ if (btnEditName) {
       );
       return;
     }
-    const input = window.prompt(
-      `请输入新的指挥官昵称（最多14个字符，改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币）：`,
+    const { value: input, unavailable } = askText(
+      `请输入新的昵称（最多14个字符，改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币）：`,
       state.playerName
     );
+    if (unavailable) showGlobalToast(PROMPT_UNAVAILABLE_TEXT);
     if (input && input.trim()) {
       const res = state.setPlayerName(input);
       if (res.ok) {
         sound.playUpgrade();
         spawnMenuUpgradeBurst(btnEditName, `-${RENAME_GOLD_COST.toLocaleString()} 金币`, '#f59e0b');
-        showGlobalToast(`✅ 改名成功：「${state.playerName}」（已消耗 ${RENAME_GOLD_COST.toLocaleString()} 金币）`);
+        showGlobalToast(`✅ 改名成功：「${escapeHtml(state.playerName)}」（已消耗 ${RENAME_GOLD_COST.toLocaleString()} 金币）`);
         refreshUpgradeUI();
         renderMainMenu();
+      } else if (res.reason === 'blocked') {
+        showGlobalToast('🚫 这个昵称不能用，换一个吧（没扣金币）');
       } else if (res.reason === 'insufficient_gold') {
         showGlobalToast(
           `💰 改名需花费 ${RENAME_GOLD_COST.toLocaleString()} 金币（当前：${Math.floor(state.gold).toLocaleString()} 金币）`
         );
       }
     }
+  });
+}
+
+// 榜单行上的小旗：举报昵称（行每次重绘，所以挂在列表上）
+if (leaderboardListEl) {
+  leaderboardListEl.addEventListener('click', (ev) => {
+    const btn = (ev.target as HTMLElement | null)?.closest<HTMLButtonElement>('.lb-report-btn');
+    if (!btn || btn.disabled) return;
+    ev.stopPropagation();
+    const publicId = btn.dataset.reportId || '';
+    const choices = REPORT_REASONS.map((r, i) => `${i + 1} ${r.label}`).join('  ');
+    const asked = askText(`举报「${btn.dataset.reportName || ''}」的昵称，填编号：\n${choices}`, '1');
+    if (asked.unavailable) showGlobalToast(PROMPT_UNAVAILABLE_TEXT);
+    const reason = parseReportChoice(asked.value);
+    if (!publicId || !reason) return;
+    btn.disabled = true;
+    void state.reportLeaderboardName(publicId, reason).then((res) => {
+      showGlobalToast(reportResultText(res.ok, res.reason));
+      if (!res.ok && res.reason !== 'duplicate') btn.disabled = false;
+    });
   });
 }
 
@@ -6164,6 +6239,8 @@ if (btnTitleSound) {
   });
 }
 
+bindLegalLinks();
+
 if (btnEnterWorkshop) {
   btnEnterWorkshop.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -6231,7 +6308,7 @@ if (btnTacticalSubweapon) {
 
 function rollTycoonFreeDoubleUpgrade(btnEl: HTMLElement): boolean {
   if (state.getSkillNodeRank('tycoon_t4') > 0 && Math.random() < 0.2) {
-    spawnMenuUpgradeBurst(btnEl, '👑 财阀免单连升 +2!', '#facc15');
+    spawnMenuUpgradeBurst(btnEl, '👑 免单连升 +2!', '#facc15');
     return true;
   }
   return false;
@@ -6285,8 +6362,8 @@ upgChampion.addEventListener('click', () => {
       showBanner(
         `✨ 大招进化 · 【${nextEvo.badge}】`,
         nextEvo.isCompleteForm
-          ? '👑 完全体大招已解锁：全屏连环洗地与震波特效全面绽放！'
-          : '大招伤害、打击范围与特效波次已提升！'
+          ? '👑 完全体大招已解锁：全屏连环礼花与震波特效全面绽放！'
+          : '大招伤害、范围与特效波次已提升！'
       );
     }
   }
@@ -6536,6 +6613,8 @@ btnModalNext.addEventListener('click', () => {
 // Preload 3D stage background & open Title Cover Screen on startup
 startLevel(state.currentLevelIndex);
 openTitleScreen();
+if (document.readyState === 'complete') warmLobbyArt();
+else window.addEventListener('load', warmLobbyArt, { once: true });
 
 if (btnLbPeak) {
   btnLbPeak.addEventListener('click', () => {
@@ -6970,7 +7049,7 @@ if (referralWelcome) {
   refreshUpgradeUI();
   window.setTimeout(() => {
     showGlobalToast(
-      `🎁 收到【${referralWelcome.fromName}】的偶像应援补给：+${referralWelcome.goldAwarded.toLocaleString()}🪙 星光金币！`
+      `🎁 收到【${escapeHtml(referralWelcome.fromName)}】的偶像应援补给：+${referralWelcome.goldAwarded.toLocaleString()}🪙 星光金币！`
     );
   }, 400);
 }

@@ -3995,6 +3995,25 @@ body.screen-quake-active #app {
   flex-shrink: 0;
 }
 
+/* 图标按需加载的占位（src/ui/LazyArt.ts）：只改底色和描边，不动尺寸 */
+.art-icon-img.art-pending {
+  background: rgba(120, 72, 24, 0.2) !important;
+  border-radius: 24% !important;
+  animation: artPendingPulse 1.1s ease-in-out infinite;
+}
+
+.art-icon-img.art-failed {
+  outline: 1.5px dashed rgba(120, 72, 24, 0.5);
+  outline-offset: -2px;
+  border-radius: 24% !important;
+}
+
+@keyframes artPendingPulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 .skill-art-img {
   width: 100%;
   height: 100%;
@@ -4648,9 +4667,7 @@ body.screen-quake-active #app {
 .hero-stage-bg-layer {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(180deg, rgba(28, 16, 6, 0.18) 0%, rgba(28, 16, 6, 0.05) 45%, rgba(36, 18, 5, 0.72) 100%),
-    url('/assets/icons/hero_stage_bg.jpg');
+  background-image: linear-gradient(180deg, rgba(28, 16, 6, 0.18) 0%, rgba(28, 16, 6, 0.05) 45%, rgba(36, 18, 5, 0.72) 100%);
   background-size: cover;
   background-position: center 42%;
   z-index: 0;
@@ -5176,7 +5193,7 @@ body.screen-quake-active #app {
       rgba(15, 23, 42, 0.0) 76%,
       rgba(15, 23, 42, 0.55) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=35') center center / cover no-repeat;
+    url('/assets/icons/title_splash_bg.jpg?v=36') center center / cover no-repeat;
   image-rendering: auto;
   animation: none !important;
   transform: none !important;
@@ -7466,7 +7483,7 @@ img,
       rgba(15, 28, 64, 0.05) 70%,
       rgba(20, 12, 6, 0.62) 100%
     ),
-    url('/assets/icons/title_splash_bg.jpg?v=35') center center / cover no-repeat !important;
+    url('/assets/icons/title_splash_bg.jpg?v=36') center center / cover no-repeat !important;
 }
 
 .title-center-emblem {
@@ -14877,4 +14894,199 @@ body.jungle-mode-active #cannon-mod-hud-badge {
     -webkit-box-orient: vertical;
     line-height: 1.2 !important;
   }
+}
+
+/* MC-COM3: 隐私说明 / 用户协议入口与弹窗 */
+.legal-links {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 8px;
+  color: var(--ink-dark);
+}
+
+.top-tools-drawer .legal-links {
+  margin-top: 0;
+}
+
+.legal-links button {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.title-legal-links {
+  margin-top: 12px;
+  color: #fff6dc;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
+}
+
+.legal-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(46, 26, 10, 0.66);
+}
+
+.legal-modal.hidden {
+  display: none;
+}
+
+.legal-card {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 560px);
+  max-height: 88vh;
+  max-height: 88dvh;
+  box-sizing: border-box;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 3px solid #c4904e;
+  background: #fff8e8;
+  color: #43301c;
+}
+
+.legal-card h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.legal-draft {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #fee2e2;
+  border: 1.5px solid #dc2626;
+  color: #991b1b;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.legal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.legal-body,
+.legal-body * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.legal-body h3 {
+  margin: 12px 0 4px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.legal-body ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.legal-close {
+  flex: 0 0 auto;
+  margin-top: 12px;
+  font-size: 16px;
+}
+
+/* MC-G4: 周榜区分真人与陪练。陪练行压暗、不排名次；自己的行用绿底描边 */
+.lb-player {
+  flex-wrap: nowrap;
+}
+
+.lb-player .lb-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-player .lb-role-tag {
+  font-size: 12px;
+}
+
+/* 举报昵称的小旗：平时很淡，不抢名字；点击区放到 28px，手指好点（行高本来就有 30px 头像） */
+.lb-report-btn {
+  flex-shrink: 0;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #a08668;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.lb-report-btn:hover,
+.lb-report-btn:focus-visible {
+  opacity: 1;
+}
+
+.lb-report-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.lb-role-self {
+  color: #ffffff;
+  background: #15803d;
+  border: 1px solid #14532d;
+}
+
+.lb-row.lb-bot-row {
+  background: #e9e2d3 !important;
+  border-color: #d3c8b2 !important;
+  box-shadow: none !important;
+}
+
+.lb-row.lb-bot-row .lb-name,
+.lb-row.lb-bot-row .lb-rank,
+.lb-row.lb-bot-row .lb-stage,
+.lb-row.lb-bot-row .lb-time {
+  color: #6b5d4a !important;
+}
+
+.lb-row.lb-bot-row .lb-avatar-box {
+  background: #a8a08f !important;
+  border-color: #7d7464 !important;
+  box-shadow: none !important;
+}
+
+.lb-row.lb-self-row {
+  background: linear-gradient(90deg, #bbf7d0 0%, #f0fdf4 100%) !important;
+  border: 2.5px solid #16a34a !important;
+  outline-color: #16a34a !important;
+}
+
+.lb-empty-hint {
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border-radius: 11px;
+  background: #fef3c7;
+  border: 1.5px dashed #d97706;
+  color: #7c2d12;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
 }

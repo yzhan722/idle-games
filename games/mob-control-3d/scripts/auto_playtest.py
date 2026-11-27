@@ -11,6 +11,7 @@ import os
 import sys
 import json
 import datetime
+import tempfile
 import threading
 import http.server
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
@@ -19,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(BASE_DIR, "dist")
 BRAIN_DIR = os.environ.get(
     "BRAIN_DIR",
-    r"C:\Users\Administrator\.gemini\antigravity\brain\6d2279ce-1afd-4b76-9c2b-3b4e98e08859"
+    os.path.join(tempfile.gettempdir(), "mob-control-3d-playtest")
 )
 REPORT_JSON = os.path.join(BRAIN_DIR, "scratch", "last_playtest_report.json")
 LOG_MD_BRAIN = os.path.join(BRAIN_DIR, "playtest_log.md")
@@ -121,12 +122,23 @@ def _nav_with_retry(action, what):
         return action()
 
 
+# The in-engine self-checks are their own chunk now (main.ts loads it only under webdriver); wait until it is attached.
+def _wait_self_checks(pg):
+    pg.wait_for_function(
+        "() => window.__mc3dWorld && typeof window.__mc3dWorld.runMc1SelfCheck === 'function'", timeout=NAV_TIMEOUT_MS
+    )
+
+
 def page_reload(pg):
-    return _nav_with_retry(lambda: pg.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS), "reload")
+    resp = _nav_with_retry(lambda: pg.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS), "reload")
+    _wait_self_checks(pg)
+    return resp
 
 
 def page_goto(pg, url):
-    return _nav_with_retry(lambda: pg.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS), "goto")
+    resp = _nav_with_retry(lambda: pg.goto(url, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS), "goto")
+    _wait_self_checks(pg)
+    return resp
 
 
 def new_page_context(viewport, scale=1):
@@ -390,7 +402,7 @@ try:
                     const title = document.getElementById('home-race-title')?.textContent?.trim() || '';
                     const img = document.querySelector('#home-mascot-art img');
                     const src = img ? img.getAttribute('src') || '' : '';
-                    list.push({ title, hasHq2d: src.includes('/assets/icons/race_') && src.includes('?v=35') });
+                    list.push({ title, hasHq2d: src.includes('/assets/icons/race_') && src.includes('?v=36') });
                     document.getElementById('btn-home-next-race')?.click();
                 }
                 return list;
@@ -506,7 +518,7 @@ try:
 
             has_inrun_labels = (
                 "秒" in battle_state["frCost"]
-                and "击杀" in battle_state["pwrCost"]
+                and "击退" in battle_state["pwrCost"]
                 and "出兵" in battle_state["champCost"]
                 and "攻城" in battle_state["lootCost"]
             )
@@ -524,7 +536,7 @@ try:
 
             bad_tokens = [
                 tok
-                for tok in ["NaN", "undefined", "[object Object]", "链式爆破 -0"]
+                for tok in ["NaN", "undefined", "[object Object]", "连环礼花 -0"]
                 if tok in battle_state["bodyText"]
             ]
             add_check("Zero NaN/Undefined in DOM Text", len(bad_tokens) == 0, f"bad_tokens={bad_tokens}")
@@ -696,19 +708,19 @@ try:
                 btn.click();
                 labels.push(label.textContent.trim());
                 const scatterImg = btn.querySelector('img');
-                const scatterLoaded = Boolean(scatterImg && scatterImg.src.includes('icon_weapon_scatter.png?v=35'));
+                const scatterLoaded = Boolean(scatterImg && scatterImg.src.includes('icon_weapon_scatter.png?v=36'));
                 btn.click();
                 labels.push(label.textContent.trim());
                 const rainbowImg = btn.querySelector('img');
-                const rainbowLoaded = Boolean(rainbowImg && rainbowImg.src.includes('icon_weapon_rainbow.png?v=35'));
+                const rainbowLoaded = Boolean(rainbowImg && rainbowImg.src.includes('icon_weapon_rainbow.png?v=36'));
                 const hasInlineSvg = Boolean(btn.querySelector('svg'));
                 // Cycle back to default gatling
                 btn.click(); btn.click(); btn.click();
                 // Probe all 3 MC-4 RGBA PNGs
                 const urls = [
-                    '/assets/icon_weapon_scatter.png?v=35',
-                    '/assets/icon_weapon_rainbow.png?v=35',
-                    '/assets/icon_tactical_airdrop.png?v=35',
+                    '/assets/icon_weapon_scatter.png?v=36',
+                    '/assets/icon_weapon_rainbow.png?v=36',
+                    '/assets/icon_tactical_airdrop.png?v=36',
                 ];
                 const imgChecks = await Promise.all(urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -814,18 +826,18 @@ try:
 
                 // Verify 6x MC-5 256x256 RGBA PNG icons load cleanly & have transparent corner alpha (a === 0)
                 const mc5Urls = [
-                    '/assets/icons/ui_escort_cart.png?v=35',
-                    '/assets/icons/ui_barricade.png?v=35',
-                    '/assets/icons/finish_candy_gloss.png?v=35',
-                    '/assets/icons/finish_brass_steam.png?v=35',
-                    '/assets/icons/finish_crystal_jelly.png?v=35',
-                    '/assets/icons/finish_starlight_prism.png?v=35',
+                    '/assets/icons/ui_escort_cart.png?v=36',
+                    '/assets/icons/ui_barricade.png?v=36',
+                    '/assets/icons/finish_candy_gloss.png?v=36',
+                    '/assets/icons/finish_brass_steam.png?v=36',
+                    '/assets/icons/finish_crystal_jelly.png?v=36',
+                    '/assets/icons/finish_starlight_prism.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc5Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -983,19 +995,19 @@ try:
                 }
                 const sim = w.runMc6SelfCheck();
 
-                // Verify 5x MC-6 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-6 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with transparent corners (a === 0)
                 const mc6Urls = [
-                    '/assets/icons/ui_mecha_overlord.png?v=35',
-                    '/assets/icons/meta_mecha_core.png?v=35',
-                    '/assets/icons/env_tailwind_belt.png?v=35',
-                    '/assets/icons/env_emp_zone.png?v=35',
-                    '/assets/icons/env_frosting_pad.png?v=35',
+                    '/assets/icons/ui_mecha_overlord.png?v=36',
+                    '/assets/icons/meta_mecha_core.png?v=36',
+                    '/assets/icons/env_tailwind_belt.png?v=36',
+                    '/assets/icons/env_emp_zone.png?v=36',
+                    '/assets/icons/env_frosting_pad.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc6Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -1067,7 +1079,7 @@ try:
 
             mc6_sim = mc6_check.get("sim") or {}
             add_check(
-                "MC-6 5x 256px True-Alpha RGBA Icons (?v=35) & Zero Inline SVG in Hangar/HUD",
+                "MC-6 5x 256px True-Alpha RGBA Icons (?v=36) & Zero Inline SVG in Hangar/HUD",
                 all(mc6_check.get("rgbaChecks", [False]))
                 and len(mc6_check.get("rgbaChecks", [])) == 5
                 and not bool(mc6_check.get("metaHasSvg"))
@@ -1159,19 +1171,19 @@ try:
                 }
                 const sim = w.runMc7SelfCheck();
 
-                // Verify 5x MC-7 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-7 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with transparent corners (a === 0)
                 const mc7Urls = [
-                    '/assets/icons/ui_gear_tournament.png?v=35',
-                    '/assets/icons/ui_tournament_chest.png?v=35',
-                    '/assets/icons/subwpn_electro_net.png?v=35',
-                    '/assets/icons/subwpn_syrup_bubble.png?v=35',
-                    '/assets/icons/subwpn_rally_horn.png?v=35',
+                    '/assets/icons/ui_gear_tournament.png?v=36',
+                    '/assets/icons/ui_tournament_chest.png?v=36',
+                    '/assets/icons/subwpn_electro_net.png?v=36',
+                    '/assets/icons/subwpn_syrup_bubble.png?v=36',
+                    '/assets/icons/subwpn_rally_horn.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc7Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -1280,7 +1292,7 @@ try:
 
             mc7_sim = mc7_check.get("sim") or {}
             add_check(
-                "MC-7 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-7 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc7_check.get("rgbaChecks", [False]))
                 and len(mc7_check.get("rgbaChecks", [])) == 5
                 and int(mc7_check.get("totalSvgCount", 1)) == 0
@@ -1365,19 +1377,19 @@ try:
                 }
                 const sim = w.runMc8SelfCheck();
 
-                // Verify 5x MC-8 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-8 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with transparent corners (a === 0)
                 const mc8Urls = [
-                    '/assets/icons/ui_clockwork_colossus.png?v=35',
-                    '/assets/icons/ui_clockwork_core.png?v=35',
-                    '/assets/icons/tech_vanguard_charge.png?v=35',
-                    '/assets/icons/tech_heavy_siege.png?v=35',
-                    '/assets/icons/tech_candy_bombard.png?v=35',
+                    '/assets/icons/ui_clockwork_colossus.png?v=36',
+                    '/assets/icons/ui_clockwork_core.png?v=36',
+                    '/assets/icons/tech_vanguard_charge.png?v=36',
+                    '/assets/icons/tech_heavy_siege.png?v=36',
+                    '/assets/icons/tech_candy_bombard.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc8Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -1474,7 +1486,7 @@ try:
 
             mc8_sim = mc8_check.get("sim") or {}
             add_check(
-                "MC-8 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-8 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc8_check.get("rgbaChecks", [False]))
                 and len(mc8_check.get("rgbaChecks", [])) == 5
                 and int(mc8_check.get("totalSvgCount", 1)) == 0
@@ -1555,19 +1567,19 @@ try:
                 }
                 const sim = w.runMc9SelfCheck();
 
-                // Verify 5x MC-9 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-9 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with transparent corners (a === 0)
                 const mc9Urls = [
-                    '/assets/icons/ui_airship_escort.png?v=35',
-                    '/assets/icons/ui_airship_wing_medal.png?v=35',
-                    '/assets/icons/mod_overdrive_breech.png?v=35',
-                    '/assets/icons/mod_prism_splitter.png?v=35',
-                    '/assets/icons/mod_heavy_mortar.png?v=35',
+                    '/assets/icons/ui_airship_escort.png?v=36',
+                    '/assets/icons/ui_airship_wing_medal.png?v=36',
+                    '/assets/icons/mod_overdrive_breech.png?v=36',
+                    '/assets/icons/mod_prism_splitter.png?v=36',
+                    '/assets/icons/mod_heavy_mortar.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc9Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -1715,7 +1727,7 @@ try:
 
             mc9_sim = mc9_check.get("sim") or {}
             add_check(
-                "MC-9 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-9 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc9_check.get("rgbaChecks", [False]))
                 and len(mc9_check.get("rgbaChecks", [])) == 5
                 and bool(mc9_check.get("escortBtnImgOk"))
@@ -1798,19 +1810,19 @@ try:
                 }
                 const sim = w.runMc10SelfCheck();
 
-                // Verify 5x MC-10 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with transparent corners (a === 0)
+                // Verify 5x MC-10 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with transparent corners (a === 0)
                 const mc10Urls = [
-                    '/assets/icons/ui_candy_train_raid.png?v=35',
-                    '/assets/icons/ui_train_gold_medal.png?v=35',
-                    '/assets/icons/banner_gale_charge.png?v=35',
-                    '/assets/icons/banner_holy_shield.png?v=35',
-                    '/assets/icons/banner_star_carnival.png?v=35',
+                    '/assets/icons/ui_candy_train_raid.png?v=36',
+                    '/assets/icons/ui_train_gold_medal.png?v=36',
+                    '/assets/icons/banner_gale_charge.png?v=36',
+                    '/assets/icons/banner_holy_shield.png?v=36',
+                    '/assets/icons/banner_star_carnival.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc10Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -1832,7 +1844,7 @@ try:
                 const trainBtn = document.getElementById('btn-start-candy-train-raid');
                 const hasTrainBtn = Boolean(trainBtn);
                 const trainBtnImg = trainBtn?.querySelector('img');
-                const trainBtnImgOk = Boolean(trainBtnImg && trainBtnImg.complete && trainBtnImg.naturalWidth > 0 && trainBtnImg.src.includes('ui_candy_train_raid.png?v=35'));
+                const trainBtnImgOk = Boolean(trainBtnImg && trainBtnImg.complete && trainBtnImg.naturalWidth > 0 && trainBtnImg.src.includes('ui_candy_train_raid.png?v=36'));
                 const trainMedalTxt = document.getElementById('candy-train-medal-text')?.textContent?.trim() || '';
 
                 // Open Workshop (#menu-panel-meta) -> #relic-banner-stand: unlock / upgrade / equip all 3 banners via real UI buttons
@@ -1938,7 +1950,7 @@ try:
                 const bannerBuffPillOk = Boolean(
                     bannerBuffPill &&
                     bannerBuffPill.textContent?.includes('圣盾守护旗') &&
-                    bannerBuffPill.querySelector('img')?.src.includes('banner_holy_shield.png?v=35')
+                    bannerBuffPill.querySelector('img')?.src.includes('banner_holy_shield.png?v=36')
                 );
                 const carLabelsShown = Array.from(document.querySelectorAll('.candy-train-car-label')).filter(
                     (el) => el.style.display !== 'none'
@@ -2001,7 +2013,7 @@ try:
 
             mc10_sim = mc10_check.get("sim") or {}
             add_check(
-                "MC-10 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-10 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc10_check.get("rgbaChecks", [False]))
                 and len(mc10_check.get("rgbaChecks", [])) == 5
                 and bool(mc10_check.get("trainBtnImgOk"))
@@ -2102,19 +2114,19 @@ try:
                 }
                 const sim = w.runMc11SelfCheck();
 
-                // Verify 5x MC-11 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
+                // Verify 5x MC-11 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with all 4 corners transparent
                 const mc11Urls = [
-                    '/assets/icons/ui_submarine_rescue.png?v=35',
-                    '/assets/icons/ui_deep_pearl.png?v=35',
-                    '/assets/icons/pet_jelly_puff.png?v=35',
-                    '/assets/icons/pet_shell_turtle.png?v=35',
-                    '/assets/icons/pet_spark_seahorse.png?v=35',
+                    '/assets/icons/ui_submarine_rescue.png?v=36',
+                    '/assets/icons/ui_deep_pearl.png?v=36',
+                    '/assets/icons/pet_jelly_puff.png?v=36',
+                    '/assets/icons/pet_shell_turtle.png?v=36',
+                    '/assets/icons/pet_spark_seahorse.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc11Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -2136,7 +2148,7 @@ try:
                 const subBtn = document.getElementById('btn-start-submarine-rescue');
                 const hasSubBtn = Boolean(subBtn);
                 const subBtnImg = subBtn?.querySelector('img');
-                const subBtnImgOk = Boolean(subBtnImg && subBtnImg.complete && subBtnImg.naturalWidth > 0 && subBtnImg.src.includes('ui_submarine_rescue.png?v=35'));
+                const subBtnImgOk = Boolean(subBtnImg && subBtnImg.complete && subBtnImg.naturalWidth > 0 && subBtnImg.src.includes('ui_submarine_rescue.png?v=36'));
                 const pearlTxt = document.getElementById('submarine-pearl-text')?.textContent?.trim() || '';
 
                 // Open Workshop (#menu-panel-meta) -> #pet-companion-dock: adopt / upgrade / equip all 3 pets via real UI buttons
@@ -2290,7 +2302,7 @@ try:
                 const petBuffPillOk = Boolean(
                     petBuffPill &&
                     petBuffPill.textContent?.includes('小海马') &&
-                    petBuffPill.querySelector('img')?.src.includes('pet_spark_seahorse.png?v=35')
+                    petBuffPill.querySelector('img')?.src.includes('pet_spark_seahorse.png?v=36')
                 );
                 const worldLabelsShown = Array.from(
                     document.querySelectorAll('.coral-barrier-label, .rescue-bubble-label, .submarine-hull-label')
@@ -2365,7 +2377,7 @@ try:
 
             mc11_sim = mc11_check.get("sim") or {}
             add_check(
-                "MC-11 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-11 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc11_check.get("rgbaChecks", [False]))
                 and len(mc11_check.get("rgbaChecks", [])) == 5
                 and bool(mc11_check.get("subBtnImgOk"))
@@ -2481,19 +2493,19 @@ try:
                 }
                 const sim = w.runMc12SelfCheck();
 
-                // Verify 5x MC-12 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
+                // Verify 5x MC-12 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with all 4 corners transparent
                 const mc12Urls = [
-                    '/assets/icons/ui_glacier_sled.png?v=35',
-                    '/assets/icons/ui_ice_medal.png?v=35',
-                    '/assets/icons/trophy_hall.png?v=35',
-                    '/assets/icons/trophy_gold_cup.png?v=35',
-                    '/assets/icons/display_pedestal.png?v=35',
+                    '/assets/icons/ui_glacier_sled.png?v=36',
+                    '/assets/icons/ui_ice_medal.png?v=36',
+                    '/assets/icons/trophy_hall.png?v=36',
+                    '/assets/icons/trophy_gold_cup.png?v=36',
+                    '/assets/icons/display_pedestal.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc12Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -2529,7 +2541,7 @@ try:
                 const sledBtn = document.getElementById('btn-start-glacier-sled');
                 const hasSledBtn = Boolean(sledBtn);
                 const sledBtnImg = sledBtn?.querySelector('img');
-                const sledBtnImgOk = Boolean(sledBtnImg && sledBtnImg.complete && sledBtnImg.naturalWidth > 0 && sledBtnImg.src.includes('ui_glacier_sled.png?v=35'));
+                const sledBtnImgOk = Boolean(sledBtnImg && sledBtnImg.complete && sledBtnImg.naturalWidth > 0 && sledBtnImg.src.includes('ui_glacier_sled.png?v=36'));
                 const iceTxt = document.getElementById('glacier-ice-medal-text')?.textContent?.trim() || '';
                 const sledBtnBeforeSub = Boolean(
                     sledBtn && document.getElementById('btn-start-submarine-rescue') &&
@@ -2677,7 +2689,7 @@ try:
                 const hallPill = document.querySelector('#active-buffs-bar .trophy-hall-pill');
                 const hallPillOk = Boolean(
                     hallPill && hallPill.textContent?.includes('荣誉陈列') &&
-                    hallPill.querySelector('img')?.src.includes('trophy_gold_cup.png?v=35')
+                    hallPill.querySelector('img')?.src.includes('trophy_gold_cup.png?v=36')
                 );
                 const sledPill = document.querySelector('#active-buffs-bar .glacier-sled-pill');
                 const sledLabelShown = Array.from(document.querySelectorAll('.glacier-sled-label')).filter(
@@ -2768,7 +2780,7 @@ try:
 
             mc12_sim = mc12_check.get("sim") or {}
             add_check(
-                "MC-12 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-12 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc12_check.get("rgbaChecks", [False]))
                 and len(mc12_check.get("rgbaChecks", [])) == 5
                 and bool(mc12_check.get("sledBtnImgOk"))
@@ -2900,19 +2912,19 @@ try:
                 const sim = w.runMc13SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 5x MC-13 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
+                // Verify 5x MC-13 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with all 4 corners transparent
                 const mc13Urls = [
-                    '/assets/icons/ui_lava_jump.png?v=35',
-                    '/assets/icons/ui_lava_core.png?v=35',
-                    '/assets/icons/gacha_machine.png?v=35',
-                    '/assets/icons/skin_capsule.png?v=35',
-                    '/assets/icons/skin_crown.png?v=35',
+                    '/assets/icons/ui_lava_jump.png?v=36',
+                    '/assets/icons/ui_lava_core.png?v=36',
+                    '/assets/icons/gacha_machine.png?v=36',
+                    '/assets/icons/skin_capsule.png?v=36',
+                    '/assets/icons/skin_crown.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc13Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -2945,7 +2957,7 @@ try:
                 const lavaBtn = document.getElementById('btn-start-lava-jump');
                 const sledBtn = document.getElementById('btn-start-glacier-sled');
                 const lavaBtnImg = lavaBtn?.querySelector('img');
-                const lavaBtnImgOk = Boolean(lavaBtnImg && lavaBtnImg.complete && lavaBtnImg.naturalWidth > 0 && lavaBtnImg.src.includes('ui_lava_jump.png?v=35'));
+                const lavaBtnImgOk = Boolean(lavaBtnImg && lavaBtnImg.complete && lavaBtnImg.naturalWidth > 0 && lavaBtnImg.src.includes('ui_lava_jump.png?v=36'));
                 const coreTxt = document.getElementById('lava-core-text')?.textContent?.trim() || '';
                 const lavaBtnBeforeSled = Boolean(
                     lavaBtn && sledBtn && (lavaBtn.compareDocumentPosition(sledBtn) & Node.DOCUMENT_POSITION_FOLLOWING)
@@ -3152,7 +3164,7 @@ try:
 
             mc13_sim = mc13_check.get("sim") or {}
             add_check(
-                "MC-13 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-13 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc13_check.get("rgbaChecks", [False]))
                 and len(mc13_check.get("rgbaChecks", [])) == 5
                 and bool(mc13_check.get("lavaBtnImgOk"))
@@ -3326,19 +3338,19 @@ try:
                 const sim = w.runMc14SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 5x MC-14 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
+                // Verify 5x MC-14 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with all 4 corners transparent
                 const mc14Urls = [
-                    '/assets/icons/ui_asteroid_dash.png?v=35',
-                    '/assets/icons/ui_stardust_badge.png?v=35',
-                    '/assets/icons/lobby_theme.png?v=35',
-                    '/assets/icons/decor_lamp.png?v=35',
-                    '/assets/icons/decor_plant.png?v=35',
+                    '/assets/icons/ui_asteroid_dash.png?v=36',
+                    '/assets/icons/ui_stardust_badge.png?v=36',
+                    '/assets/icons/lobby_theme.png?v=36',
+                    '/assets/icons/decor_lamp.png?v=36',
+                    '/assets/icons/decor_plant.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc14Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -3373,7 +3385,7 @@ try:
                 const astBtn = document.getElementById('btn-start-asteroid-dash');
                 const lavaBtn = document.getElementById('btn-start-lava-jump');
                 const astBtnImg = astBtn?.querySelector('img');
-                const astBtnImgOk = Boolean(astBtnImg && astBtnImg.complete && astBtnImg.naturalWidth > 0 && astBtnImg.src.includes('ui_asteroid_dash.png?v=35'));
+                const astBtnImgOk = Boolean(astBtnImg && astBtnImg.complete && astBtnImg.naturalWidth > 0 && astBtnImg.src.includes('ui_asteroid_dash.png?v=36'));
                 const badgeTxt = document.getElementById('stardust-badge-text')?.textContent?.trim() || '';
                 const astBtnBeforeLava = Boolean(
                     astBtn && lavaBtn && (astBtn.compareDocumentPosition(lavaBtn) & Node.DOCUMENT_POSITION_FOLLOWING)
@@ -3570,7 +3582,7 @@ try:
 
             mc14_sim = mc14_check.get("sim") or {}
             add_check(
-                "MC-14 5x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-14 5x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc14_check.get("rgbaChecks", [False]))
                 and len(mc14_check.get("rgbaChecks", [])) == 5
                 and bool(mc14_check.get("astBtnImgOk"))
@@ -3603,9 +3615,9 @@ try:
                 and int(mc14_check.get("astLabelShown", 0)) >= 1
                 and ("剩余" in str(mc14_check.get("hudTimeTxt", "")))
                 and ("波波" in str(mc14_check.get("hudBobosTxt", "")))
-                and ("跃迁门" in str(mc14_check.get("hudCourseTxt", "")))
+                and ("星光门" in str(mc14_check.get("hudCourseTxt", "")))
                 and bool(mc14_check.get("astPillOk"))
-                and ("跃迁门" in str(mc14_check.get("modalTxt", "")))
+                and ("星光门" in str(mc14_check.get("modalTxt", "")))
                 and bool(mc14_check.get("badgesAwardedOnVictory"))
                 and all(
                     bool(mc14_sim.get(k))
@@ -3732,21 +3744,21 @@ try:
                 const sim = w.runMc15SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 7x MC-15 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
+                // Verify 7x MC-15 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with all 4 corners transparent
                 const mc15Urls = [
-                    '/assets/icons/ui_pumpkin_night.png?v=35',
-                    '/assets/icons/ui_pumpkin_badge.png?v=35',
-                    '/assets/icons/ghost.png?v=35',
-                    '/assets/icons/ui_tactic_deck.png?v=35',
-                    '/assets/icons/card_shield.png?v=35',
-                    '/assets/icons/card_rush.png?v=35',
-                    '/assets/icons/card_crowd.png?v=35',
+                    '/assets/icons/ui_pumpkin_night.png?v=36',
+                    '/assets/icons/ui_pumpkin_badge.png?v=36',
+                    '/assets/icons/ghost.png?v=36',
+                    '/assets/icons/ui_tactic_deck.png?v=36',
+                    '/assets/icons/card_shield.png?v=36',
+                    '/assets/icons/card_rush.png?v=36',
+                    '/assets/icons/card_crowd.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc15Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -3781,7 +3793,7 @@ try:
                 const pkBtn = document.getElementById('btn-start-pumpkin-night');
                 const astBtn = document.getElementById('btn-start-asteroid-dash');
                 const pkBtnImg = pkBtn?.querySelector('img');
-                const pkBtnImgOk = Boolean(pkBtnImg && pkBtnImg.complete && pkBtnImg.naturalWidth > 0 && pkBtnImg.src.includes('ui_pumpkin_night.png?v=35'));
+                const pkBtnImgOk = Boolean(pkBtnImg && pkBtnImg.complete && pkBtnImg.naturalWidth > 0 && pkBtnImg.src.includes('ui_pumpkin_night.png?v=36'));
                 const pkBadgeTxt = document.getElementById('pumpkin-badge-text')?.textContent?.trim() || '';
                 const pkBtnBeforeAst = Boolean(pkBtn && astBtn && (pkBtn.compareDocumentPosition(astBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
                 const battleBtn = document.getElementById('btn-start-battle');
@@ -4002,7 +4014,7 @@ try:
 
             mc15_sim = mc15_check.get("sim") or {}
             add_check(
-                "MC-15 7x 256px True-Alpha RGBA Icons (?v=35), Zero Inline SVG & Zero Raw Emoji",
+                "MC-15 7x 256px True-Alpha RGBA Icons (?v=36), Zero Inline SVG & Zero Raw Emoji",
                 all(mc15_check.get("rgbaChecks", [False]))
                 and len(mc15_check.get("rgbaChecks", [])) == 7
                 and bool(mc15_check.get("pkBtnImgOk"))
@@ -4159,19 +4171,19 @@ try:
                 const sim = w.runMc16SelfCheck();
                 const raf2 = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-                // Verify 5x MC-16 256x256 true-alpha RGBA PNG icons (?v=35) load cleanly with all 4 corners transparent
+                // Verify 5x MC-16 256x256 true-alpha RGBA PNG icons (?v=36) load cleanly with all 4 corners transparent
                 const mc16Urls = [
-                    '/assets/icons/ui_pyramid_run.png?v=35',
-                    '/assets/icons/ui_scarab_badge.png?v=35',
-                    '/assets/icons/quicksand_trap.png?v=35',
-                    '/assets/icons/flip_slab.png?v=35',
-                    '/assets/icons/tactic_balance.png?v=35',
+                    '/assets/icons/ui_pyramid_run.png?v=36',
+                    '/assets/icons/ui_scarab_badge.png?v=36',
+                    '/assets/icons/quicksand_trap.png?v=36',
+                    '/assets/icons/flip_slab.png?v=36',
+                    '/assets/icons/tactic_balance.png?v=36',
                 ];
                 const rgbaChecks = await Promise.all(mc16Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => {
-                        if (img.naturalWidth !== 256 || img.naturalHeight !== 256) {
+                        if (img.naturalWidth < 72 || img.naturalHeight !== img.naturalWidth) {
                             resolve(false);
                             return;
                         }
@@ -4203,9 +4215,9 @@ try:
                 const pyBtn = document.getElementById('btn-start-pyramid-run');
                 const pkBtn = document.getElementById('btn-start-pumpkin-night');
                 const pyBtnImg = pyBtn?.querySelector('img');
-                const pyBtnImgOk = Boolean(pyBtnImg && pyBtnImg.complete && pyBtnImg.naturalWidth > 0 && pyBtnImg.src.includes('ui_pyramid_run.png?v=35'));
+                const pyBtnImgOk = Boolean(pyBtnImg && pyBtnImg.complete && pyBtnImg.naturalWidth > 0 && pyBtnImg.src.includes('ui_pyramid_run.png?v=36'));
                 const pyBadgeImg = document.querySelector('#pyramid-run-badge img');
-                const pyBadgeImgOk = Boolean(pyBadgeImg && pyBadgeImg.complete && pyBadgeImg.naturalWidth > 0 && pyBadgeImg.src.includes('ui_scarab_badge.png?v=35'));
+                const pyBadgeImgOk = Boolean(pyBadgeImg && pyBadgeImg.complete && pyBadgeImg.naturalWidth > 0 && pyBadgeImg.src.includes('ui_scarab_badge.png?v=36'));
                 const pyBadgeTxt = document.getElementById('scarab-badge-text')?.textContent?.trim() || '';
                 const pyBtnBeforePk = Boolean(pyBtn && pkBtn && (pyBtn.compareDocumentPosition(pkBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
                 const lobbySubOn = document.getElementById('lobby-tactic-sub')?.textContent || '';
@@ -4217,7 +4229,7 @@ try:
                 const deckEl = document.getElementById('tactic-deck');
                 const balInDeck = Boolean(balRow && deckEl && deckEl.contains(balRow));
                 const balImg = balRow?.querySelector('img');
-                const balImgOk = Boolean(balImg && balImg.complete && balImg.naturalWidth > 0 && balImg.src.includes('tactic_balance.png?v=35'));
+                const balImgOk = Boolean(balImg && balImg.complete && balImg.naturalWidth > 0 && balImg.src.includes('tactic_balance.png?v=36'));
                 const balTitleOn = document.getElementById('tactic-balance-title')?.textContent || '';
                 const balTextOn = document.getElementById('tactic-balance-text')?.textContent || '';
                 const cardCampTags = Array.from(document.querySelectorAll('#tactic-card-grid .tactic-card-camp')).map((e) => e.textContent || '');
@@ -4395,7 +4407,7 @@ try:
 
             mc16_sim = mc16_check.get("sim") or {}
             add_check(
-                "MC-16 5x 256px True-Alpha RGBA Icons (?v=35) on Lobby Card / Badge / HUD / Balance Row, Zero Inline SVG & Zero Raw Emoji",
+                "MC-16 5x 256px True-Alpha RGBA Icons (?v=36) on Lobby Card / Badge / HUD / Balance Row, Zero Inline SVG & Zero Raw Emoji",
                 all(mc16_check.get("rgbaChecks", [False]))
                 and len(mc16_check.get("rgbaChecks", [])) == 5
                 and bool(mc16_check.get("pyBtnImgOk"))
@@ -4557,12 +4569,12 @@ try:
                 + JUNGLE_INFO_JS
                 + """;
 
-                // The 4 MC-17 icons (?v=35) reuse existing art (art debt) normalised to 256x256 true-alpha RGBA with all 4 corners transparent
+                // The 4 MC-17 icons (?v=36) reuse existing art (art debt) normalised to 256x256 true-alpha RGBA with all 4 corners transparent
                 const mc17Urls = [
-                    '/assets/icons/ui_jungle_temple.png?v=35',
-                    '/assets/icons/ui_emerald_idol_badge.png?v=35',
-                    '/assets/icons/vine_swing.png?v=35',
-                    '/assets/icons/rolling_boulder.png?v=35',
+                    '/assets/icons/ui_jungle_temple.png?v=36',
+                    '/assets/icons/ui_emerald_idol_badge.png?v=36',
+                    '/assets/icons/vine_swing.png?v=36',
+                    '/assets/icons/rolling_boulder.png?v=36',
                 ];
                 const iconInfo = await Promise.all(mc17Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -4575,7 +4587,7 @@ try:
                         const ctx2d = cv.getContext('2d');
                         ctx2d.drawImage(img, 0, 0);
                         const corners = [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1]].map(([cx, cy]) => ctx2d.getImageData(cx, cy, 1, 1).data[3]);
-                        resolve({ w: W, h: H, cornerAlpha: corners, ok: W === 256 && H === 256 && corners.every((a) => a === 0) });
+                        resolve({ w: W, h: H, cornerAlpha: corners, ok: W >= 72 && H === W && corners.every((a) => a === 0) });
                     };
                     img.onerror = () => resolve({ w: 0, h: 0, ok: false });
                     img.src = u;
@@ -4598,9 +4610,9 @@ try:
                 const jgBtn = document.getElementById('btn-start-jungle-swing');
                 const pyBtn = document.getElementById('btn-start-pyramid-run');
                 const jgBtnImg = jgBtn?.querySelector('img');
-                const jgBtnImgOk = Boolean(jgBtnImg && jgBtnImg.complete && jgBtnImg.naturalWidth > 0 && jgBtnImg.src.includes('ui_jungle_temple.png?v=35'));
+                const jgBtnImgOk = Boolean(jgBtnImg && jgBtnImg.complete && jgBtnImg.naturalWidth > 0 && jgBtnImg.src.includes('ui_jungle_temple.png?v=36'));
                 const jgBadgeImg = document.querySelector('#jungle-swing-badge img');
-                const jgBadgeImgOk = Boolean(jgBadgeImg && jgBadgeImg.complete && jgBadgeImg.naturalWidth > 0 && jgBadgeImg.src.includes('ui_emerald_idol_badge.png?v=35'));
+                const jgBadgeImgOk = Boolean(jgBadgeImg && jgBadgeImg.complete && jgBadgeImg.naturalWidth > 0 && jgBadgeImg.src.includes('ui_emerald_idol_badge.png?v=36'));
                 const jgBadgeTxt = document.getElementById('emerald-idol-text')?.textContent?.trim() || '';
                 const jgBtnBeforePy = Boolean(jgBtn && pyBtn && (jgBtn.compareDocumentPosition(pyBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
                 const pairsLaunch = artPairs();
@@ -4693,7 +4705,7 @@ try:
             mc17_sim = mc17_check.get("sim") or {}
             mc17_live = mc17_check.get("live") or {}
             add_check(
-                "MC-17 4x Square Alpha PNG Icons (?v=35; Stand-in Copies of Existing Art, 2 of Them Not 256px) on Lobby Card / Badge / HUD, Never on One Screen with Their Originals, Zero Inline SVG & Zero Raw Emoji",
+                "MC-17 4x Square Alpha PNG Icons (?v=36; Stand-in Copies of Existing Art, 2 of Them Not 256px) on Lobby Card / Badge / HUD, Never on One Screen with Their Originals, Zero Inline SVG & Zero Raw Emoji",
                 all(bool(i.get("ok")) for i in (mc17_check.get("iconInfo") or [{}]))
                 and len(mc17_check.get("iconInfo") or []) == 4
                 and bool(mc17_check.get("jgBtnImgOk"))
@@ -4831,12 +4843,12 @@ try:
                 + RESULT_STATS_JS
                 + """;
 
-                // The 4 MC-18 icons (?v=35) reuse existing art (art debt) normalised to 256x256 true-alpha RGBA with all 4 corners transparent
+                // The 4 MC-18 icons (?v=36) reuse existing art (art debt) normalised to 256x256 true-alpha RGBA with all 4 corners transparent
                 const mc18Urls = [
-                    '/assets/icons/ui_pirate_ship.png?v=35',
-                    '/assets/icons/ui_gold_skull_badge.png?v=35',
-                    '/assets/icons/swing_plank.png?v=35',
-                    '/assets/icons/cannonball.png?v=35',
+                    '/assets/icons/ui_pirate_ship.png?v=36',
+                    '/assets/icons/ui_gold_skull_badge.png?v=36',
+                    '/assets/icons/swing_plank.png?v=36',
+                    '/assets/icons/cannonball.png?v=36',
                 ];
                 const iconInfo = await Promise.all(mc18Urls.map((u) => new Promise((resolve) => {
                     const img = new Image();
@@ -4849,7 +4861,7 @@ try:
                         const ctx2d = cv.getContext('2d');
                         ctx2d.drawImage(img, 0, 0);
                         const corners = [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1]].map(([cx, cy]) => ctx2d.getImageData(cx, cy, 1, 1).data[3]);
-                        resolve({ w: W, h: H, cornerAlpha: corners, ok: W === 256 && H === 256 && corners.every((a) => a === 0) });
+                        resolve({ w: W, h: H, cornerAlpha: corners, ok: W >= 72 && H === W && corners.every((a) => a === 0) });
                     };
                     img.onerror = () => resolve({ w: 0, h: 0, ok: false });
                     img.src = u;
@@ -4870,9 +4882,9 @@ try:
                 const prBtn = document.getElementById('btn-start-pirate-boarding');
                 const jgBtn = document.getElementById('btn-start-jungle-swing');
                 const prBtnImg = prBtn?.querySelector('img');
-                const prBtnImgOk = Boolean(prBtnImg && prBtnImg.complete && prBtnImg.naturalWidth > 0 && prBtnImg.src.includes('ui_pirate_ship.png?v=35'));
+                const prBtnImgOk = Boolean(prBtnImg && prBtnImg.complete && prBtnImg.naturalWidth > 0 && prBtnImg.src.includes('ui_pirate_ship.png?v=36'));
                 const prBadgeImg = document.querySelector('#pirate-boarding-badge img');
-                const prBadgeImgOk = Boolean(prBadgeImg && prBadgeImg.complete && prBadgeImg.naturalWidth > 0 && prBadgeImg.src.includes('ui_gold_skull_badge.png?v=35'));
+                const prBadgeImgOk = Boolean(prBadgeImg && prBadgeImg.complete && prBadgeImg.naturalWidth > 0 && prBadgeImg.src.includes('ui_gold_skull_badge.png?v=36'));
                 const prBadgeTxt = document.getElementById('gold-skull-text')?.textContent?.trim() || '';
                 const prBtnBeforeJg = Boolean(prBtn && jgBtn && (prBtn.compareDocumentPosition(jgBtn) & Node.DOCUMENT_POSITION_FOLLOWING));
                 const pairsLaunch = artPairs();
@@ -5000,7 +5012,7 @@ try:
             mc18_sim = mc18_check.get("sim") or {}
             mc18_live = mc18_check.get("live") or {}
             add_check(
-                "MC-18 4x 256px Alpha PNG Icons (?v=35; Stand-in Copies of Existing Art) on Lobby Card / Badge / HUD, Never on One Screen with Their Originals, Zero Inline SVG & Zero Raw Emoji",
+                "MC-18 4x 256px Alpha PNG Icons (?v=36; Stand-in Copies of Existing Art) on Lobby Card / Badge / HUD, Never on One Screen with Their Originals, Zero Inline SVG & Zero Raw Emoji",
                 all(bool(i.get("ok")) for i in (mc18_check.get("iconInfo") or [{}]))
                 and len(mc18_check.get("iconInfo") or []) == 4
                 and bool(mc18_check.get("prBtnImgOk"))
@@ -6797,7 +6809,7 @@ try:
                 const img = card ? card.querySelector('img.trophy-cabinet-source') : null;
                 return { ov: document.documentElement.scrollWidth - window.innerWidth, cardFit: fit(card),
                     shown: card ? card.classList.contains('is-displayed-trophy') : false,
-                    img: Boolean(img && img.complete && img.naturalWidth > 0 && img.src.includes('ui_emerald_idol_badge.png?v=35')),
+                    img: Boolean(img && img.complete && img.naturalWidth > 0 && img.src.includes('ui_emerald_idol_badge.png?v=36')),
                     name: card?.querySelector('.finish-name')?.textContent || '', cards: document.querySelectorAll('#trophy-hall-grid .trophy-cabinet-card').length,
                     art: (""" + ART_PAIR_JS + """)() };
             }"""

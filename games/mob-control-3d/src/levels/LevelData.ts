@@ -1,4 +1,5 @@
 import { THEME_ORDER, ThemeId } from '../game/SceneThemes';
+import { bossHpMultiplier, bossStageSpawns, campaignCurve } from './CampaignCurve';
 
 export type GateOp = 'add' | 'mul' | 'sub' | 'div' | 'giant_jelly' | 'frost_shield';
 
@@ -80,9 +81,9 @@ export const WEATHER_AFFIX_CATALOG: Record<WeatherAffixId, WeatherAffixConfig> =
   },
   ion_emp_storm: {
     id: 'ion_emp_storm',
-    name: '电磁雷暴',
-    shortBadge: '电磁雷暴·充能+20%',
-    desc: '电离风暴令全军技能与合体机甲充能效率 +20%，桥面电磁干扰区周期性预警放电破盾缓敌',
+    name: '静电雷暴',
+    shortBadge: '静电雷暴·充能+20%',
+    desc: '电离风暴令全军技能与合体大机偶充能效率 +20%，桥面静电干扰区周期性预警放电破盾缓敌',
     iconKey: 'envEmp',
     blueSpeedMult: 1.04,
     chargeGainMult: 1.2,
@@ -805,21 +806,21 @@ const BOSS_ROSTER = [
   '高压汽笛总督 (WHISTLE OVERSEER)',
   '焦糖熔炉总管 (FURNACE WARDEN)',
   '蒸汽广播主脑 (MEGAPHONE DIRECTOR)',
-  '红砖要塞总工程师 (CITADEL ARCHITECT)',
+  '红砖总厂总工程师 (CITADEL ARCHITECT)',
 ] as const;
 
 const MINI_BOSS_ROSTER = [
   '工坊先锋 · 巨型扳手领班 (STAGE 5 MINI BOSS)',
   '黑油主管 · 高压阀门督军 (STAGE 15 MINI BOSS)',
-  '齿轮处刑官 · 重装铆钉巨汉 (STAGE 25 MINI BOSS)',
-  '广播督察长 · 扩音蒸汽领主 (STAGE 35 MINI BOSS)',
+  '齿轮监工 · 重装铆钉巨汉 (STAGE 25 MINI BOSS)',
+  '广播督察长 · 扩音蒸汽大王 (STAGE 35 MINI BOSS)',
   '涡轮总领班 · 超压发条巨匠 (STAGE 45 MINI BOSS)',
 ] as const;
 
 const MEGA_BOSS_ROSTER = [
   '集团董事 · 红砖巨型总厂长 (STAGE 10 MEGA BOSS)',
   '蒸汽霸主 · 黄金齿轮大亨 (STAGE 20 MEGA BOSS)',
-  '熔炉总帅 · 百吨发条巨神 (STAGE 30 MEGA BOSS)',
+  '熔炉总帅 · 百吨发条巨人 (STAGE 30 MEGA BOSS)',
   '财团首脑 · 皇家蒸汽总督 (STAGE 40 MEGA BOSS)',
   '终极厂长 · 无尽工坊最高总裁 (STAGE 50 MEGA BOSS)',
 ] as const;
@@ -902,20 +903,15 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
       : Math.floor(Date.now() % 1000000) + safeStage * 9973 + Math.floor(Math.random() * 89999);
   const rng = new SeededRNG(seed);
 
-  // Steeper progressive difficulty curve: fair Stage 1, scaling sharply into intense mid-to-late-game battles
-  const difficultyScale = Math.pow(1.13, Math.min(safeStage - 1, 35)) + (safeStage - 1) * 0.16;
-  const bossMaxHp = Math.round((950 + (safeStage - 1) * 235) * Math.pow(1.135, Math.min(safeStage - 1, 40)));
-  const enemySpawnInterval = Math.max(
-    0.42,
-    Number((1.12 * Math.pow(0.955, Math.min(safeStage - 1, 35))).toFixed(3))
-  );
-  const enemyBurstCount = Math.min(18, Math.round(4 + (safeStage - 1) * 0.58));
-  const initialRedPrewarm = Math.min(60, Math.round(11 + (safeStage - 1) * 3.0));
-  const bruteSpawnInterval =
-    safeStage === 1
-      ? 11.5
-      : Math.max(4.4, Number((10.6 * Math.pow(0.935, Math.min(safeStage - 1, 30))).toFixed(2)));
-  const rewardGold = Math.round(125 * difficultyScale);
+  const {
+    difficultyScale,
+    bossMaxHp,
+    enemySpawnInterval,
+    enemyBurstCount,
+    initialRedPrewarm,
+    bruteSpawnInterval,
+    rewardGold,
+  } = campaignCurve(safeStage);
 
   const allArchetypes: MapArchetype[] = [
     'cascade_scurve',
@@ -2324,13 +2320,8 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
     }
   }
 
-  const scaledBossMaxHp = isMegaBoss
-    ? Math.round(bossMaxHp * 1.9)
-    : isMiniBoss
-      ? Math.round(bossMaxHp * 1.42)
-      : isMilestoneBoss
-        ? Math.round(bossMaxHp * 1.2)
-        : bossMaxHp;
+  const scaledBossMaxHp = Math.round(bossMaxHp * bossHpMultiplier(isMegaBoss, isMiniBoss, isMilestoneBoss));
+  const stageSpawns = bossStageSpawns({ enemySpawnInterval, enemyBurstCount }, isMegaBoss, isMiniBoss);
 
   const bossSubTowers: BossSubTowerConfig[] = [];
   if (isMegaBoss || isMiniBoss) {
@@ -2463,16 +2454,8 @@ export function generateDynamicLevel(stageNumber: number, customSeed?: number): 
     subtitle: `[随机地形 #${seed % 10000}] ${info.desc}`,
     bossName: resolvedBossName,
     bossMaxHp: scaledBossMaxHp,
-    enemySpawnInterval: isMegaBoss
-      ? Number(Math.max(0.36, enemySpawnInterval * 0.82).toFixed(3))
-      : isMiniBoss
-        ? Number(Math.max(0.38, enemySpawnInterval * 0.9).toFixed(3))
-        : enemySpawnInterval,
-    enemyBurstCount: isMegaBoss
-      ? Math.min(22, enemyBurstCount + 3)
-      : isMiniBoss
-        ? Math.min(20, enemyBurstCount + 2)
-        : enemyBurstCount,
+    enemySpawnInterval: stageSpawns.enemySpawnInterval,
+    enemyBurstCount: stageSpawns.enemyBurstCount,
     initialRedPrewarm,
     bruteSpawnInterval,
     rewardGold: finalRewardGold,
@@ -2546,7 +2529,7 @@ export function generateCandyVaultBonusLevel(milestoneStage: number): LevelConfi
     seed: 77700 + safeMilestone,
     themeId,
     archetype: 'chaos_overdrive',
-    archetypeName: '25s 限时暴爽奖励关 · 零红军干扰',
+    archetypeName: '25s 限时暴爽奖励关 · 没有抓捕队干扰',
     isMilestoneBoss: false,
     isMiniBoss: false,
     isMegaBoss: false,
@@ -2555,7 +2538,7 @@ export function generateCandyVaultBonusLevel(milestoneStage: number): LevelConfi
     candyVaults,
     weatherAffix: WEATHER_AFFIX_CATALOG.sugar_snow_updraft,
     name: `糖果金库大劫案（第 ${safeMilestone} 关奖励）`,
-    subtitle: '零红军 · 穿倍增门轰碎金库塔',
+    subtitle: '没有抓捕队 · 穿倍增门轰碎金库塔',
     bossName: '至尊糖果总金库',
     bossMaxHp: 720 + tier * 240,
     enemySpawnInterval: 999,
@@ -2597,8 +2580,8 @@ export function generateEndlessDefenseLevel(): LevelConfig {
     isEndlessDefense: true,
     weatherAffix: WEATHER_AFFIX_CATALOG.ion_emp_storm,
     name: '无尽工坊保卫战',
-    subtitle: '死守泡泡站 · 波次递增 · 零战败损耗',
-    bossName: '深渊突变裂隙',
+    subtitle: '守住泡泡站 · 波次递增 · 零战败损耗',
+    bossName: '失控总锅炉',
     bossMaxHp: 999999,
     enemySpawnInterval: 2.0,
     enemyBurstCount: 4,
@@ -2643,7 +2626,7 @@ export function generatePayloadEscortLevel(tier = 1): LevelConfig {
       hp: Math.round(150 * hpMult),
       rewardGold: 320 + safeTier * 80,
       rewardShards: 1,
-      name: '前哨铆铁拒马',
+      name: '前哨铆铁路障',
     },
     {
       id: 'esc_bar_2',
@@ -2684,16 +2667,16 @@ export function generatePayloadEscortLevel(tier = 1): LevelConfig {
     seed: 95500 + safeTier,
     themeId,
     archetype: 'trilane_siege',
-    archetypeName: '蒸汽装甲战车护送 · 冲角破障攻坚',
+    archetypeName: '蒸汽花车护送 · 撞角破障攻坚',
     isMilestoneBoss: false,
     isMiniBoss: false,
     isMegaBoss: false,
     isPayloadEscort: true,
     escortBarricades,
     weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier - 1) % WEATHER_AFFIX_ORDER.length]],
-    name: '蒸汽装甲战车护送',
+    name: '蒸汽花车护送',
     subtitle: '波波围车充能 · 撞碎 4 道路障',
-    bossName: '黑铁终极据点',
+    bossName: '黑铁终点站',
     bossMaxHp: Math.round(680 * hpMult),
     enemySpawnInterval: 2.15,
     enemyBurstCount: 4,
@@ -2808,7 +2791,7 @@ export function generateGearTournamentLevel(stage: 1 | 2 | 3, cupTier = 1): Leve
       weatherAffix: WEATHER_AFFIX_CATALOG.ion_emp_storm,
       name: '齿轮巅峰锦标赛 · 银齿半决赛',
       subtitle: '用副武器瓦解银齿副塔与脉冲阵',
-      bossName: '银齿电磁中枢堡',
+      bossName: '银齿静电中枢堡',
       bossMaxHp: Math.round(740 * cupScale),
       enemySpawnInterval: 1.95,
       enemyBurstCount: 5,
@@ -2892,8 +2875,8 @@ export function generateGearTournamentLevel(stage: 1 | 2 | 3, cupTier = 1): Leve
       { id: 'trn3_gear_c', x: 0, z: -1.8, radius: 1.65, hp: 22, moveRangeX: 2.4, moveSpeed: 1.5, movePhase: 1.5 },
     ],
     nests: [
-      { id: 'trn3_nest_l', x: -5.6, z: -6.4, hp: 140, name: '左翼金齿禁卫巢', rewardGold: 210 },
-      { id: 'trn3_nest_r', x: 5.6, z: -6.4, hp: 140, name: '右翼金齿禁卫巢', rewardGold: 210 },
+      { id: 'trn3_nest_l', x: -5.6, z: -6.4, hp: 140, name: '左翼金齿警卫站', rewardGold: 210 },
+      { id: 'trn3_nest_r', x: 5.6, z: -6.4, hp: 140, name: '右翼金齿警卫站', rewardGold: 210 },
     ],
     barrels: [
       { id: 'trn3_br_l', x: -5.4, z: -7.6, hp: 20 },
@@ -2999,7 +2982,7 @@ export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
   const antiAirTurrets: AntiAirTurretConfig[] = [
     {
       id: 'aa_1_l',
-      name: '前哨左翼防空炮',
+      name: '前哨左翼拦截炮',
       side: 'left',
       x: -5.4,
       z: 8.4,
@@ -3011,7 +2994,7 @@ export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
     },
     {
       id: 'aa_2_r',
-      name: '中段右翼高射塔',
+      name: '中段右翼拦截塔',
       side: 'right',
       x: 5.4,
       z: 2.6,
@@ -3023,7 +3006,7 @@ export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
     },
     {
       id: 'aa_3_l',
-      name: '纵深左翼防空炮',
+      name: '纵深左翼拦截炮',
       side: 'left',
       x: -5.4,
       z: -3.4,
@@ -3035,7 +3018,7 @@ export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
     },
     {
       id: 'aa_4_r',
-      name: '要塞右翼防空塔',
+      name: '总厂右翼拦截塔',
       side: 'right',
       x: 5.4,
       z: -9.2,
@@ -3058,14 +3041,14 @@ export function generateAirshipEscortLevel(escortTier = 1): LevelConfig {
     antiAirTurrets,
     themeId,
     archetype: 'trilane_siege',
-    archetypeName: `云端飞艇母舰护航战 · 第 ${safeTier} 阶`,
+    archetypeName: `云端飞艇护航战 · 第 ${safeTier} 阶`,
     isMilestoneBoss: true,
     isMiniBoss: false,
     isMegaBoss: false,
     weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier + 1) % WEATHER_AFFIX_ORDER.length]],
-    name: `云端飞艇母舰护航战 · 第 ${safeTier} 阶`,
-    subtitle: '拔防空塔 · 充能空投 · 轰破要塞',
-    bossName: '苍穹黑铁防空要塞',
+    name: `云端飞艇护航战 · 第 ${safeTier} 阶`,
+    subtitle: '拔拦截塔 · 充能空投 · 冲破总厂',
+    bossName: '云顶黑铁总厂',
     bossMaxHp: Math.round(760 * tierScale),
     enemySpawnInterval: 2.15,
     enemyBurstCount: 4 + Math.min(3, Math.floor((safeTier - 1) / 2)),
@@ -3130,8 +3113,8 @@ export function generateCandyTrainRaidLevel(raidTier = 1): LevelConfig {
     },
     {
       id: 'train_armor_mint',
-      name: '薄荷装甲货厢',
-      shortName: '薄荷装甲',
+      name: '薄荷铁皮货厢',
+      shortName: '薄荷铁皮',
       kind: 'armored',
       hp: Math.round(4700 * tierScale),
       armor: 0.34,
@@ -3154,8 +3137,8 @@ export function generateCandyTrainRaidLevel(raidTier = 1): LevelConfig {
     },
     {
       id: 'train_armor_berry',
-      name: '草莓装甲货厢',
-      shortName: '草莓装甲',
+      name: '草莓铁皮货厢',
+      shortName: '草莓铁皮',
       kind: 'armored',
       hp: Math.round(4700 * tierScale),
       armor: 0.34,
@@ -3215,7 +3198,7 @@ export function generateCandyTrainRaidLevel(raidTier = 1): LevelConfig {
     weatherAffix: WEATHER_AFFIX_CATALOG[WEATHER_AFFIX_ORDER[(safeTier + 2) % WEATHER_AFFIX_ORDER.length]],
     name: `彩虹糖果列车突袭战 · 第 ${safeTier} 阶`,
     subtitle: '先打车头令全车停摆 · 夺金章',
-    bossName: '彩虹糖果装甲货运列车',
+    bossName: '彩虹糖果货运列车',
     bossMaxHp: candyTrainCars.reduce((sum, car) => sum + car.hp, 0),
     enemySpawnInterval: 2.6,
     enemyBurstCount: 3 + Math.min(3, Math.floor((safeTier - 1) / 3)),
@@ -3858,13 +3841,13 @@ export function generateAsteroidDashLevel(asteroidTier = 1): LevelConfig {
     asteroidBelts: belts,
     themeId: 'cyberhive',
     archetype: 'trilane_siege',
-    archetypeName: `星际陨石带护盾突围 · 第 ${safeTier} 阶`,
+    archetypeName: `星空陨石带护盾突围 · 第 ${safeTier} 阶`,
     isMilestoneBoss: false,
     isMiniBoss: false,
     isMegaBoss: false,
-    name: `星际陨石带护盾突围 · 第 ${safeTier} 阶`,
-    subtitle: '躲陨石 · 穿护盾门 · 冲进跃迁门',
-    bossName: '跃迁门',
+    name: `星空陨石带护盾突围 · 第 ${safeTier} 阶`,
+    subtitle: '躲陨石 · 穿护盾门 · 冲进星光门',
+    bossName: '星光门',
     bossMaxHp: 100,
     enemySpawnInterval: 999,
     enemyBurstCount: 0,
