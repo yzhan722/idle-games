@@ -17,7 +17,7 @@ func _ready() -> void:
 	EventBus.spawn_floating_text.connect(_on_spawn_floating_text)
 	EventBus.customer_paid.connect(_on_customer_paid)
 
-func _acquire_pooled_label(text_str: String, final_col: Color, font_size: int = 14) -> Label:
+func _acquire_pooled_label(text_str: String, final_col: Color, font_size: int = 17) -> Label:
 	var lbl: Label = null
 	while _label_pool.size() > 0 and lbl == null:
 		var cand: Label = _label_pool.pop_back()
@@ -54,7 +54,9 @@ func clear_all() -> void:
 	coin_arcs.clear()
 	queue_redraw()
 
-func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color, font_size: int = 14, rise_speed: float = 16.0) -> void:
+func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color, font_size: int = 17, rise_speed: float = 16.0) -> void:
+	if text_str.strip_edges() == "":
+		return
 	var is_gold := text_str.begins_with("+") and text_str.ends_with("G")
 	var final_col := col if is_gold else col
 	if is_gold and col == Color.WHITE:
@@ -70,10 +72,10 @@ func _on_spawn_floating_text(world_pos: Vector2, text_str: String, col: Color, f
 func _on_customer_paid(_recipe_id: String, _qty: int, total_gold: int, world_pos: Vector2) -> void:
 	var is_jackpot := total_gold >= 60
 	var is_medium := total_gold >= 25
-	var fsize := 17 if is_jackpot else (15 if is_medium else 14)
+	var fsize := 22 if is_jackpot else (19 if is_medium else 17)
 	var gcol := Color("#FFF3BF") if is_jackpot else (Color("#FFD43B") if is_medium else Color("#FFE066"))
 	var rise := 24.0 if is_jackpot else (19.0 if is_medium else 16.0)
-	var prefix := "★ +" if is_jackpot else "+"
+	var prefix := "+"
 	_on_spawn_floating_text(world_pos + Vector2(0.0, -58.0), prefix + str(total_gold) + "G", gcol, fsize, rise)
 	var burst_cnt := 7 if is_jackpot else (5 if is_medium else 3)
 	var spread := 44.0 if is_jackpot else 34.0

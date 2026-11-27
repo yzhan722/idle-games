@@ -9,7 +9,6 @@ class_name PotteryKiln
 ##   decorative duplicate apple tree (same texture width & scale), `28.06px` clear of `SoilPlot_3` -> zero re-layout.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
 ## - Kiln fire = soft glow circles at the firing mouth only (no programmatic polygons as art).
-## - 100% Godot native `Label + LabelSettings` (own `LabelSettings` copies, ZERO deprecated font, ZERO Emoji, ZERO SVG).
 
 const SLOT_X := 1437.8 # == EconomyConfig.POTTERY_KILN_SLOT_X
 const BASE_SPRITE_SCALE := 0.39 # == EconomyConfig.POTTERY_KILN_SCALE
@@ -18,8 +17,6 @@ const TARGET_VISUAL_H := 40.56 # 104.0 * 0.39
 ## Firing mouth and chimney top in texture pixels of the 112x104 art (glow & smoke follow any same-size repaint)
 const FIRE_TEX_POS := Vector2(46.0, 56.0)
 const CHIMNEY_TEX_POS := Vector2(62.0, 16.0)
-## Badge row sits above the docked airship's `★商队` badge row (world y 55..70 incl. bob) that ends right at the kiln's west edge
-const BADGE_Y := -TARGET_VISUAL_H - 46.0
 
 var island_idx: int = 3
 var tex_kiln: Texture2D
@@ -28,8 +25,6 @@ var tex_pottery_icons: Dictionary = {}
 
 var body_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
-var status_badge_label: Label
 
 var anim_time: float = 0.0
 var fire_flash_timer: float = 0.0
@@ -58,36 +53,19 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "pottery_kiln", get_kiln_level())
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(get_kiln_level()), 14, Color("#FFF4D6"), true)
-	level_label.name = "PotteryKilnLevelLabel"
-	# Own LabelSettings copy: greying this label while unbuilt must never recolour the shared `Lv.` labels
-	level_label.label_settings = level_label.label_settings.duplicate() as LabelSettings
-	level_label.position = Vector2(-30.0, 2.0)
-	level_label.custom_minimum_size = Vector2(60.0, 20.0)
-	add_child(level_label)
-
-	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_pk_init"), 13, Color("#FFD8A8"), true)
-	status_badge_label.name = "PotteryKilnBadgeLabel"
-	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
-	status_badge_label.scale = Vector2(0.74, 0.74)
-	status_badge_label.position = Vector2(-30.0, BADGE_Y)
-	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
-	status_badge_label.z_as_relative = false
-	add_child(status_badge_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 		EventBus.pottery_kiln_unlocked_changed.connect(_on_kiln_unlocked_changed)
 		EventBus.pottery_fired.connect(_on_pottery_fired)
 		EventBus.pottery_clay_dug.connect(_on_pottery_clay_dug)
 
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func setup_pottery_kiln(p_island: int = 3, p_pos: Vector2 = Vector2(SLOT_X, EconomyConfig.GROUND_Y)) -> void:
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	reload_ci12_textures()
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func reload_ci12_textures() -> void:
 	tex_kiln = EconomyConfig.load_pixel_texture(EconomyConfig.POTTERY_KILN_TEX)
@@ -150,54 +128,21 @@ func _on_upgrade_purchased(category: String, key: String, new_level: int) -> voi
 	if category == "building" and key == "pottery_kiln":
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
-		_sync_labels_and_tint()
+		_sync_tint()
 
 func _on_kiln_unlocked_changed(_unlocked: bool) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_pottery_fired(_item_id: String, _qty: int, _stock: int) -> void:
 	fire_flash_timer = 0.55
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_pottery_clay_dug(_qty: int, _stock: int) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
-func _sync_labels_and_tint() -> void:
-	if GameManager == null:
-		return
-	var built := is_kiln_built()
-	if level_label != null and level_label.label_settings != null:
-		level_label.text = ("Lv." + str(get_kiln_level())) if built else EconomyConfig.tr_key("wl_pk_unbuilt")
-		level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
-	if status_badge_label != null and status_badge_label.label_settings != null:
-		if built:
-			var rid := GameManager.active_pottery_recipe_id
-			var rcfg: Dictionary = EconomyConfig.POTTERY_ITEMS.get(rid, {})
-			var clay_cnt := GameManager.get_pottery_stock(EconomyConfig.POTTERY_CLAY_ID)
-			var st := GameManager.get_pottery_kiln_status()
-			var tail := EconomyConfig.tr_fmt("wl_seg_clay", [clay_cnt])
-			if st == "fuel":
-				tail = EconomyConfig.tr_key("wl_seg_nofuel")
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(String(rcfg.get("short_name", "茶碗"))), tail])
-			status_badge_label.label_settings.font_color = Color("#FFD8A8") if st == "ok" else Color("#FFE8A3")
-		else:
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_pk_cost", [EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD])
-			status_badge_label.label_settings.font_color = Color("#CBD5E1")
-	_center_badge()
-	if body_sprite != null:
-		body_sprite.modulate = Color.WHITE if built else Color(0.74, 0.80, 0.86, 0.72)
-
-## Keeps the badge horizontally centred over the kiln whatever its text width (a Label never shrinks on its own).
-func _center_badge() -> void:
-	if status_badge_label == null:
-		return
-	status_badge_label.size = Vector2.ZERO
-	status_badge_label.position = Vector2(-status_badge_label.size.x * status_badge_label.scale.x * 0.5, BADGE_Y)
-
-func get_badge_local_rect() -> Rect2:
-	if status_badge_label == null:
-		return Rect2()
-	return Rect2(position + status_badge_label.position, status_badge_label.size * status_badge_label.scale)
+func _sync_tint() -> void:
+	if body_sprite != null and GameManager != null:
+		body_sprite.modulate = Color.WHITE if is_kiln_built() else Color(0.74, 0.80, 0.86, 0.72)
 
 func _process(delta: float) -> void:
 	var isl_open := GameManager != null and bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -209,7 +154,7 @@ func _process(delta: float) -> void:
 		fire_flash_timer = maxf(0.0, fire_flash_timer - delta)
 	if body_sprite != null:
 		body_sprite.scale = base_scale_vec
-	_sync_labels_and_tint()
+	_sync_tint()
 	queue_redraw()
 
 func _draw() -> void:
@@ -235,6 +180,9 @@ func _draw() -> void:
 		draw_rect(Rect2(roundf(mx), roundf(my), 2.5, 2.5), Color(0.94, 0.92, 0.88, (1.0 - phase) * 0.45), true)
 
 	# Firing-cycle progress bar + the active ware icon (tea bowl / vase)
+	# the bar and its icon only show while the mouse is on the building
+	if EconomyConfig.hovered_building != "pottery_kiln":
+		return
 	var prog := GameManager.get_pottery_cycle_ratio()
 	var bar_w := 30.0
 	var bar_h := 4.5

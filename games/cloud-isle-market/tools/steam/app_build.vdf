@@ -1,0 +1,21 @@
+// steamcmd +login <account> +run_app_build <this file> +quit
+// AppID / DepotID are placeholders: fill them in once the app exists on Steamworks.
+"AppBuild"
+{
+	"AppID" "0"
+	"Desc" "Cloud Isle Market"
+	"Preview" "1"
+	"ContentRoot" "../../build/"
+	"BuildOutput" "../../build/steam_output/"
+	"Depots"
+	{
+		"0"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "CloudIsleMarket.exe"
+				"DepotPath" "."
+			}
+		}
+	}
+}

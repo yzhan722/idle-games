@@ -3,13 +3,16 @@ extends Node
 
 const SAVE_PATH := "user://savegame.json"
 const SELFTEST_SAVE_PATH := "user://savegame_selftest.json"
-const SAVE_VERSION := 24
+const SAVE_VERSION := 25
+const START_GOLD := Pacing.START_GOLD
 
 var active_save_path: String = SAVE_PATH
 var is_automated_test_mode: bool = false
 
-var gold: int = 120
-var total_gold_earned: int = 120
+var gold: int = START_GOLD
+var total_gold_earned: int = START_GOLD
+## Income earned but not paid yet; customers pay it out (`collect_from_till`)
+var till_gold: float = 0.0
 var desktop_companion_mode: bool = true
 
 var unlocked_islands: Dictionary = {
@@ -61,13 +64,13 @@ var raw_baskets: Dictionary = {
 var workshop_inputs: Dictionary = {
 	"mortar": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
 	"cauldron": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
-	"orbis_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+	"coral_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
 }
 
 var workshop_outputs: Dictionary = {
 	"mortar": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
 	"cauldron": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
-	"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
+	"coral_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
 }
 
 var stall_inventory: Dictionary = {
@@ -91,17 +94,15 @@ enum WeatherState { DAY = 0, DUSK = 1, NIGHT = 2, RAIN = 3 }
 const GOURMET_ACCLAIM_DURATION: float = 36.0
 const GOURMET_PRICE_BONUS_MULT: float = 1.25
 const GOURMET_TIP_BONUS_MULT: float = 1.20
-const LANTERN_FESTIVAL_DURATION: float = 42.0
 
 var current_weather: int = WeatherState.DAY
 var weather_timer: float = 0.0
 var frenzy_timer: float = 0.0
 var gourmet_acclaim_timer: float = 0.0
-var lantern_festival_timer: float = 0.0
 
 ## v2.4-4: Pomodoro Focus Timer Companion (25min / 1500s) & Gift Box Reward
 const POMODORO_DURATION: float = 1500.0
-const POMODORO_REWARD_GOLD: int = 500
+const POMODORO_REWARD_SEC: float = 120.0
 const POMODORO_FRENZY_DURATION: float = 30.0
 
 var pomodoro_active: bool = false
@@ -126,12 +127,10 @@ var total_amber_earned: int = 0
 var active_contract: Dictionary = {}
 
 ## CI-4: 24 Solar Terms Specialty Dishes (`二十四节气限定美食`), Rare Codex Vouchers & Floating Airship Bulk Orders
-const SOLAR_TERM_ROTATE_INTERVAL: float = 36.0
-const AIRSHIP_DOCK_DURATION: float = 75.0
-const AIRSHIP_VOYAGE_COOLDOWN: float = 28.0
+const AIRSHIP_DOCK_DURATION: float = Pacing.AIRSHIP_DOCK_SEC
+const AIRSHIP_VOYAGE_COOLDOWN: float = Pacing.AIRSHIP_AWAY_SEC
 
 var current_solar_term_idx: int = 3 # Default: 春分 (`solar_dish_spring`)
-var solar_term_timer: float = 0.0
 var unlocked_solar_dishes: Dictionary = {
 	"solar_dish_spring": true,
 	"solar_dish_summer": false,
@@ -196,14 +195,12 @@ var hotspring_reputation_bonus: int = 0
 var hotspring_guests_served: int = 0
 
 ## CI-7: Cloud Windmill Bakery (`云端风车烘焙面坊`) & Cloud-Sea Gourmet Parade Float Festival (`云海美食花车巡游节`)
-const GOURMET_PARADE_DURATION: float = 38.0
-const GOURMET_PARADE_COOLDOWN: float = 68.0
+const GOURMET_PARADE_DURATION: float = Pacing.FESTIVAL_SEC
 var windmill_unlocked: bool = false
 var active_windmill_bread_id: String = "bread_cloud_souffle"
 var windmill_bake_timer: float = 0.0
 var windmill_aroma_timer: float = 0.0
 var parade_festival_timer: float = 0.0
-var parade_cooldown_timer: float = 48.0
 var bakery_craft_counts: Dictionary = {
 	"flour_golden_wheat": 0,
 	"bread_cloud_souffle": 0,
@@ -223,14 +220,12 @@ var bakery_reputation_bonus: int = 0
 var parade_tourists_served: int = 0
 
 ## CI-8: Cloud Tea Pavilion (`云端茗香制茶坊`) & Lotus Pond Moon-Boat Tea Gathering (`月色画舫品茗雅集`)
-const MOON_TEA_GATHERING_DURATION: float = 40.0
-const MOON_TEA_GATHERING_COOLDOWN: float = 64.0
+const MOON_TEA_GATHERING_DURATION: float = Pacing.FESTIVAL_SEC
 var tea_pavilion_unlocked: bool = false
 var active_tea_recipe_id: String = "tea_cloud_longjing"
 var tea_brew_timer: float = 0.0
 var tea_aura_timer: float = 0.0
 var moon_tea_gathering_timer: float = 0.0
-var moon_tea_cooldown_timer: float = 44.0
 var tea_craft_counts: Dictionary = {
 	"tea_spring_leaves": 0,
 	"tea_cloud_longjing": 0,
@@ -249,14 +244,17 @@ var unlocked_tea_items: Dictionary = {
 var tea_reputation_bonus: int = 0
 var tea_connoisseurs_served: int = 0
 var moon_tea_boat_claims: int = 0
+## The boat pays once per gathering
+var moon_tea_boat_claimed: bool = false
 
 ## CI-9: Cloud-Sea Star Lantern Wish Festival (`云海星灯祈愿水灯节`) & Mountain-Sea Master Chef Tasting Pavilion (`山海特级食神品鉴席`)
-const WISH_LANTERN_FESTIVAL_DURATION: float = 45.0
-const WISH_LANTERN_FESTIVAL_COOLDOWN: float = 72.0
+const WISH_LANTERN_FESTIVAL_DURATION: float = Pacing.FESTIVAL_SEC
 const WISH_LANTERN_WISH_BONUS_EVERY: int = 3
 var wish_lantern_festival_timer: float = 0.0
-var wish_lantern_cooldown_timer: float = 60.0
 var wish_lanterns_collected: int = 0
+## Lanterns scooped up and encore tastings held during the running festival
+var lanterns_this_festival: int = 0
+var lantern_encores: int = 0
 var wish_lantern_reputation_bonus: int = 0
 var chef_pavilion_unlocked: bool = false
 var active_tasting_dish_id: String = "dish_cloud_dumplings"
@@ -290,7 +288,7 @@ var chef_medals: int = 0
 var chef_reputation_bonus: int = 0
 var tastings_held: int = 0
 
-## CI-10: Cloud-Sea Lighthouse Fishing Harbor (`云海灯塔渔港`) & Islander Specialty Market Auction (`岛民名物集市拍卖会`)
+## CI-10: Cloud-Sea Lighthouse Fishing Harbor (`云海灯塔渔港`)
 var lighthouse_harbor_unlocked: bool = false
 var harbor_clock: float = 0.0
 ## Completed round trips already unloaded per boat (`floor((clock + offset) / period)` at the last unload)
@@ -299,36 +297,6 @@ var harbor_seafood_inventory: Dictionary = {"seafood_catch": 0}
 var seafood_landed_total: int = 0
 var harbor_trips_total: int = 0
 var harbor_reputation_bonus: int = 0
-var island_auction_active: bool = false
-var auction_lot_index: int = 0
-var auction_lot_timer: float = 0.0
-var auction_lot_elapsed: float = 0.0
-var auction_ai_ticks_done: int = 0
-var auction_start_bid: int = 0
-var auction_increment: int = 1
-var auction_high_bid: int = 0
-var auction_high_bidder: String = ""
-var auction_ai_caps: Array = []
-var auction_player_bids: int = 0
-var auction_ai_bids: int = 0
-var auction_round_results: Array = []
-var auction_round_player_wins: int = 0
-var auction_cooldown_timer: float = 40.0
-var auction_buff_timer: float = 0.0
-var auctions_held: int = 0
-var auction_lots_won: Dictionary = {
-	"lot_coral_pearl_box": false,
-	"lot_cloudsea_seafood_basket": false,
-	"lot_three_isle_souvenir": false
-}
-var auction_collectibles: Dictionary = {
-	"lot_coral_pearl_box": 0,
-	"lot_cloudsea_seafood_basket": 0,
-	"lot_three_isle_souvenir": 0
-}
-var auction_gavel_medals: int = 0
-var auction_reputation_bonus: int = 0
-var auction_last_result: Dictionary = {}
 
 ## CI-11: Cloud Ranch Dairy Workshop (`云端牧场乳品工坊`) & Starry Night-Market Open-Air Cinema (`星空夜市露天电影院`)
 var dairy_workshop_unlocked: bool = false
@@ -344,6 +312,7 @@ var open_air_cinema_unlocked: bool = false
 var cinema_night_on: bool = false
 var cinema_night_clock: float = 0.0
 var cinema_screenings_tonight: int = 0
+var cinema_snacks_tonight: int = 0
 var cinema_last_started_idx: int = -1
 var cinema_film_screen_counts: Dictionary = {"film_moon_rabbit_post": 0, "film_cloud_whale": 0, "film_lighthouse_lights": 0}
 var unlocked_films: Dictionary = {"film_moon_rabbit_post": false, "film_cloud_whale": false, "film_lighthouse_lights": false}
@@ -356,7 +325,7 @@ var cinema_snack_gold_total: int = 0
 var cinema_reputation_bonus: int = 0
 var cinema_last_result: Dictionary = {}
 
-## CI-12: Cloud Pottery Kiln Workshop (`云端陶艺窑坊`) & Islander Autumn Sports Day (`岛民秋季运动会`)
+## CI-12: Cloud Pottery Kiln Workshop (`云端陶艺窑坊`)
 var pottery_kiln_unlocked: bool = false
 var active_pottery_recipe_id: String = "pottery_tea_bowl"
 var pottery_kiln_timer: float = 0.0
@@ -367,29 +336,11 @@ var pottery_fuel_consumed: int = 0
 var pottery_clay_dug_total: int = 0
 var pottery_packed_in_boxes: int = 0
 var pottery_reputation_bonus: int = 0
-## Sports day clock (seconds since the opening ceremony); an unfinished sports day is never persisted
-var sports_day_active: bool = false
-var sports_day_clock: float = 0.0
-var sports_cooldown_timer: float = 75.0
-var sports_teams: Array[String] = []
-var sports_event_results: Array = []
-var sports_points: Dictionary = {}
-var sports_last_started_idx: int = -1
-var sports_medals: int = 0
-var sports_days_held: int = 0
-var sports_events_held_total: int = 0
-var unlocked_sports_events: Dictionary = {"sports_relay": false, "sports_tug_of_war": false, "sports_harvest_carry": false}
-var sports_champion_counts: Dictionary = {"bunny": 0, "otter": 0, "fox": 0, "shiba": 0}
-var sports_prize_gold_total: int = 0
-var sports_reputation_bonus: int = 0
-var sports_last_result: Dictionary = {}
-var sports_last_champion: String = ""
 
 ## CI-13: Cloud-Sea Kite Festival (`云海风筝节`) & Island Four-Season Dress-Up (`岛屿四季装扮`) — no new building
 ## A festival in flight is never persisted (it restarts on its cooldown); its clock is the only time source of the kites.
 var kite_festival_active: bool = false
 var kite_festival_clock: float = 0.0
-var kite_cooldown_timer: float = 100.0
 var kite_festivals_held: int = 0
 var kite_festival_idx: int = 0
 var kite_collected_slots: Array[int] = []
@@ -407,36 +358,6 @@ var current_season_id: String = ""
 var season_refresh_timer: float = 0.0
 var seasons_seen: Dictionary = {"spring": false, "summer": false, "autumn": false, "winter": false}
 
-## CI-14: Cloud-Isle Photo Tour (`云岛观光摄影打卡`) & Islander Wish Board (`岛民心愿委托告示板`) — no new building
-## A tour in progress is never persisted (it restarts on its cooldown). The sightseer is a deterministic state machine driven
-## only by the game clock: walk (34px/s) -> pose 3.2s at each open spot (shutter at 1.4s) -> walk on -> exit.
-var photo_tour_active: bool = false
-var photo_tour_clock: float = 0.0
-var photo_tour_cooldown_timer: float = 70.0
-var photo_tours_held: int = 0
-var photo_tour_idx: int = 0
-var photo_tour_route: Array[String] = []
-var photo_tour_stop_idx: int = 0
-var photo_tour_phase: String = ""
-var photo_tour_x: float = 0.0
-var photo_tour_entry_x: float = 0.0
-var photo_tour_target_x: float = 0.0
-var photo_tour_facing: float = 1.0
-var photo_tour_pose_timer: float = 0.0
-var photo_tour_shutter_done: bool = false
-var photo_tour_photos: Array[String] = []
-var photo_tour_skipped: Array[String] = []
-var photo_tour_last_shot: Dictionary = {}
-var photo_tour_last_shot_age: float = 99.0
-## Set every frame by MainWorld while the night cinema screen stands on the east cape (it also fades out after dawn)
-var photo_cape_prop_blocked: bool = false
-var unlocked_photos: Dictionary = {}
-var photo_counts: Dictionary = {}
-var photos_taken_total: int = 0
-var photo_gold_total: int = 0
-var photo_reputation_bonus: int = 0
-var photo_stamps: int = 0
-var photo_last_result: Dictionary = {}
 ## Wish board: `WISH_SLOT_COUNT` notes, each {serial, islander, type, tier, target, progress, time_left, rep, vouchers, state, linger}
 var wish_board: Array[Dictionary] = []
 var wish_serial_next: int = 0
@@ -448,7 +369,7 @@ var wish_medals: int = 0
 var wish_last_result: Dictionary = {}
 ## Self-test isolation only (never saved): while true the tour and the wish board neither tick nor react to economy events,
 ## so the earlier economy assertions keep their exact voucher / gold deltas. Gameplay never sets it.
-var photo_wish_paused: bool = false
+var wish_paused: bool = false
 
 ## CI-15: Cloud-Sea Weather Rotation (`云海天气轮换`) & Islander Birthday Party (`岛民生日会`) — no new building
 ## Both follow the island calendar = the injectable `season_clock` (CI-13): the weather is a pure function of the local
@@ -533,12 +454,13 @@ func _ready() -> void:
 		generate_next_airship_order()
 	_sync_codex_from_progression()
 	evaluate_achievements()
+	_sync_steam_achievements()
 	# CI-12: every soil-plot harvest turns up island clay for the pottery kiln
 	if EventBus != null and not EventBus.item_produced.is_connected(_on_item_produced_for_kiln):
 		EventBus.item_produced.connect(_on_item_produced_for_kiln)
 	# CI-13: the island dress-up follows the local calendar month (northern-hemisphere seasons)
 	refresh_season()
-	# CI-14: the islanders' wish notes count real production / sales / photo events
+	# CI-14: the islanders' wish notes count real production and sales
 	_connect_wish_board_signals()
 	if wish_board.is_empty():
 		_fill_wish_board()
@@ -549,16 +471,31 @@ func _ready() -> void:
 		if not friendship_points.has(isl_b):
 			friendship_points[isl_b] = 0
 	refresh_island_calendar()
+	replace_impossible_orders()
+
+## Achievements earned while Steam was away are handed over on the next start
+func _sync_steam_achievements() -> void:
+	if SteamBridge == null or not SteamBridge.steam_initialized:
+		return
+	for k in unlocked_achievements.keys():
+		if bool(unlocked_achievements[k]):
+			SteamBridge.set_achievement(String(k))
 
 func reset_for_playtest_state() -> void:
-	gold = 120
-	total_gold_earned = 120
+	reset_guest_state()
+	gold = START_GOLD
+	total_gold_earned = START_GOLD
+	till_gold = 0.0
+	balloon_timer = BALLOON_FIRST_SEC
+	lanterns_this_festival = 0
+	lantern_encores = 0
+	festival_gap_timer = Pacing.FESTIVAL_FIRST_SEC
+	festival_turn = 0
 	desktop_companion_mode = true
 	amber = 0
 	total_amber_earned = 0
 	active_contract.clear()
 	current_solar_term_idx = 3
-	solar_term_timer = 0.0
 	unlocked_solar_dishes = {
 		"solar_dish_spring": true,
 		"solar_dish_summer": false,
@@ -622,7 +559,6 @@ func reset_for_playtest_state() -> void:
 	windmill_bake_timer = 0.0
 	windmill_aroma_timer = 0.0
 	parade_festival_timer = 0.0
-	parade_cooldown_timer = 48.0
 	bakery_craft_counts = {
 		"flour_golden_wheat": 0,
 		"bread_cloud_souffle": 0,
@@ -645,7 +581,6 @@ func reset_for_playtest_state() -> void:
 	tea_brew_timer = 0.0
 	tea_aura_timer = 0.0
 	moon_tea_gathering_timer = 0.0
-	moon_tea_cooldown_timer = 44.0
 	tea_craft_counts = {
 		"tea_spring_leaves": 0,
 		"tea_cloud_longjing": 0,
@@ -665,7 +600,6 @@ func reset_for_playtest_state() -> void:
 	tea_connoisseurs_served = 0
 	moon_tea_boat_claims = 0
 	wish_lantern_festival_timer = 0.0
-	wish_lantern_cooldown_timer = 60.0
 	wish_lanterns_collected = 0
 	wish_lantern_reputation_bonus = 0
 	chef_pavilion_unlocked = false
@@ -680,11 +614,11 @@ func reset_for_playtest_state() -> void:
 	chef_medals = 0
 	chef_reputation_bonus = 0
 	tastings_held = 0
-	_reset_harbor_and_auction_state()
+	_reset_harbor_state()
 	_reset_dairy_and_cinema_state()
-	_reset_pottery_and_sports_state()
+	_reset_pottery_state()
 	_reset_kite_and_season_state()
-	_reset_photo_and_wish_state()
+	_reset_wish_state()
 	_reset_sky_weather_and_birthday_state()
 	_reset_food_week_and_friendship_state()
 	unlocked_landscapes = {
@@ -692,8 +626,6 @@ func reset_for_playtest_state() -> void:
 		"wind_chime": false,
 		"tiki_torch": false
 	}
-	generate_next_contract()
-	generate_next_airship_order()
 	unlocked_islands = {1: true, 2: false, 3: false}
 	building_levels = {"soil_1": 1, "mortar": 1, "tea_pavilion": 1, "chef_pavilion": 1, "stall": 1, "soil_2": 1, "cauldron": 1, "greenhouse": 1, "soil_3": 1, "hotspring": 1, "lighthouse_harbor": 1, "windmill": 1, "dairy_workshop": 1, "pottery_kiln": 1}
 	animal_levels = {"bunny": 1, "otter": 0, "fox": 0, "shiba": 0, "penguin": 0, "toucan": 0}
@@ -710,12 +642,12 @@ func reset_for_playtest_state() -> void:
 	workshop_inputs = {
 		"mortar": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
 		"cauldron": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0},
-		"orbis_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
+		"coral_linked": {"crop_0": 0, "crop_1": 0, "crop_2": 0, "crop_3": 0}
 	}
 	workshop_outputs = {
 		"mortar": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
 		"cauldron": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0},
-		"orbis_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
+		"coral_linked": {"delicacy_0": 0, "delicacy_1": 0, "delicacy_2": 0, "delicacy_3": 0}
 	}
 	stall_inventory = {
 		"crop_0": 3, "crop_1": 0, "crop_2": 0, "crop_3": 0,
@@ -725,6 +657,8 @@ func reset_for_playtest_state() -> void:
 		"crop_0": true, "crop_1": false, "crop_2": false, "crop_3": false,
 		"delicacy_0": false, "delicacy_1": false, "delicacy_2": false, "delicacy_3": false
 	}
+	generate_next_contract()
+	generate_next_airship_order()
 	pending_offline_seconds = 0
 	pending_offline_gold = 0
 	last_offline_report = {}
@@ -732,27 +666,47 @@ func reset_for_playtest_state() -> void:
 	pomodoro_time_remaining = 0.0
 	pomodoro_completed_count = 0
 	gourmet_acclaim_timer = 0.0
-	lantern_festival_timer = 0.0
 	unlocked_achievements = {}
 	career_stats = {"harvests": 0, "crafts": 0, "customers": 0, "contracts": 0}
 	_sync_codex_from_progression()
 	evaluate_achievements()
 
+var _wall_prev: float = 0.0
+
+## The window is closing: keep the last seconds too
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and not is_automated_test_mode:
+		save_game()
+
+func quit_game() -> void:
+	save_game()
+	get_tree().quit()
+
+## The computer slept while the game was open: the gap pays like time away
+func _check_sleep_gap() -> bool:
+	var wall := Time.get_unix_time_from_system()
+	var gap := wall - _wall_prev
+	var slept := _wall_prev > 0.0 and gap > Pacing.SLEEP_GAP_SEC
+	_wall_prev = wall
+	if slept:
+		if guests_while_away(gap) > 0:
+			EventBus.guests_waiting.emit()
+		calculate_and_apply_offline_earnings(int(minf(gap, 86400.0)))
+	return slept
+
 func _process(delta: float) -> void:
+	if not is_automated_test_mode and _check_sleep_gap():
+		delta = minf(delta, 1.0)
 	save_timer += delta
 	if save_timer >= 15.0:
 		save_timer = 0.0
 		save_game()
 
+	accrue_till(delta)
 	if frenzy_timer > 0.0:
 		frenzy_timer = maxf(0.0, frenzy_timer - delta)
 	if gourmet_acclaim_timer > 0.0:
 		gourmet_acclaim_timer = maxf(0.0, gourmet_acclaim_timer - delta)
-	if lantern_festival_timer > 0.0:
-		if current_weather != WeatherState.NIGHT:
-			lantern_festival_timer = 0.0
-		else:
-			lantern_festival_timer = maxf(0.0, lantern_festival_timer - delta)
 
 	if pomodoro_active:
 		pomodoro_time_remaining -= delta
@@ -760,14 +714,9 @@ func _process(delta: float) -> void:
 			complete_pomodoro()
 
 	weather_timer += delta
-	if weather_timer >= 42.0:
+	if weather_timer >= Pacing.DAY_PHASE_SEC:
 		weather_timer = 0.0
 		set_weather((current_weather + 1) % 4)
-
-	solar_term_timer += delta
-	if solar_term_timer >= SOLAR_TERM_ROTATE_INTERVAL:
-		solar_term_timer = 0.0
-		advance_solar_term()
 
 	airship_timer -= delta
 	if airship_timer <= 0.0:
@@ -792,10 +741,6 @@ func _process(delta: float) -> void:
 		parade_festival_timer = maxf(0.0, parade_festival_timer - delta)
 	if windmill_unlocked and bool(unlocked_islands.get(2, false)):
 		_tick_windmill_bakery(delta)
-		if parade_festival_timer <= 0.0:
-			parade_cooldown_timer -= delta
-			if parade_cooldown_timer <= 0.0 and get_total_bread_stock_count() > 0:
-				start_gourmet_parade_festival(GOURMET_PARADE_DURATION)
 
 	if tea_aura_timer > 0.0:
 		tea_aura_timer = maxf(0.0, tea_aura_timer - delta)
@@ -803,96 +748,116 @@ func _process(delta: float) -> void:
 		moon_tea_gathering_timer = maxf(0.0, moon_tea_gathering_timer - delta)
 	if tea_pavilion_unlocked and bool(unlocked_islands.get(1, true)):
 		_tick_tea_pavilion(delta)
-		if moon_tea_gathering_timer <= 0.0:
-			moon_tea_cooldown_timer -= delta
-			if moon_tea_cooldown_timer <= 0.0 and get_total_brewed_tea_stock_count() > 0:
-				start_moon_tea_gathering(MOON_TEA_GATHERING_DURATION)
 
 	if wish_lantern_festival_timer > 0.0:
 		wish_lantern_festival_timer = maxf(0.0, wish_lantern_festival_timer - delta)
-	elif chef_pavilion_unlocked or bool(unlocked_islands.get(3, false)):
-		# Mid-game: the Star Lantern Wish Festival returns periodically once the Chef Pavilion is built or Island 3 (coast) is open
-		wish_lantern_cooldown_timer -= delta
-		if wish_lantern_cooldown_timer <= 0.0:
-			start_wish_lantern_festival(WISH_LANTERN_FESTIVAL_DURATION)
 	if chef_pavilion_unlocked and bool(unlocked_islands.get(2, false)):
 		_tick_chef_pavilion(delta)
 
-	if auction_buff_timer > 0.0:
-		auction_buff_timer = maxf(0.0, auction_buff_timer - delta)
 	if lighthouse_harbor_unlocked and bool(unlocked_islands.get(3, false)):
 		advance_harbor(delta)
-		if island_auction_active:
-			advance_island_auction(delta)
-		else:
-			auction_cooldown_timer -= delta
-			if auction_cooldown_timer <= 0.0:
-				start_island_auction()
 
 	if dairy_workshop_unlocked and bool(unlocked_islands.get(1, true)):
 		_tick_dairy_workshop(delta)
 	if open_air_cinema_unlocked:
-		advance_cinema(delta)
+		advance_cinema(delta * Pacing.CINEMA_PACE)
 
-	# CI-12: the pottery kiln fires on Island 3; the autumn sports day returns on its own cooldown once 2+ teams exist
+	# CI-12: the pottery kiln fires on Island 3
 	if pottery_kiln_unlocked and bool(unlocked_islands.get(3, false)):
 		_tick_pottery_kiln(delta)
-	if sports_day_active:
-		advance_sports_day(delta)
-	elif get_sports_eligible_teams().size() >= EconomyConfig.SPORTS_MIN_TEAMS:
-		sports_cooldown_timer -= delta
-		if sports_cooldown_timer <= 0.0:
-			start_sports_day()
 
-	# CI-13: the kite festival returns on its own cooldown; the season follows the local calendar month
+	# CI-13: kites in the air; the season follows the local calendar month
 	if kite_festival_active:
-		advance_kite_festival(delta)
-	else:
-		kite_cooldown_timer -= delta
-		if kite_cooldown_timer <= 0.0:
-			start_kite_festival()
+		advance_kite_festival(delta * Pacing.KITE_PACE)
+	_tick_festivals(delta)
+	_tick_guests(delta)
 	season_refresh_timer += delta
 	if season_refresh_timer >= EconomyConfig.SEASON_REFRESH_SEC:
 		season_refresh_timer = 0.0
 		refresh_season()
 
-	# CI-14: the photo tour returns on its own cooldown; the islanders' wish notes tick on the board
-	if not photo_wish_paused:
-		if photo_tour_active:
-			advance_photo_tour(delta)
-		else:
-			photo_tour_cooldown_timer -= delta
-			if photo_tour_cooldown_timer <= 0.0 and not start_photo_tour():
-				photo_tour_cooldown_timer = EconomyConfig.PHOTO_TOUR_RETRY_SEC
+	# CI-14: the islanders' wish notes tick on the board
+	if not wish_paused:
 		advance_wish_board(delta)
 
-	# CI-15: the cloud-sea weather turns every 20 local minutes; the birthday follows the local date
+	# CI-15: the cloud-sea weather turns every three local hours; the birthday follows the local date
 	if not sky_weather_paused:
 		sky_weather_refresh_timer += delta
 		if sky_weather_refresh_timer >= EconomyConfig.SKY_WEATHER_REFRESH_SEC:
 			sky_weather_refresh_timer = 0.0
 			refresh_island_calendar()
 
+## ------------------------------------------------------------------------------------------------------------------
+## Festivals: four of them, never two at once, `Pacing.FESTIVAL_GAP_SEC` apart (time away counts too)
+## ------------------------------------------------------------------------------------------------------------------
+var festival_gap_timer: float = Pacing.FESTIVAL_FIRST_SEC
+const BALLOON_FIRST_SEC := 300.0
+## Seconds until the next balloon (kept in the save, so a restart does not call one)
+var balloon_timer: float = BALLOON_FIRST_SEC
+var festival_turn: int = 0
+
+func is_festival_unlocked(key: String) -> bool:
+	match key:
+		"kite": return bool(unlocked_islands.get(2, false))
+		"moon_tea": return tea_pavilion_unlocked
+		"parade": return windmill_unlocked
+		"lantern": return bool(unlocked_islands.get(3, false))
+	return false
+
+func is_festival_active(key: String) -> bool:
+	match key:
+		"kite": return kite_festival_active
+		"moon_tea": return is_moon_tea_gathering_active()
+		"parade": return is_gourmet_parade_active()
+		"lantern": return is_wish_lantern_festival_active()
+	return false
+
+func get_active_festival() -> String:
+	for k in Pacing.FESTIVAL_ORDER:
+		if is_festival_active(k):
+			return k
+	return ""
+
+func is_festival_ready() -> bool:
+	return get_active_festival() == "" and festival_gap_timer <= 0.0
+
+func get_seconds_to_festival() -> float:
+	return maxf(0.0, festival_gap_timer)
+
+## The next festival in turn among the unlocked ones ("" before Island 2)
+func get_next_festival() -> String:
+	for i in range(Pacing.FESTIVAL_ORDER.size()):
+		var k: String = Pacing.FESTIVAL_ORDER[(festival_turn + i) % Pacing.FESTIVAL_ORDER.size()]
+		if is_festival_unlocked(k):
+			return k
+	return ""
+
+func try_start_festival(key: String) -> bool:
+	if not is_festival_unlocked(key) or not is_festival_ready():
+		return false
+	var ok := false
+	match key:
+		"kite": ok = start_kite_festival()
+		"moon_tea": ok = start_moon_tea_gathering()
+		"parade": ok = start_gourmet_parade_festival()
+		"lantern": ok = start_wish_lantern_festival()
+	if ok:
+		festival_gap_timer = Pacing.FESTIVAL_GAP_SEC
+		festival_turn = Pacing.FESTIVAL_ORDER.find(key) + 1
+	return ok
+
+func _tick_festivals(delta: float) -> void:
+	if get_active_festival() != "" or get_next_festival() == "":
+		return
+	festival_gap_timer -= delta
+	if festival_gap_timer <= -Pacing.FESTIVAL_AUTO_SEC:
+		try_start_festival(get_next_festival())
+
 func set_weather(next_weather: int) -> void:
 	current_weather = clampi(next_weather, 0, 3)
-	if current_weather == WeatherState.NIGHT:
-		if lantern_festival_timer <= 0.0 and randf() < 0.68:
-			start_lantern_festival(LANTERN_FESTIVAL_DURATION)
-	else:
-		lantern_festival_timer = 0.0
-	if SoundManager != null and SoundManager.has_method("crossfade_to_ambient"):
-		SoundManager.crossfade_to_ambient(current_weather)
+	if SoundManager != null:
+		SoundManager.sync_ambient_to_phase(current_weather)
 	EventBus.weather_changed.emit(current_weather)
-
-func start_lantern_festival(duration: float = LANTERN_FESTIVAL_DURATION) -> void:
-	if current_weather != WeatherState.NIGHT:
-		current_weather = WeatherState.NIGHT
-		EventBus.weather_changed.emit(current_weather)
-	lantern_festival_timer = maxf(lantern_festival_timer, duration)
-	EventBus.lantern_festival_started.emit(lantern_festival_timer)
-
-func is_lantern_festival_active() -> bool:
-	return current_weather == WeatherState.NIGHT and lantern_festival_timer > 0.0
 
 func trigger_gourmet_acclaim(duration: float = GOURMET_ACCLAIM_DURATION) -> void:
 	gourmet_acclaim_timer = maxf(gourmet_acclaim_timer, duration)
@@ -913,44 +878,9 @@ func get_weather_crop_growth_multiplier() -> float:
 
 func get_weather_vip_chance() -> float:
 	var base_c := 0.36 if (current_weather == WeatherState.DUSK or current_weather == WeatherState.NIGHT) else 0.18
-	if is_lantern_festival_active():
-		base_c = maxf(base_c, 0.58)
 	if frenzy_timer > 0.0:
 		base_c = maxf(base_c, 0.50)
 	return base_c
-
-func get_weather_status_text() -> String:
-	if frenzy_timer > 0.0:
-		return "★嘉年华加速(" + str(int(ceili(frenzy_timer))) + "s)"
-	if island_auction_active:
-		return "★名物拍卖会(" + str(auction_lot_index + 1) + "/" + str(EconomyConfig.AUCTION_LOT_ORDER.size()) + ")"
-	if sports_day_active:
-		var sp_k := get_sports_focus_event_index()
-		return "★秋季运动会(" + str(maxi(0, sp_k) + 1) + "/" + str(EconomyConfig.SPORTS_EVENT_ORDER.size()) + ")"
-	if kite_festival_active:
-		return "★风筝节·" + get_kite_wind_name() + "(" + str(maxi(1, int(ceili(get_kite_seconds_left())))) + "s)"
-	if is_cinema_screening_active():
-		return "★露天电影(" + str(get_cinema_slot_index() + 1) + "/" + str(EconomyConfig.CINEMA_FILM_ORDER.size()) + ")"
-	if is_wish_lantern_festival_active():
-		return "★星灯水灯节(" + str(int(ceili(wish_lantern_festival_timer))) + "s)"
-	if is_moon_tea_gathering_active():
-		return "★画舫茶会(" + str(int(ceili(moon_tea_gathering_timer))) + "s)"
-	if is_gourmet_parade_active():
-		return "★花车巡游(" + str(int(ceili(parade_festival_timer))) + "s)"
-	if is_lantern_festival_active():
-		return "★花火灯会(" + str(int(ceili(lantern_festival_timer))) + "s)"
-	if gourmet_acclaim_timer > 0.0:
-		return "★金牌口碑(" + str(int(ceili(gourmet_acclaim_timer))) + "s)"
-	match current_weather:
-		WeatherState.DAY:
-			return "晴昼·常速"
-		WeatherState.DUSK:
-			return "黄昏·富豪2x"
-		WeatherState.NIGHT:
-			return "夜市·富豪2x"
-		WeatherState.RAIN:
-			return "微雨·农田+35%"
-	return "晴昼·常速"
 
 func trigger_carnival_frenzy(duration: float = 20.0) -> void:
 	frenzy_timer = maxf(frenzy_timer, duration)
@@ -978,22 +908,17 @@ func complete_pomodoro() -> Dictionary:
 	pomodoro_active = false
 	pomodoro_time_remaining = 0.0
 	pomodoro_completed_count += 1
-	add_gold(POMODORO_REWARD_GOLD)
+	var reward := income_gold(POMODORO_REWARD_SEC, 60)
+	add_gold(reward)
 	trigger_carnival_frenzy(POMODORO_FRENZY_DURATION)
 	var report := {
-		"gold": POMODORO_REWARD_GOLD,
+		"gold": reward,
 		"frenzy_sec": POMODORO_FRENZY_DURATION,
 		"completed_count": pomodoro_completed_count
 	}
-	EventBus.pomodoro_completed.emit(POMODORO_REWARD_GOLD, POMODORO_FRENZY_DURATION)
+	EventBus.pomodoro_completed.emit(reward, POMODORO_FRENZY_DURATION)
 	save_game()
 	return report
-
-func fast_forward_pomodoro(seconds: float) -> void:
-	if pomodoro_active:
-		pomodoro_time_remaining -= seconds
-		if pomodoro_time_remaining <= 0.0:
-			complete_pomodoro()
 
 func get_pomodoro_formatted_time() -> String:
 	var total_sec := int(ceilf(pomodoro_time_remaining)) if pomodoro_active else int(POMODORO_DURATION)
@@ -1039,13 +964,17 @@ func get_unlocked_solar_dish_count() -> int:
 
 func set_solar_term(term_idx: int) -> Dictionary:
 	current_solar_term_idx = posmod(term_idx, maxi(1, EconomyConfig.SOLAR_TERMS.size()))
-	solar_term_timer = 0.0
 	var info := get_current_solar_term()
 	EventBus.solar_term_changed.emit(current_solar_term_idx, String(info.get("name", "春分")), String(info.get("dish_id", "solar_dish_spring")))
 	return info
 
-func advance_solar_term() -> Dictionary:
-	return set_solar_term(current_solar_term_idx + 1)
+## The solar term of the real calendar
+func refresh_solar_term() -> void:
+	var dt := get_local_datetime()
+	var idx := EconomyConfig.calc_solar_term(int(dt["month"]), int(dt["day"]))
+	if idx != current_solar_term_idx:
+		set_solar_term(idx)
+		replace_impossible_orders()
 
 func get_current_solar_term() -> Dictionary:
 	return EconomyConfig.get_solar_term_info(current_solar_term_idx)
@@ -1085,14 +1014,75 @@ func get_unlocked_codex_count() -> int:
 			cnt += 1
 	return cnt
 
-func get_codex_price_multiplier() -> float:
-	var mult := 1.0 + 0.10 * float(get_unlocked_codex_count()) + 0.08 * float(get_unlocked_solar_dish_count()) + 0.08 * float(get_unlocked_flora_count()) + 0.10 * float(get_unlocked_souvenir_count()) + 0.08 * float(get_unlocked_bath_count()) + 0.08 * float(get_unlocked_bakery_count()) + 0.08 * float(get_unlocked_tea_count()) + 0.08 * float(get_passed_tasting_challenge_count()) + 0.08 * float(get_unlocked_auction_lot_count()) + 0.04 * float(get_unlocked_dairy_count()) + 0.04 * float(get_unlocked_film_count()) + 0.04 * float(get_unlocked_pottery_count()) + 0.04 * float(get_unlocked_sports_event_count()) + 0.04 * float(get_unlocked_kite_count()) + 0.02 * float(get_seen_season_count()) + EconomyConfig.PHOTO_CODEX_PRICE_PER_ENTRY * float(get_unlocked_photo_count()) + EconomyConfig.SKY_WEATHER_CODEX_PRICE_PER_TYPE * float(get_seen_sky_weather_count()) + EconomyConfig.BIRTHDAY_CODEX_PRICE_PER_ISLANDER * float(get_celebrated_islander_count()) + get_friendship_price_bonus()
+## Every picture in the collection counts the same: +1% income each
+func get_collection_count() -> int:
+	return (get_unlocked_codex_count() + get_unlocked_solar_dish_count() + get_unlocked_flora_count() + get_unlocked_souvenir_count() + get_unlocked_bath_count()
+		+ get_unlocked_bakery_count() + get_unlocked_tea_count() + get_passed_tasting_challenge_count() + get_unlocked_dairy_count() + get_unlocked_film_count()
+		+ get_unlocked_pottery_count() + get_met_guest_count() + get_unlocked_kite_count() + get_seen_season_count() + get_seen_sky_weather_count() + get_celebrated_islander_count())
+
+func get_collection_multiplier() -> float:
+	return 1.0 + Pacing.CODEX_PER_ENTRY * float(get_collection_count()) + get_friendship_price_bonus()
+
+## Short-lived price bonuses shared by every sale
+func get_market_mood_multiplier() -> float:
+	var mult := 1.0
 	var s_term := get_current_solar_term()
 	if String(s_term.get("buff_type", "")) == "price_bonus":
 		mult *= (1.0 + float(s_term.get("buff_val", 0.15)))
 	if gourmet_acclaim_timer > 0.0:
 		mult *= GOURMET_PRICE_BONUS_MULT
 	return mult
+
+## ------------------------------------------------------------------------------------------------------------------
+## Income core (numbers in `src/data/Pacing.gd`): the isle earns `estimate_idle_gold_per_sec()`; the money waits in the till and
+## customers pay it out, so income never depends on how many customers happen to walk by.
+## ------------------------------------------------------------------------------------------------------------------
+func get_active_lines() -> Dictionary:
+	var out := {}
+	for k in Pacing.RATE.keys():
+		if is_line_open(String(k)):
+			out[k] = int(building_levels.get(k, 1))
+	return out
+
+func is_line_open(key: String) -> bool:
+	if not bool(unlocked_islands.get(int(Pacing.ISLE.get(key, 1)), false)):
+		return false
+	match key:
+		"greenhouse": return greenhouse_unlocked
+		"hotspring": return hotspring_unlocked
+		"windmill": return windmill_unlocked
+		"tea_pavilion": return tea_pavilion_unlocked
+		"chef_pavilion": return chef_pavilion_unlocked
+		"lighthouse_harbor": return lighthouse_harbor_unlocked
+		"dairy_workshop": return dairy_workshop_unlocked
+		"pottery_kiln": return pottery_kiln_unlocked
+	return true
+
+func estimate_idle_gold_per_sec() -> float:
+	var lv_sum := 0
+	var heads := 0
+	for k in animal_levels.keys():
+		lv_sum += int(animal_levels[k])
+		heads += get_total_recruited(String(k))
+	return Pacing.gold_per_sec(get_active_lines(), lv_sum, heads, get_collection_multiplier())
+
+## Every reward in the game is worth `sec` seconds of income (never less than `floor_gold`)
+func income_gold(sec: float, floor_gold: int = 1) -> int:
+	return maxi(floor_gold, int(round(estimate_idle_gold_per_sec() * sec)))
+
+func accrue_till(delta: float) -> void:
+	var gps := estimate_idle_gold_per_sec()
+	till_gold = minf(till_gold + gps * delta, gps * Pacing.TILL_CAP_SEC)
+
+## A customer pays `share` of the till; the live bonuses on top are capped together
+func collect_from_till(share: float, bonus: float = 1.0) -> int:
+	var cut := till_gold * clampf(share, 0.0, 1.0)
+	till_gold -= cut
+	return maxi(1, int(round(cut * clampf(bonus, 1.0, Pacing.LIVE_BONUS_CAP))))
+
+## Tips are a tenth of what a customer pays, so "+20% tips" adds 2%
+func get_tip_bonus(is_vip: bool, island: int = 3) -> float:
+	return 1.0 + Pacing.TIP_SHARE * (get_customer_tip_multiplier(is_vip, island) - 1.0)
 
 func is_animal_hired(animal_key: String) -> bool:
 	return get_total_recruited(animal_key) >= 1
@@ -1175,17 +1165,71 @@ func spend_amber(cost: int) -> bool:
 func get_amber() -> int:
 	return amber
 
+## What the fields (`crops`) or the workshops make at their present level; nothing else can still be ordered
+func get_produced_items(crops: bool) -> Array[String]:
+	var out: Array[String] = []
+	for isl in [1, 2, 3]:
+		if isl > 1 and not bool(unlocked_islands.get(isl, false)):
+			continue
+		var id := ""
+		if crops:
+			id = EconomyConfig.get_evolved_crop_id(isl, int(building_levels.get("soil_%d" % isl, 1)))
+		else:
+			var wid: String = ["mortar", "cauldron", "coral_linked"][isl - 1]
+			id = EconomyConfig.get_evolved_delicacy_id(wid, int(building_levels.get("soil_3" if isl == 3 else wid, 1)))
+		if not out.has(id):
+			out.append(id)
+	return out
+
+## What lies on the stall, in the workshops and in the field baskets
+func _count_island_stock(item_id: String) -> int:
+	var n := int(stall_inventory.get(item_id, 0))
+	for wid in workshop_outputs.keys():
+		n += int(workshop_outputs[wid].get(item_id, 0))
+	for isl in raw_baskets.keys():
+		n += int(raw_baskets[isl].get(item_id, 0))
+	return n
+
+## What an order still lacks and nothing makes any more is swapped for what is made now; what was already loaded comes back
+func replace_impossible_orders() -> void:
+	var crops := get_produced_items(true)
+	var dishes := get_produced_items(false)
+	if not active_contract.is_empty():
+		var want := String(active_contract.get("target_item", ""))
+		var left := int(active_contract.get("required_count", 1)) - int(active_contract.get("current_count", 0))
+		if not crops.has(want) and not dishes.has(want) and _count_island_stock(want) < left:
+			generate_next_contract()
+	var changed := false
+	for entry in active_airship_order.get("items", []):
+		if not (entry is Dictionary):
+			continue
+		var id := String(entry.get("item_id", ""))
+		var done := int(entry.get("delivered", 0))
+		var lack := int(entry.get("required", 1)) - done
+		var now := ""
+		if lack <= 0 or _count_island_stock(id) >= lack:
+			continue
+		if EconomyConfig.CROPS.has(id) and not crops.has(id):
+			now = crops[0]
+		elif EconomyConfig.DELICACIES.has(id) and not dishes.has(id):
+			now = dishes[0]
+		elif EconomyConfig.is_solar_specialty_dish(id) and id != get_current_solar_dish_id():
+			now = get_current_solar_dish_id()
+		if now == "":
+			continue
+		if done > 0:
+			stall_inventory[id] = int(stall_inventory.get(id, 0)) + done
+			EventBus.inventory_changed.emit()
+		entry["item_id"] = now
+		entry["name"] = EconomyConfig.get_item_raw_name(now)
+		entry["delivered"] = 0
+		changed = true
+	if changed:
+		EventBus.airship_state_changed.emit(airship_docked, active_airship_order)
+
 func generate_next_contract() -> Dictionary:
-	var available_items: Array[String] = ["crop_0", "delicacy_0"]
-	if bool(unlocked_codex.get("crop_1", false)) or int(building_levels.get("soil_1", 1)) >= 25:
-		available_items.append("crop_1")
-		available_items.append("delicacy_1")
-	if bool(unlocked_islands.get(2, false)):
-		available_items.append("crop_2")
-		available_items.append("delicacy_2")
-	if bool(unlocked_islands.get(3, false)):
-		available_items.append("crop_3")
-		available_items.append("delicacy_3")
+	var available_items := get_produced_items(true)
+	available_items.append_array(get_produced_items(false))
 
 	var prev_idx: int = int(active_contract.get("contract_index", 0))
 	var next_idx: int = prev_idx + 1
@@ -1197,7 +1241,7 @@ func generate_next_contract() -> Dictionary:
 		item_name = String(EconomyConfig.DELICACIES[chosen_item].get("name", chosen_item))
 
 	var req_cnt: int = 3 + (next_idx % 4)
-	var rew_gold: int = 120 + req_cnt * 25
+	var rew_gold: int = income_gold(6.0 + 2.0 * float(req_cnt), 20)
 	var rew_amber: int = 1 + (next_idx % 3)
 
 	active_contract = {
@@ -1232,7 +1276,7 @@ func complete_active_contract() -> Dictionary:
 		return {}
 	var completed := active_contract.duplicate(true)
 	career_stats["contracts"] = int(career_stats.get("contracts", 0)) + 1
-	var rew_gold := int(completed.get("reward_gold", 150))
+	var rew_gold := int(completed.get("reward_gold", 20))
 	var rew_amber := int(completed.get("reward_amber", 2))
 	add_gold(rew_gold)
 	add_amber(rew_amber)
@@ -1290,8 +1334,8 @@ func redeem_rare_voucher_for_codex() -> Dictionary:
 			save_game()
 			return {"redeemed": true, "unlocked_dish": dk, "bonus_amber": 0, "bonus_gold": 0}
 	# All 4 seasonal specialty dishes already unlocked -> collector dividend + 2 seasonal specialty dishes
-	var div_amber := 3
-	var div_gold := 320
+	var div_amber := 1
+	var div_gold := income_gold(2.0, 5)
 	add_amber(div_amber)
 	add_gold(div_gold)
 	var cur_sd := get_current_solar_dish_id()
@@ -1309,6 +1353,8 @@ func dock_airship_caravan(force_new_order: bool = false) -> Dictionary:
 	airship_timer = AIRSHIP_DOCK_DURATION
 	if force_new_order or active_airship_order.is_empty():
 		generate_next_airship_order()
+	else:
+		replace_impossible_orders()
 	EventBus.airship_state_changed.emit(true, active_airship_order)
 	return active_airship_order
 
@@ -1316,21 +1362,8 @@ func generate_next_airship_order() -> Dictionary:
 	var prev_idx := int(active_airship_order.get("order_index", 0))
 	var next_idx := prev_idx + 1
 
-	var crop_pool: Array[String] = ["crop_0"]
-	if bool(unlocked_codex.get("crop_1", false)) or int(building_levels.get("soil_1", 1)) >= 25:
-		crop_pool.append("crop_1")
-	if bool(unlocked_islands.get(2, false)):
-		crop_pool.append("crop_2")
-	if bool(unlocked_islands.get(3, false)):
-		crop_pool.append("crop_3")
-
-	var del_pool: Array[String] = ["delicacy_0"]
-	if bool(unlocked_codex.get("delicacy_1", false)) or int(building_levels.get("mortar", 1)) >= 25:
-		del_pool.append("delicacy_1")
-	if bool(unlocked_islands.get(2, false)):
-		del_pool.append("delicacy_2")
-	if bool(unlocked_islands.get(3, false)):
-		del_pool.append("delicacy_3")
+	var crop_pool := get_produced_items(true)
+	var del_pool := get_produced_items(false)
 
 	var pick_crop := crop_pool[next_idx % crop_pool.size()]
 	var pick_del := del_pool[next_idx % del_pool.size()]
@@ -1361,7 +1394,7 @@ func generate_next_airship_order() -> Dictionary:
 		}
 	]
 
-	var rew_gold := 380 + next_idx * 65
+	var rew_gold := income_gold(45.0, 60)
 	var rew_amber := 4 + (next_idx % 3)
 	var rew_vouchers := 2 if (next_idx % 3 == 0) else 1
 
@@ -1405,7 +1438,7 @@ func get_airship_order_progress_summary() -> Dictionary:
 		"brief": "·".join(parts),
 		"reward_amber": int(ord.get("reward_amber", 4)),
 		"reward_vouchers": int(ord.get("reward_vouchers", 1)),
-		"reward_gold": int(ord.get("reward_gold", 445))
+		"reward_gold": int(ord.get("reward_gold", 60))
 	}
 
 func _is_airship_order_ready_to_settle() -> bool:
@@ -1457,7 +1490,7 @@ func _pull_item_from_island_buffers(item_id: String, max_needed: int) -> int:
 		rem -= t
 		pulled += t
 	if rem > 0:
-		for wid in ["mortar", "cauldron", "orbis_linked"]:
+		for wid in ["mortar", "cauldron", "coral_linked"]:
 			if rem <= 0:
 				break
 			if workshop_outputs.has(wid):
@@ -1489,7 +1522,7 @@ func fulfill_airship_bulk_order_from_stock() -> Dictionary:
 	var prev_completed_cnt := completed_airship_orders
 	var rew_amb := int(ord.get("reward_amber", 4))
 	var rew_vch := int(ord.get("reward_vouchers", 1))
-	var rew_gld := int(ord.get("reward_gold", 445))
+	var rew_gld := int(ord.get("reward_gold", 60))
 	var items: Array = ord.get("items", [])
 	var total_loaded := 0
 	for entry in items:
@@ -1523,7 +1556,7 @@ func complete_airship_bulk_order() -> Dictionary:
 	var completed := active_airship_order.duplicate(true)
 	completed_airship_orders += 1
 	career_stats["contracts"] = int(career_stats.get("contracts", 0)) + 1
-	var rew_gold := int(completed.get("reward_gold", 445))
+	var rew_gold := int(completed.get("reward_gold", 60))
 	var rew_amber := int(completed.get("reward_amber", 4))
 	var rew_vouchers := int(completed.get("reward_vouchers", 1))
 	add_gold(rew_gold)
@@ -1673,7 +1706,7 @@ func try_merchant_acquire_surplus_crops(desired_qty: int, world_pos: Vector2) ->
 	if taken <= 0:
 		return {"taken": 0, "amber": 0, "gold": 0, "item_id": ""}
 	var amber_gain := maxi(1, int(ceilf(float(taken) / 2.0)))
-	var gold_gain := taken * 36
+	var gold_gain := income_gold(1.5 * float(taken), taken)
 	career_stats["customers"] = int(career_stats.get("customers", 0)) + 1
 	add_amber(amber_gain)
 	add_gold(gold_gain)
@@ -1690,7 +1723,7 @@ func has_delicacy_or_stall_stock_for_critic() -> bool:
 	for dk in ["solar_dish_winter", "solar_dish_autumn", "solar_dish_summer", "solar_dish_spring", "delicacy_3", "delicacy_2", "delicacy_1", "delicacy_0"]:
 		if int(stall_inventory.get(dk, 0)) > 0:
 			return true
-		for wid in ["orbis_linked", "cauldron", "mortar"]:
+		for wid in ["coral_linked", "cauldron", "mortar"]:
 			if workshop_outputs.has(wid) and int(workshop_outputs[wid].get(dk, 0)) > 0:
 				return true
 	return get_total_stall_count() > 0
@@ -1705,7 +1738,7 @@ func try_critic_taste_delicacy(preferred_id: String, qty: int, world_pos: Vector
 				target_del = dk
 				break
 	if target_del == "":
-		for wid in ["orbis_linked", "cauldron", "mortar"]:
+		for wid in ["coral_linked", "cauldron", "mortar"]:
 			if not workshop_outputs.has(wid):
 				continue
 			for dk in ["solar_dish_winter", "solar_dish_autumn", "solar_dish_summer", "solar_dish_spring", "delicacy_3", "delicacy_2", "delicacy_1", "delicacy_0"]:
@@ -1722,7 +1755,6 @@ func try_critic_taste_delicacy(preferred_id: String, qty: int, world_pos: Vector
 	if earned > 0:
 		trigger_gourmet_acclaim(GOURMET_ACCLAIM_DURATION)
 	return earned
-
 
 ## ==================================================================
 ## CI-5: Cloud Greenhouse Hybrid Flora Nursery & Island Souvenir Gift Boxes
@@ -1884,7 +1916,7 @@ func harvest_greenhouse_flora() -> Dictionary:
 
 func _count_total_available_dishes() -> int:
 	var sum_d := 0
-	for wid in ["mortar", "cauldron", "orbis_linked"]:
+	for wid in ["mortar", "cauldron", "coral_linked"]:
 		if workshop_outputs.has(wid):
 			for dk in workshop_outputs[wid].keys():
 				sum_d += maxi(0, int(workshop_outputs[wid][dk]))
@@ -1938,7 +1970,7 @@ func bundle_souvenir_gift_box(preferred_box_id: String = "", allow_last_dish: bo
 			if picked_dish != "":
 				break
 			var d_id := String(dc)
-			for wid in ["orbis_linked", "cauldron", "mortar"]:
+			for wid in ["coral_linked", "cauldron", "mortar"]:
 				if workshop_outputs.has(wid) and int(workshop_outputs[wid].get(d_id, 0)) > 0:
 					picked_wid = wid
 					picked_dish = d_id
@@ -2007,12 +2039,7 @@ func try_collector_purchase_souvenir(preferred_box_id: String, qty: int, world_p
 	unlock_souvenir_box(target_box)
 
 	var bcfg: Dictionary = EconomyConfig.SOUVENIR_BOXES[target_box]
-	var gh_lv := maxi(1, int(building_levels.get("greenhouse", 1)))
-	var st_lv := maxi(1, int(building_levels.get("stall", 1)))
-	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
-	var base_unit := EconomyConfig.calc_item_unit_price(target_box, gh_lv, st_lv, shiba_lv, current_solar_term_idx)
-	var collector_mult := float(bcfg.get("collector_mult", 1.55))
-	var total_gold := maxi(1, int(round(float(base_unit * bought) * collector_mult * get_codex_price_multiplier() * get_customer_tip_multiplier(true, 3))))
+	var total_gold := collect_from_till(0.8, float(bcfg.get("collector_mult", 1.55)) * get_market_mood_multiplier() * get_tip_bonus(true, 3))
 	var amber_gain := maxi(1, int(bcfg.get("amber_bonus", 2)) * bought)
 	var voucher_gain := maxi(0, int(bcfg.get("voucher_bonus", 0)) * bought)
 	var rep_gain := maxi(10, int(bcfg.get("rep_bonus", 35)) * bought)
@@ -2040,7 +2067,6 @@ func try_collector_purchase_souvenir(preferred_box_id: String, qty: int, world_p
 		"rep_gained": rep_gain,
 		"box_id": target_box
 	}
-
 
 ## ==================================================================
 ## CI-6: Island 3 Cloud-Sea Hot-Spring Inn & VIP Cute Spirit Bathhouse
@@ -2224,7 +2250,11 @@ func brew_hotspring_bath(preferred_bath_id: String = "", allow_steep_fallback: b
 		for bid in ["bath_star_amber", "bath_sakura_mist", "bath_mugwort_warm"]:
 			if bool(unlocked_baths.get(bid, false)) or bid == "bath_mugwort_warm":
 				cands.append(bid)
+	var full := false
 	for bath_id in cands:
+		if int(bath_inventory.get(bath_id, 0)) >= maxi(14, EconomyConfig.calc_buffer_capacity(maxi(1, int(building_levels.get("hotspring", 1))))):
+			full = true
+			continue
 		if not _has_ingredients_for_bath(bath_id, allow_steep_fallback):
 			continue
 		var bcfg: Dictionary = EconomyConfig.HOTSPRING_BATH_BLENDS[bath_id]
@@ -2246,7 +2276,9 @@ func brew_hotspring_bath(preferred_bath_id: String = "", allow_steep_fallback: b
 		bath_inventory[bath_id] = int(bath_inventory.get(bath_id, 0)) + 1
 		bath_brew_counts[bath_id] = int(bath_brew_counts.get(bath_id, 0)) + 1
 		unlock_hotspring_bath(bath_id)
-		active_hotspring_bath_id = bath_id
+		# a better bath that is merely sold in stock stays the chosen one
+		if not full:
+			active_hotspring_bath_id = bath_id
 		hotspring_rejuvenation_timer = maxf(hotspring_rejuvenation_timer, 36.0)
 		career_stats["crafts"] = int(career_stats.get("crafts", 0)) + 1
 		var unlocked_next := _check_hotspring_recipe_progression(bath_id)
@@ -2264,7 +2296,7 @@ func brew_hotspring_bath(preferred_bath_id: String = "", allow_steep_fallback: b
 			"stock": int(bath_inventory[bath_id]),
 			"unlocked_next": unlocked_next
 		}
-	return {"brewed": false, "bath_id": "", "stock": get_total_bath_stock_count()}
+	return {"brewed": false, "full": full, "bath_id": "", "stock": get_total_bath_stock_count()}
 
 func get_worker_hotspring_move_multiplier() -> float:
 	if not hotspring_unlocked or not bool(unlocked_islands.get(3, false)):
@@ -2320,12 +2352,7 @@ func try_vip_hotspring_guest_checkout(preferred_bath_id: String, qty: int, world
 	unlock_hotspring_bath(target_bath)
 
 	var bcfg: Dictionary = EconomyConfig.HOTSPRING_BATH_BLENDS[target_bath]
-	var hs_lv := maxi(1, int(building_levels.get("hotspring", 1)))
-	var st_lv := maxi(1, int(building_levels.get("stall", 1)))
-	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
-	var base_unit := EconomyConfig.calc_item_unit_price(target_bath, hs_lv, st_lv, shiba_lv, current_solar_term_idx)
-	var vip_tip_mult := float(bcfg.get("vip_tip_mult", 1.70))
-	var total_gold := maxi(1, int(round(float(base_unit * bought) * vip_tip_mult * get_codex_price_multiplier() * get_customer_tip_multiplier(true, 3))))
+	var total_gold := collect_from_till(0.8, float(bcfg.get("vip_tip_mult", 1.70)) * get_market_mood_multiplier() * get_tip_bonus(true, 3))
 	var amber_gain := maxi(1, int(bcfg.get("amber_bonus", 2)) * bought)
 	var voucher_gain := maxi(0, int(bcfg.get("voucher_bonus", 0)) * bought)
 	var rep_gain := maxi(15, int(bcfg.get("rep_bonus", 40)) * bought)
@@ -2356,7 +2383,6 @@ func try_vip_hotspring_guest_checkout(preferred_bath_id: String, qty: int, world
 		"bath_id": target_bath
 	}
 
-
 ## ==================================================================
 ## CI-7: Cloud Windmill Bakery (`云端风车烘焙面坊`) & Gourmet Parade Float Festival (`云海美食花车巡游节`)
 ## ==================================================================
@@ -2373,7 +2399,6 @@ func unlock_windmill_bakery(free_for_test: bool = false) -> bool:
 	active_windmill_bread_id = "bread_cloud_souffle"
 	windmill_bake_timer = 0.0
 	windmill_aroma_timer = 36.0
-	parade_cooldown_timer = 32.0
 	unlock_bakery_item("flour_golden_wheat")
 	bakery_inventory["flour_golden_wheat"] = maxi(1, int(bakery_inventory.get("flour_golden_wheat", 0)))
 	if SoundManager != null:
@@ -2434,9 +2459,6 @@ func get_bakery_aura_speed_multiplier() -> float:
 		mult *= 1.04
 	return mult
 
-func get_market_stall_speed_multiplier() -> float:
-	return get_bakery_aura_speed_multiplier()
-
 func cycle_windmill_bread() -> String:
 	var unlocked_list: Array[String] = []
 	for bid in EconomyConfig.BAKERY_BREAD_ORDER:
@@ -2471,6 +2493,8 @@ func _check_bakery_recipe_progression(crafted_id: String) -> String:
 
 func mill_golden_wheat_flour(prefer_flora: bool = false, allow_wind_fallback: bool = false) -> Dictionary:
 	if not windmill_unlocked:
+		return {"milled": false, "qty": 0, "crop_id": "", "flora_id": "", "stock": get_flour_stock_count()}
+	if get_flour_stock_count() >= maxi(14, EconomyConfig.calc_buffer_capacity(maxi(1, int(building_levels.get("windmill", 1))))):
 		return {"milled": false, "qty": 0, "crop_id": "", "flora_id": "", "stock": get_flour_stock_count()}
 	var fcfg: Dictionary = EconomyConfig.BAKERY_ITEMS["flour_golden_wheat"]
 	var crop_cands: Array = fcfg.get("crop_candidates", ["crop_0"])
@@ -2522,7 +2546,12 @@ func bake_windmill_bread(preferred_bread_id: String = "", allow_auto_mill: bool 
 		for bid in ["bread_amber_croissant", "bread_cloud_souffle"]:
 			if bool(unlocked_bakery_items.get(bid, false)) or bid == "bread_cloud_souffle":
 				cands.append(bid)
+	var full := false
 	for bread_id in cands:
+		if int(bakery_inventory.get(bread_id, 0)) >= maxi(14, EconomyConfig.calc_buffer_capacity(maxi(1, int(building_levels.get("windmill", 1))))):
+			windmill_aroma_timer = maxf(windmill_aroma_timer, 38.0)
+			full = true
+			continue
 		if get_flour_stock_count() <= 0 and allow_auto_mill:
 			mill_golden_wheat_flour(bread_id == "bread_amber_croissant", false)
 		if get_flour_stock_count() <= 0:
@@ -2546,12 +2575,13 @@ func bake_windmill_bread(preferred_bread_id: String = "", allow_auto_mill: bool 
 		var yield_qty := 1 + int(floor(float(lv) / 5.0))
 		var cap := maxi(14, EconomyConfig.calc_buffer_capacity(lv))
 		var cur_stock := maxi(0, int(bakery_inventory.get(bread_id, 0)))
-		var added := maxi(1, mini(yield_qty, maxi(1, cap - cur_stock)))
+		var added := maxi(0, mini(yield_qty, cap - cur_stock))
 		bakery_inventory[bread_id] = cur_stock + added
 		bakery_craft_counts[bread_id] = int(bakery_craft_counts.get(bread_id, 0)) + 1
 		unlock_bakery_item("flour_golden_wheat")
 		unlock_bakery_item(bread_id)
-		active_windmill_bread_id = bread_id
+		if not full:
+			active_windmill_bread_id = bread_id
 		windmill_aroma_timer = maxf(windmill_aroma_timer, 38.0)
 		career_stats["crafts"] = int(career_stats.get("crafts", 0)) + added
 		var unlocked_next := _check_bakery_recipe_progression(bread_id)
@@ -2568,7 +2598,7 @@ func bake_windmill_bread(preferred_bread_id: String = "", allow_auto_mill: bool 
 			"stock": int(bakery_inventory[bread_id]),
 			"unlocked_next": unlocked_next
 		}
-	return {"baked": false, "bread_id": "", "stock": get_total_bread_stock_count()}
+	return {"baked": false, "full": full, "bread_id": "", "stock": get_total_bread_stock_count()}
 
 func _tick_windmill_bakery(delta: float) -> void:
 	var bcfg: Dictionary = EconomyConfig.BAKERY_ITEMS.get(active_windmill_bread_id, EconomyConfig.BAKERY_ITEMS["bread_cloud_souffle"])
@@ -2590,7 +2620,6 @@ func start_gourmet_parade_festival(duration: float = GOURMET_PARADE_DURATION) ->
 	if not windmill_unlocked:
 		return false
 	parade_festival_timer = maxf(parade_festival_timer, maxf(8.0, duration))
-	parade_cooldown_timer = GOURMET_PARADE_COOLDOWN
 	windmill_aroma_timer = maxf(windmill_aroma_timer, parade_festival_timer)
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
@@ -2631,12 +2660,8 @@ func try_parade_tourist_purchase_bakery(preferred_bread_id: String, qty: int, wo
 	unlock_bakery_item(target_bread)
 
 	var bcfg: Dictionary = EconomyConfig.BAKERY_ITEMS[target_bread]
-	var wm_lv := maxi(1, int(building_levels.get("windmill", 1)))
-	var st_lv := maxi(1, int(building_levels.get("stall", 1)))
-	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
-	var base_unit := EconomyConfig.calc_item_unit_price(target_bread, wm_lv, st_lv, shiba_lv, current_solar_term_idx)
 	var parade_mult := clampf(float(bcfg.get("parade_mult", 1.78)), 1.75, 1.90)
-	var total_gold := maxi(1, int(round(float(base_unit * bought) * parade_mult * get_codex_price_multiplier() * get_customer_tip_multiplier(true, 2))))
+	var total_gold := collect_from_till(0.8, parade_mult * get_market_mood_multiplier() * get_tip_bonus(true, 2))
 	var amber_gain := maxi(1, int(bcfg.get("amber_bonus", 3)) * bought)
 	var voucher_gain := maxi(1, int(bcfg.get("voucher_bonus", 1)) * bought)
 	var rep_gain := maxi(25, int(bcfg.get("rep_bonus", 55)) * bought)
@@ -2667,7 +2692,6 @@ func try_parade_tourist_purchase_bakery(preferred_bread_id: String, qty: int, wo
 		"premium_mult": parade_mult
 	}
 
-
 ## ==================================================================
 ## CI-8: Cloud Tea Pavilion (`云端茗香制茶坊`) & Lotus Pond Moon-Boat Tea Gathering (`月色画舫品茗雅集`)
 ## ==================================================================
@@ -2682,7 +2706,6 @@ func unlock_tea_pavilion(free_for_test: bool = false) -> bool:
 	active_tea_recipe_id = "tea_cloud_longjing"
 	tea_brew_timer = 0.0
 	tea_aura_timer = 40.0
-	moon_tea_cooldown_timer = 28.0
 	unlock_tea_item("tea_spring_leaves")
 	tea_inventory["tea_spring_leaves"] = maxi(1, int(tea_inventory.get("tea_spring_leaves", 0)))
 	if SoundManager != null:
@@ -2800,6 +2823,8 @@ func _check_tea_recipe_progression(crafted_id: String) -> String:
 func roast_tea_spring_leaves(prefer_flora: bool = false, allow_dew_fallback: bool = false) -> Dictionary:
 	if not tea_pavilion_unlocked:
 		return {"roasted": false, "qty": 0, "crop_id": "", "flora_id": "", "stock": get_tea_leaves_stock_count()}
+	if get_tea_leaves_stock_count() >= maxi(14, EconomyConfig.calc_buffer_capacity(maxi(1, int(building_levels.get("tea_pavilion", 1))))):
+		return {"roasted": false, "qty": 0, "crop_id": "", "flora_id": "", "stock": get_tea_leaves_stock_count()}
 	var lcfg: Dictionary = EconomyConfig.TEA_ITEMS["tea_spring_leaves"]
 	var crop_cands: Array = lcfg.get("crop_candidates", ["crop_0"])
 	var used_crop := _take_crop_for_bath(crop_cands)
@@ -2850,7 +2875,12 @@ func brew_artisan_tea(preferred_tea_id: String = "", allow_auto_roast: bool = tr
 		for tid in ["tea_osmanthus_oolong", "tea_cloud_longjing"]:
 			if bool(unlocked_tea_items.get(tid, false)) or tid == "tea_cloud_longjing":
 				cands.append(tid)
+	var full := false
 	for tea_id in cands:
+		if is_stall_full() and int(tea_inventory.get(tea_id, 0)) >= maxi(14, EconomyConfig.calc_buffer_capacity(maxi(1, int(building_levels.get("tea_pavilion", 1))))):
+			tea_aura_timer = maxf(tea_aura_timer, 40.0)
+			full = true
+			continue
 		if get_tea_leaves_stock_count() <= 0 and allow_auto_roast:
 			roast_tea_spring_leaves(tea_id == "tea_osmanthus_oolong", false)
 		if get_tea_leaves_stock_count() <= 0:
@@ -2874,17 +2904,17 @@ func brew_artisan_tea(preferred_tea_id: String = "", allow_auto_roast: bool = tr
 		var yield_qty := 1 + int(floor(float(lv) / 5.0))
 		var cap := maxi(14, EconomyConfig.calc_buffer_capacity(lv))
 		var cur_stock := maxi(0, int(tea_inventory.get(tea_id, 0)))
-		var added := maxi(1, mini(yield_qty, maxi(1, cap - cur_stock)))
+		var added := maxi(0, mini(yield_qty, cap - cur_stock))
 		tea_inventory[tea_id] = cur_stock + added
 		tea_craft_counts[tea_id] = int(tea_craft_counts.get(tea_id, 0)) + 1
 		unlock_tea_item("tea_spring_leaves")
 		unlock_tea_item(tea_id)
-		active_tea_recipe_id = tea_id
+		if not full:
+			active_tea_recipe_id = tea_id
 		tea_aura_timer = maxf(tea_aura_timer, 40.0)
 		career_stats["crafts"] = int(career_stats.get("crafts", 0)) + added
 		# Also stock freshly brewed tea to MarketStall when stall buffer has room
-		if not is_stall_full():
-			add_to_stall(tea_id, 1)
+		var shelved := add_to_stall(tea_id, 1) if not is_stall_full() else 0
 		var unlocked_next := _check_tea_recipe_progression(tea_id)
 		if SoundManager != null:
 			SoundManager.play_pop_sfx()
@@ -2894,12 +2924,12 @@ func brew_artisan_tea(preferred_tea_id: String = "", allow_auto_roast: bool = tr
 		return {
 			"brewed": true,
 			"tea_id": tea_id,
-			"qty": added,
+			"qty": added if added > 0 else shelved,
 			"flora_id": used_flora,
 			"stock": int(tea_inventory[tea_id]),
 			"unlocked_next": unlocked_next
 		}
-	return {"brewed": false, "tea_id": "", "stock": get_total_brewed_tea_stock_count()}
+	return {"brewed": false, "full": full, "tea_id": "", "stock": get_total_brewed_tea_stock_count()}
 
 func _tick_tea_pavilion(delta: float) -> void:
 	var tcfg: Dictionary = EconomyConfig.TEA_ITEMS.get(active_tea_recipe_id, EconomyConfig.TEA_ITEMS["tea_cloud_longjing"])
@@ -2920,8 +2950,9 @@ func _tick_tea_pavilion(delta: float) -> void:
 func start_moon_tea_gathering(duration: float = MOON_TEA_GATHERING_DURATION) -> bool:
 	if not tea_pavilion_unlocked:
 		return false
+	if moon_tea_gathering_timer <= 0.0:
+		moon_tea_boat_claimed = false
 	moon_tea_gathering_timer = maxf(moon_tea_gathering_timer, maxf(8.0, duration))
-	moon_tea_cooldown_timer = MOON_TEA_GATHERING_COOLDOWN
 	tea_aura_timer = maxf(tea_aura_timer, moon_tea_gathering_timer)
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
@@ -2950,11 +2981,13 @@ func claim_moon_tea_boat_reward(world_pos: Vector2 = Vector2(1192.0, 96.0)) -> D
 		else:
 			EventBus.spawn_floating_text.emit(
 				world_pos + Vector2(0.0, -28.0),
-				EconomyConfig.tr_fmt("ft_moontea_need", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD]),
+				EconomyConfig.tr_fmt("ft_moontea_need", [UiKit.num(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD)]),
 				Color("#FFF4D6")
 			)
 			return {"claimed": false, "amber": 0, "vouchers": 0, "rep_gained": 0, "buff_mult": 1.0}
-	start_moon_tea_gathering(MOON_TEA_GATHERING_DURATION)
+	if (not is_moon_tea_gathering_active() and not try_start_festival("moon_tea")) or moon_tea_boat_claimed:
+		return {"claimed": false, "amber": 0, "vouchers": 0, "rep_gained": 0, "buff_mult": 1.0}
+	moon_tea_boat_claimed = true
 	var tp_lv := maxi(1, int(building_levels.get("tea_pavilion", 1)))
 	var amber_gain := 2 + int(floor(float(tp_lv) / 3.0))
 	var voucher_gain := 1
@@ -2968,7 +3001,7 @@ func claim_moon_tea_boat_reward(world_pos: Vector2 = Vector2(1192.0, 96.0)) -> D
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		world_pos + Vector2(0.0, -32.0),
-		EconomyConfig.tr_key("ft_moontea_reward") % [amber_gain, voucher_gain, rep_gain],
+		EconomyConfig.tr_fmt("ft_moontea_reward", [amber_gain, voucher_gain, rep_gain]),
 		Color("#FFE066")
 	)
 	save_game()
@@ -3011,13 +3044,9 @@ func try_tea_connoisseur_checkout(preferred_tea_id: String, qty: int, world_pos:
 	unlock_tea_item(target_tea)
 
 	var tcfg: Dictionary = EconomyConfig.TEA_ITEMS[target_tea]
-	var tp_lv := maxi(1, int(building_levels.get("tea_pavilion", 1)))
-	var st_lv := maxi(1, int(building_levels.get("stall", 1)))
-	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
-	var base_unit := EconomyConfig.calc_item_unit_price(target_tea, tp_lv, st_lv, shiba_lv, current_solar_term_idx)
 	var moon_mult := get_moon_tea_sale_multiplier(target_tea)
 	var connoisseur_mult := 1.42 * moon_mult
-	var total_gold := maxi(1, int(round(float(base_unit * bought) * connoisseur_mult * get_codex_price_multiplier() * get_tea_aura_tip_multiplier())))
+	var total_gold := collect_from_till(0.8, connoisseur_mult * get_market_mood_multiplier() * (1.0 + Pacing.TIP_SHARE * (get_tea_aura_tip_multiplier() - 1.0)))
 	var amber_gain := maxi(2, int(tcfg.get("amber_bonus", 3)) * bought)
 	var voucher_gain := int(tcfg.get("voucher_bonus", 1)) * bought
 	var rep_gain := int(tcfg.get("rep_bonus", 50)) * bought
@@ -3050,13 +3079,14 @@ func try_tea_connoisseur_checkout(preferred_tea_id: String, qty: int, world_pos:
 		"premium_mult": connoisseur_mult
 	}
 
-
 ## ==================================================================
 ## CI-9: Cloud-Sea Star Lantern Wish Festival (`云海星灯祈愿水灯节`) & Mountain-Sea Master Chef Tasting Pavilion (`山海特级食神品鉴席`)
 ## ==================================================================
 func start_wish_lantern_festival(duration: float = WISH_LANTERN_FESTIVAL_DURATION) -> bool:
+	if wish_lantern_festival_timer <= 0.0:
+		lanterns_this_festival = 0
+		lantern_encores = 0
 	wish_lantern_festival_timer = maxf(wish_lantern_festival_timer, maxf(8.0, duration))
-	wish_lantern_cooldown_timer = WISH_LANTERN_FESTIVAL_COOLDOWN
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
 	EventBus.wish_lantern_festival_started.emit(wish_lantern_festival_timer)
@@ -3078,15 +3108,19 @@ func get_wish_lantern_sale_multiplier(_item_id: String = "") -> float:
 func get_wish_lantern_tasting_bonus() -> int:
 	return EconomyConfig.WISH_LANTERN_TASTING_SCORE_BONUS if is_wish_lantern_festival_active() else 0
 
+func can_claim_wish_lantern() -> bool:
+	return is_wish_lantern_festival_active() and lanterns_this_festival < Pacing.LANTERNS_PER_FESTIVAL
+
 func claim_wish_lantern(lantern_idx: int, world_pos: Vector2) -> Dictionary:
-	if not is_wish_lantern_festival_active():
+	if not can_claim_wish_lantern():
 		return {"claimed": false, "gold": 0, "amber": 0, "vouchers": 0, "rep_gained": 0, "wish_total": wish_lanterns_collected, "wish_granted": false}
 	var chef_lv := maxi(1, int(building_levels.get("chef_pavilion", 1))) if chef_pavilion_unlocked else 0
-	var gold_gain := maxi(120, int(round(estimate_idle_gold_per_sec() * 8.0)))
+	var gold_gain := income_gold(8.0, 5)
 	var amber_gain := 2 + (1 if chef_pavilion_unlocked else 0) + int(floor(float(chef_lv) / 5.0))
 	var voucher_gain := 1
 	var rep_gain := 30 + chef_lv * 4
 	wish_lanterns_collected += 1
+	lanterns_this_festival += 1
 	var wish_granted := (wish_lanterns_collected % WISH_LANTERN_WISH_BONUS_EVERY) == 0
 	if wish_granted:
 		# `祈愿成真`: every 3rd lantern wish grants bonus Amber and extends the festival night
@@ -3103,7 +3137,7 @@ func claim_wish_lantern(lantern_idx: int, world_pos: Vector2) -> Dictionary:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		world_pos + Vector2(0.0, -26.0),
-		(EconomyConfig.tr_key("ft_wish_granted") if wish_granted else EconomyConfig.tr_key("ft_lantern_wish")) + EconomyConfig.tr_key("ft_lantern_reward") % [gold_gain, amber_gain, voucher_gain],
+		(EconomyConfig.tr_key("ft_wish_granted") if wish_granted else EconomyConfig.tr_key("ft_lantern_wish")) + EconomyConfig.tr_fmt("ft_lantern_reward", [gold_gain, amber_gain, voucher_gain]),
 		Color("#FFE066") if wish_granted else Color("#FFD8A8")
 	)
 	save_game()
@@ -3129,7 +3163,6 @@ func unlock_chef_pavilion(free_for_test: bool = false) -> bool:
 	chef_pavilion_unlocked = true
 	active_tasting_dish_id = "dish_cloud_dumplings"
 	chef_cook_timer = 0.0
-	wish_lantern_cooldown_timer = minf(wish_lantern_cooldown_timer, 24.0)
 	unlock_tasting_dish("dish_cloud_dumplings")
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
@@ -3200,7 +3233,7 @@ func _get_tasting_ingredient_pools() -> Array[Dictionary]:
 	for isl in [1, 2, 3]:
 		if raw_baskets.has(isl):
 			pools.append(raw_baskets[isl])
-	for ws_id in ["mortar", "cauldron", "orbis_linked"]:
+	for ws_id in ["mortar", "cauldron", "coral_linked"]:
 		if workshop_outputs.has(ws_id):
 			pools.append(workshop_outputs[ws_id])
 	pools.append(bakery_inventory)
@@ -3246,9 +3279,6 @@ func _plan_tasting_ingredients(dish_id: String) -> Array[String]:
 		plan.append(picked)
 	return plan
 
-func can_cook_tasting_dish(dish_id: String) -> bool:
-	return not _plan_tasting_ingredients(dish_id).is_empty()
-
 ## Idle fallback: when a combo slot is missing, any harvested crop from the three islands' field baskets stands in for it.
 func _plan_tasting_fallback(dish_id: String) -> Array[String]:
 	var dcfg: Dictionary = EconomyConfig.TASTING_DISHES.get(dish_id, {})
@@ -3278,6 +3308,8 @@ func cook_tasting_dish(preferred_dish_id: String = "", allow_fallback: bool = fa
 		dish_id = preferred_dish_id
 	if not bool(unlocked_tasting_dishes.get(dish_id, false)):
 		dish_id = "dish_cloud_dumplings"
+	if is_stall_full() and int(tasting_inventory.get(dish_id, 0)) >= maxi(12, EconomyConfig.calc_buffer_capacity(maxi(1, int(building_levels.get("chef_pavilion", 1))))):
+		return {"cooked": false, "dish_id": dish_id, "stock": get_total_tasting_dish_stock_count(), "ingredients": []}
 	var plan := _plan_tasting_ingredients(dish_id)
 	var used_fallback := false
 	if plan.is_empty() and allow_fallback:
@@ -3291,7 +3323,7 @@ func cook_tasting_dish(preferred_dish_id: String = "", allow_fallback: bool = fa
 	var yield_qty := 1 + int(floor(float(lv) / 5.0))
 	var cap := maxi(12, EconomyConfig.calc_buffer_capacity(lv))
 	var cur_stock := maxi(0, int(tasting_inventory.get(dish_id, 0)))
-	var added := maxi(1, mini(yield_qty, maxi(1, cap - cur_stock)))
+	var added := maxi(0, mini(yield_qty, cap - cur_stock))
 	tasting_inventory[dish_id] = cur_stock + added
 	tasting_cook_counts[dish_id] = int(tasting_cook_counts.get(dish_id, 0)) + 1
 	unlock_tasting_dish(dish_id)
@@ -3351,10 +3383,6 @@ func run_tasting_challenge(preferred_dish_id: String = "") -> Dictionary:
 	var score := get_tasting_score(dish_id)
 	var passed := score >= EconomyConfig.TASTING_PASS_SCORE
 	tasting_best_scores[dish_id] = maxi(int(tasting_best_scores.get(dish_id, 0)), score)
-	var lv := maxi(1, int(building_levels.get("chef_pavilion", 1)))
-	var st_lv := maxi(1, int(building_levels.get("stall", 1)))
-	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
-	var unit := EconomyConfig.calc_item_unit_price(dish_id, lv, st_lv, shiba_lv, current_solar_term_idx)
 	var gold_gain := 0
 	var amber_gain := 0
 	var voucher_gain := 0
@@ -3362,7 +3390,7 @@ func run_tasting_challenge(preferred_dish_id: String = "") -> Dictionary:
 	var first_pass := false
 	var medal_awarded := false
 	if passed:
-		gold_gain = maxi(1, int(round(float(unit) * 2.2 * get_codex_price_multiplier() * get_wish_lantern_sale_multiplier(dish_id))))
+		gold_gain = income_gold((4.0 if bool(tasting_challenges_passed.get(dish_id, false)) else 40.0) * get_wish_lantern_sale_multiplier(dish_id), 4)
 		amber_gain = int(dcfg.get("amber_bonus", 4))
 		voucher_gain = int(dcfg.get("voucher_bonus", 1))
 		rep_gain = int(dcfg.get("rep_bonus", 60))
@@ -3384,7 +3412,7 @@ func run_tasting_challenge(preferred_dish_id: String = "") -> Dictionary:
 				rep_gain += 200
 	else:
 		# The jury still pays a modest tasting fee for a near-miss dish
-		gold_gain = maxi(1, int(round(float(unit) * 0.8)))
+		gold_gain = income_gold(2.0, 2)
 		amber_gain = 1
 		rep_gain = 12
 	add_gold(gold_gain)
@@ -3403,7 +3431,7 @@ func run_tasting_challenge(preferred_dish_id: String = "") -> Dictionary:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.CHEF_PAVILION_SLOT_X, EconomyConfig.GROUND_Y - 60.0),
-		(EconomyConfig.tr_key("ft_tasting_pass") % [EconomyConfig.get_item_display_name(dish_id), score]) if passed else (EconomyConfig.tr_key("ft_tasting_fail") % [EconomyConfig.get_item_display_name(dish_id), score, EconomyConfig.TASTING_PASS_SCORE]),
+		(EconomyConfig.tr_fmt("ft_tasting_pass", [EconomyConfig.get_item_display_name(dish_id), score])) if passed else (EconomyConfig.tr_fmt("ft_tasting_fail", [EconomyConfig.get_item_display_name(dish_id), score, EconomyConfig.TASTING_PASS_SCORE])),
 		Color("#FFE066") if passed else Color("#FFF4D6")
 	)
 	save_game()
@@ -3436,8 +3464,8 @@ func _tick_chef_pavilion(delta: float) -> void:
 	while chef_cook_timer >= cook_req and safety < 4:
 		chef_cook_timer -= cook_req
 		safety += 1
-		var res := cook_tasting_dish(active_tasting_dish_id, true)
-		if bool(res.get("cooked", false)) and is_wish_lantern_festival_active() and has_pending_tasting_challenge():
+		cook_tasting_dish(active_tasting_dish_id, true)
+		if is_wish_lantern_festival_active() and has_pending_tasting_challenge():
 			var pend_id := _pick_tasting_challenge_dish("")
 			if int(tasting_inventory.get(pend_id, 0)) > 0 and get_tasting_score(pend_id) >= EconomyConfig.TASTING_PASS_SCORE:
 				run_tasting_challenge(pend_id)
@@ -3445,9 +3473,9 @@ func _tick_chef_pavilion(delta: float) -> void:
 		cook_req = maxf(2.0, float(dcfg.get("cook_time", 8.0)))
 
 ## ==================================================================
-## CI-10: Cloud-Sea Lighthouse Fishing Harbor (`云海灯塔渔港`) & Islander Specialty Market Auction (`岛民名物集市拍卖会`)
+## CI-10: Cloud-Sea Lighthouse Fishing Harbor (`云海灯塔渔港`)
 ## ==================================================================
-func _reset_harbor_and_auction_state() -> void:
+func _reset_harbor_state() -> void:
 	lighthouse_harbor_unlocked = false
 	harbor_clock = 0.0
 	harbor_boat_trips = [0, 0]
@@ -3455,29 +3483,6 @@ func _reset_harbor_and_auction_state() -> void:
 	seafood_landed_total = 0
 	harbor_trips_total = 0
 	harbor_reputation_bonus = 0
-	island_auction_active = false
-	auction_lot_index = 0
-	auction_lot_timer = 0.0
-	auction_lot_elapsed = 0.0
-	auction_ai_ticks_done = 0
-	auction_start_bid = 0
-	auction_increment = 1
-	auction_high_bid = 0
-	auction_high_bidder = ""
-	auction_ai_caps = []
-	auction_player_bids = 0
-	auction_ai_bids = 0
-	auction_round_results = []
-	auction_round_player_wins = 0
-	auction_cooldown_timer = EconomyConfig.AUCTION_FIRST_COOLDOWN_SEC
-	auction_buff_timer = 0.0
-	auctions_held = 0
-	for lot_id in EconomyConfig.AUCTION_LOT_ORDER:
-		auction_lots_won[lot_id] = false
-		auction_collectibles[lot_id] = 0
-	auction_gavel_medals = 0
-	auction_reputation_bonus = 0
-	auction_last_result = {}
 
 func unlock_lighthouse_harbor(free_for_test: bool = false) -> bool:
 	if lighthouse_harbor_unlocked:
@@ -3490,7 +3495,6 @@ func unlock_lighthouse_harbor(free_for_test: bool = false) -> bool:
 		return false
 	lighthouse_harbor_unlocked = true
 	set_harbor_clock(0.0)
-	auction_cooldown_timer = minf(auction_cooldown_timer, EconomyConfig.AUCTION_FIRST_COOLDOWN_SEC)
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
 	EventBus.lighthouse_harbor_unlocked_changed.emit(true)
@@ -3607,7 +3611,7 @@ func _land_harbor_catch(boat_idx: int, trips: int) -> int:
 	EventBus.seafood_catch_landed.emit(boat_idx, qty, get_harbor_seafood_stock())
 	EventBus.spawn_floating_text.emit(
 		Vector2(float(EconomyConfig.HARBOR_BOAT_LANE["berth_x"]), EconomyConfig.GROUND_Y - 30.0),
-		EconomyConfig.tr_key("ft_boat_back") % qty,
+		EconomyConfig.tr_fmt("ft_boat_back", [qty]),
 		Color("#88D8FF")
 	)
 	evaluate_achievements()
@@ -3620,266 +3624,6 @@ func ship_harbor_seafood_to_stall(max_qty: int = 3) -> int:
 	var added := add_to_stall(EconomyConfig.SEAFOOD_ITEM_ID, mini(stock, maxi(1, max_qty)))
 	harbor_seafood_inventory[EconomyConfig.SEAFOOD_ITEM_ID] = stock - added
 	return added
-
-func is_island_auction_available() -> bool:
-	return lighthouse_harbor_unlocked and bool(unlocked_islands.get(3, false))
-
-func get_auction_lot_id() -> String:
-	return EconomyConfig.AUCTION_LOT_ORDER[clampi(auction_lot_index, 0, EconomyConfig.AUCTION_LOT_ORDER.size() - 1)]
-
-func get_auction_lot_cfg() -> Dictionary:
-	return EconomyConfig.AUCTION_LOTS.get(get_auction_lot_id(), {})
-
-func get_auction_currency() -> String:
-	return String(get_auction_lot_cfg().get("currency", "gold"))
-
-func get_auction_currency_tag(cur: String = "") -> String:
-	var c := cur if cur != "" else get_auction_currency()
-	return EconomyConfig.tr_key("ui_cur_amber") if c == "amber" else "G"
-
-func get_unlocked_auction_lot_count() -> int:
-	var cnt := 0
-	for lot_id in EconomyConfig.AUCTION_LOT_ORDER:
-		if bool(auction_lots_won.get(lot_id, false)):
-			cnt += 1
-	return cnt
-
-func get_total_auction_collectibles() -> int:
-	var s := 0
-	for lot_id in EconomyConfig.AUCTION_LOT_ORDER:
-		s += maxi(0, int(auction_collectibles.get(lot_id, 0)))
-	return s
-
-func get_auction_sale_multiplier(_item_id: String = "") -> float:
-	return EconomyConfig.AUCTION_BUFF_SALE_MULT if auction_buff_timer > 0.0 else 1.0
-
-func start_island_auction(force: bool = false) -> bool:
-	if island_auction_active:
-		return false
-	if not force and not is_island_auction_available():
-		return false
-	island_auction_active = true
-	auction_round_results = []
-	auction_round_player_wins = 0
-	auction_last_result = {}
-	auctions_held += 1
-	_begin_auction_lot(0)
-	if SoundManager != null:
-		SoundManager.play_milestone_sfx()
-	EventBus.island_auction_started.emit(EconomyConfig.AUCTION_LOT_ORDER.size())
-	EventBus.spawn_floating_text.emit(
-		Vector2(EconomyConfig.LIGHTHOUSE_HARBOR_SLOT_X, EconomyConfig.GROUND_Y - 96.0),
-		EconomyConfig.tr_key("ft_auction_open"),
-		Color("#FFD8A8")
-	)
-	return true
-
-## Lot prices: gold lots open at `idle gold/s x start_gps_sec` (floor `start_min`), +12% steps; islander caps are fixed multiples.
-func _begin_auction_lot(idx: int) -> void:
-	auction_lot_index = clampi(idx, 0, EconomyConfig.AUCTION_LOT_ORDER.size() - 1)
-	var cfg := get_auction_lot_cfg()
-	auction_ai_caps = []
-	if String(cfg.get("currency", "gold")) == "amber":
-		auction_start_bid = maxi(1, int(cfg.get("start_amber", 3)))
-		auction_increment = maxi(1, int(cfg.get("inc_amber", 1)))
-		for c in cfg.get("ai_caps", []):
-			auction_ai_caps.append(maxi(0, int(c)))
-	else:
-		var gps := estimate_idle_gold_per_sec()
-		auction_start_bid = maxi(int(cfg.get("start_min", 360)), int(round(gps * float(cfg.get("start_gps_sec", 14.0)))))
-		auction_increment = maxi(10, int(round(float(auction_start_bid) * float(cfg.get("inc_frac", 0.12)))))
-		for c in cfg.get("ai_caps", []):
-			auction_ai_caps.append(int(round(float(auction_start_bid) * float(c))))
-	auction_high_bid = 0
-	auction_high_bidder = ""
-	auction_lot_timer = EconomyConfig.AUCTION_LOT_SEC
-	auction_lot_elapsed = 0.0
-	auction_ai_ticks_done = 0
-	auction_player_bids = 0
-	auction_ai_bids = 0
-
-func get_auction_next_bid() -> int:
-	return auction_start_bid if auction_high_bidder == "" else auction_high_bid + auction_increment
-
-func get_auction_max_ai_cap() -> int:
-	var m := 0
-	for c in auction_ai_caps:
-		m = maxi(m, int(c))
-	return m
-
-func can_player_afford_auction_bid(amount: int) -> bool:
-	if get_auction_currency() == "amber":
-		return amber >= amount
-	return gold >= amount
-
-func place_auction_bid() -> Dictionary:
-	if not island_auction_active:
-		return {"ok": false, "reason": "inactive", "amount": 0}
-	if auction_high_bidder == "player":
-		return {"ok": false, "reason": "leading", "amount": auction_high_bid}
-	var amount := get_auction_next_bid()
-	var cur := get_auction_currency()
-	if not can_player_afford_auction_bid(amount):
-		return {"ok": false, "reason": "short", "amount": amount, "currency": cur}
-	auction_high_bid = amount
-	auction_high_bidder = "player"
-	auction_player_bids += 1
-	# Soft close: a late bid always leaves the islanders one more bidding window
-	if auction_lot_timer < EconomyConfig.AUCTION_SOFT_CLOSE_SEC:
-		auction_lot_timer = EconomyConfig.AUCTION_SOFT_CLOSE_SEC
-	if SoundManager != null:
-		SoundManager.play_click_sfx()
-	EventBus.auction_bid_placed.emit(get_auction_lot_id(), "player", amount, cur)
-	return {"ok": true, "reason": "bid", "amount": amount, "currency": cur}
-
-## One islander bid per cadence tick: bidders are polled round-robin from `tick_idx`, the first one whose cap covers the
-## next step (and who is not already leading) raises by exactly one increment. No randomness -> fully reproducible.
-func _auction_ai_tick(tick_idx: int) -> bool:
-	var n := EconomyConfig.AUCTION_BIDDERS.size()
-	var next_bid := get_auction_next_bid()
-	for k in range(n):
-		var bi := (tick_idx + k) % n
-		if bi >= auction_ai_caps.size():
-			continue
-		var bid_id := String(EconomyConfig.AUCTION_BIDDERS[bi]["id"])
-		if bid_id == auction_high_bidder:
-			continue
-		if int(auction_ai_caps[bi]) >= next_bid:
-			auction_high_bid = next_bid
-			auction_high_bidder = bid_id
-			auction_ai_bids += 1
-			EventBus.auction_bid_placed.emit(get_auction_lot_id(), bid_id, next_bid, get_auction_currency())
-			return true
-	return false
-
-func advance_island_auction(delta: float) -> Dictionary:
-	if not island_auction_active:
-		return {}
-	var step := maxf(0.0, delta)
-	auction_lot_elapsed += step
-	auction_lot_timer -= step
-	while auction_lot_timer > 0.0 and auction_lot_elapsed >= float(auction_ai_ticks_done + 1) * EconomyConfig.AUCTION_AI_BID_INTERVAL:
-		auction_ai_ticks_done += 1
-		_auction_ai_tick(auction_ai_ticks_done)
-	if auction_lot_timer <= 0.0:
-		return _resolve_auction_lot()
-	return {}
-
-func _resolve_auction_lot() -> Dictionary:
-	var lot_id := get_auction_lot_id()
-	var cfg := get_auction_lot_cfg()
-	var cur := get_auction_currency()
-	var winner := auction_high_bidder
-	var price := auction_high_bid
-	var player_won := false
-	var rewards: Dictionary = {}
-	if winner == "player":
-		var paid := spend_amber(price) if cur == "amber" else spend_gold(price)
-		if paid:
-			player_won = true
-			rewards = _grant_auction_lot_rewards(lot_id, cfg)
-		else:
-			# The bid could not be settled -> the strongest islander takes the lot at its own cap
-			var best_i := -1
-			for bi in range(auction_ai_caps.size()):
-				if best_i < 0 or int(auction_ai_caps[bi]) > int(auction_ai_caps[best_i]):
-					best_i = bi
-			winner = String(EconomyConfig.AUCTION_BIDDERS[best_i]["id"]) if best_i >= 0 else ""
-			price = mini(price, int(auction_ai_caps[best_i])) if best_i >= 0 else 0
-	var res := {
-		"lot_id": lot_id,
-		"lot_index": auction_lot_index,
-		"winner_id": winner,
-		"winner_name": EconomyConfig.get_auction_bidder_name(winner) if winner != "" else EconomyConfig.tr_key("ui_unsold"),
-		"price": price,
-		"currency": cur,
-		"player_won": player_won,
-		"rewards": rewards,
-		"player_bids": auction_player_bids,
-		"ai_bids": auction_ai_bids,
-		"start_bid": auction_start_bid,
-		"max_ai_cap": get_auction_max_ai_cap()
-	}
-	auction_round_results.append(res)
-	auction_last_result = res
-	if player_won:
-		auction_round_player_wins += 1
-		if SoundManager != null:
-			SoundManager.play_coin_sfx()
-	EventBus.auction_lot_resolved.emit(lot_id, winner, price, cur, player_won)
-	EventBus.spawn_floating_text.emit(
-		Vector2(EconomyConfig.LIGHTHOUSE_HARBOR_SLOT_X, EconomyConfig.GROUND_Y - 96.0),
-		(EconomyConfig.tr_key("ft_au_won") % [EconomyConfig.get_item_display_name(lot_id), price, get_auction_currency_tag(cur)]) if player_won else (EconomyConfig.tr_key("ft_au_lost") % [EconomyConfig.get_item_display_name(lot_id), String(res["winner_name"])]),
-		Color("#FFE066") if player_won else Color("#FFF4D6")
-	)
-	if auction_lot_index + 1 < EconomyConfig.AUCTION_LOT_ORDER.size():
-		_begin_auction_lot(auction_lot_index + 1)
-	else:
-		_end_island_auction()
-	EventBus.inventory_changed.emit()
-	return res
-
-func _grant_auction_lot_rewards(lot_id: String, cfg: Dictionary) -> Dictionary:
-	var first_win := not bool(auction_lots_won.get(lot_id, false))
-	auction_lots_won[lot_id] = true
-	auction_collectibles[lot_id] = int(auction_collectibles.get(lot_id, 0)) + 1
-	# `名物热卖` buff: every stall sale earns 1.25x for 45s after a won lot
-	auction_buff_timer = maxf(auction_buff_timer, EconomyConfig.AUCTION_BUFF_SEC)
-	var amb := maxi(0, int(cfg.get("amber", 0)))
-	var vou := maxi(0, int(cfg.get("vouchers", 0)))
-	var rep := maxi(0, int(cfg.get("rep", 60)))
-	add_amber(amb)
-	if vou > 0:
-		add_rare_voucher(vou)
-	auction_reputation_bonus += rep
-	var seafood_gain := maxi(0, int(cfg.get("seafood", 0)))
-	if seafood_gain > 0:
-		harbor_seafood_inventory[EconomyConfig.SEAFOOD_ITEM_ID] = mini(maxi(get_harbor_seafood_cap(), get_harbor_seafood_stock()), get_harbor_seafood_stock() + seafood_gain)
-	var souv := String(cfg.get("souvenir", ""))
-	if souv != "" and souvenir_inventory.has(souv):
-		souvenir_inventory[souv] = int(souvenir_inventory.get(souv, 0)) + 1
-		unlock_souvenir_box(souv)
-	if first_win:
-		EventBus.codex_unlocked.emit(lot_id)
-	evaluate_achievements()
-	return {"amber": amb, "vouchers": vou, "rep": rep, "seafood": seafood_gain, "souvenir": souv, "first_win": first_win, "buff_sec": EconomyConfig.AUCTION_BUFF_SEC}
-
-func _end_island_auction() -> void:
-	island_auction_active = false
-	auction_cooldown_timer = EconomyConfig.AUCTION_COOLDOWN_SEC
-	var gavel := auction_round_player_wins >= EconomyConfig.AUCTION_LOT_ORDER.size()
-	if gavel:
-		# `金槌勋章`: all 3 specialty lots won in one auction
-		auction_gavel_medals += 1
-		add_amber(6)
-		add_rare_voucher(2)
-		auction_reputation_bonus += 150
-		if SoundManager != null:
-			SoundManager.play_milestone_sfx()
-	evaluate_achievements()
-	EventBus.island_auction_ended.emit(auction_round_player_wins, gavel)
-	EventBus.prosperity_changed.emit(get_prosperity_score())
-	save_game()
-
-func get_auction_status_summary() -> Dictionary:
-	var cfg := get_auction_lot_cfg()
-	var cur := get_auction_currency()
-	return {
-		"active": island_auction_active,
-		"lot_index": auction_lot_index,
-		"lot_count": EconomyConfig.AUCTION_LOT_ORDER.size(),
-		"lot_id": get_auction_lot_id(),
-		"lot_short": EconomyConfig.tr_name(String(cfg.get("short_name", "名物"))),
-		"timer": maxf(0.0, auction_lot_timer),
-		"high_bid": auction_high_bid,
-		"high_bidder": auction_high_bidder,
-		"leader_name": EconomyConfig.get_auction_bidder_name(auction_high_bidder) if auction_high_bidder != "" else "",
-		"next_bid": get_auction_next_bid(),
-		"currency": cur,
-		"cur_tag": get_auction_currency_tag(cur),
-		"player_leading": auction_high_bidder == "player",
-		"can_afford": can_player_afford_auction_bid(get_auction_next_bid())
-	}
 
 ## ==================================================================
 ## CI-11: Cloud Ranch Dairy Workshop (`云端牧场乳品工坊`) & Starry Night-Market Open-Air Cinema (`星空夜市露天电影院`)
@@ -3940,12 +3684,6 @@ func get_dairy_level() -> int:
 
 func get_dairy_stock(item_id: String) -> int:
 	return maxi(0, int(dairy_inventory.get(item_id, 0)))
-
-func get_total_dairy_stock_count() -> int:
-	var s := 0
-	for d_id in EconomyConfig.DAIRY_CODEX_ORDER:
-		s += get_dairy_stock(d_id)
-	return s
 
 func get_dairy_buffer_cap() -> int:
 	return maxi(12, EconomyConfig.calc_buffer_capacity(get_dairy_level()))
@@ -4143,22 +3881,13 @@ func get_cinema_screening_remaining() -> float:
 		return 0.0
 	return maxf(0.0, float(k) * EconomyConfig.CINEMA_SLOT_SEC + EconomyConfig.CINEMA_SCREEN_SEC - cinema_night_clock)
 
-func get_cinema_screening_ratio() -> float:
-	if not is_cinema_screening_active():
-		return 0.0
-	return clampf(1.0 - get_cinema_screening_remaining() / EconomyConfig.CINEMA_SCREEN_SEC, 0.0, 1.0)
-
-## Audience per screening: 8 night strollers, +4 when the CI-2 `云端花火灯会` night-market festival is on.
 func get_cinema_audience() -> int:
-	var aud := EconomyConfig.CINEMA_BASE_AUDIENCE
-	if is_lantern_festival_active():
-		aud += EconomyConfig.CINEMA_FESTIVAL_AUDIENCE_BONUS
-	return aud
+	return EconomyConfig.CINEMA_BASE_AUDIENCE
 
 ## Ticket price follows the island's idle economy (buildings + crew), with the codex / festival price multipliers divided out
 ## so a night's three screenings always sell at one stable price even when a film unlocks its codex entry mid-programme.
 func get_cinema_ticket_price() -> int:
-	var base_gps := estimate_idle_gold_per_sec() / maxf(0.01, get_codex_price_multiplier())
+	var base_gps := estimate_idle_gold_per_sec() / get_collection_multiplier()
 	return maxi(EconomyConfig.CINEMA_TICKET_MIN_GOLD, int(round(base_gps * EconomyConfig.CINEMA_TICKET_GPS_SEC)))
 
 ## Night-market sale boost while the cinema is open (night only, deterministic `1.25x`).
@@ -4181,7 +3910,7 @@ func get_seconds_until_night() -> float:
 	if current_weather == WeatherState.NIGHT:
 		return 0.0
 	var steps := posmod(WeatherState.NIGHT - current_weather, 4)
-	return maxf(0.0, float(steps) * 42.0 - weather_timer)
+	return maxf(0.0, float(steps) * Pacing.DAY_PHASE_SEC - weather_timer)
 
 ## Opens the night programme at the first frame of a NIGHT phase and closes it at the first frame after it:
 ## a film still rolling when the night ends is cancelled without ticket income.
@@ -4189,6 +3918,7 @@ func _sync_cinema_night_state() -> void:
 	var night := is_cinema_open()
 	if night and not cinema_night_on:
 		cinema_night_on = true
+		cinema_snacks_tonight = 0
 		cinema_night_clock = 0.0
 		cinema_screenings_tonight = 0
 		cinema_last_started_idx = -1
@@ -4223,7 +3953,7 @@ func advance_cinema(delta: float) -> int:
 		EventBus.cinema_screening_started.emit(k_now, f_now)
 		EventBus.spawn_floating_text.emit(
 			Vector2(EconomyConfig.OPEN_AIR_CINEMA_SLOT_X, EconomyConfig.GROUND_Y - 62.0),
-			EconomyConfig.tr_key("ft_film_start") % EconomyConfig.get_item_display_name(f_now),
+			EconomyConfig.tr_fmt("ft_film_start", [EconomyConfig.get_item_display_name(f_now)]),
 			Color("#FFD8A8")
 		)
 	return settled
@@ -4234,10 +3964,7 @@ func sell_cinema_snacks(max_qty: int = 1) -> Dictionary:
 	var sold := 0
 	var gold_gain := 0
 	var items: Array[String] = []
-	var d_lv := get_dairy_level()
-	var st_lv := maxi(1, int(building_levels.get("stall", 1)))
-	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
-	for _i in range(maxi(0, max_qty)):
+	for _i in range(mini(maxi(0, max_qty), Pacing.SNACKS_PER_NIGHT - cinema_snacks_tonight)):
 		var snack_id := ""
 		for sid in EconomyConfig.CINEMA_SNACK_CANDIDATES:
 			if get_dairy_stock(sid) > 0 or int(stall_inventory.get(sid, 0)) > 0:
@@ -4249,9 +3976,9 @@ func sell_cinema_snacks(max_qty: int = 1) -> Dictionary:
 			dairy_inventory[snack_id] = get_dairy_stock(snack_id) - 1
 		else:
 			stall_inventory[snack_id] = int(stall_inventory.get(snack_id, 0)) - 1
-		var unit := EconomyConfig.calc_item_unit_price(snack_id, d_lv, st_lv, shiba_lv, current_solar_term_idx)
-		gold_gain += maxi(1, int(round(float(unit) * EconomyConfig.CINEMA_SNACK_PREMIUM * get_codex_price_multiplier())))
+		gold_gain += income_gold(EconomyConfig.CINEMA_SNACK_SEC, 2)
 		sold += 1
+		cinema_snacks_tonight += 1
 		items.append(snack_id)
 	if gold_gain > 0:
 		add_gold(gold_gain)
@@ -4319,7 +4046,7 @@ func _settle_cinema_screening(k: int) -> Dictionary:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.OPEN_AIR_CINEMA_SLOT_X, EconomyConfig.GROUND_Y - 52.0),
-		(EconomyConfig.tr_key("ft_cin_medal") if medal else EconomyConfig.tr_key("ft_cin_end")) + EconomyConfig.tr_key("ft_cin_audience") % [audience, ticket_gold] + ((EconomyConfig.tr_key("ft_cin_snack") % int(snack["gold"])) if int(snack["gold"]) > 0 else ""),
+		(EconomyConfig.tr_key("ft_cin_medal") if medal else EconomyConfig.tr_key("ft_cin_end")) + EconomyConfig.tr_fmt("ft_cin_audience", [audience, ticket_gold]) + ((EconomyConfig.tr_fmt("ft_cin_snack", [int(snack["gold"])])) if int(snack["gold"]) > 0 else ""),
 		Color("#FFE066") if medal else Color("#FFD8A8")
 	)
 	return res
@@ -4336,18 +4063,15 @@ func get_cinema_status_summary() -> Dictionary:
 		"slot_count": EconomyConfig.CINEMA_FILM_ORDER.size(),
 		"film_id": film_id,
 		"film_short": EconomyConfig.tr_name(String(fcfg.get("short_name", ""))),
-		"remaining": get_cinema_screening_remaining(),
-		"intermission_left": maxf(0.0, (float(k + 1) * EconomyConfig.CINEMA_SLOT_SEC - cinema_night_clock)) if (k >= 0 and not is_cinema_screening_active()) else 0.0,
+		"remaining": get_cinema_screening_remaining() / Pacing.CINEMA_PACE,
+		"intermission_left": maxf(0.0, (float(k + 1) * EconomyConfig.CINEMA_SLOT_SEC - cinema_night_clock)) / Pacing.CINEMA_PACE if (k >= 0 and not is_cinema_screening_active()) else 0.0,
 		"audience": get_cinema_audience(),
 		"ticket_price": get_cinema_ticket_price(),
 		"tonight": cinema_screenings_tonight,
 		"until_night": get_seconds_until_night()
 	}
 
-## ==================================================================
-## CI-12: Cloud Pottery Kiln Workshop (`云端陶艺窑坊`) & Islander Autumn Sports Day (`岛民秋季运动会`)
-## ==================================================================
-func _reset_pottery_and_sports_state() -> void:
+func _reset_pottery_state() -> void:
 	pottery_kiln_unlocked = false
 	active_pottery_recipe_id = "pottery_tea_bowl"
 	pottery_kiln_timer = 0.0
@@ -4359,24 +4083,6 @@ func _reset_pottery_and_sports_state() -> void:
 	pottery_clay_dug_total = 0
 	pottery_packed_in_boxes = 0
 	pottery_reputation_bonus = 0
-	sports_day_active = false
-	sports_day_clock = 0.0
-	sports_cooldown_timer = EconomyConfig.SPORTS_FIRST_COOLDOWN_SEC
-	sports_teams.clear()
-	sports_event_results.clear()
-	sports_points = {}
-	sports_last_started_idx = -1
-	sports_medals = 0
-	sports_days_held = 0
-	sports_events_held_total = 0
-	for e_id in EconomyConfig.SPORTS_EVENT_ORDER:
-		unlocked_sports_events[e_id] = false
-	for t_key in EconomyConfig.SPORTS_TEAM_ORDER:
-		sports_champion_counts[t_key] = 0
-	sports_prize_gold_total = 0
-	sports_reputation_bonus = 0
-	sports_last_result = {}
-	sports_last_champion = ""
 
 func unlock_pottery_kiln(free_for_test: bool = false) -> bool:
 	if pottery_kiln_unlocked:
@@ -4470,26 +4176,6 @@ func _on_item_produced_for_kiln(_island_idx: int, item_id: String, _qty: int) ->
 	if pottery_kiln_unlocked and EconomyConfig.CROPS.has(item_id):
 		dig_pottery_clay(EconomyConfig.POTTERY_CLAY_PER_HARVEST)
 
-func has_pottery_fuel() -> bool:
-	for cc in EconomyConfig.POTTERY_FUEL_CANDIDATES:
-		var cid := String(cc)
-		for isl in [3, 2, 1]:
-			if raw_baskets.has(isl) and int(raw_baskets[isl].get(cid, 0)) > 0:
-				return true
-		if int(stall_inventory.get(cid, 0)) > 0:
-			return true
-	return false
-
-func can_fire_pottery(item_id: String) -> bool:
-	if not pottery_kiln_unlocked or not EconomyConfig.POTTERY_RECIPE_ORDER.has(item_id):
-		return false
-	var cfg: Dictionary = EconomyConfig.POTTERY_ITEMS[item_id]
-	if get_pottery_stock(EconomyConfig.POTTERY_CLAY_ID) < int(cfg.get("clay_cost", 1)):
-		return false
-	if get_pottery_stock(item_id) >= get_pottery_buffer_cap():
-		return false
-	return has_pottery_fuel()
-
 ## Tea bowl = 1 clay + 1 fuel bundle; celadon vase = 2 clay + 1 fuel bundle (`1` harvested crop's dried stalks / husks).
 ## The kiln shelf keeps 1 of each ware for the souvenir gift boxes; every surplus piece is shipped to the market stall.
 func fire_pottery(preferred_id: String = "") -> Dictionary:
@@ -4543,19 +4229,6 @@ func ship_pottery_to_stall(max_qty: int = 3) -> int:
 			shipped += put
 	return shipped
 
-## Why the kiln is idle (`ok` / `clay` / `fuel` / `full`) for the badge and the HUD card
-func get_pottery_kiln_status() -> String:
-	if not pottery_kiln_unlocked:
-		return "locked"
-	var cfg: Dictionary = EconomyConfig.POTTERY_ITEMS.get(active_pottery_recipe_id, {})
-	if get_pottery_stock(EconomyConfig.POTTERY_CLAY_ID) < int(cfg.get("clay_cost", 1)):
-		return "clay"
-	if not has_pottery_fuel():
-		return "fuel"
-	if get_pottery_stock(active_pottery_recipe_id) >= get_pottery_buffer_cap():
-		return "full"
-	return "ok"
-
 func _tick_pottery_kiln(delta: float) -> void:
 	pottery_kiln_timer += maxf(0.0, delta) * get_pottery_speed_multiplier()
 	var safety := 0
@@ -4568,300 +4241,12 @@ func _tick_pottery_kiln(delta: float) -> void:
 				if alt_id != first_try and bool(fire_pottery(alt_id).get("fired", false)):
 					break
 
-## ---------------- Autumn Sports Day ----------------
-## Teams = Island 1 crew species with at least one recruited worker (月兔/水獭/狐狸/柴犬 队), at least 2 teams.
-func get_sports_eligible_teams() -> Array[String]:
-	var out: Array[String] = []
-	for t_key in EconomyConfig.SPORTS_TEAM_ORDER:
-		if get_island_recruited_count(1, t_key) >= 1:
-			out.append(t_key)
-	return out
-
-func can_start_sports_day() -> bool:
-	return not sports_day_active and get_sports_eligible_teams().size() >= EconomyConfig.SPORTS_MIN_TEAMS
-
-func start_sports_day() -> bool:
-	if sports_day_active:
-		return false
-	var teams := get_sports_eligible_teams()
-	if teams.size() < EconomyConfig.SPORTS_MIN_TEAMS:
-		return false
-	sports_day_active = true
-	sports_day_clock = 0.0
-	sports_teams = teams
-	sports_event_results.clear()
-	sports_points = {}
-	for t_key in teams:
-		sports_points[t_key] = 0
-	sports_last_started_idx = -1
-	sports_last_result = {}
-	sports_last_champion = ""
-	sports_cooldown_timer = EconomyConfig.SPORTS_COOLDOWN_SEC
-	if SoundManager != null:
-		SoundManager.play_milestone_sfx()
-	EventBus.sports_day_started.emit(teams.size())
-	EventBus.spawn_floating_text.emit(
-		Vector2(EconomyConfig.SPORTS_TRACK_CENTER_X, EconomyConfig.GROUND_Y - 58.0),
-		EconomyConfig.tr_key("ft_sp_open") % [teams.size(), EconomyConfig.SPORTS_SPECTATOR_SALE_MULT],
-		Color("#FFE066")
-	)
-	return true
-
-func is_sports_day_active() -> bool:
-	return sports_day_active
-
-## Index of the mini event running right now (`-1` during march-in, breaks, the award ceremony or when idle)
-func get_sports_event_index() -> int:
-	if not sports_day_active:
-		return -1
-	for k in range(EconomyConfig.SPORTS_EVENT_ORDER.size()):
-		var st := EconomyConfig.get_sports_event_start_sec(k)
-		if sports_day_clock >= st and sports_day_clock < st + EconomyConfig.SPORTS_EVENT_SEC:
-			return k
-	return -1
-
-func get_sports_award_start_sec() -> float:
-	return EconomyConfig.get_sports_event_start_sec(EconomyConfig.SPORTS_EVENT_ORDER.size() - 1) + EconomyConfig.SPORTS_EVENT_SEC
-
-## `idle` / `gather` / `event` / `break` / `award`
-func get_sports_phase() -> String:
-	if not sports_day_active:
-		return "idle"
-	if sports_day_clock < EconomyConfig.SPORTS_GATHER_SEC:
-		return "gather"
-	if get_sports_event_index() >= 0:
-		return "event"
-	if sports_day_clock >= get_sports_award_start_sec():
-		return "award"
-	return "break"
-
-## The event being run, or the next one during march-in / breaks (the last one during the ceremony)
-func get_sports_focus_event_index() -> int:
-	if not sports_day_active:
-		return -1
-	var k := get_sports_event_index()
-	if k >= 0:
-		return k
-	for kk in range(EconomyConfig.SPORTS_EVENT_ORDER.size()):
-		if sports_day_clock < EconomyConfig.get_sports_event_start_sec(kk):
-			return kk
-	return EconomyConfig.SPORTS_EVENT_ORDER.size() - 1
-
-func get_sports_event_progress() -> float:
-	var k := get_sports_event_index()
-	if k < 0:
-		return 0.0
-	return clampf((sports_day_clock - EconomyConfig.get_sports_event_start_sec(k)) / EconomyConfig.SPORTS_EVENT_SEC, 0.0, 1.0)
-
-func get_sports_seconds_left() -> float:
-	if not sports_day_active:
-		return 0.0
-	return maxf(0.0, EconomyConfig.get_sports_day_total_sec() - sports_day_clock)
-
-func get_sports_current_event_id() -> String:
-	var k := get_sports_focus_event_index()
-	return EconomyConfig.SPORTS_EVENT_ORDER[k] if k >= 0 else ""
-
-## Deterministic athlete score: species stats at the current crew level + a fixed per-(team, event, day) form bonus (0..4%)
-## hashed from the team key, the event id and the number of sports days already held (no RNG, replays are identical).
-func get_sports_team_score(team_key: String, event_id: String, day_seed: int) -> float:
-	var lv := maxi(1, int(animal_levels.get(team_key, 1)))
-	var spd := EconomyConfig.calc_move_speed(team_key, lv)
-	var cap := float(EconomyConfig.calc_carry_capacity(team_key, lv))
-	var base := 0.0
-	match event_id:
-		"sports_relay":
-			base = spd * (1.0 + 0.012 * float(lv))
-		"sports_tug_of_war":
-			base = (cap * 10.0 + float(lv)) * float(EconomyConfig.SPORTS_TUG_STRENGTH.get(team_key, 1.0)) * 4.0
-		_:
-			base = (cap * 0.5 + 1.0) * spd
-	var form := posmod(("%s|%s|%d" % [team_key, event_id, day_seed]).hash(), 1000)
-	return base * (1.0 + 0.04 * float(form) / 1000.0)
-
-func _sports_rank_cmp(a: Dictionary, b: Dictionary) -> bool:
-	if absf(float(a["score"]) - float(b["score"])) > 0.0001:
-		return float(a["score"]) > float(b["score"])
-	return int(a["order"]) < int(b["order"])
-
-func compute_sports_ranking(event_id: String, teams: Array, day_seed: int) -> Array[String]:
-	var scored: Array = []
-	for t in teams:
-		var t_key := String(t)
-		scored.append({"team": t_key, "score": get_sports_team_score(t_key, event_id, day_seed), "order": EconomyConfig.SPORTS_TEAM_ORDER.find(t_key)})
-	scored.sort_custom(_sports_rank_cmp)
-	var out: Array[String] = []
-	for e in scored:
-		out.append(String(e["team"]))
-	return out
-
-## Placement in mini event `event_idx` of the current sports day (`0` = 1st), `-1` if the team does not compete
-func get_sports_team_rank(team_key: String, event_idx: int) -> int:
-	if event_idx < 0 or event_idx >= EconomyConfig.SPORTS_EVENT_ORDER.size():
-		return -1
-	return compute_sports_ranking(EconomyConfig.SPORTS_EVENT_ORDER[event_idx], sports_teams, sports_days_held).find(team_key)
-
-## Per-event prize pool follows the idle economy with the codex multiplier divided out (stable within one sports day)
-func get_sports_prize_gold() -> int:
-	var base_gps := estimate_idle_gold_per_sec() / maxf(0.01, get_codex_price_multiplier())
-	return maxi(EconomyConfig.SPORTS_PRIZE_MIN_GOLD, int(round(base_gps * EconomyConfig.SPORTS_PRIZE_GPS_SEC)))
-
-## Spectators lining the pond while the sports day runs: every stall sale `1.20x`
-func get_sports_sale_multiplier(_item_id: String = "") -> float:
-	return EconomyConfig.SPORTS_SPECTATOR_SALE_MULT if sports_day_active else 1.0
-
-func get_sports_visitor_spawn_mult() -> float:
-	return EconomyConfig.SPORTS_SPECTATOR_SPAWN_MULT if sports_day_active else 1.0
-
-func get_unlocked_sports_event_count() -> int:
-	var cnt := 0
-	for e_id in EconomyConfig.SPORTS_EVENT_ORDER:
-		if bool(unlocked_sports_events.get(e_id, false)):
-			cnt += 1
-	return cnt
-
-## Champion = most placement points (3/2/1/0); a tie goes to the better placement in the final event
-func get_sports_champion_key() -> String:
-	if sports_teams.is_empty():
-		return ""
-	var last_rank: Array[String] = compute_sports_ranking(EconomyConfig.SPORTS_EVENT_ORDER[EconomyConfig.SPORTS_EVENT_ORDER.size() - 1], sports_teams, sports_days_held)
-	var best := ""
-	var best_pts := -1
-	for t_key in last_rank:
-		var pts := int(sports_points.get(t_key, 0))
-		if pts > best_pts:
-			best = t_key
-			best_pts = pts
-	return best
-
-func advance_sports_day(delta: float) -> int:
-	if not sports_day_active:
-		return 0
-	var prev := sports_day_clock
-	sports_day_clock += maxf(0.0, delta)
-	var settled := 0
-	for k in range(EconomyConfig.SPORTS_EVENT_ORDER.size()):
-		var end_t := EconomyConfig.get_sports_event_start_sec(k) + EconomyConfig.SPORTS_EVENT_SEC
-		if prev < end_t and sports_day_clock >= end_t:
-			_settle_sports_event(k)
-			settled += 1
-	var k_now := get_sports_event_index()
-	if k_now >= 0 and k_now != sports_last_started_idx:
-		sports_last_started_idx = k_now
-		var e_now := EconomyConfig.SPORTS_EVENT_ORDER[k_now]
-		EventBus.sports_event_started.emit(k_now, e_now)
-		EventBus.spawn_floating_text.emit(
-			Vector2(EconomyConfig.SPORTS_TRACK_CENTER_X, EconomyConfig.GROUND_Y - 60.0),
-			EconomyConfig.tr_key("ft_sp_event_start") % EconomyConfig.tr_name(String(EconomyConfig.SPORTS_EVENTS[e_now].get("name", e_now))),
-			Color("#FFE066")
-		)
-	if sports_day_active and sports_day_clock >= EconomyConfig.get_sports_day_total_sec():
-		_finish_sports_day()
-	return settled
-
-func _settle_sports_event(k: int) -> Dictionary:
-	var kk := clampi(k, 0, EconomyConfig.SPORTS_EVENT_ORDER.size() - 1)
-	var event_id := EconomyConfig.SPORTS_EVENT_ORDER[kk]
-	var ecfg: Dictionary = EconomyConfig.SPORTS_EVENTS[event_id]
-	var ranking := compute_sports_ranking(event_id, sports_teams, sports_days_held)
-	for ri in range(ranking.size()):
-		var t_key := ranking[ri]
-		sports_points[t_key] = int(sports_points.get(t_key, 0)) + int(EconomyConfig.SPORTS_PLACEMENT_POINTS[mini(ri, EconomyConfig.SPORTS_PLACEMENT_POINTS.size() - 1)])
-	var prize := get_sports_prize_gold()
-	var first_time := not bool(unlocked_sports_events.get(event_id, false))
-	unlocked_sports_events[event_id] = true
-	sports_events_held_total += 1
-	var amber_gain := 1
-	var voucher_gain := 1 if first_time else 0
-	var rep_gain := int(ecfg.get("rep_bonus", 30)) + 6 * ranking.size()
-	add_gold(prize)
-	add_amber(amber_gain)
-	if voucher_gain > 0:
-		add_rare_voucher(voucher_gain)
-	sports_prize_gold_total += prize
-	sports_reputation_bonus += rep_gain
-	career_stats["customers"] = int(career_stats.get("customers", 0)) + 1
-	var res := {
-		"event_id": event_id,
-		"event_idx": kk,
-		"ranking": ranking,
-		"points": sports_points.duplicate(),
-		"prize_gold": prize,
-		"amber": amber_gain,
-		"vouchers": voucher_gain,
-		"rep": rep_gain,
-		"first_time": first_time,
-		"medal_awarded": false,
-		"champion": ""
-	}
-	if first_time:
-		EventBus.codex_unlocked.emit(event_id)
-	if kk == EconomyConfig.SPORTS_EVENT_ORDER.size() - 1:
-		# `金丝带奖牌`: the whole 3-event programme is done -> the team with the most placement points is champion
-		var champ := get_sports_champion_key()
-		sports_medals += 1
-		sports_last_champion = champ
-		if sports_champion_counts.has(champ):
-			sports_champion_counts[champ] = int(sports_champion_counts[champ]) + 1
-		add_amber(3)
-		add_rare_voucher(1)
-		sports_reputation_bonus += 80
-		res["medal_awarded"] = true
-		res["champion"] = champ
-		res["amber"] = amber_gain + 3
-		res["vouchers"] = voucher_gain + 1
-		res["rep"] = rep_gain + 80
-	sports_event_results.append(res)
-	sports_last_result = res
-	if SoundManager != null:
-		if bool(res["medal_awarded"]):
-			SoundManager.play_milestone_sfx()
-		else:
-			SoundManager.play_coin_sfx()
-	EventBus.sports_event_settled.emit(event_id, ranking, prize)
-	EventBus.spawn_floating_text.emit(
-		Vector2(EconomyConfig.SPORTS_TRACK_CENTER_X, EconomyConfig.GROUND_Y - 52.0),
-		EconomyConfig.tr_key("ft_sp_event_win") % [EconomyConfig.tr_name(String(ecfg.get("short_name", event_id))), EconomyConfig.tr_name(String(EconomyConfig.SPORTS_TEAM_NAMES.get(ranking[0], ranking[0]))), prize],
-		Color("#FFE066")
-	)
-	if bool(res["medal_awarded"]):
-		EventBus.sports_day_ended.emit(sports_last_champion, sports_medals)
-	evaluate_achievements()
-	EventBus.prosperity_changed.emit(get_prosperity_score())
-	return res
-
-func _finish_sports_day() -> void:
-	sports_day_active = false
-	sports_day_clock = 0.0
-	sports_last_started_idx = -1
-	sports_days_held += 1
-	sports_cooldown_timer = EconomyConfig.SPORTS_COOLDOWN_SEC
-
-func get_sports_status_summary() -> Dictionary:
-	var k := get_sports_focus_event_index()
-	var e_id := EconomyConfig.SPORTS_EVENT_ORDER[k] if k >= 0 else ""
-	var ecfg: Dictionary = EconomyConfig.SPORTS_EVENTS.get(e_id, {})
-	return {
-		"active": sports_day_active,
-		"phase": get_sports_phase(),
-		"event_idx": k,
-		"event_count": EconomyConfig.SPORTS_EVENT_ORDER.size(),
-		"event_id": e_id,
-		"event_short": EconomyConfig.tr_name(String(ecfg.get("short_name", ""))),
-		"seconds_left": get_sports_seconds_left(),
-		"teams": sports_teams.size() if sports_day_active else get_sports_eligible_teams().size(),
-		"cooldown": maxf(0.0, sports_cooldown_timer),
-		"medals": sports_medals,
-		"champion": sports_last_champion
-	}
-
 ## ==================================================================
 ## CI-13: Cloud-Sea Kite Festival (`云海风筝节`) & Island Four-Season Dress-Up (`岛屿四季装扮`) — no new building
 ## ==================================================================
 func _reset_kite_and_season_state() -> void:
 	kite_festival_active = false
 	kite_festival_clock = 0.0
-	kite_cooldown_timer = EconomyConfig.KITE_FIRST_COOLDOWN_SEC
 	kite_festivals_held = 0
 	kite_festival_idx = 0
 	kite_collected_slots.clear()
@@ -4951,13 +4336,12 @@ func start_kite_festival() -> bool:
 	kite_festival_idx = kite_festivals_held
 	kite_collected_slots.clear()
 	kite_last_result = {}
-	kite_cooldown_timer = EconomyConfig.KITE_COOLDOWN_SEC
 	if SoundManager != null:
 		SoundManager.play_milestone_sfx()
 	EventBus.kite_festival_started.emit(kite_festival_idx)
 	EventBus.spawn_floating_text.emit(
 		Vector2(EconomyConfig.KITE_BADGE_POS.x + 70.0, EconomyConfig.GROUND_Y - 62.0),
-		EconomyConfig.tr_key("ft_kite_open") % [EconomyConfig.KITE_SLOTS.size(), get_kite_wind_name()],
+		EconomyConfig.tr_fmt("ft_kite_open", [EconomyConfig.KITE_SLOTS.size(), get_kite_wind_name()]),
 		Color("#9BE7FF")
 	)
 	return true
@@ -4969,10 +4353,6 @@ func get_kite_seconds_left() -> float:
 	if not kite_festival_active:
 		return 0.0
 	return maxf(0.0, EconomyConfig.KITE_FESTIVAL_SEC - kite_festival_clock)
-
-## Gust index (0..2) of the festival in flight
-func get_kite_gust_index() -> int:
-	return clampi(int(floor(kite_festival_clock / EconomyConfig.KITE_GUST_SEC)), 0, 2)
 
 func get_kite_wind_strength() -> float:
 	if not kite_festival_active:
@@ -5021,7 +4401,7 @@ func get_unlocked_kite_count() -> int:
 ## Gold for one kite = idle gold/s with the codex multiplier divided out x `gold_sec` (at least `KITE_MIN_GOLD`)
 func get_kite_reward_gold(kite_id: String) -> int:
 	var cfg: Dictionary = EconomyConfig.KITE_TYPES.get(kite_id, EconomyConfig.KITE_TYPES["kite_carp"])
-	var base_gps := estimate_idle_gold_per_sec() / maxf(0.01, get_codex_price_multiplier())
+	var base_gps := estimate_idle_gold_per_sec() / get_collection_multiplier()
 	return maxi(EconomyConfig.KITE_MIN_GOLD, int(round(base_gps * float(cfg.get("gold_sec", 6.0)))))
 
 ## Click a kite: reel it in for its reward (carp = most gold, bird = +1 amber, star = most reputation). Collecting all 6
@@ -5095,57 +4475,26 @@ func _finish_kite_festival() -> void:
 	kite_festival_clock = 0.0
 	kite_collected_slots.clear()
 	kite_festivals_held += 1
-	kite_cooldown_timer = EconomyConfig.KITE_COOLDOWN_SEC
 	EventBus.kite_festival_ended.emit(got, swept)
 
 func get_kite_status_summary() -> Dictionary:
 	return {
 		"active": kite_festival_active,
-		"seconds_left": get_kite_seconds_left(),
+		"seconds_left": get_kite_seconds_left() / Pacing.KITE_PACE,
 		"wind_name": get_kite_wind_name() if kite_festival_active else "",
 		"wind": get_kite_wind_strength(),
 		"sale_mult": get_kite_wind_sale_multiplier(),
 		"prod_mult": get_kite_wind_production_multiplier(),
 		"remaining": get_kite_remaining_count(),
 		"collected": kite_collected_slots.size(),
-		"cooldown": maxf(0.0, kite_cooldown_timer),
 		"medals": kite_medals,
 		"festivals": kite_festivals_held
 	}
 
 ## ==================================================================
-## CI-14: Cloud-Isle Photo Tour (`云岛观光摄影打卡`) & Islander Wish Board (`岛民心愿委托告示板`) — no new building
+## CI-14: Islander Wish Board (`岛民心愿委托告示板`)
 ## ==================================================================
-func _reset_photo_and_wish_state() -> void:
-	photo_tour_active = false
-	photo_tour_clock = 0.0
-	photo_tour_cooldown_timer = EconomyConfig.PHOTO_TOUR_FIRST_COOLDOWN_SEC
-	photo_tours_held = 0
-	photo_tour_idx = 0
-	photo_tour_route.clear()
-	photo_tour_stop_idx = 0
-	photo_tour_phase = ""
-	photo_tour_x = 0.0
-	photo_tour_entry_x = 0.0
-	photo_tour_target_x = 0.0
-	photo_tour_facing = 1.0
-	photo_tour_pose_timer = 0.0
-	photo_tour_shutter_done = false
-	photo_tour_photos.clear()
-	photo_tour_skipped.clear()
-	photo_tour_last_shot = {}
-	photo_tour_last_shot_age = 99.0
-	photo_cape_prop_blocked = false
-	unlocked_photos.clear()
-	photo_counts.clear()
-	for pid in EconomyConfig.get_photo_entry_order():
-		unlocked_photos[pid] = false
-		photo_counts[pid] = 0
-	photos_taken_total = 0
-	photo_gold_total = 0
-	photo_reputation_bonus = 0
-	photo_stamps = 0
-	photo_last_result = {}
+func _reset_wish_state() -> void:
 	wish_board.clear()
 	wish_serial_next = 0
 	wishes_fulfilled_total = 0
@@ -5156,258 +4505,8 @@ func _reset_photo_and_wish_state() -> void:
 	wish_vouchers_total = 0
 	wish_medals = 0
 	wish_last_result = {}
-	photo_wish_paused = false
+	wish_paused = false
 	_fill_wish_board()
-
-## ---------------- Photo tour ----------------
-## Spots on unlocked islands, west -> east (Island 1 always has the pond bank + cape lawn; Island 2 adds the kite terrace)
-func get_photo_tour_route_candidates() -> Array[String]:
-	var out: Array[String] = []
-	for s_id in EconomyConfig.PHOTO_SPOT_ORDER:
-		var sp: Dictionary = EconomyConfig.PHOTO_SPOTS[s_id]
-		if bool(unlocked_islands.get(int(sp["island"]), false)):
-			out.append(s_id)
-	return out
-
-## A spot can be photographed when its island is open; the cape lawn is closed while the night cinema stands on it
-func is_photo_spot_open(spot_id: String) -> bool:
-	if not EconomyConfig.PHOTO_SPOTS.has(spot_id):
-		return false
-	var sp: Dictionary = EconomyConfig.PHOTO_SPOTS[spot_id]
-	if not bool(unlocked_islands.get(int(sp["island"]), false)):
-		return false
-	if bool(sp.get("day_only", false)) and (current_weather == WeatherState.NIGHT or photo_cape_prop_blocked):
-		return false
-	return true
-
-## Special shot = the spot's landmark event is running (kite festival overhead / the night cinema across the pond / the
-## caravan airship docked above the cape)
-func is_photo_special_condition(spot_id: String) -> bool:
-	match spot_id:
-		"kite_terrace":
-			return kite_festival_active
-		"pond_bank":
-			return current_weather == WeatherState.NIGHT
-		"cape_lawn":
-			return airship_docked
-	return false
-
-func is_photo_tour_active() -> bool:
-	return photo_tour_active
-
-func can_start_photo_tour() -> bool:
-	return not photo_tour_active and not get_photo_tour_route_candidates().is_empty()
-
-func start_photo_tour() -> bool:
-	if not can_start_photo_tour():
-		return false
-	var route := get_photo_tour_route_candidates()
-	photo_tour_active = true
-	photo_tour_clock = 0.0
-	photo_tour_idx = photo_tours_held
-	photo_tour_route = route
-	photo_tour_stop_idx = 0
-	photo_tour_photos.clear()
-	photo_tour_skipped.clear()
-	photo_tour_last_shot = {}
-	photo_tour_last_shot_age = 99.0
-	var first: Dictionary = EconomyConfig.PHOTO_SPOTS[route[0]]
-	photo_tour_entry_x = clampf(float(first["pose_x"]) - EconomyConfig.PHOTO_TOUR_ENTRY_PX, 90.0, 1815.0)
-	photo_tour_x = photo_tour_entry_x
-	photo_tour_target_x = float(first["pose_x"])
-	photo_tour_facing = 1.0
-	photo_tour_phase = "walk"
-	photo_tour_pose_timer = 0.0
-	photo_tour_shutter_done = false
-	photo_tour_cooldown_timer = EconomyConfig.PHOTO_TOUR_COOLDOWN_SEC
-	if SoundManager != null:
-		SoundManager.play_milestone_sfx()
-	EventBus.photo_tour_started.emit(photo_tour_idx, route.size())
-	EventBus.spawn_floating_text.emit(
-		Vector2(float(first["pose_x"]), EconomyConfig.GROUND_Y - 58.0),
-		EconomyConfig.tr_key("ft_pt_start") % route.size(),
-		Color("#FFD8A8")
-	)
-	return true
-
-func get_photo_tour_current_spot() -> String:
-	if not photo_tour_active or photo_tour_stop_idx < 0 or photo_tour_stop_idx >= photo_tour_route.size():
-		return ""
-	return photo_tour_route[photo_tour_stop_idx]
-
-func is_photo_tourist_posing() -> bool:
-	return photo_tour_active and photo_tour_phase == "pose"
-
-## Fade in over the first 30px of the entry walk and out over the last 30px of the exit walk
-func get_photo_tourist_alpha() -> float:
-	if not photo_tour_active:
-		return 0.0
-	if photo_tour_phase == "walk" and photo_tour_stop_idx == 0:
-		return clampf(absf(photo_tour_x - photo_tour_entry_x) / EconomyConfig.PHOTO_TOUR_ENTRY_PX, 0.0, 1.0)
-	if photo_tour_phase == "exit":
-		return clampf(absf(photo_tour_target_x - photo_tour_x) / EconomyConfig.PHOTO_TOUR_ENTRY_PX, 0.0, 1.0)
-	return 1.0
-
-func advance_photo_tour(delta: float) -> bool:
-	if not photo_tour_active:
-		return false
-	var dt := maxf(0.0, delta)
-	photo_tour_clock += dt
-	photo_tour_last_shot_age += dt
-	if photo_tour_phase == "walk" or photo_tour_phase == "exit":
-		var dx := photo_tour_target_x - photo_tour_x
-		if absf(dx) > 0.01:
-			photo_tour_facing = signf(dx)
-		var step := EconomyConfig.PHOTO_TOUR_WALK_SPEED * dt
-		if absf(dx) <= step:
-			photo_tour_x = photo_tour_target_x
-			if photo_tour_phase == "exit":
-				_finish_photo_tour()
-				return true
-			_arrive_at_photo_stop()
-		else:
-			photo_tour_x += signf(dx) * step
-	elif photo_tour_phase == "pose":
-		var s_id := get_photo_tour_current_spot()
-		if not is_photo_spot_open(s_id):
-			# e.g. night falls on the cape lawn mid-pose: the cinema screen takes the cape, the sightseer walks on
-			if not photo_tour_shutter_done:
-				photo_tour_skipped.append(s_id)
-			_leave_photo_stop()
-			return false
-		photo_tour_pose_timer += dt
-		if not photo_tour_shutter_done and photo_tour_pose_timer >= EconomyConfig.PHOTO_SHUTTER_SEC:
-			photo_tour_shutter_done = true
-			_take_tour_photo(s_id)
-		if photo_tour_pose_timer >= EconomyConfig.PHOTO_POSE_SEC:
-			_leave_photo_stop()
-	return false
-
-func _arrive_at_photo_stop() -> void:
-	var s_id := get_photo_tour_current_spot()
-	if s_id == "" or not is_photo_spot_open(s_id):
-		if s_id != "":
-			photo_tour_skipped.append(s_id)
-		_leave_photo_stop()
-		return
-	photo_tour_phase = "pose"
-	photo_tour_pose_timer = 0.0
-	photo_tour_shutter_done = false
-	photo_tour_facing = float(EconomyConfig.PHOTO_SPOTS[s_id]["facing"])
-
-func _leave_photo_stop() -> void:
-	photo_tour_stop_idx += 1
-	photo_tour_pose_timer = 0.0
-	photo_tour_shutter_done = false
-	if photo_tour_stop_idx >= photo_tour_route.size():
-		var last: Dictionary = EconomyConfig.PHOTO_SPOTS[photo_tour_route[photo_tour_route.size() - 1]]
-		photo_tour_phase = "exit"
-		photo_tour_target_x = clampf(float(last["pose_x"]) + EconomyConfig.PHOTO_TOUR_ENTRY_PX, 90.0, 1815.0)
-	else:
-		photo_tour_phase = "walk"
-		photo_tour_target_x = float(EconomyConfig.PHOTO_SPOTS[photo_tour_route[photo_tour_stop_idx]]["pose_x"])
-
-func get_photo_reward_gold(special: bool) -> int:
-	var base_gps := estimate_idle_gold_per_sec() / maxf(0.01, get_codex_price_multiplier())
-	if special:
-		return maxi(EconomyConfig.PHOTO_SPECIAL_MIN_GOLD, int(round(base_gps * EconomyConfig.PHOTO_SPECIAL_GOLD_SEC)))
-	return maxi(EconomyConfig.PHOTO_MIN_GOLD, int(round(base_gps * EconomyConfig.PHOTO_GOLD_SEC)))
-
-## Shutter: the spot's normal shot (or its special shot while the landmark event runs) goes into the photo codex.
-func _take_tour_photo(spot_id: String) -> Dictionary:
-	var sp: Dictionary = EconomyConfig.PHOTO_SPOTS[spot_id]
-	var special := is_photo_special_condition(spot_id)
-	var pid := String(sp["special_id"] if special else sp["normal_id"])
-	var first := not bool(unlocked_photos.get(pid, false))
-	var gold_gain := get_photo_reward_gold(special)
-	var rep_gain := EconomyConfig.PHOTO_SPECIAL_REP if special else EconomyConfig.PHOTO_REP
-	var amber_gain := EconomyConfig.PHOTO_FIRST_NORMAL_AMBER if (first and not special) else 0
-	var voucher_gain := EconomyConfig.PHOTO_FIRST_SPECIAL_VOUCHERS if (first and special) else 0
-	unlocked_photos[pid] = true
-	photo_counts[pid] = int(photo_counts.get(pid, 0)) + 1
-	photos_taken_total += 1
-	photo_gold_total += gold_gain
-	photo_reputation_bonus += rep_gain
-	add_gold(gold_gain)
-	if amber_gain > 0:
-		add_amber(amber_gain)
-	if voucher_gain > 0:
-		add_rare_voucher(voucher_gain)
-	photo_tour_photos.append(pid)
-	var res := {
-		"taken": true,
-		"spot_id": spot_id,
-		"photo_id": pid,
-		"special": special,
-		"first_time": first,
-		"gold": gold_gain,
-		"amber": amber_gain,
-		"vouchers": voucher_gain,
-		"rep": rep_gain,
-		"x": float(sp["pose_x"]),
-		"facing": float(sp["facing"])
-	}
-	photo_tour_last_shot = res
-	photo_tour_last_shot_age = 0.0
-	photo_last_result = res
-	if first and EventBus != null:
-		EventBus.codex_unlocked.emit(pid)
-	if SoundManager != null:
-		SoundManager.play_coin_sfx()
-	EventBus.photo_taken.emit(spot_id, pid, gold_gain, special)
-	EventBus.spawn_floating_text.emit(
-		Vector2(float(sp["pose_x"]), EconomyConfig.GROUND_Y - 52.0),
-		EconomyConfig.tr_key("ft_photo") % [EconomyConfig.get_item_display_name(pid), gold_gain, EconomyConfig.tr_key("ft_photo_special") if special else ""],
-		Color("#FFE8CC") if not special else Color("#FFD43B")
-	)
-	evaluate_achievements()
-	EventBus.prosperity_changed.emit(get_prosperity_score())
-	return res
-
-func _finish_photo_tour() -> void:
-	var got := photo_tour_photos.size()
-	var stamped := got >= EconomyConfig.PHOTO_STAMP_MIN_PHOTOS
-	if stamped:
-		photo_stamps += 1
-		add_rare_voucher(EconomyConfig.PHOTO_STAMP_VOUCHERS)
-		photo_reputation_bonus += EconomyConfig.PHOTO_STAMP_REP
-	photo_last_result = {"finished": true, "photos": got, "stamped": stamped, "skipped": photo_tour_skipped.duplicate(), "route": photo_tour_route.duplicate()}
-	photo_tour_active = false
-	photo_tour_phase = ""
-	photo_tour_clock = 0.0
-	photo_tours_held += 1
-	photo_tour_cooldown_timer = EconomyConfig.PHOTO_TOUR_COOLDOWN_SEC
-	if SoundManager != null and stamped:
-		SoundManager.play_milestone_sfx()
-	EventBus.photo_tour_ended.emit(got, stamped)
-	evaluate_achievements()
-	EventBus.prosperity_changed.emit(get_prosperity_score())
-
-func get_unlocked_photo_count() -> int:
-	var cnt := 0
-	for pid in EconomyConfig.get_photo_entry_order():
-		if bool(unlocked_photos.get(pid, false)):
-			cnt += 1
-	return cnt
-
-func get_photo_tour_status_summary() -> Dictionary:
-	return {
-		"active": photo_tour_active,
-		"stop": photo_tour_stop_idx,
-		"stops": photo_tour_route.size(),
-		"spot": get_photo_tour_current_spot(),
-		"phase": photo_tour_phase,
-		"photos": photo_tour_photos.size(),
-		"clock": photo_tour_clock,
-		"cooldown": maxf(0.0, photo_tour_cooldown_timer),
-		"stamps": photo_stamps,
-		"unlocked": get_unlocked_photo_count(),
-		"total": EconomyConfig.get_photo_entry_order().size()
-	}
-
-## Extra visitors drawn by the sightseeing group while a tour is out (MainWorld spawn rate)
-func get_photo_tour_visitor_spawn_mult() -> float:
-	return EconomyConfig.PHOTO_TOUR_VISITOR_SPAWN_MULT if photo_tour_active else 1.0
 
 ## ---------------- Islander wish board ----------------
 func _connect_wish_board_signals() -> void:
@@ -5419,13 +4518,11 @@ func _connect_wish_board_signals() -> void:
 		EventBus.item_delivered.connect(_on_wish_item_delivered)
 	if not EventBus.customer_paid.is_connected(_on_wish_customer_paid):
 		EventBus.customer_paid.connect(_on_wish_customer_paid)
-	if not EventBus.photo_taken.is_connected(_on_wish_photo_taken):
-		EventBus.photo_taken.connect(_on_wish_photo_taken)
 
 func _make_wish(serial: int) -> Dictionary:
 	var w_type := EconomyConfig.get_wish_type_for_serial(serial)
 	var tier := EconomyConfig.get_wish_tier(serial)
-	var base_gps := estimate_idle_gold_per_sec() / maxf(0.01, get_codex_price_multiplier())
+	var base_gps := estimate_idle_gold_per_sec() / get_collection_multiplier()
 	return {
 		"serial": serial,
 		"islander": EconomyConfig.get_wish_islander(serial),
@@ -5474,7 +4571,7 @@ func advance_wish_board(delta: float) -> void:
 				_post_wish(i)
 
 func _progress_wishes(w_type: String, amount: int) -> void:
-	if amount <= 0 or photo_wish_paused:
+	if amount <= 0 or wish_paused:
 		return
 	for i in range(wish_board.size()):
 		var w: Dictionary = wish_board[i]
@@ -5513,7 +4610,7 @@ func _fulfil_wish(slot_idx: int) -> Dictionary:
 		EventBus.wish_fulfilled.emit(slot_idx, w.duplicate())
 		EventBus.spawn_floating_text.emit(
 			Vector2(MarketStall.SLOT_X, EconomyConfig.GROUND_Y - 56.0),
-			EconomyConfig.tr_key("ft_wish_done") % [EconomyConfig.tr_name(String(EconomyConfig.WISH_ISLANDER_NAMES.get(isl_k, isl_k))), rep_gain, voucher_gain, EconomyConfig.tr_key("ft_wish_medal") if medal else ""],
+			EconomyConfig.tr_fmt("ft_wish_done", [EconomyConfig.tr_name(String(EconomyConfig.WISH_ISLANDER_NAMES.get(isl_k, isl_k))), rep_gain, voucher_gain, EconomyConfig.tr_key("ft_wish_medal") if medal else ""]),
 			Color("#FFC9E3")
 		)
 	evaluate_achievements()
@@ -5532,9 +4629,6 @@ func _on_wish_item_delivered(_item_id: String, amount: int, target_name: String)
 func _on_wish_customer_paid(_recipe_id: String, _qty: int, total_gold: int, _world_pos: Vector2) -> void:
 	_progress_wishes("serve", 1)
 	_progress_wishes("earn", total_gold)
-
-func _on_wish_photo_taken(_spot_id: String, _photo_id: String, _gold: int, _special: bool) -> void:
-	_progress_wishes("photo", 1)
 
 func get_open_wish_count() -> int:
 	var cnt := 0
@@ -5557,7 +4651,7 @@ func get_wish_display(slot_idx: int) -> Dictionary:
 	var reward := EconomyConfig.tr_key("gm_wish_reward") % [int(w["rep"]), int(w["vouchers"])]
 	var title := "★" + who + "·" + EconomyConfig.tr_name(String(cfg["name"]))
 	var sub := EconomyConfig.tr_name(String(cfg["verb"])) + " " + prog
-	var cost := reward + EconomyConfig.tr_key("gm_wish_left") % maxi(0, int(ceili(float(w["time_left"]))))
+	var cost := reward + EconomyConfig.tr_key("gm_wish_left") % UiKit.clock(maxf(0.0, float(w["time_left"])))
 	if st == "done":
 		title = EconomyConfig.tr_key("gm_wish_done_title") % who
 		cost = reward + EconomyConfig.tr_key("gm_wish_claimed")
@@ -5565,7 +4659,7 @@ func get_wish_display(slot_idx: int) -> Dictionary:
 		title = EconomyConfig.tr_key("gm_wish_expired_title") % who
 		sub = EconomyConfig.tr_key("gm_wish_new_in") % maxi(1, int(ceili(float(w["linger"]))))
 		cost = reward + EconomyConfig.tr_key("gm_wish_void")
-	return {"title": title, "sub": sub, "cost": cost, "state": st, "kind": EconomyConfig.tr_name(String(cfg["kind"])), "islander": String(w["islander"]), "type": String(w["type"]), "name": EconomyConfig.tr_name(String(cfg["name"])), "who": who}
+	return {"title": title, "sub": sub, "cost": cost, "state": st, "progress": int(w["progress"]), "target": int(w["target"]), "kind": EconomyConfig.tr_name(String(cfg["kind"])), "islander": String(w["islander"]), "type": String(w["type"]), "name": EconomyConfig.tr_name(String(cfg["name"])), "who": who}
 
 func _short_num(v: int) -> String:
 	if v >= 100000:
@@ -5617,6 +4711,7 @@ func refresh_island_calendar() -> void:
 	if sky_weather_paused:
 		return
 	refresh_season()
+	refresh_solar_term()
 	refresh_sky_weather()
 	refresh_birthday()
 	refresh_food_week()
@@ -5663,7 +4758,7 @@ func get_sky_weather_stacked_factor(channel: String, group_mult: float) -> float
 	var g := maxf(0.0001, group_mult)
 	return EconomyConfig.stack_weather_mult(g, w, EconomyConfig.get_sky_weather_stack_cap(channel)) / g
 
-## Customer arrival rate: the festival / cinema / sports-day / photo-tour product `event_mult` with the weather stacked on it
+## Customer arrival rate: the festival / cinema product `event_mult` with the weather stacked on it
 func apply_sky_weather_visitor_mult(event_mult: float) -> float:
 	return event_mult * get_sky_weather_stacked_factor("visitor", event_mult)
 
@@ -5725,7 +4820,7 @@ func can_prepare_birthday_gift() -> bool:
 	return is_birthday_today() and not has_birthday_gift_today()
 
 func get_birthday_gift_cost() -> int:
-	var base_gps := estimate_idle_gold_per_sec() / maxf(0.01, get_codex_price_multiplier())
+	var base_gps := estimate_idle_gold_per_sec() / get_collection_multiplier()
 	return maxi(EconomyConfig.BIRTHDAY_GIFT_MIN_GOLD, int(round(base_gps * EconomyConfig.BIRTHDAY_GIFT_GOLD_SEC)))
 
 ## The islander's favourite goods on the market shelf (most stocked first, ties by id); "" when the shelf has none
@@ -5788,7 +4883,7 @@ func prepare_birthday_gift() -> Dictionary:
 		EventBus.birthday_gift_given.emit(isl, res.duplicate())
 		EventBus.spawn_floating_text.emit(
 			Vector2(MarketStall.SLOT_X, EconomyConfig.GROUND_Y - 56.0),
-			EconomyConfig.tr_key("ft_bday") % [EconomyConfig.get_islander_name(isl), rep_gain, voucher_gain, EconomyConfig.tr_key("ft_bday_medal") if medal else ""],
+			EconomyConfig.tr_fmt("ft_bday", [EconomyConfig.get_islander_name(isl), rep_gain, voucher_gain, EconomyConfig.tr_key("ft_bday_medal") if medal else ""]),
 			Color("#FFC9E3")
 		)
 	evaluate_achievements()
@@ -5921,9 +5016,6 @@ func find_food_week_best_dish() -> String:
 			best_s = s
 	return best
 
-func can_enter_food_week() -> bool:
-	return get_food_week_entries_left() > 0 and find_food_week_best_dish() != ""
-
 ## Enter one existing dish (1 piece from the market shelf) for the week's judge. Default = the best dish on the shelf.
 ## Reward: reputation = score / 4, friendship with the judge (+ taste match), and the week's medal tier once per tier.
 func enter_food_week_dish(item_id: String = "") -> Dictionary:
@@ -5986,7 +5078,7 @@ func enter_food_week_dish(item_id: String = "") -> Dictionary:
 		EventBus.food_week_scored.emit(res.duplicate())
 		EventBus.spawn_floating_text.emit(
 			Vector2(MarketStall.SLOT_X, EconomyConfig.GROUND_Y - 56.0),
-			EconomyConfig.tr_key("ft_food_week") % [EconomyConfig.get_islander_name(judge), score, rep_gain, (" " + EconomyConfig.get_food_medal_name(food_week_tier)) if medal_up else ""],
+			EconomyConfig.tr_fmt("ft_food_week", [EconomyConfig.get_islander_name(judge), score, rep_gain, (" " + EconomyConfig.get_food_medal_name(food_week_tier)) if medal_up else ""]),
 			Color("#FFD8A8")
 		)
 	evaluate_achievements()
@@ -6111,20 +5203,15 @@ func get_star_reputation() -> int:
 	score += bakery_reputation_bonus + get_unlocked_bakery_count() * 42
 	score += tea_reputation_bonus + get_unlocked_tea_count() * 42
 	score += chef_reputation_bonus + get_passed_tasting_challenge_count() * 45 + wish_lantern_reputation_bonus
-	score += harbor_reputation_bonus + auction_reputation_bonus + get_unlocked_auction_lot_count() * 45
+	score += harbor_reputation_bonus
 	score += dairy_reputation_bonus + get_unlocked_dairy_count() * 40 + cinema_reputation_bonus + get_unlocked_film_count() * 42
-	score += pottery_reputation_bonus + get_unlocked_pottery_count() * 40 + sports_reputation_bonus + get_unlocked_sports_event_count() * 42
+	score += pottery_reputation_bonus + get_unlocked_pottery_count() * 40 + food_week_reputation_bonus
 	score += kite_reputation_bonus + get_unlocked_kite_count() * 40 + get_seen_season_count() * 25
-	score += photo_reputation_bonus + get_unlocked_photo_count() * EconomyConfig.PHOTO_CODEX_REP_PER_ENTRY + wish_reputation_bonus
+	score += wish_reputation_bonus
 	score += birthday_reputation_bonus + get_seen_sky_weather_count() * EconomyConfig.SKY_WEATHER_CODEX_REP_PER_TYPE
-	if score >= 1600:
-		return 5
-	elif score >= 900:
-		return 4
-	elif score >= 450:
-		return 3
-	elif score >= 180:
-		return 2
+	for i in range(Pacing.STAR_SCORE.size() - 1, -1, -1):
+		if score >= int(Pacing.STAR_SCORE[i]):
+			return i + 2
 	return 1
 
 func get_career_summary_text() -> String:
@@ -6147,7 +5234,7 @@ func unlock_achievement(ach_id: String) -> bool:
 	var cfg: Dictionary = EconomyConfig.ACHIEVEMENTS[ach_id]
 	EventBus.spawn_floating_text.emit(
 		Vector2(884.7, EconomyConfig.GROUND_Y - 46.0),
-		EconomyConfig.tr_key("ft_achievement") % EconomyConfig.tr_name(String(cfg.get("name", ach_id))),
+		EconomyConfig.tr_fmt("ft_achievement", [EconomyConfig.tr_name(String(cfg.get("name", ach_id)))]),
 		Color("#FFE066")
 	)
 	return true
@@ -6223,22 +5310,16 @@ func evaluate_achievements() -> Array[String]:
 		newly.append("ach_chef_medal")
 	if seafood_landed_total >= 1 and unlock_achievement("ach_lighthouse_harbor"):
 		newly.append("ach_lighthouse_harbor")
-	if auction_gavel_medals >= 1 and unlock_achievement("ach_auction_gavel"):
-		newly.append("ach_auction_gavel")
 	if get_unlocked_dairy_count() >= EconomyConfig.DAIRY_CODEX_ORDER.size() and unlock_achievement("ach_dairy_ranch"):
 		newly.append("ach_dairy_ranch")
 	if cinema_medals >= 1 and unlock_achievement("ach_starry_cinema"):
 		newly.append("ach_starry_cinema")
 	if get_unlocked_pottery_count() >= EconomyConfig.POTTERY_CODEX_ORDER.size() and unlock_achievement("ach_pottery_kiln"):
 		newly.append("ach_pottery_kiln")
-	if sports_medals >= 1 and unlock_achievement("ach_sports_champion"):
-		newly.append("ach_sports_champion")
 	if kite_medals >= 1 and unlock_achievement("ach_kite_sweep"):
 		newly.append("ach_kite_sweep")
 	if get_seen_season_count() >= EconomyConfig.SEASON_ORDER.size() and unlock_achievement("ach_four_seasons"):
 		newly.append("ach_four_seasons")
-	if photo_stamps >= 1 and unlock_achievement("ach_photo_stamp"):
-		newly.append("ach_photo_stamp")
 	if wish_medals >= 1 and unlock_achievement("ach_wish_keeper"):
 		newly.append("ach_wish_keeper")
 	if get_seen_sky_weather_count() >= EconomyConfig.SKY_WEATHER_ORDER.size() and unlock_achievement("ach_weather_watcher"):
@@ -6286,16 +5367,15 @@ func get_prosperity_score() -> int:
 	if hotspring_unlocked and bool(unlocked_islands.get(3, false)):
 		score += 160
 	if lighthouse_harbor_unlocked and bool(unlocked_islands.get(3, false)):
-		score += 150 + auction_gavel_medals * 60
+		score += 150
 	if dairy_workshop_unlocked:
 		score += 140
 	if open_air_cinema_unlocked:
 		score += 120 + cinema_medals * 60
 	if pottery_kiln_unlocked and bool(unlocked_islands.get(3, false)):
 		score += 140
-	score += sports_medals * 60
 	score += kite_medals * 50 + get_seen_season_count() * 20
-	score += photo_stamps * 40 + wish_medals * 50
+	score += wish_medals * 50
 	score += birthday_medals * 50 + get_seen_sky_weather_count() * 10
 	score += int(food_week_medals.get("gold", 0)) * 50 + int(food_week_medals.get("silver", 0)) * 30 + int(food_week_medals.get("bronze", 0)) * 15 + get_friendship_total_levels() * 10
 	return score
@@ -6346,7 +5426,7 @@ func take_from_raw_basket(island_idx: int, max_qty: int) -> Dictionary:
 	return {}
 
 func get_workshop_buffer_cap(workshop_id: String) -> int:
-	var b_key := "soil_3" if workshop_id == "orbis_linked" else workshop_id
+	var b_key := "soil_3" if workshop_id == "coral_linked" else workshop_id
 	return EconomyConfig.calc_buffer_capacity(int(building_levels.get(b_key, 1)))
 
 func get_workshop_input_total(workshop_id: String) -> int:
@@ -6448,6 +5528,15 @@ func add_to_stall(item_id: String, qty: int) -> int:
 		EventBus.item_delivered.emit(item_id, added, "market_stall")
 	return added
 
+## All live bonuses of one sale, before the cap (`collect_from_till` caps them together)
+func get_sale_bonus(item_id: String, is_vip: bool = false) -> float:
+	# CI-13: kite-festival wind sales x(1 + 0.20 w) and the summer parasol props (+2% per prop)
+	var kite_mult := get_kite_wind_sale_multiplier() * get_season_bonus_multiplier("sale_price")
+	# CI-15: the cloud-sea weather joins the climate sale group (kite wind x summer props), bonus capped at x1.30
+	kite_mult *= get_sky_weather_stacked_factor("sale", kite_mult)
+	return (get_market_mood_multiplier() * get_moon_tea_sale_multiplier(item_id) * get_wish_lantern_sale_multiplier(item_id)
+		* get_cinema_sale_multiplier(item_id) * kite_mult * get_tip_bonus(is_vip, 3))
+
 func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2, is_vip: bool = false) -> int:
 	var target_id := preferred_id
 	if int(stall_inventory.get(target_id, 0)) <= 0:
@@ -6462,50 +5551,7 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 	stall_inventory[target_id] = avail - bought
 	unlock_codex_entry(target_id)
 
-	var b_lv := int(building_levels.get("soil_1", 1))
-	if EconomyConfig.is_seafood_item(target_id):
-		b_lv = int(building_levels.get("lighthouse_harbor", 1))
-	elif EconomyConfig.is_dairy_item(target_id):
-		b_lv = int(building_levels.get("dairy_workshop", 1))
-	elif EconomyConfig.is_pottery_item(target_id):
-		b_lv = int(building_levels.get("pottery_kiln", 1))
-	elif EconomyConfig.is_tasting_dish(target_id):
-		b_lv = int(building_levels.get("chef_pavilion", 1))
-	elif EconomyConfig.is_tea_item(target_id):
-		b_lv = int(building_levels.get("tea_pavilion", 1))
-	elif EconomyConfig.is_bakery_item(target_id):
-		b_lv = int(building_levels.get("windmill", 1))
-	elif target_id == "crop_2":
-		b_lv = int(building_levels.get("soil_2", 1))
-	elif target_id == "crop_3":
-		b_lv = int(building_levels.get("soil_3", 1))
-	elif target_id == "delicacy_0" or target_id == "delicacy_1" or target_id == "solar_dish_spring" or target_id == "solar_dish_autumn":
-		b_lv = int(building_levels.get("mortar", 1))
-	elif target_id == "delicacy_2" or target_id == "solar_dish_summer":
-		b_lv = int(building_levels.get("cauldron", 1))
-	elif target_id == "delicacy_3" or target_id == "solar_dish_winter":
-		b_lv = maxi(int(building_levels.get("cauldron", 1)), int(building_levels.get("soil_3", 1)))
-
-	var shiba_lv := int(animal_levels.get("shiba", 0)) if is_animal_hired("shiba") else 0
-	var unit_price := EconomyConfig.calc_item_unit_price(
-		target_id,
-		b_lv,
-		int(building_levels.get("stall", 1)),
-		shiba_lv,
-		current_solar_term_idx
-	)
-	var moon_mult := get_moon_tea_sale_multiplier(target_id)
-	var lantern_mult := get_wish_lantern_sale_multiplier(target_id)
-	var auction_mult := get_auction_sale_multiplier(target_id)
-	var cinema_mult := get_cinema_sale_multiplier(target_id)
-	var sports_mult := get_sports_sale_multiplier(target_id)
-	# CI-13: kite-festival wind sales x(1 + 0.20 w) and the summer parasol props (+2% per prop)
-	var kite_mult := get_kite_wind_sale_multiplier() * get_season_bonus_multiplier("sale_price")
-	# CI-15: the cloud-sea weather joins the climate sale group (kite wind x summer props), bonus capped at x1.30
-	kite_mult *= get_sky_weather_stacked_factor("sale", kite_mult)
-	var total_earned := int(round(float(unit_price * bought) * get_codex_price_multiplier() * moon_mult * lantern_mult * auction_mult * cinema_mult * sports_mult * kite_mult))
-	var tip_mult := get_customer_tip_multiplier(is_vip, 3)
-	total_earned = int(round(float(total_earned) * tip_mult))
+	var total_earned := collect_from_till(0.8 if is_vip else 0.6, get_sale_bonus(target_id, is_vip))
 
 	career_stats["customers"] = int(career_stats.get("customers", 0)) + 1
 	add_gold(total_earned)
@@ -6519,7 +5565,41 @@ func try_purchase_from_stall(preferred_id: String, qty: int, world_pos: Vector2,
 	EventBus.customer_paid.emit(target_id, bought, total_earned, world_pos)
 	return total_earned
 
-func upgrade_building(b_key: String) -> bool:
+## How many steps one press buys: 1, 10, or -1 = as many as the gold allows
+const BULK_MODES: Array[int] = [1, 10, -1]
+const BULK_LIMIT := 200
+var bulk_mode: int = 1
+
+func cycle_bulk_mode() -> int:
+	bulk_mode = BULK_MODES[(BULK_MODES.find(bulk_mode) + 1) % BULK_MODES.size()]
+	return bulk_mode
+
+## [steps, price] of one press on a building / a crew team
+func get_bulk_building(key: String) -> Array:
+	var lv := maxi(1, int(building_levels.get(key, 1)))
+	return _bulk_steps(func(i: int) -> int: return Pacing.line_cost(key, lv + i))
+
+func get_bulk_animal(key: String) -> Array:
+	var step := get_total_recruited(key) + maxi(1, int(animal_levels.get(key, 0)))
+	return _bulk_steps(func(i: int) -> int: return Pacing.animal_cost(key, step + i))
+
+func _bulk_steps(cost_of: Callable) -> Array:
+	var sum: int = cost_of.call(0)
+	var n := 1
+	if bulk_mode > 1:
+		while n < bulk_mode:
+			sum += int(cost_of.call(n))
+			n += 1
+	elif bulk_mode < 0:
+		while n < BULK_LIMIT:
+			var c: int = cost_of.call(n)
+			if sum + c > gold:
+				break
+			sum += c
+			n += 1
+	return [n, sum]
+
+func upgrade_building(b_key: String, steps: int = 1) -> bool:
 	if not EconomyConfig.BUILDINGS.has(b_key):
 		return false
 	if b_key == "greenhouse" and not greenhouse_unlocked:
@@ -6542,13 +5622,13 @@ func upgrade_building(b_key: String) -> bool:
 	if not bool(unlocked_islands.get(req_island, false)):
 		return false
 	var cur_lv := int(building_levels.get(b_key, 1))
-	var base_c := int(EconomyConfig.BUILDINGS[b_key]["base_cost"])
-	var cost := EconomyConfig.calc_upgrade_cost(base_c, cur_lv)
-	if not spend_gold(cost):
+	var n := maxi(1, steps)
+	if not spend_gold(Pacing.line_cost_n(b_key, cur_lv, n)):
 		return false
-	building_levels[b_key] = cur_lv + 1
+	building_levels[b_key] = cur_lv + n
 	_sync_codex_from_progression()
-	EventBus.upgrade_purchased.emit("building", b_key, cur_lv + 1)
+	replace_impossible_orders()
+	EventBus.upgrade_purchased.emit("building", b_key, cur_lv + n)
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
 	return true
@@ -6556,33 +5636,31 @@ func upgrade_building(b_key: String) -> bool:
 ## PRD v2.2 Section 3: Recruit-to-Promote Mechanism (`招满转进修机制`):
 ## - If any unlocked island has room below `ISLAND_RECRUIT_CAPS`, recruits +1 animal worker onto that island.
 ## - Once all unlocked islands reach Max Cap for `a_key`, upgrades `animal_levels[a_key] += 1` (Team Promotion Lv.+1)!
-func upgrade_animal(a_key: String) -> bool:
+func upgrade_animal(a_key: String, steps: int = 1) -> bool:
 	if not EconomyConfig.ANIMALS.has(a_key):
 		return false
-	var next_isl := find_next_recruit_island(a_key)
 	var cur_lv := int(animal_levels.get(a_key, 0))
-	var total_rec := get_total_recruited(a_key)
-	var base_c := int(EconomyConfig.ANIMALS[a_key]["base_cost"])
-	var cost_step := total_rec + maxi(1, cur_lv)
-	var cost := EconomyConfig.calc_upgrade_cost(base_c, cost_step)
-	if not spend_gold(cost):
+	var n := maxi(1, steps)
+	if not spend_gold(Pacing.animal_cost_n(a_key, get_total_recruited(a_key) + maxi(1, cur_lv), n)):
 		return false
-
-	if next_isl > 0:
-		island_recruited[next_isl][a_key] = get_island_recruited_count(next_isl, a_key) + 1
-		if cur_lv <= 0:
-			animal_levels[a_key] = 1
-		if SoundManager != null:
+	var promoted := false
+	for _i in range(n):
+		var next_isl := find_next_recruit_island(a_key)
+		if next_isl > 0:
+			island_recruited[next_isl][a_key] = get_island_recruited_count(next_isl, a_key) + 1
+			if int(animal_levels.get(a_key, 0)) <= 0:
+				animal_levels[a_key] = 1
+			EventBus.upgrade_purchased.emit("recruit", a_key, get_total_recruited(a_key))
+		else:
+			animal_levels[a_key] = maxi(1, int(animal_levels.get(a_key, 0))) + 1
+			promoted = true
+	if promoted:
+		EventBus.upgrade_purchased.emit("animal", a_key, int(animal_levels[a_key]))
+	if SoundManager != null:
+		if promoted and int(animal_levels[a_key]) / 25 > cur_lv / 25:
+			SoundManager.play_milestone_sfx()
+		else:
 			SoundManager.play_upgrade_sfx()
-		EventBus.upgrade_purchased.emit("recruit", a_key, get_total_recruited(a_key))
-	else:
-		animal_levels[a_key] = maxi(1, cur_lv) + 1
-		if SoundManager != null:
-			if animal_levels[a_key] % 25 == 0:
-				SoundManager.play_milestone_sfx()
-			else:
-				SoundManager.play_upgrade_sfx()
-		EventBus.upgrade_purchased.emit("animal", a_key, animal_levels[a_key])
 
 	_sync_codex_from_progression()
 	evaluate_achievements()
@@ -6594,7 +5672,7 @@ func unlock_island(island_idx: int) -> bool:
 	if bool(unlocked_islands.get(island_idx, false)):
 		return false
 	var exp_key := "island_" + str(island_idx)
-	var cost := int(EconomyConfig.EXPANSIONS.get(exp_key, {"cost": 180})["cost"])
+	var cost := int(EconomyConfig.EXPANSIONS[exp_key]["cost"])
 	if not spend_gold(cost):
 		return false
 	unlocked_islands[island_idx] = true
@@ -6605,24 +5683,6 @@ func unlock_island(island_idx: int) -> bool:
 	EventBus.prosperity_changed.emit(get_prosperity_score())
 	save_game()
 	return true
-
-func estimate_idle_gold_per_sec() -> float:
-	var base_rate := 1.8
-	for k in building_levels.keys():
-		if k == "chef_pavilion" and not chef_pavilion_unlocked:
-			continue
-		if k == "lighthouse_harbor" and not lighthouse_harbor_unlocked:
-			continue
-		if k == "dairy_workshop" and not dairy_workshop_unlocked:
-			continue
-		if k == "pottery_kiln" and not pottery_kiln_unlocked:
-			continue
-		var req_isl := int(EconomyConfig.BUILDINGS.get(k, {}).get("island", 1))
-		if bool(unlocked_islands.get(req_isl, false)):
-			base_rate += float(building_levels[k]) * 1.1
-	for k in animal_levels.keys():
-		base_rate += float(get_total_recruited(k)) * 1.6
-	return base_rate * EconomyConfig.calc_shiba_price_bonus(int(animal_levels.get("shiba", 0))) * get_codex_price_multiplier()
 
 func get_backup_save_path() -> String:
 	return active_save_path + ".bak"
@@ -6640,16 +5700,46 @@ func _parse_valid_save_dict(path: String) -> Dictionary:
 		return {}
 	return parsed
 
+## Writes a whole file next to the old one, then swaps: a crash or a full disk never leaves half a save
+func _write_save_text(path: String, txt: String) -> bool:
+	var tmp := path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return false
+	f.store_string(txt)
+	f.flush()
+	var ok := f.get_error() == OK
+	f.close()
+	if not ok or FileAccess.get_file_as_string(tmp).length() != txt.length():
+		return false
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(tmp), ProjectSettings.globalize_path(path)) == OK
+
+## A save this version cannot read is copied aside under a name of its own, never overwritten
+func _keep_unreadable_save(path: String) -> String:
+	if not FileAccess.file_exists(path):
+		return ""
+	var raw := FileAccess.get_file_as_bytes(path)
+	if raw.size() < 2:
+		return ""
+	var js := JSON.new()
+	var readable := js.parse(raw.get_string_from_utf8()) == OK and js.data is Dictionary
+	var tag := "v%d" % int(js.data.get("version", 0)) if readable else "broken"
+	var keep := "%s.%s.%d.keep" % [path, tag, int(Time.get_unix_time_from_system())]
+	if DirAccess.copy_absolute(ProjectSettings.globalize_path(path), ProjectSettings.globalize_path(keep)) != OK:
+		return ""
+	return keep
+
 func calculate_and_apply_offline_earnings(elapsed_sec: int) -> Dictionary:
-	var clamped_sec := clampi(elapsed_sec, 0, 86400)
+	var clamped_sec := clampi(elapsed_sec, 0, Pacing.OFFLINE_CAP_SEC)
 	if clamped_sec < 60:
 		return {"seconds": clamped_sec, "gold": 0, "items": 0}
-	var gold_earned := maxi(8, int(round(float(clamped_sec) * estimate_idle_gold_per_sec() * 0.45)))
+	var gold_earned := maxi(8, int(round(float(clamped_sec) * estimate_idle_gold_per_sec() * Pacing.OFFLINE_RATE)))
 	var total_workers := 0
 	for k in animal_levels.keys():
 		total_workers += get_total_recruited(String(k))
 	var ws_lv := int(building_levels.get("mortar", 1)) + int(building_levels.get("cauldron", 1))
 	var items_est := maxi(1, int(round(float(clamped_sec) / 10.0 * (float(maxi(1, total_workers)) * 0.6 + float(ws_lv) * 0.2))))
+	festival_gap_timer = maxf(0.0, festival_gap_timer - float(elapsed_sec)) if festival_gap_timer > 0.0 else festival_gap_timer
 	pending_offline_seconds = clamped_sec
 	pending_offline_gold = gold_earned
 	last_offline_report = {
@@ -6665,10 +5755,7 @@ func save_game() -> void:
 	var prev_valid := _parse_valid_save_dict(active_save_path)
 	if not prev_valid.is_empty():
 		var prev_txt := FileAccess.get_file_as_string(active_save_path)
-		var f_bak := FileAccess.open(get_backup_save_path(), FileAccess.WRITE)
-		if f_bak != null:
-			f_bak.store_string(prev_txt)
-			f_bak.close()
+		_write_save_text(get_backup_save_path(), prev_txt)
 
 	var data := {
 		"version": SAVE_VERSION,
@@ -6691,6 +5778,18 @@ func save_game() -> void:
 		"stall_inventory": stall_inventory,
 		"unlocked_codex": unlocked_codex,
 		"pomodoro_completed_count": pomodoro_completed_count,
+		"festival_gap_timer": festival_gap_timer,
+		"day_phase": current_weather,
+		"day_phase_timer": weather_timer,
+		"festival_turn": festival_turn,
+		"till_gold": till_gold,
+		"airship_timer": airship_timer,
+		"balloon_timer": balloon_timer,
+		"moon_tea_boat_claimed": moon_tea_boat_claimed,
+		"lanterns_this_festival": lanterns_this_festival,
+		"lantern_encores": lantern_encores,
+		"kite_festival": [kite_festival_active, kite_festival_clock, kite_festival_idx, kite_collected_slots],
+		"cinema_night": [cinema_night_on, cinema_night_clock, cinema_screenings_tonight, cinema_snacks_tonight, cinema_last_started_idx],
 		"amber": amber,
 		"total_amber_earned": total_amber_earned,
 		"active_contract": active_contract,
@@ -6745,7 +5844,6 @@ func save_game() -> void:
 		"tea_connoisseurs_served": tea_connoisseurs_served,
 		"moon_tea_boat_claims": moon_tea_boat_claims,
 		"wish_lantern_festival_timer": wish_lantern_festival_timer,
-		"wish_lantern_cooldown_timer": wish_lantern_cooldown_timer,
 		"wish_lanterns_collected": wish_lanterns_collected,
 		"wish_lantern_reputation_bonus": wish_lantern_reputation_bonus,
 		"chef_pavilion_unlocked": chef_pavilion_unlocked,
@@ -6766,13 +5864,6 @@ func save_game() -> void:
 		"seafood_landed_total": seafood_landed_total,
 		"harbor_trips_total": harbor_trips_total,
 		"harbor_reputation_bonus": harbor_reputation_bonus,
-		"auction_cooldown_timer": auction_cooldown_timer,
-		"auction_buff_timer": auction_buff_timer,
-		"auctions_held": auctions_held,
-		"auction_lots_won": auction_lots_won,
-		"auction_collectibles": auction_collectibles,
-		"auction_gavel_medals": auction_gavel_medals,
-		"auction_reputation_bonus": auction_reputation_bonus,
 		"dairy_workshop_unlocked": dairy_workshop_unlocked,
 		"active_dairy_recipe_id": active_dairy_recipe_id,
 		"dairy_timer": dairy_timer,
@@ -6801,15 +5892,6 @@ func save_game() -> void:
 		"pottery_clay_dug_total": pottery_clay_dug_total,
 		"pottery_packed_in_boxes": pottery_packed_in_boxes,
 		"pottery_reputation_bonus": pottery_reputation_bonus,
-		"sports_cooldown_timer": sports_cooldown_timer,
-		"sports_medals": sports_medals,
-		"sports_days_held": sports_days_held,
-		"sports_events_held_total": sports_events_held_total,
-		"unlocked_sports_events": unlocked_sports_events,
-		"sports_champion_counts": sports_champion_counts,
-		"sports_prize_gold_total": sports_prize_gold_total,
-		"sports_reputation_bonus": sports_reputation_bonus,
-		"kite_cooldown_timer": kite_cooldown_timer,
 		"kite_festivals_held": kite_festivals_held,
 		"kite_collect_counts": kite_collect_counts,
 		"unlocked_kites": unlocked_kites,
@@ -6818,14 +5900,6 @@ func save_game() -> void:
 		"kite_gold_total": kite_gold_total,
 		"kite_reputation_bonus": kite_reputation_bonus,
 		"seasons_seen": seasons_seen,
-		"photo_tour_cooldown_timer": photo_tour_cooldown_timer,
-		"photo_tours_held": photo_tours_held,
-		"unlocked_photos": unlocked_photos,
-		"photo_counts": photo_counts,
-		"photos_taken_total": photos_taken_total,
-		"photo_gold_total": photo_gold_total,
-		"photo_reputation_bonus": photo_reputation_bonus,
-		"photo_stamps": photo_stamps,
 		"wish_board": wish_board,
 		"wish_serial_next": wish_serial_next,
 		"wishes_fulfilled_total": wishes_fulfilled_total,
@@ -6851,32 +5925,68 @@ func save_game() -> void:
 		"food_week_reputation_bonus": food_week_reputation_bonus,
 		"food_week_vouchers_total": food_week_vouchers_total,
 		"food_week_dish_best": food_week_dish_best,
-		"friendship_points": friendship_points
+		"friendship_points": friendship_points,
+		"guest_visits": guest_visits,
+		"guest_pending": guest_pending,
+		"guest_timer": guest_timer,
+		"featured_dish": featured_dish,
+		"decor_owned": decor_owned,
+		"decor_placed": decor_placed
 	}
 	var json_str := JSON.stringify(data, "\t")
-	var f := FileAccess.open(active_save_path, FileAccess.WRITE)
-	if f != null:
-		f.store_string(json_str)
-		f.close()
+	_write_save_text(active_save_path, json_str)
 	if SteamBridge != null and SteamBridge.has_method("cloud_write"):
 		SteamBridge.cloud_write("savegame_cloud.json", json_str)
 	if not FileAccess.file_exists(get_backup_save_path()):
-		var f_init_bak := FileAccess.open(get_backup_save_path(), FileAccess.WRITE)
-		if f_init_bak != null:
-			f_init_bak.store_string(json_str)
-			f_init_bak.close()
+		_write_save_text(get_backup_save_path(), json_str)
+
+func _load_kite_festival(raw: Variant) -> void:
+	kite_festival_active = false
+	kite_festival_clock = 0.0
+	kite_collected_slots.clear()
+	if not (raw is Array) or (raw as Array).size() < 4 or not bool(raw[0]):
+		return
+	kite_festival_active = true
+	kite_festival_clock = clampf(float(raw[1]), 0.0, EconomyConfig.KITE_FESTIVAL_SEC)
+	kite_festival_idx = maxi(0, int(raw[2]))
+	if raw[3] is Array:
+		for sl in raw[3]:
+			if not kite_collected_slots.has(int(sl)):
+				kite_collected_slots.append(int(sl))
+
+## The films of this night are not shown twice because the game was restarted
+func _load_cinema_night(raw: Variant) -> void:
+	cinema_night_on = false
+	cinema_night_clock = 0.0
+	cinema_screenings_tonight = 0
+	cinema_snacks_tonight = 0
+	cinema_last_started_idx = -1
+	if not (raw is Array) or (raw as Array).size() < 5 or not bool(raw[0]) or current_weather != WeatherState.NIGHT:
+		return
+	cinema_night_on = true
+	cinema_night_clock = maxf(0.0, float(raw[1]))
+	cinema_screenings_tonight = maxi(0, int(raw[2]))
+	cinema_snacks_tonight = maxi(0, int(raw[3]))
+	cinema_last_started_idx = int(raw[4])
 
 func load_game() -> void:
 	var parsed := _parse_valid_save_dict(active_save_path)
 	if parsed.is_empty():
-		parsed = _parse_valid_save_dict(get_backup_save_path())
-		if not parsed.is_empty():
-			var bak_txt := FileAccess.get_file_as_string(get_backup_save_path())
-			var f_repair := FileAccess.open(active_save_path, FileAccess.WRITE)
-			if f_repair != null:
-				f_repair.store_string(bak_txt)
-				f_repair.close()
+		# a write that was cut off after the old file was gone leaves the new one under its working name
+		for spare in [active_save_path + ".tmp", get_backup_save_path(), get_backup_save_path() + ".tmp"]:
+			parsed = _parse_valid_save_dict(spare)
+			if not parsed.is_empty():
+				if not is_automated_test_mode:
+					_keep_unreadable_save(active_save_path)
+				if spare == active_save_path + ".tmp":
+					DirAccess.rename_absolute(ProjectSettings.globalize_path(spare), ProjectSettings.globalize_path(active_save_path))
+				else:
+					_write_save_text(active_save_path, FileAccess.get_file_as_string(spare))
+				break
 	if parsed.is_empty():
+		if not is_automated_test_mode:
+			_keep_unreadable_save(active_save_path)
+			_keep_unreadable_save(get_backup_save_path())
 		return
 	gold = int(parsed.get("gold", gold))
 	total_gold_earned = int(parsed.get("total_gold_earned", total_gold_earned))
@@ -6907,6 +6017,16 @@ func load_game() -> void:
 			if unlocked_codex.has(String(ck)):
 				unlocked_codex[String(ck)] = bool(parsed["unlocked_codex"][ck])
 	pomodoro_completed_count = int(parsed.get("pomodoro_completed_count", 0))
+	festival_gap_timer = clampf(float(parsed.get("festival_gap_timer", Pacing.FESTIVAL_FIRST_SEC)), -Pacing.FESTIVAL_AUTO_SEC, Pacing.FESTIVAL_GAP_SEC)
+	festival_turn = maxi(0, int(parsed.get("festival_turn", 0)))
+	till_gold = maxf(0.0, float(parsed.get("till_gold", 0.0)))
+	airship_timer = clampf(float(parsed.get("airship_timer", AIRSHIP_DOCK_DURATION)), 0.0, AIRSHIP_VOYAGE_COOLDOWN)
+	balloon_timer = clampf(float(parsed.get("balloon_timer", BALLOON_FIRST_SEC)), 0.0, Pacing.BALLOON_GAP[1])
+	moon_tea_boat_claimed = bool(parsed.get("moon_tea_boat_claimed", false))
+	lanterns_this_festival = maxi(0, int(parsed.get("lanterns_this_festival", 0)))
+	lantern_encores = maxi(0, int(parsed.get("lantern_encores", 0)))
+	current_weather = clampi(int(parsed.get("day_phase", WeatherState.DAY)), 0, 3)
+	weather_timer = clampf(float(parsed.get("day_phase_timer", 0.0)), 0.0, Pacing.DAY_PHASE_SEC)
 	amber = int(parsed.get("amber", 0))
 	total_amber_earned = int(parsed.get("total_amber_earned", amber))
 	if parsed.has("active_contract") and parsed["active_contract"] is Dictionary:
@@ -7036,7 +6156,6 @@ func load_game() -> void:
 	moon_tea_boat_claims = maxi(0, int(parsed.get("moon_tea_boat_claims", 0)))
 
 	wish_lantern_festival_timer = clampf(float(parsed.get("wish_lantern_festival_timer", 0.0)), 0.0, WISH_LANTERN_FESTIVAL_DURATION + 60.0)
-	wish_lantern_cooldown_timer = clampf(float(parsed.get("wish_lantern_cooldown_timer", 60.0)), 0.0, WISH_LANTERN_FESTIVAL_COOLDOWN)
 	wish_lanterns_collected = maxi(0, int(parsed.get("wish_lanterns_collected", 0)))
 	wish_lantern_reputation_bonus = maxi(0, int(parsed.get("wish_lantern_reputation_bonus", 0)))
 	chef_pavilion_unlocked = bool(parsed.get("chef_pavilion_unlocked", false))
@@ -7061,7 +6180,7 @@ func load_game() -> void:
 	chef_reputation_bonus = maxi(0, int(parsed.get("chef_reputation_bonus", 0)))
 	tastings_held = maxi(0, int(parsed.get("tastings_held", 0)))
 
-	# CI-10: Lighthouse Harbor & Specialty Auction (an auction in progress is never persisted; it simply closes on reload)
+	# CI-10: Lighthouse Harbor
 	lighthouse_harbor_unlocked = bool(parsed.get("lighthouse_harbor_unlocked", false))
 	harbor_clock = maxf(0.0, float(parsed.get("harbor_clock", 0.0)))
 	var period_l := EconomyConfig.get_harbor_boat_period()
@@ -7073,20 +6192,6 @@ func load_game() -> void:
 	seafood_landed_total = maxi(0, int(parsed.get("seafood_landed_total", 0)))
 	harbor_trips_total = maxi(0, int(parsed.get("harbor_trips_total", 0)))
 	harbor_reputation_bonus = maxi(0, int(parsed.get("harbor_reputation_bonus", 0)))
-	island_auction_active = false
-	auction_cooldown_timer = clampf(float(parsed.get("auction_cooldown_timer", EconomyConfig.AUCTION_FIRST_COOLDOWN_SEC)), 0.0, EconomyConfig.AUCTION_COOLDOWN_SEC)
-	auction_buff_timer = clampf(float(parsed.get("auction_buff_timer", 0.0)), 0.0, EconomyConfig.AUCTION_BUFF_SEC)
-	auctions_held = maxi(0, int(parsed.get("auctions_held", 0)))
-	if parsed.has("auction_lots_won") and parsed["auction_lots_won"] is Dictionary:
-		var src_won: Dictionary = parsed["auction_lots_won"]
-		for lot_id in EconomyConfig.AUCTION_LOT_ORDER:
-			auction_lots_won[lot_id] = bool(src_won.get(lot_id, false))
-	if parsed.has("auction_collectibles") and parsed["auction_collectibles"] is Dictionary:
-		var src_col: Dictionary = parsed["auction_collectibles"]
-		for lot_id in EconomyConfig.AUCTION_LOT_ORDER:
-			auction_collectibles[lot_id] = maxi(0, int(src_col.get(lot_id, 0)))
-	auction_gavel_medals = maxi(0, int(parsed.get("auction_gavel_medals", 0)))
-	auction_reputation_bonus = maxi(0, int(parsed.get("auction_reputation_bonus", 0)))
 
 	# CI-11: Dairy Workshop & Open-Air Cinema (the night programme clock is never persisted; it re-syncs from the weather)
 	dairy_workshop_unlocked = bool(parsed.get("dairy_workshop_unlocked", false))
@@ -7124,10 +6229,9 @@ func load_game() -> void:
 	cinema_snack_gold_total = maxi(0, int(parsed.get("cinema_snack_gold_total", 0)))
 	cinema_reputation_bonus = maxi(0, int(parsed.get("cinema_reputation_bonus", 0)))
 	cinema_night_on = false
-	cinema_night_clock = 0.0
-	cinema_screenings_tonight = 0
+	_load_cinema_night(parsed.get("cinema_night", []))
 
-	# CI-12: Pottery Kiln & Autumn Sports Day (a sports day in progress is never persisted; it restarts on its cooldown)
+	# CI-12: Pottery Kiln
 	pottery_kiln_unlocked = bool(parsed.get("pottery_kiln_unlocked", false))
 	var saved_prid := String(parsed.get("active_pottery_recipe_id", "pottery_tea_bowl"))
 	active_pottery_recipe_id = saved_prid if EconomyConfig.POTTERY_RECIPE_ORDER.has(saved_prid) else "pottery_tea_bowl"
@@ -7146,27 +6250,8 @@ func load_game() -> void:
 	pottery_clay_dug_total = maxi(0, int(parsed.get("pottery_clay_dug_total", 0)))
 	pottery_packed_in_boxes = maxi(0, int(parsed.get("pottery_packed_in_boxes", 0)))
 	pottery_reputation_bonus = maxi(0, int(parsed.get("pottery_reputation_bonus", 0)))
-	sports_cooldown_timer = clampf(float(parsed.get("sports_cooldown_timer", EconomyConfig.SPORTS_FIRST_COOLDOWN_SEC)), 0.0, EconomyConfig.SPORTS_COOLDOWN_SEC)
-	sports_medals = maxi(0, int(parsed.get("sports_medals", 0)))
-	sports_days_held = maxi(0, int(parsed.get("sports_days_held", 0)))
-	sports_events_held_total = maxi(0, int(parsed.get("sports_events_held_total", 0)))
-	if parsed.has("unlocked_sports_events") and parsed["unlocked_sports_events"] is Dictionary:
-		var src_se: Dictionary = parsed["unlocked_sports_events"]
-		for e_id in EconomyConfig.SPORTS_EVENT_ORDER:
-			unlocked_sports_events[e_id] = bool(src_se.get(e_id, false))
-	if parsed.has("sports_champion_counts") and parsed["sports_champion_counts"] is Dictionary:
-		var src_sc: Dictionary = parsed["sports_champion_counts"]
-		for t_key in EconomyConfig.SPORTS_TEAM_ORDER:
-			sports_champion_counts[t_key] = maxi(0, int(src_sc.get(t_key, 0)))
-	sports_prize_gold_total = maxi(0, int(parsed.get("sports_prize_gold_total", 0)))
-	sports_reputation_bonus = maxi(0, int(parsed.get("sports_reputation_bonus", 0)))
-	sports_day_active = false
-	sports_day_clock = 0.0
-	sports_last_started_idx = -1
-	sports_teams.clear()
 
-	# CI-13: Kite Festival & Four Seasons (a festival in flight is never persisted; it returns on its cooldown)
-	kite_cooldown_timer = clampf(float(parsed.get("kite_cooldown_timer", EconomyConfig.KITE_FIRST_COOLDOWN_SEC)), 0.0, EconomyConfig.KITE_COOLDOWN_SEC)
+	# CI-13: Kite Festival & Four Seasons (a festival in flight goes on where it was)
 	kite_festivals_held = maxi(0, int(parsed.get("kite_festivals_held", 0)))
 	if parsed.has("kite_collect_counts") and parsed["kite_collect_counts"] is Dictionary:
 		var src_kc: Dictionary = parsed["kite_collect_counts"]
@@ -7184,31 +6269,10 @@ func load_game() -> void:
 		var src_ss: Dictionary = parsed["seasons_seen"]
 		for s_id in EconomyConfig.SEASON_ORDER:
 			seasons_seen[s_id] = bool(src_ss.get(s_id, false))
-	kite_festival_active = false
-	kite_festival_clock = 0.0
-	kite_collected_slots.clear()
+	_load_kite_festival(parsed.get("kite_festival", []))
 	refresh_season()
 
-	# CI-14: Photo Tour & Islander Wish Board (a tour in progress is never persisted; it returns on its cooldown)
-	photo_tour_active = false
-	photo_tour_phase = ""
-	photo_tour_clock = 0.0
-	photo_tour_route.clear()
-	photo_tour_photos.clear()
-	photo_tour_skipped.clear()
-	photo_tour_last_shot = {}
-	photo_tour_last_shot_age = 99.0
-	photo_tour_cooldown_timer = clampf(float(parsed.get("photo_tour_cooldown_timer", EconomyConfig.PHOTO_TOUR_FIRST_COOLDOWN_SEC)), 0.0, EconomyConfig.PHOTO_TOUR_COOLDOWN_SEC)
-	photo_tours_held = maxi(0, int(parsed.get("photo_tours_held", 0)))
-	var src_up: Dictionary = parsed["unlocked_photos"] if (parsed.has("unlocked_photos") and parsed["unlocked_photos"] is Dictionary) else {}
-	var src_pc: Dictionary = parsed["photo_counts"] if (parsed.has("photo_counts") and parsed["photo_counts"] is Dictionary) else {}
-	for pid in EconomyConfig.get_photo_entry_order():
-		unlocked_photos[pid] = bool(src_up.get(pid, false))
-		photo_counts[pid] = maxi(0, int(src_pc.get(pid, 0)))
-	photos_taken_total = maxi(0, int(parsed.get("photos_taken_total", 0)))
-	photo_gold_total = maxi(0, int(parsed.get("photo_gold_total", 0)))
-	photo_reputation_bonus = maxi(0, int(parsed.get("photo_reputation_bonus", 0)))
-	photo_stamps = maxi(0, int(parsed.get("photo_stamps", 0)))
+	# CI-14: Islander Wish Board
 	wish_serial_next = maxi(0, int(parsed.get("wish_serial_next", 0)))
 	wishes_fulfilled_total = maxi(0, int(parsed.get("wishes_fulfilled_total", 0)))
 	var src_wf: Dictionary = parsed["wish_fulfilled_counts"] if (parsed.has("wish_fulfilled_counts") and parsed["wish_fulfilled_counts"] is Dictionary) else {}
@@ -7248,9 +6312,222 @@ func load_game() -> void:
 	_load_sky_weather_and_birthday_state(parsed)
 	# CI-16: Food Critics' Week (this week's entries only when the save is from the same week) & Friendship Bonds
 	_load_food_week_and_friendship_state(parsed)
+	_load_guest_state(parsed)
 
 	var last_ts := int(parsed.get("timestamp", 0))
 	var now_ts := int(Time.get_unix_time_from_system())
 	var elapsed := clampi(now_ts - last_ts, 0, 86400)
 	if elapsed >= 60:
 		calculate_and_apply_offline_earnings(elapsed)
+		guests_while_away(float(now_ts - last_ts))
+
+## ------------------------------------------------------------------------------------------------------------------
+## Guests, the featured dish and the small decorations (tables in `src/data/Guests.gd`)
+## ------------------------------------------------------------------------------------------------------------------
+var guest_visits: Dictionary = {}
+## Gifts waiting to be taken, one entry per guest: {"id", "n", "gold", "amber", "keep" (decoration id or "")}
+var guest_pending: Array = []
+var guest_timer: float = 0.0
+var featured_dish: String = "fruit"
+## Decoration id -> owned; a placed one is {"id", "x"} on the lawn
+var decor_owned: Dictionary = {}
+var decor_placed: Array = []
+
+func reset_guest_state() -> void:
+	guest_visits = {}
+	guest_pending = []
+	guest_timer = 0.0
+	featured_dish = "fruit"
+	decor_owned = {}
+	decor_placed = []
+	EventBus.decor_changed.emit()
+
+func get_met_guest_count() -> int:
+	var c := 0
+	for g in Guests.ORDER:
+		if int(guest_visits.get(g, 0)) > 0:
+			c += 1
+	return c
+
+func get_available_dishes() -> Array:
+	var out: Array = []
+	for d in Guests.DISH_ORDER:
+		if is_line_open(String(Guests.DISH_LINE[d])):
+			out.append(d)
+	return out
+
+func set_featured_dish(dish: String) -> bool:
+	if not get_available_dishes().has(dish):
+		return false
+	featured_dish = dish
+	save_game()
+	return true
+
+func get_placed_decor_ids() -> Array:
+	var out: Array = []
+	for d in decor_placed:
+		out.append(String(d["id"]))
+	return out
+
+## One visit; `roll` in [0, 1). Returns the guest id.
+func receive_guest(roll: float, quiet: bool = false) -> String:
+	var g := Guests.pick(get_available_dishes(), featured_dish, get_placed_decor_ids(), roll)
+	if g == "":
+		return ""
+	var rarity := int(Guests.LIST[g]["rarity"])
+	guest_visits[g] = int(guest_visits.get(g, 0)) + 1
+	var keep := String(Guests.LIST[g]["keep"]) if int(guest_visits[g]) == Guests.keep_at(g) else ""
+	var entry := {}
+	for e in guest_pending:
+		if String(e["id"]) == g:
+			entry = e
+			break
+	if entry.is_empty():
+		entry = {"id": g, "n": 0, "gold": 0, "amber": 0, "keep": ""}
+		guest_pending.append(entry)
+	entry["n"] = int(entry["n"]) + 1
+	entry["gold"] = int(entry["gold"]) + income_gold(Guests.GIFT_SEC[rarity], 5)
+	entry["amber"] = int(entry["amber"]) + Guests.GIFT_AMBER[rarity]
+	if keep != "":
+		entry["keep"] = keep
+	if not quiet:
+		EventBus.guest_arrived.emit(g, keep)
+	return g
+
+func _tick_guests(delta: float) -> void:
+	guest_timer += delta
+	if guest_timer >= Guests.VISIT_SEC:
+		guest_timer = 0.0
+		receive_guest(randf())
+
+func guests_while_away(elapsed: float) -> int:
+	var total := guest_timer + maxf(0.0, elapsed)
+	var n := mini(int(floor(total / Guests.VISIT_SEC)), Guests.AWAY_VISITS_MAX)
+	guest_timer = fmod(total, Guests.VISIT_SEC)
+	for _i in range(n):
+		receive_guest(randf(), true)
+	return n
+
+func get_pending_guest_count() -> int:
+	var c := 0
+	for e in guest_pending:
+		c += int(e["n"])
+	return c
+
+func get_pending_guest_totals() -> Dictionary:
+	var out := {"gold": 0, "amber": 0, "keeps": []}
+	for e in guest_pending:
+		out["gold"] = int(out["gold"]) + int(e["gold"])
+		out["amber"] = int(out["amber"]) + int(e["amber"])
+		if String(e["keep"]) != "":
+			(out["keeps"] as Array).append(String(e["keep"]))
+	return out
+
+func claim_guest_gifts() -> Dictionary:
+	var t := get_pending_guest_totals()
+	guest_pending = []
+	add_gold(int(t["gold"]))
+	add_amber(int(t["amber"]))
+	for k in t["keeps"]:
+		decor_owned[k] = true
+	if SoundManager != null and int(t["gold"]) > 0:
+		SoundManager.play_coin_sfx()
+	EventBus.decor_changed.emit()
+	save_game()
+	return t
+
+func is_decor_owned(id: String) -> bool:
+	return bool(decor_owned.get(id, false))
+
+func buy_decor(id: String) -> bool:
+	if not Guests.DECOR.has(id) or is_decor_owned(id) or int(Guests.DECOR[id]["amber"]) <= 0:
+		return false
+	if not spend_amber(int(Guests.DECOR[id]["amber"])):
+		return false
+	decor_owned[id] = true
+	EventBus.decor_changed.emit()
+	save_game()
+	return true
+
+func get_decor_x(id: String) -> float:
+	for d in decor_placed:
+		if String(d["id"]) == id:
+			return float(d["x"])
+	return NAN
+
+## Nearest spot on an open lawn to `x`
+func snap_lawn_x(x: float) -> float:
+	var best := NAN
+	for lawn in Guests.LAWNS:
+		if not bool(unlocked_islands.get(int(lawn[0]), false)):
+			continue
+		var cx := clampf(x, float(lawn[1]), float(lawn[2]))
+		if is_nan(best) or absf(cx - x) < absf(best - x):
+			best = cx
+	return best
+
+func place_decor(id: String, x: float) -> bool:
+	if not is_decor_owned(id):
+		return false
+	var nx := roundf(snap_lawn_x(x))
+	for d in decor_placed:
+		if String(d["id"]) == id:
+			d["x"] = nx
+			EventBus.decor_changed.emit()
+			return true
+	decor_placed.append({"id": id, "x": nx})
+	EventBus.decor_changed.emit()
+	save_game()
+	return true
+
+## Puts it on the first free spot of the lawns, isle 1 first
+func place_decor_anywhere(id: String) -> bool:
+	for lawn in Guests.LAWNS:
+		if not bool(unlocked_islands.get(int(lawn[0]), false)):
+			continue
+		var x := float(lawn[1]) + 10.0
+		while x <= float(lawn[2]):
+			var free := true
+			for d in decor_placed:
+				if absf(float(d["x"]) - x) < Guests.LAWN_STEP:
+					free = false
+					break
+			if free:
+				return place_decor(id, x)
+			x += Guests.LAWN_STEP
+	return place_decor(id, randf_range(float(Guests.LAWNS[0][1]), float(Guests.LAWNS[0][2])))
+
+func remove_decor(id: String) -> bool:
+	for i in range(decor_placed.size()):
+		if String(decor_placed[i]["id"]) == id:
+			decor_placed.remove_at(i)
+			EventBus.decor_changed.emit()
+			save_game()
+			return true
+	return false
+
+func _load_guest_state(parsed: Dictionary) -> void:
+	reset_guest_state()
+	var gv: Dictionary = parsed["guest_visits"] if parsed.get("guest_visits") is Dictionary else {}
+	for g in Guests.ORDER:
+		var n := int(gv.get(g, 0))
+		if n > 0:
+			guest_visits[g] = n
+	if parsed.get("guest_pending") is Array:
+		for e in parsed["guest_pending"]:
+			if e is Dictionary and Guests.LIST.has(String(e.get("id", ""))):
+				var keep := String(e.get("keep", ""))
+				guest_pending.append({"id": String(e["id"]), "n": maxi(1, int(e.get("n", 1))), "gold": maxi(0, int(e.get("gold", 0))), "amber": maxi(0, int(e.get("amber", 0))), "keep": keep if Guests.DECOR.has(keep) else ""})
+	guest_timer = clampf(float(parsed.get("guest_timer", 0.0)), 0.0, Guests.VISIT_SEC)
+	featured_dish = String(parsed.get("featured_dish", "fruit"))
+	if not Guests.DISH_ORDER.has(featured_dish):
+		featured_dish = "fruit"
+	var od: Dictionary = parsed["decor_owned"] if parsed.get("decor_owned") is Dictionary else {}
+	for id in Guests.DECOR_ORDER:
+		if bool(od.get(id, false)):
+			decor_owned[id] = true
+	if parsed.get("decor_placed") is Array:
+		for d in parsed["decor_placed"]:
+			if d is Dictionary and is_decor_owned(String(d.get("id", ""))) and is_nan(get_decor_x(String(d["id"]))):
+				decor_placed.append({"id": String(d["id"]), "x": float(d.get("x", 700.0))})
+	EventBus.decor_changed.emit()

@@ -10,7 +10,7 @@ class_name BuildingVisualUpgrader
 ##   * Tier 3 (Lv.50~99): Elevates building scale to `1.08x`, renders a 5-pointed Silver Star Badge at base, and doubles (`2x`) particle emission.
 ##   * Tier 4 (Lv.100+): Mounts custom Golden Shimmer Outline `ShaderMaterial`, emits Golden Stardust `CPUParticles2D`, and upgrades base badge to Gold Star.
 
-@export var building_kind: String = "soil" # "soil", "mortar", "cauldron", "orbis_linked", "stall"
+@export var building_kind: String = "soil" # "soil", "mortar", "cauldron", "coral_linked", "stall"
 
 var current_level: int = 1
 var current_tier: int = 1
@@ -56,12 +56,12 @@ func _init_child_nodes() -> void:
 		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
 		decor_sprite.scale = Vector2(0.52, 0.52)
 		decor_sprite.position = Vector2(-(Workshop.CAULDRON_VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
-	elif building_kind == "orbis_linked":
+	elif building_kind == "coral_linked":
 		# CI-10: Island 3 runs 6 buildings with 28px gaps -> slimmer signpost (~23px) centered at outer edge + 16px
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_signpost.png")
 		decor_sprite.offset = Vector2(0.0, -float(54) * 0.5)
 		decor_sprite.scale = Vector2(0.52, 0.52)
-		decor_sprite.position = Vector2(-(Workshop.ORBIS_VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
+		decor_sprite.position = Vector2(-(Workshop.CORAL_VISUAL_WIDTH * 0.5 + EconomyConfig.DECOR_OUTER_OFFSET), 0.0)
 	elif building_kind == "stall":
 		decor_sprite.texture = load("res://assets/pixel_art/buildings/decor_lamp.png")
 		decor_sprite.offset = Vector2(0.0, -float(66) * 0.5)
@@ -118,7 +118,7 @@ func _init_child_nodes() -> void:
 	particles.initial_velocity_max = 18.0
 	particles.scale_amount_min = 2.0
 	particles.scale_amount_max = 3.5
-	if building_kind == "cauldron" or building_kind == "orbis_linked":
+	if building_kind == "cauldron" or building_kind == "coral_linked":
 		particles.color = Color(0.55, 0.96, 1.0, 0.85)
 	else:
 		particles.color = Color(0.98, 0.96, 0.90, 0.75)
@@ -187,7 +187,7 @@ func apply_level_visuals(new_level: int, play_bounce: bool = true) -> void:
 		decor_sprite.visible = (current_tier >= 2)
 
 	if particles != null:
-		var is_workshop := (building_kind == "mortar" or building_kind == "cauldron" or building_kind == "orbis_linked" or building_kind == "hotspring" or building_kind == "windmill" or building_kind == "tea_pavilion" or building_kind == "chef_pavilion" or building_kind == "lighthouse_harbor" or building_kind == "dairy_workshop" or building_kind == "pottery_kiln")
+		var is_workshop := (building_kind == "mortar" or building_kind == "cauldron" or building_kind == "coral_linked" or building_kind == "hotspring" or building_kind == "windmill" or building_kind == "tea_pavilion" or building_kind == "chef_pavilion" or building_kind == "lighthouse_harbor" or building_kind == "dairy_workshop" or building_kind == "pottery_kiln")
 		particles.emitting = is_workshop and (current_tier >= 2)
 		particles.amount = 16 if current_tier >= 3 else 8
 

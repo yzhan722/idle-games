@@ -4,7 +4,7 @@
 Generates crisp 16-bit PCM .wav sound effects and 5 distinct ambient nature loops
 for Cloud Isle Market (PRD v2.2):
 - harvest_pop.wav    (plucky pop when harvesting crops)
-- meso_coin.wav      (bright metallic dual-tone coin chime)
+- coin.wav      (bright metallic dual-tone coin chime)
 - water_splash.wav   (soft bubbly water droplet chime)
 - wood_build.wav     (warm wooden mallet tap + upgrade arpeggio)
 - ui_click.wav       (wooden button click)
@@ -56,7 +56,7 @@ def gen_harvest_pop() -> list[float]:
     return out
 
 
-def gen_meso_coin() -> list[float]:
+def gen_coin() -> list[float]:
     dur = 0.34
     n = int(SAMPLE_RATE * dur)
     out = []
@@ -271,7 +271,7 @@ def gen_ambient_stream() -> list[float]:
 
 def main() -> None:
     write_wav("harvest_pop.wav", gen_harvest_pop())
-    write_wav("meso_coin.wav", gen_meso_coin())
+    write_wav("coin.wav", gen_coin())
     write_wav("water_splash.wav", gen_water_splash())
     write_wav("wood_build.wav", gen_wood_build())
     write_wav("ui_click.wav", gen_ui_click())

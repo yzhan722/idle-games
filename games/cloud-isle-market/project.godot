@@ -11,7 +11,8 @@ config_version=5
 [application]
 
 config/name="云岛集市 · Cloud Isle Market"
-config/description="《云岛集市 (Cloud Isle Market)》1.5D 浮空微缩生态岛 · 桌面透明置顶挂机经营游戏 (PRD v2.2)"
+config/description="《云岛集市 (Cloud Isle Market)》1.5D 浮空微缩生态岛 · 桌面透明置顶挂机经营游戏"
+config/version="3.1.0"
 run/main_scene="res://src/world/MainWorld.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 run/low_processor_mode=false
@@ -39,6 +40,7 @@ window/size/transparent=true
 window/size/window_width_override=1920
 window/size/window_height_override=300
 window/per_pixel_transparency/allowed=true
+window/subwindows/embed_subwindows=false
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

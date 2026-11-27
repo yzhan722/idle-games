@@ -8,7 +8,6 @@ class_name AnimalWorker
 ## - `carry_icon`: `z_index = 20`, `z_as_relative = false`.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` (`shadow_width = 44 * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`).
 
-const FRAME_W := 60
 const FRAME_H := 60
 const VISUAL_WIDTH := 44.0
 
@@ -79,15 +78,6 @@ var pet_jump_timer: float = 0.0
 var pet_motes: Array[Sprite2D] = []
 var total_distance_moved: float = 0.0
 var _was_hired: bool = false
-
-## CI-12: Autumn Sports Day athlete mode. `MainWorld` drives `sports_target_x` along the Lotus Pond bridge track every frame;
-## production pauses while racing and the worker walks back to the task it left (same step / carry state) afterwards.
-var sports_mode: bool = false
-var sports_target_x: float = 0.0
-var sports_facing: float = 0.0
-var sports_pull_pose: bool = false
-var _sports_resume_dest: Vector2 = Vector2.ZERO
-var _sports_saved_sleep: bool = false
 
 func _ready() -> void:
 	z_index = EconomyConfig.Z_UNIT
@@ -175,11 +165,47 @@ func _ready() -> void:
 		add_child(mote)
 		pet_motes.append(mote)
 
+## A break at one of the player's decorations: walk over, step onto the front grass, enjoy it, go back to work
+var decor_wait := randf_range(12.0, 30.0)
+var decor_left := 0.0
+var decor_id := ""
+var decor_step := 13.0
+
+func is_at_decor() -> bool:
+	return decor_id != "" and nav_path.is_empty()
+
+func _try_decor_break(delta: float) -> bool:
+	decor_wait -= delta
+	if decor_wait > 0.0 or carry_icon.visible or world_ref == null or not world_ref.has_method("find_decor_for"):
+		return false
+	decor_wait = randf_range(40.0, 90.0)
+	var spot: Dictionary = world_ref.find_decor_for(self)
+	if spot.is_empty():
+		return false
+	decor_id = String(spot["id"])
+	decor_step = float(spot["step"])
+	decor_left = randf_range(4.0, 7.0)
+	is_sleeping_full = false
+	nav_path = [Vector2(float(spot["x"]), EconomyConfig.GROUND_Y)]
+	return true
+
+func _process_decor_break(delta: float) -> void:
+	is_moving = false
+	decor_left -= delta
+	z_index = EconomyConfig.Z_UNIT + 2
+	position.y = minf(EconomyConfig.GROUND_Y + decor_step, position.y + delta * 40.0)
+	if decor_left <= 0.0 or is_nan(GameManager.get_decor_x(decor_id)):
+		end_decor_break()
+		_assign_next_task()
+
+func end_decor_break() -> void:
+	decor_id = ""
+	decor_left = 0.0
+	z_index = EconomyConfig.Z_UNIT
+	position.y = EconomyConfig.GROUND_Y
+
 func get_pet_hit_rect() -> Rect2:
 	return Rect2(position.x - 24.0, position.y - 54.0, 48.0, 56.0)
-
-func can_be_petted() -> bool:
-	return visible and is_hired() and pet_cooldown_timer <= 0.0
 
 func trigger_pet_boost() -> bool:
 	if not visible or not is_hired():
@@ -365,46 +391,6 @@ func _sync_carry_rig_transform(hop_y: float) -> void:
 		carry_front_grip.flip_h = facing_left
 		carry_front_grip.rotation = 0.0
 
-func enter_sports_mode(start_x: float) -> void:
-	if sports_mode:
-		return
-	sports_mode = true
-	_sports_resume_dest = nav_path[nav_path.size() - 1] if nav_path.size() > 0 else position
-	_sports_saved_sleep = is_sleeping_full
-	is_sleeping_full = false
-	nav_path.clear()
-	sports_target_x = start_x
-	sports_facing = 0.0
-	sports_pull_pose = false
-
-func exit_sports_mode() -> void:
-	if not sports_mode:
-		return
-	sports_mode = false
-	sports_pull_pose = false
-	sports_facing = 0.0
-	is_sleeping_full = _sports_saved_sleep
-	_navigate_to(_sports_resume_dest)
-
-func get_sports_resume_dest() -> Vector2:
-	return _sports_resume_dest
-
-func _process_sports_motion(delta: float) -> void:
-	var tx := clampf(sports_target_x, 90.0, 1815.0)
-	var dx := tx - position.x
-	var step := EconomyConfig.SPORTS_RUN_SPEED * maxf(0.0, delta)
-	if absf(dx) > 0.5:
-		is_moving = true
-		var mv := signf(dx) * minf(absf(dx), step)
-		position = Vector2(position.x + mv, EconomyConfig.GROUND_Y)
-		total_distance_moved += absf(mv)
-		facing_left = dx < 0.0
-	else:
-		is_moving = false
-		position = Vector2(tx, EconomyConfig.GROUND_Y)
-		if absf(sports_facing) > 0.01:
-			facing_left = sports_facing < 0.0
-
 ## CI-12: x of the long-dwell spot this worker returns to between trips (work dock or idle rest dock)
 func get_rest_dock_x() -> float:
 	if waypoint_graph == null:
@@ -450,24 +436,24 @@ func _get_home_workshop_id() -> String:
 		return "mortar"
 	elif home_island == 2:
 		return "cauldron"
-	return "orbis_linked"
+	return "coral_linked"
 
 func _get_home_workshop_pos() -> Vector2:
 	if home_island == 1:
 		return waypoint_graph.get_named_pos("mortar")
 	elif home_island == 2:
 		return waypoint_graph.get_named_pos("cauldron")
-	return waypoint_graph.get_named_pos("orbis_linked")
+	return waypoint_graph.get_named_pos("coral_linked")
 
 func _get_workshop_dock_pos(dock_suffix: String) -> Vector2:
 	var prefix := "mortar"
 	if home_island == 2:
 		prefix = "cauldron"
 	elif home_island == 3:
-		prefix = "orbis"
+		prefix = "coral"
 	if waypoint_graph != null:
 		if home_island == 3 and dock_suffix == "chef":
-			var chef_dock := "orbis_chef_penguin" if role_type == RoleType.PENGUIN_ALCHEMIST else "orbis_chef_fox"
+			var chef_dock := "coral_chef_penguin" if role_type == RoleType.PENGUIN_ALCHEMIST else "coral_chef_fox"
 			return waypoint_graph.get_dock_pos(chef_dock)
 		return waypoint_graph.get_dock_pos(prefix + "_" + dock_suffix)
 	return _get_home_workshop_pos()
@@ -532,8 +518,8 @@ func _process(delta: float) -> void:
 	var tea_move_mult := GameManager.get_tea_aura_worker_move_multiplier() if GameManager != null else 1.0
 	var tea_stamina_mult := GameManager.get_tea_aura_worker_stamina_multiplier() if GameManager != null else 1.0
 
-	if sports_mode:
-		_process_sports_motion(delta)
+	if is_at_decor():
+		_process_decor_break(delta)
 	elif nav_path.size() > 0:
 		is_moving = true
 		var spd := EconomyConfig.calc_move_speed(animal_key, get_level()) * haste_mult * hs_move_mult * tea_move_mult
@@ -560,6 +546,7 @@ func _process(delta: float) -> void:
 	else:
 		is_moving = false
 		position.y = EconomyConfig.GROUND_Y
+		_try_decor_break(delta)
 		state_timer += delta * haste_mult * hs_work_mult * tea_stamina_mult
 		_update_role_work_step(delta * haste_mult * hs_work_mult * tea_stamina_mult)
 
@@ -599,7 +586,7 @@ func _process(delta: float) -> void:
 
 	var promo_headroom := -14.0 if (promo_accessory != null and promo_accessory.visible) else 0.0
 	if heart_icon != null:
-		heart_icon.visible = (boost_timer > 0.0)
+		heart_icon.visible = boost_timer > 0.0 or is_at_decor()
 		if heart_icon.visible:
 			var pulse_s := 0.55 + (0.14 if pet_jump_timer > 0.0 else 0.03 * sin(anim_time * 7.0))
 			heart_icon.scale = Vector2(pulse_s, pulse_s)
@@ -662,7 +649,7 @@ func _assign_next_task() -> void:
 				_navigate_to(_get_otter_rest_pos())
 
 		RoleType.TOUCAN_TRADER:
-			var wid := "orbis_linked" if home_island == 3 else "cauldron"
+			var wid := "coral_linked" if home_island == 3 else "cauldron"
 			var can_take_raw_fallback := (not _is_home_chef_hired()) or GameManager.is_workshop_input_full(wid) or (not GameManager.is_island_otter_hired(home_island))
 			if GameManager.get_workshop_output_total(wid) > 0 and not GameManager.is_stall_full():
 				worker_step = 10
@@ -817,7 +804,7 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 
 		RoleType.TOUCAN_TRADER:
 			var cap := EconomyConfig.calc_carry_capacity("toucan", get_level())
-			var wid := "orbis_linked" if home_island == 3 else "cauldron"
+			var wid := "coral_linked" if home_island == 3 else "cauldron"
 			if worker_step == 40:
 				if state_timer >= 0.8:
 					_assign_next_task()
@@ -869,11 +856,11 @@ func _update_role_work_step(eff_delta: float = 0.016) -> void:
 
 func _update_chef_work_step() -> void:
 	var is_penguin := (role_type == RoleType.PENGUIN_ALCHEMIST)
-	var wid := "orbis_linked" if home_island == 3 else ("cauldron" if is_penguin else "mortar")
+	var wid := "coral_linked" if home_island == 3 else ("cauldron" if is_penguin else "mortar")
 	var w_node: Workshop = null
 	if world_ref != null:
 		if home_island == 3:
-			w_node = world_ref.orbis_linked_workshop
+			w_node = world_ref.coral_linked_workshop
 		elif is_penguin:
 			w_node = world_ref.cauldron_workshop
 		else:
@@ -933,11 +920,6 @@ func _update_chef_work_step() -> void:
 func _get_pose_index() -> int:
 	# Strictly keep all animal poses upright (0 = Idle/Stand, 1 = Walk, 2 = Active Work).
 	# Never select frame 3 (horizontal lying-down sleep pose) to prevent sudden 90-degree sideways sprite flips.
-	if sports_mode:
-		if is_moving:
-			return int(floor(anim_time * 9.5 / PI)) % 2
-		# Tug-of-war heave: slow alternating idle/step frames (planting the feet and hauling) instead of the tool-work pose
-		return (int(floor(anim_time * 3.0)) % 2) if sports_pull_pose else 0
 	if is_sleeping_full or worker_step == 20 or worker_step == 40 or worker_step == 99:
 		return 0
 	if is_moving:

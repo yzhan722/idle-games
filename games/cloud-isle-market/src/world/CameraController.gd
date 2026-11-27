@@ -152,11 +152,11 @@ func apply_wheel_zoom(wheel_dir: float, factor: float, mouse_screen_pos: Vector2
 	velocity_x = 0.0
 	_sync_legacy_targets()
 
-func _apply_zoom_step(delta_zoom: float, mouse_screen_pos: Vector2) -> void:
-	var dir := 1.0 if delta_zoom >= 0.0 else -1.0
-	apply_wheel_zoom(dir, absf(delta_zoom) / 0.10, mouse_screen_pos)
 
 func _input(event: InputEvent) -> void:
+	if WindowController != null and WindowController.boss_stealth_active:
+		is_rmb_panning = false
+		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -212,6 +212,9 @@ func _input(event: InputEvent) -> void:
 			focus_on_island(3)
 
 func _process(delta: float) -> void:
+	if WindowController != null and WindowController.boss_stealth_active:
+		velocity_x = 0.0
+		return
 	var input_dir_x := 0.0
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
 		input_dir_x += 1.0 # Pressing Left moves world_root right so view pans left

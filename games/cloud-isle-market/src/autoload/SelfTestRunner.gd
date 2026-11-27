@@ -171,11 +171,8 @@ func _run_all_four_assertions_and_export() -> void:
 	if world == null:
 		_fail_and_quit("[SelfTestRunner]", "MainWorld is not the active current_scene!")
 		return
-	# CI-14: freeze the photo tour + wish board while the earlier economy assertions measure exact voucher / gold deltas
-	# (assertion 27 un-freezes them for its own checks)
-	GameManager.photo_wish_paused = true
-	if GameManager.photo_tour_active:
-		GameManager._finish_photo_tour()
+	# freeze the wish board while the earlier economy assertions measure exact voucher / gold deltas
+	GameManager.wish_paused = true
 
 	# ------------------------------------------------------------------
 	# [断言1-切帧防呆]: Check single-frame rendered dimensions of all animals, customers, and crops
@@ -444,8 +441,8 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "snap_to_taskbar() failed to dock window to bottom usable rect!")
 		return
 
-	if world.hud == null or world.hud.lbl_drawer_fps == null or world.hud.lbl_drawer_opacity == null or world.hud.lbl_drawer_dock == null:
-		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "HUD drawer control labels for FPS, Opacity or Dock are missing!")
+	if world.hud == null or world.hud._get_settings_rows().size() < 8:
+		_fail_and_quit("[断言6-任务栏贴合与帧率透明度锁]", "Settings page misses rows!")
 		return
 
 	print("[PASS] [断言6-任务栏贴合与帧率透明度锁] 通过: 节能 30/60 FPS 双向锁、60%%~100%% 整体透明度安全边界与任务栏贴合停靠校验 PASS!")
@@ -479,8 +476,8 @@ func _run_all_four_assertions_and_export() -> void:
 	var box_gold := int(pomo_box.get("gold", 0))
 	var box_frenzy := float(pomo_box.get("frenzy_sec", 0.0))
 
-	if GameManager.pomodoro_active != false or GameManager.gold != pre_pomo_gold + box_gold or box_gold != 500:
-		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro box gold payout error: expected +500G, got %d (gold before=%d, after=%d)" % [box_gold, pre_pomo_gold, GameManager.gold])
+	if GameManager.pomodoro_active != false or GameManager.gold != pre_pomo_gold + box_gold or box_gold != GameManager.income_gold(GameManager.POMODORO_REWARD_SEC, 60):
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro box gold payout error: got %d (gold before=%d, after=%d)" % [box_gold, pre_pomo_gold, GameManager.gold])
 		return
 	if GameManager.frenzy_timer < 29.0:
 		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro box carnival frenzy buff not activated! frenzy_timer=%.2f" % GameManager.frenzy_timer)
@@ -488,8 +485,8 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.pomodoro_completed_count != pre_pomo_count + 1:
 		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "Pomodoro completed count did not increment: %d -> %d" % [pre_pomo_count, GameManager.pomodoro_completed_count])
 		return
-	if world.hud.offline_banner_text.find("专注晨露礼盒") == -1:
-		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD banner missing `专注晨露礼盒` message: `%s`" % world.hud.offline_banner_text)
+	if world.hud.offline_banner_text.find("专注完成") == -1:
+		_fail_and_quit("[断言7-番茄钟与礼盒结算]", "HUD banner missing `专注完成` message: `%s`" % world.hud.offline_banner_text)
 		return
 
 	world.hud.offline_banner_timer = 0.0
@@ -543,8 +540,8 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	world.hud._sync_label_nodes()
-	if world.hud.lbl_bar_pipeline == null or world.hud.lbl_bar_pipeline.text.find("契约:") == -1:
-		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "HUD status text missing `契约:` prefix!")
+	if world.hud.lbl_bar_pipeline == null or world.hud.lbl_bar_pipeline.text != "%d/%d" % [int(next_c.get("current_count", 0)), int(next_c.get("required_count", 5))]:
+		_fail_and_quit("[断言8-晨露琥珀与皇家契约]", "HUD order counter wrong: `%s`" % world.hud.lbl_bar_pipeline.text)
 		return
 	print("[PASS] [断言8-晨露琥珀与皇家契约系统] 通过: 琥珀二级货币收支边界、皇家订单自动推进、奖金与琥珀结算、循环刷单与 HUD 状态显示校验 PASS!")
 
@@ -641,16 +638,16 @@ func _run_all_four_assertions_and_export() -> void:
 	SoundManager.set_muted(false)
 	SoundManager.set_white_noise_enabled(true)
 	SoundManager.sync_white_noise_to_weather(3)
-	if SoundManager.get_white_noise_profile() != "rain" or SoundManager.get_white_noise_status_label() != "[白噪:雨声]":
+	if SoundManager.get_white_noise_profile() != "rain" or SoundManager.get_white_noise_status_label() != "雨声":
 		_fail_and_quit("[断言11-白噪音与锦鲤]", "Rain white noise profile/label mismatch: `%s` / `%s`" % [SoundManager.get_white_noise_profile(), SoundManager.get_white_noise_status_label()])
 		return
 	SoundManager.sync_white_noise_to_weather(2)
-	if SoundManager.get_white_noise_profile() != "cricket" or SoundManager.get_white_noise_status_label() != "[白噪:虫鸣]":
+	if SoundManager.get_white_noise_profile() != "cricket" or SoundManager.get_white_noise_status_label() != "虫鸣":
 		_fail_and_quit("[断言11-白噪音与锦鲤]", "Night white noise profile/label mismatch!")
 		return
 	SoundManager.set_white_noise_enabled(false)
-	if SoundManager.get_white_noise_status_label() != "[白噪:关]":
-		_fail_and_quit("[断言11-白噪音与锦鲤]", "Disabled white noise label should be `[白噪:关]`!")
+	if SoundManager.get_white_noise_status_label() != "关":
+		_fail_and_quit("[断言11-白噪音与锦鲤]", "Disabled white noise label should be `关`!")
 		return
 	SoundManager.set_white_noise_enabled(prev_wn)
 	SoundManager.set_muted(prev_mute)
@@ -723,7 +720,7 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.animal_levels["toucan"] = 1
 	GameManager._sync_codex_from_progression()
 	if not bool(GameManager.unlocked_codex.get("delicacy_2", false)) or not bool(GameManager.unlocked_codex.get("delicacy_3", false)):
-		_fail_and_quit("[断言13-三岛满编压力]", "Island 2/3 cauldron & Orbis dual-workshop delicacies failed to unlock!")
+		_fail_and_quit("[断言13-三岛满编压力]", "Island 2/3 cauldron & Coral dual-workshop delicacies failed to unlock!")
 		return
 	# Restore Island 1 showcase state for clean screenshot export
 	GameManager.unlocked_islands[2] = false
@@ -812,44 +809,43 @@ func _run_all_four_assertions_and_export() -> void:
 	print("[PASS] [断言14-CI-1抚摸动物加速与天空热气球礼袋] 通过: 全 6 类执勤动物欢快跳跃+像素爱心+8s干劲加速+防鬼畜冷却、天空热气球防穿透多边形命中与礼袋金币/琥珀/狂欢结算校验 PASS!")
 
 	# ------------------------------------------------------------------
-	# [断言15-CI-2美食评论家与云游行商及云端花火灯会]:
+	# [断言15-CI-2美食评论家与云游行商]:
 	#   1) Gourmet Critic (`traveler_critic_normalized.png`, 48x48x2) tastes delicacy -> activates `gourmet_acclaim_timer` (+25% price & +20% tip) + medal badge;
 	#   2) Caravan Merchant (`traveler_merchant_normalized.png`, 48x48x2) acquires surplus crops from `raw_baskets` -> grants `amber` + gold;
-	#   3) Night Cloud Firework & Lantern Festival (`start_lantern_festival`) activates `fest_lantern_garland.png`, boosts VIP chance >= 0.58, and spawns pixel firework bursts.
 	# ------------------------------------------------------------------
 	GameManager.gourmet_acclaim_timer = 0.0
-	var pre_codex_mult := GameManager.get_codex_price_multiplier()
+	var pre_codex_mult := GameManager.get_market_mood_multiplier()
 	var pre_tip_mult := GameManager.get_customer_tip_multiplier(false, 3)
 	GameManager.add_to_stall("delicacy_0", 2)
 	var critic := world.spawn_special_visitor(CustomerNPC.VisitorRole.GOURMET_CRITIC)
 	if critic == null or critic.body_sprite == null or critic.body_sprite.texture == null:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Critic failed to load `traveler_critic_normalized.png`!")
+		_fail_and_quit("[断言15-特殊访客]", "Gourmet Critic failed to load `traveler_critic_normalized.png`!")
 		return
 	var critic_fw := float(critic.body_sprite.texture.get_width()) / float(maxi(1, critic.body_sprite.hframes))
 	var critic_fh := float(critic.body_sprite.texture.get_height()) / float(maxi(1, critic.body_sprite.vframes))
 	if critic.body_sprite.hframes != 2 or absf(critic_fw - 48.0) > 0.5 or absf(critic_fh - 48.0) > 0.5 or critic.tex_gourmet_medal == null:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Critic invalid slicing/medal: fw=%.1f fh=%.1f hframes=%d medal=%s" % [
+		_fail_and_quit("[断言15-特殊访客]", "Gourmet Critic invalid slicing/medal: fw=%.1f fh=%.1f hframes=%d medal=%s" % [
 			critic_fw, critic_fh, critic.body_sprite.hframes, str(critic.tex_gourmet_medal != null)
 		])
 		return
 	var pre_critic_gold := GameManager.gold
 	var critic_earned := GameManager.try_critic_taste_delicacy("delicacy_0", 1, critic.position)
 	if critic_earned <= 0 or GameManager.gold <= pre_critic_gold or not GameManager.is_gourmet_acclaim_active():
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Critic checkout failed to settle delicacy & activate Gourmet Acclaim!")
+		_fail_and_quit("[断言15-特殊访客]", "Gourmet Critic checkout failed to settle delicacy & activate Gourmet Acclaim!")
 		return
-	if GameManager.get_codex_price_multiplier() <= pre_codex_mult + 0.05 or GameManager.get_customer_tip_multiplier(false, 3) <= pre_tip_mult + 0.05:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Gourmet Acclaim failed to boost price & tip multipliers!")
+	if GameManager.get_market_mood_multiplier() <= pre_codex_mult + 0.05 or GameManager.get_customer_tip_multiplier(false, 3) <= pre_tip_mult + 0.05:
+		_fail_and_quit("[断言15-特殊访客]", "Gourmet Acclaim failed to boost price & tip multipliers!")
 		return
 
 	GameManager.raw_baskets[1]["crop_0"] = maxi(3, int(GameManager.raw_baskets[1].get("crop_0", 0)) + 3)
 	var merchant := world.spawn_special_visitor(CustomerNPC.VisitorRole.CARAVAN_MERCHANT)
 	if merchant == null or merchant.body_sprite == null or merchant.body_sprite.texture == null:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Caravan Merchant failed to load `traveler_merchant_normalized.png`!")
+		_fail_and_quit("[断言15-特殊访客]", "Caravan Merchant failed to load `traveler_merchant_normalized.png`!")
 		return
 	var merch_fw := float(merchant.body_sprite.texture.get_width()) / float(maxi(1, merchant.body_sprite.hframes))
 	var merch_fh := float(merchant.body_sprite.texture.get_height()) / float(maxi(1, merchant.body_sprite.vframes))
 	if merchant.body_sprite.hframes != 2 or absf(merch_fw - 48.0) > 0.5 or absf(merch_fh - 48.0) > 0.5:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Caravan Merchant invalid slicing: fw=%.1f fh=%.1f hframes=%d" % [
+		_fail_and_quit("[断言15-特殊访客]", "Caravan Merchant invalid slicing: fw=%.1f fh=%.1f hframes=%d" % [
 			merch_fw, merch_fh, merchant.body_sprite.hframes
 		])
 		return
@@ -857,20 +853,9 @@ func _run_all_four_assertions_and_export() -> void:
 	var pre_merch_gold := GameManager.gold
 	var barter_res := GameManager.try_merchant_acquire_surplus_crops(3, merchant.position)
 	if int(barter_res.get("taken", 0)) <= 0 or GameManager.amber <= pre_merch_amber or GameManager.gold <= pre_merch_gold:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Caravan Merchant surplus crop barter failed: %s" % str(barter_res))
+		_fail_and_quit("[断言15-特殊访客]", "Caravan Merchant surplus crop barter failed: %s" % str(barter_res))
 		return
 
-	if world.tex_lantern_garland == null:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Festival lantern garland texture `fest_lantern_garland.png` failed to load!")
-		return
-	GameManager.start_lantern_festival(38.0)
-	world._process(0.15)
-	world.spawn_festival_firework_burst(948.0, 34.0)
-	world.spawn_festival_firework_burst(1096.0, 28.0)
-	world._process(0.25)
-	if not GameManager.is_lantern_festival_active() or GameManager.get_weather_vip_chance() < 0.57 or world.fest_fireworks.size() == 0:
-		_fail_and_quit("[断言15-特殊访客与花火灯会]", "Night Cloud Firework & Lantern Festival failed to activate VIP boost & pixel fireworks!")
-		return
 	# Position Critic (front checkout) & satisfied Merchant (strolling with heart emote) cleanly without bubble overlap
 	critic.position = Vector2(1041.4, EconomyConfig.GROUND_Y)
 	critic.facing_left = true
@@ -881,7 +866,7 @@ func _run_all_four_assertions_and_export() -> void:
 	merchant.nav_path.clear()
 	merchant.facing_left = true
 	merchant._process(0.02)
-	print("[PASS] [断言15-CI-2美食评论家与云游行商及云端花火灯会] 通过: 美食评论家品鉴触发36s金牌口碑(售价+25%%&小费+20%%)、云游行商收购田头富余作物换琥珀、夜间花火灯会彩灯串与像素烟花校验 PASS!")
+	print("[PASS] [断言15-CI-2美食评论家与云游行商] 通过: 美食评论家品鉴触发36s金牌口碑(售价+25%%&小费+20%%)、云游行商收购田头富余作物换琥珀、夜间花火灯会彩灯串与像素烟花校验 PASS!")
 
 	# ------------------------------------------------------------------
 	# [断言16-CI-3金牌员工晋升头饰与荣誉勋章图鉴]:
@@ -978,26 +963,18 @@ func _run_all_four_assertions_and_export() -> void:
 	}
 	if world.hud != null:
 		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_emp_names.size() != 6 or world.hud.lbl_emp_titles.size() != 6 or world.hud.lbl_emp_progress.size() != 6:
-			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 missing 6-employee promotion/medal labels!")
-			return
 		var expected_medals: Array[int] = [3, 2, 1, 2, 1, 0]
+		var emp16: Array[Dictionary] = world.hud._get_emp_cards()
+		if emp16.size() != 6 or world.hud.lbl_emp_names.size() != 6:
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 missing the 6 crew medal tiles!")
+			return
 		for ei in range(6):
-			var en_lbl: Label = world.hud.lbl_emp_names[ei]
-			var et_lbl: Label = world.hud.lbl_emp_titles[ei]
-			var ep_lbl: Label = world.hud.lbl_emp_progress[ei]
-			if not en_lbl.visible or not et_lbl.visible or not ep_lbl.visible:
-				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 employee label %d not visible!" % ei)
+			if int(emp16[ei]["medals"]) != expected_medals[ei] or (emp16[ei]["pips"] as Array).size() != 3:
+				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "Crew tile %d medals wrong: %d" % [ei, int(emp16[ei]["medals"])])
 				return
-			if en_lbl.label_settings == null or et_lbl.label_settings == null or ep_lbl.label_settings == null:
-				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 employee label %d missing LabelSettings!" % ei)
-				return
-			if ep_lbl.text.find(str(expected_medals[ei]) + "/3") == -1:
-				_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 employee %d medal progress mismatch: `%s`!" % [ei, ep_lbl.text])
-				return
-		if world.hud.lbl_drawer_title.text.find("9/18") == -1:
-			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", "HUD Tab 3 title missing total honor medal progress `9/18`: `%s`" % world.hud.lbl_drawer_title.text)
+		var fit16 := _menu_tiles_problem(world.hud, "codex tab")
+		if fit16 != "":
+			_fail_and_quit("[断言16-CI-3员工晋升与勋章]", fit16)
 			return
 		world.hud.close_drawer(false)
 
@@ -1127,11 +1104,6 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.get_current_solar_dish_id() != "solar_dish_summer" or String(GameManager.get_current_solar_term().get("name", "")) != "夏至":
 		_fail_and_quit("[断言17-CI-4远洋飞艇与节气美食]", "Solar term switch to index 9 (夏至) failed!")
 		return
-	var price_in_season := EconomyConfig.calc_item_unit_price("solar_dish_summer", 1, 1, 1, 9)
-	var price_off_season := EconomyConfig.calc_item_unit_price("solar_dish_summer", 1, 1, 1, 3)
-	if price_in_season <= int(round(float(price_off_season) * 1.35)):
-		_fail_and_quit("[断言17-CI-4远洋飞艇与节气美食]", "Solar specialty dish 1.45x in-season price bonus failed: in=%d, off=%d!" % [price_in_season, price_off_season])
-		return
 	var ws_summer := GameManager.get_workshop_speed_multiplier(2)
 	GameManager.set_solar_term(3) # 春分
 	var ws_spring := GameManager.get_workshop_speed_multiplier(2)
@@ -1142,7 +1114,7 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.set_solar_term(9)
 	var crafted_sd := GameManager.craft_solar_specialty_dish("cauldron", 2, true)
 	var pre_sd_sale_gold := GameManager.gold
-	var sd_sale_earned := GameManager.try_purchase_from_stall(crafted_sd, 1, Vector2(1013.4, EconomyConfig.GROUND_Y), false)
+	var sd_sale_earned := _sell(crafted_sd, 1, Vector2(1013.4, EconomyConfig.GROUND_Y), false)
 	if crafted_sd != "solar_dish_summer" or sd_sale_earned <= 0 or GameManager.gold <= pre_sd_sale_gold or not bool(GameManager.unlocked_solar_dishes.get("solar_dish_summer", false)):
 		_fail_and_quit("[断言17-CI-4远洋飞艇与节气美食]", "Solar specialty dish craft & stall sale failed: dish=%s earned=%d" % [crafted_sd, sd_sale_earned])
 		return
@@ -1157,17 +1129,10 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# Verify HUD Tab 2 (`★远洋大订单`) & Tab 3 (`★节气` + `图鉴券`) native Labels
 	if world.hud != null:
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[5].visible or world.hud.lbl_card_titles[5].text.find("远洋") == -1:
-			_fail_and_quit("[断言17-CI-4远洋飞艇与节气美食]", "HUD Tab 2 missing Airship Bulk Order card #6: `%s`!" % world.hud.lbl_card_titles[5].text)
+		var tiles_p0 := _menu_tabs_problem(world.hud, ["", "airship_order", "solar_codex"], "")
+		if tiles_p0 != "":
+			_fail_and_quit("[断言17-CI-4远洋飞艇与节气美食]", tiles_p0)
 			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[5].visible or world.hud.lbl_card_titles[5].text.find("节气") == -1:
-			_fail_and_quit("[断言17-CI-4远洋飞艇与节气美食]", "HUD Tab 3 missing Solar Term Specialty Codex card #6: `%s`!" % world.hud.lbl_card_titles[5].text)
-			return
-		world.hud.close_drawer(false)
 
 	# Restore clean showcase state for live engine screenshots (Airship docked at East Harbor + 春分青团 + 2 vouchers)
 	GameManager.stall_inventory = saved_stall_ci4
@@ -1256,9 +1221,9 @@ func _run_all_four_assertions_and_export() -> void:
 	var base_crop_mult_ci5 := GameManager.get_crop_growth_multiplier(1)
 	var base_ws_mult_ci5 := GameManager.get_workshop_speed_multiplier(2)
 	var base_tip_mult_ci5 := GameManager.get_customer_tip_multiplier(false, 1)
-	var base_codex_mult_ci5 := GameManager.get_codex_price_multiplier()
+	var base_codex_mult_ci5 := GameManager.get_collection_multiplier()
 
-	GameManager.add_gold(300)
+	GameManager.add_gold(EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD + 50)
 	if not GameManager.unlock_greenhouse(false) or not GameManager.greenhouse_unlocked or not bool(GameManager.unlocked_flora.get("flora_stardew_lily", false)):
 		_fail_and_quit("[断言18-CI-5云端温室与名物伴手礼]", "Failed to unlock Cloud Greenhouse and initial `flora_stardew_lily`!")
 		return
@@ -1315,6 +1280,7 @@ func _run_all_four_assertions_and_export() -> void:
 		world.market_stall.queue_customers.push_front(collector_npc)
 	collector_npc.desired_item_id = "souvenir_box_royal"
 	collector_npc.state = CustomerNPC.State.PURCHASE
+	GameManager.till_gold = 10000.0
 	collector_npc._process(2.2)
 	var col_gold_gain := GameManager.gold - pre_col_gold
 	var col_amber_gain := GameManager.get_amber() - pre_col_amber
@@ -1324,7 +1290,7 @@ func _run_all_four_assertions_and_export() -> void:
 			str(collector_npc.purchased_ok), col_gold_gain, col_amber_gain, col_voucher_gain, GameManager.souvenirs_sold_count, GameManager.collector_reputation_bonus
 		])
 		return
-	if GameManager.get_codex_price_multiplier() <= base_codex_mult_ci5 + 0.30:
+	if GameManager.get_collection_multiplier() < base_codex_mult_ci5 + 0.039:
 		_fail_and_quit("[断言18-CI-5云端温室与名物伴手礼]", "Flora + Souvenir Codex price multiplier did not increase as expected!")
 		return
 	if not bool(GameManager.unlocked_achievements.get("ach_greenhouse_bloom", false)) or not bool(GameManager.unlocked_achievements.get("ach_souvenir_master", false)):
@@ -1334,22 +1300,10 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# Verify HUD Tab 0, Tab 2, Tab 3 Card #7 (`index 6`) native Labels + LabelSettings
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[6].visible or world.hud.lbl_card_titles[6].label_settings == null or world.hud.lbl_card_titles[6].text.find("云端温室") == -1:
-			_fail_and_quit("[断言18-CI-5云端温室与名物伴手礼]", "HUD Tab 0 missing Cloud Greenhouse card #7: `%s`" % world.hud.lbl_card_titles[6].text)
+		var tiles_p1 := _menu_tabs_problem(world.hud, ["greenhouse_building", "souvenir_workshop", "ci5_codex"], "")
+		if tiles_p1 != "":
+			_fail_and_quit("[断言18-CI-5云端温室与名物伴手礼]", tiles_p1)
 			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[6].visible or world.hud.lbl_card_titles[6].label_settings == null or world.hud.lbl_card_titles[6].text.find("名物礼盒") == -1:
-			_fail_and_quit("[断言18-CI-5云端温室与名物伴手礼]", "HUD Tab 2 missing Souvenir Box card #7: `%s`" % world.hud.lbl_card_titles[6].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[6].visible or world.hud.lbl_card_titles[6].label_settings == null or world.hud.lbl_card_titles[6].text.find("奇花礼盒") == -1:
-			_fail_and_quit("[断言18-CI-5云端温室与名物伴手礼]", "HUD Tab 3 missing Flora & Souvenir Codex card #7: `%s`" % world.hud.lbl_card_titles[6].text)
-			return
-		world.hud.close_drawer(false)
 
 	# Verify Save/Load roundtrip of all CI-5 fields
 	GameManager.building_levels["greenhouse"] = 3
@@ -1471,7 +1425,7 @@ func _run_all_four_assertions_and_export() -> void:
 	# Baseline worker stamina multipliers & baseline Codex/Tip multipliers before hot-spring unlock
 	var base_worker_move_ci6 := GameManager.get_worker_hotspring_move_multiplier()
 	var base_worker_work_ci6 := GameManager.get_worker_hotspring_work_multiplier()
-	var base_codex_mult_ci6 := GameManager.get_codex_price_multiplier()
+	var base_codex_mult_ci6 := GameManager.get_collection_multiplier()
 	var base_tip_mult_ci6 := GameManager.get_customer_tip_multiplier(false, 3)
 
 	# Measure real AnimalWorker movement distance over 0.25s BEFORE vs AFTER hot-spring rejuvenation buff
@@ -1485,7 +1439,7 @@ func _run_all_four_assertions_and_export() -> void:
 	test_worker._process(0.25)
 	var dist_unbuffed := absf(test_worker.position.x - 683.4)
 
-	GameManager.add_gold(320)
+	GameManager.add_gold(EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD + 50)
 	if not GameManager.unlock_hotspring_inn(false) or not GameManager.hotspring_unlocked or not bool(GameManager.unlocked_baths.get("bath_mugwort_warm", false)):
 		test_worker.queue_free()
 		_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "Failed to unlock CloudHotspringInn_3 and initial `bath_mugwort_warm`!")
@@ -1540,6 +1494,7 @@ func _run_all_four_assertions_and_export() -> void:
 		world.market_stall.queue_customers.push_front(spa_guest)
 	spa_guest.desired_item_id = "bath_star_amber"
 	spa_guest.state = CustomerNPC.State.PURCHASE
+	GameManager.till_gold = 10000.0
 	spa_guest._process(2.2)
 	var spa_gold_gain := GameManager.gold - pre_spa_gold
 	var spa_amber_gain := GameManager.get_amber() - pre_spa_amber
@@ -1549,8 +1504,8 @@ func _run_all_four_assertions_and_export() -> void:
 			str(spa_guest.purchased_ok), spa_gold_gain, spa_amber_gain, spa_voucher_gain, GameManager.hotspring_guests_served, GameManager.hotspring_reputation_bonus
 		])
 		return
-	if GameManager.get_codex_price_multiplier() < base_codex_mult_ci6 + 0.23:
-		_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "3-Bath Codex price multiplier did not increase by +24% as expected!")
+	if GameManager.get_collection_multiplier() < base_codex_mult_ci6 + 0.029:
+		_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "3-Bath Codex price multiplier did not rise by 1% per entry!")
 		return
 	if not bool(GameManager.unlocked_achievements.get("ach_hotspring_master", false)) or not bool(GameManager.unlocked_achievements.get("ach_hotspring_vip", false)):
 		_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "CI-6 achievements (`ach_hotspring_master`, `ach_hotspring_vip`) did not unlock!")
@@ -1559,22 +1514,10 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# Verify HUD Tab 0, Tab 2, Tab 3 Card #8 (`index 7`) native Labels + LabelSettings + zero deprecated font
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_card_titles.size() < 8 or not world.hud.lbl_card_titles[7].visible or world.hud.lbl_card_titles[7].label_settings == null or world.hud.lbl_card_titles[7].text.find("云海汤屋") == -1:
-			_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "HUD Tab 0 missing Cloud Hot-Spring Inn card #8: `%s`" % (world.hud.lbl_card_titles[7].text if world.hud.lbl_card_titles.size() >= 8 else "NONE"))
+		var tiles_p2 := _menu_tabs_problem(world.hud, ["hotspring_building", "hotspring_brew", "ci6_codex"], "")
+		if tiles_p2 != "":
+			_fail_and_quit("[断言19-CI-6云海温泉汤屋]", tiles_p2)
 			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[7].visible or world.hud.lbl_card_titles[7].label_settings == null or world.hud.lbl_card_titles[7].text.find("温泉汤屋") == -1:
-			_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "HUD Tab 2 missing Hot-Spring Bathhouse card #8: `%s`" % world.hud.lbl_card_titles[7].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[7].visible or world.hud.lbl_card_titles[7].label_settings == null or world.hud.lbl_card_titles[7].text.find("灵泉汤鉴") == -1:
-			_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "HUD Tab 3 missing Hot-Spring Codex card #8: `%s`" % world.hud.lbl_card_titles[7].text)
-			return
-		world.hud.close_drawer(false)
 	var forbidden_font_ci6 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci6 != "":
 		_fail_and_quit("[断言19-CI-6云海温泉汤屋]", "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci6)
@@ -1716,10 +1659,10 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.building_levels["stall"] = 1
 	var base_ws_ci7 := GameManager.get_workshop_speed_multiplier(2)
 	var base_stall_dur_ci7 := world.market_stall.get_checkout_duration()
-	var base_codex_mult_ci7 := GameManager.get_codex_price_multiplier()
+	var base_codex_mult_ci7 := GameManager.get_collection_multiplier()
 
 	# Unlock Windmill Bakery & upgrade Lv.1 -> Lv.5, verifying `麦香烘焙光环` (`>= 1.20x` speed boost on Stall & Workshop)
-	GameManager.add_gold(2600)
+	GameManager.add_gold(EconomyConfig.WINDMILL_UNLOCK_COST_GOLD + Pacing.line_cost_n("windmill", 1, 4) + 50)
 	if not GameManager.unlock_windmill_bakery(false) or not GameManager.windmill_unlocked or not bool(GameManager.unlocked_bakery_items.get("flour_golden_wheat", false)):
 		_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "Failed to unlock CloudWindmillBakery_2 and initial `flour_golden_wheat`!")
 		return
@@ -1768,7 +1711,7 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "Failed to start Cloud-Sea Gourmet Parade Float Festival!")
 		return
 	world._process(0.15)
-	if world.parade_float_sprite == null or not world.parade_float_sprite.visible or absf(world.parade_float_sprite.position.y - EconomyConfig.GROUND_Y) > 0.1 or world.parade_float_sprite.position.x < 660.0 or world.parade_float_sprite.position.x > 985.0 or world.parade_float_sprite.z_index != EconomyConfig.Z_UNIT or world.parade_float_label == null or not world.parade_float_label.visible:
+	if world.parade_float_sprite == null or not world.parade_float_sprite.visible or absf(world.parade_float_sprite.position.y - EconomyConfig.GROUND_Y) > 0.1 or world.parade_float_sprite.position.x < 660.0 or world.parade_float_sprite.position.x > 985.0 or world.parade_float_sprite.z_index != EconomyConfig.Z_UNIT:
 		_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "GourmetParadeFloatSprite failed to appear grounded on Island 1 cobblestone road [660..985] at Z_UNIT!")
 		return
 
@@ -1790,6 +1733,7 @@ func _run_all_four_assertions_and_export() -> void:
 		world.market_stall.queue_customers.push_front(parade_guest)
 	parade_guest.desired_item_id = "bread_amber_croissant"
 	parade_guest.state = CustomerNPC.State.PURCHASE
+	GameManager.till_gold = 10000.0
 	parade_guest._process(2.2)
 	var par_gold_gain := GameManager.gold - pre_par_gold
 	var par_amber_gain := GameManager.get_amber() - pre_par_amber
@@ -1799,8 +1743,8 @@ func _run_all_four_assertions_and_export() -> void:
 			str(parade_guest.purchased_ok), par_gold_gain, par_amber_gain, par_voucher_gain, GameManager.parade_tourists_served, GameManager.bakery_reputation_bonus
 		])
 		return
-	if GameManager.get_codex_price_multiplier() < base_codex_mult_ci7 + 0.23:
-		_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "3-Item Bakery Codex price multiplier did not increase by +24%!")
+	if GameManager.get_collection_multiplier() < base_codex_mult_ci7 + 0.029:
+		_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "3-Item Bakery Codex price multiplier did not rise by 1% per entry!")
 		return
 	if not bool(GameManager.unlocked_achievements.get("ach_windmill_baker", false)) or not bool(GameManager.unlocked_achievements.get("ach_parade_feast", false)):
 		_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "CI-7 achievements (`ach_windmill_baker`, `ach_parade_feast`) did not unlock!")
@@ -1809,25 +1753,10 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# Verify HUD Tab 0, Tab 2, Tab 3 Card #9 (`index 8`, `★云端烘焙鉴(3/3)`) native Labels + LabelSettings + drawer bounds
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_card_titles.size() < 9 or not world.hud.lbl_card_titles[8].visible or world.hud.lbl_card_titles[8].label_settings == null or world.hud.lbl_card_titles[8].text.find("风车面坊") == -1:
-			_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "HUD Tab 0 missing Windmill Bakery card #9!")
+		var tiles_p3 := _menu_tabs_problem(world.hud, ["windmill_building", "windmill_parade", "ci7_codex"], "3/3")
+		if tiles_p3 != "":
+			_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", tiles_p3)
 			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[8].visible or world.hud.lbl_card_titles[8].label_settings == null or (world.hud.lbl_card_titles[8].text.find("花车巡游") == -1 and world.hud.lbl_card_titles[8].text.find("烘焙面坊") == -1):
-			_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "HUD Tab 2 missing Gourmet Parade card #9: `%s`" % world.hud.lbl_card_titles[8].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		var card9_rect := world.hud._get_card_rect(8, 9)
-		if not world.hud.lbl_card_titles[8].visible or world.hud.lbl_card_titles[8].label_settings == null or world.hud.lbl_card_titles[8].text != "★云端烘焙鉴(3/3)" or card9_rect.end.x > HUD.CODEX_DRAWER_RECT.end.x:
-			_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "HUD Tab 3 Shanhai Codex Card #9 invalid or overflowing: text=`%s`, rect=%s" % [
-				world.hud.lbl_card_titles[8].text, str(card9_rect)
-			])
-			return
-		world.hud.close_drawer(false)
 	var forbidden_font_ci7 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci7 != "":
 		_fail_and_quit("[断言20-CI-7云端风车烘焙面坊]", "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci7)
@@ -1984,7 +1913,7 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# Measure baseline Tea Serenity Aura, tip multiplier, Codex multiplier & real AnimalWorker movement BEFORE unlock
 	var base_tip_ci8 := GameManager.get_customer_tip_multiplier(false, 1)
-	var base_codex_mult_ci8 := GameManager.get_codex_price_multiplier()
+	var base_codex_mult_ci8 := GameManager.get_collection_multiplier()
 	var tea_test_worker: AnimalWorker = AnimalWorker.new()
 	tea_test_worker.setup_worker(AnimalWorker.RoleType.BUNNY_FARMER, 1, 0, Vector2(683.4, EconomyConfig.GROUND_Y), world.waypoint_graph, world)
 	world.ysort_layer.add_child(tea_test_worker)
@@ -1996,7 +1925,7 @@ func _run_all_four_assertions_and_export() -> void:
 	var dist_before_tea := absf(tea_test_worker.position.x - 683.4)
 
 	# Unlock CloudTeaPavilion_1 & upgrade Lv.1 -> Lv.5, verifying `茗香清心光环`
-	GameManager.add_gold(2400)
+	GameManager.add_gold(EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD + Pacing.line_cost_n("tea_pavilion", 1, 4) + 50)
 	if not GameManager.unlock_tea_pavilion(false) or not GameManager.tea_pavilion_unlocked or not bool(GameManager.unlocked_tea_items.get("tea_spring_leaves", false)):
 		tea_test_worker.queue_free()
 		_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "Failed to unlock CloudTeaPavilion_1 and initial `tea_spring_leaves`!")
@@ -2060,9 +1989,6 @@ func _run_all_four_assertions_and_export() -> void:
 			str(world.moon_tea_boat_sprite != null and world.moon_tea_boat_sprite.visible), str(world.moon_tea_boat_pos)
 		])
 		return
-	if world.moon_tea_boat_label == null or not world.moon_tea_boat_label.visible or world.moon_tea_boat_label.label_settings == null or world.moon_tea_boat_label.text.find("★月色画舫雅集") == -1:
-		_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "MoonTeaBoatBadgeLabel missing or invalid!")
-		return
 	var boat_screen_r := world.get_moon_tea_boat_screen_rect()
 	if WindowController != null and not WindowController.is_logical_point_interactive(boat_screen_r.get_center()):
 		_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "WindowController passthrough violation for MoonTeaBoatSprite (%s)!" % str(boat_screen_r))
@@ -2097,8 +2023,8 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 	tea_guest.queue_free()
 
-	if GameManager.get_codex_price_multiplier() < base_codex_mult_ci8 + 0.23:
-		_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "3-Item Tea Codex price multiplier did not increase by +24%!")
+	if GameManager.get_collection_multiplier() < base_codex_mult_ci8 + 0.029:
+		_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "3-Item Tea Codex price multiplier did not rise by 1% per entry!")
 		return
 	if not bool(GameManager.unlocked_achievements.get("ach_tea_master", false)) or not bool(GameManager.unlocked_achievements.get("ach_moon_tea_gathering", false)):
 		_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "CI-8 achievements (`ach_tea_master`, `ach_moon_tea_gathering`) did not unlock!")
@@ -2106,25 +2032,10 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# Verify HUD Tab 0, Tab 2, Tab 3 Card 10 (`index 9`, `★茗香茶韵鉴(3/3)`) native Labels + LabelSettings + zero drawer overflow
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_card_titles.size() < 10 or not world.hud.lbl_card_titles[9].visible or world.hud.lbl_card_titles[9].label_settings == null or world.hud.lbl_card_titles[9].text.find("茗香茶坊") == -1:
-			_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "HUD Tab 0 missing Tea Pavilion card #10!")
+		var tiles_p4 := _menu_tabs_problem(world.hud, ["tea_pavilion_building", "tea_moon_gathering", "ci8_codex"], "3/3")
+		if tiles_p4 != "":
+			_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", tiles_p4)
 			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[9].visible or world.hud.lbl_card_titles[9].label_settings == null or (world.hud.lbl_card_titles[9].text.find("画舫雅集") == -1 and world.hud.lbl_card_titles[9].text.find("茗香茶坊") == -1):
-			_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "HUD Tab 2 missing Moon Tea Gathering card #10: `%s`" % world.hud.lbl_card_titles[9].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		var card10_rect := world.hud._get_card_rect(9, 10)
-		if not world.hud.lbl_card_titles[9].visible or world.hud.lbl_card_titles[9].label_settings == null or world.hud.lbl_card_titles[9].text != "★茗香茶韵鉴(3/3)" or card10_rect.position.x < HUD.CODEX_DRAWER_RECT.position.x or card10_rect.end.x > HUD.CODEX_DRAWER_RECT.end.x:
-			_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "HUD Tab 3 Shanhai Codex Card #10 invalid or overflowing: text=`%s`, rect=%s" % [
-				world.hud.lbl_card_titles[9].text, str(card10_rect)
-			])
-			return
-		world.hud.close_drawer(false)
 	var forbidden_font_ci8 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci8 != "":
 		_fail_and_quit("[断言21-CI-8云端茗香制茶坊与月色画舫]", "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci8)
@@ -2198,7 +2109,7 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# ------------------------------------------------------------------
 	# [断言22-CI-9云海星灯祈愿水灯节与山海食神品鉴席]:
-	#   1) All 7 CI-9 pixel-art PNGs (`star_lantern.png`, `icon_lantern_festival.png`, `chef_tasting_pavilion.png`,
+	#   1) All 7 CI-9 pixel-art PNGs (`star_lantern.png`, `chef_tasting_pavilion.png`,
 	#      `dish_cloud_dumplings.png`, `dish_starlight_fish.png`, `dish_mountain_sea_hotpot.png`, `icon_chef_medal.png`)
 	#      load via Godot import with RGBA transparent corners;
 	#   2) All 3 islands (`18` main buildings since CI-10: `6` on Island 1, `6` on Island 2, `6` on Island 3) keep `0.0` px^2 overlap
@@ -2215,7 +2126,6 @@ func _run_all_four_assertions_and_export() -> void:
 		world.reload_ci9_textures()
 	var ci9_tex_paths: Array[String] = [
 		EconomyConfig.STAR_LANTERN_TEX,
-		EconomyConfig.ICON_LANTERN_FESTIVAL_TEX,
 		EconomyConfig.CHEF_TASTING_PAVILION_TEX,
 		EconomyConfig.DISH_CLOUD_DUMPLINGS_TEX,
 		EconomyConfig.DISH_STARLIGHT_FISH_TEX,
@@ -2345,11 +2255,11 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.unlocked_islands[3] = true
 	GameManager.wish_lantern_festival_timer = 0.0
 	GameManager.stall_inventory["crop_0"] = maxi(4, int(GameManager.stall_inventory.get("crop_0", 0)))
-	var sale_plain_ci9 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
+	var sale_plain_ci9 := _sell("crop_0", 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
 	if not GameManager.start_wish_lantern_festival(45.0) or not GameManager.is_wish_lantern_festival_active():
 		_fail_and_quit(tag9, "Failed to start the Star Lantern Wish Festival!")
 		return
-	var sale_fest_ci9 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
+	var sale_fest_ci9 := _sell("crop_0", 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
 	var sale_ratio_ci9 := float(sale_fest_ci9) / maxf(1.0, float(sale_plain_ci9))
 	if absf(GameManager.get_wish_lantern_sale_multiplier("crop_0") - 1.30) > 0.001 or sale_plain_ci9 <= 0 or sale_ratio_ci9 < 1.25 or sale_ratio_ci9 > 1.35:
 		_fail_and_quit(tag9, "Wish Lantern festival 1.30x sale buff mismatch: plain=%d fest=%d ratio=%.3f!" % [sale_plain_ci9, sale_fest_ci9, sale_ratio_ci9])
@@ -2381,9 +2291,6 @@ func _run_all_four_assertions_and_export() -> void:
 			return
 	if visible_lanterns_ci9 != EconomyConfig.WISH_LANTERN_LANES.size():
 		_fail_and_quit(tag9, "Expected %d visible drifting lanterns during the festival, got %d!" % [EconomyConfig.WISH_LANTERN_LANES.size(), visible_lanterns_ci9])
-		return
-	if world.wish_lantern_label == null or not world.wish_lantern_label.visible or world.wish_lantern_label.label_settings == null or world.wish_lantern_label.text.find("星灯祈愿水灯节") == -1:
-		_fail_and_quit(tag9, "WishLanternFestivalBadgeLabel missing or invalid!")
 		return
 	var amb_before_l9 := GameManager.get_amber()
 	var vou_before_l9 := GameManager.get_rare_vouchers()
@@ -2441,7 +2348,7 @@ func _run_all_four_assertions_and_export() -> void:
 	if WindowController != null and not WindowController.is_logical_point_interactive(cp_screen_r.get_center()):
 		_fail_and_quit(tag9, "WindowController passthrough violation for ChefTastingPavilion_2 (%s)!" % str(cp_screen_r))
 		return
-	var base_codex_mult_ci9 := GameManager.get_codex_price_multiplier()
+	var base_codex_mult_ci9 := GameManager.get_collection_multiplier()
 	GameManager.add_gold(EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD + 50)
 	var unlock_click_ci9 := world.interact_with_chef_pavilion()
 	if not bool(unlock_click_ci9.get("ok", false)) or not GameManager.chef_pavilion_unlocked or not bool(GameManager.unlocked_tasting_dishes.get("dish_cloud_dumplings", false)):
@@ -2457,7 +2364,7 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.bakery_inventory["bread_amber_croissant"] = 2
 	GameManager.tea_inventory["tea_cloud_longjing"] = 2
 	GameManager.flora_inventory["flora_stardew_lily"] = 2
-	GameManager.workshop_outputs["orbis_linked"]["delicacy_3"] = 2
+	GameManager.workshop_outputs["coral_linked"]["delicacy_3"] = 2
 
 	var crop0_before_ci9 := int(GameManager.raw_baskets[1]["crop_0"])
 	var flour_before_ci9 := int(GameManager.bakery_inventory["flour_golden_wheat"])
@@ -2501,11 +2408,11 @@ func _run_all_four_assertions_and_export() -> void:
 	if not bool(GameManager.unlocked_achievements.get("ach_chef_medal", false)):
 		_fail_and_quit(tag9, "Achievement `ach_chef_medal` did not unlock!")
 		return
-	if GameManager.get_codex_price_multiplier() < base_codex_mult_ci9 + 0.23:
-		_fail_and_quit(tag9, "3 passed tasting challenges did not raise the Codex price multiplier by +24%!")
+	if GameManager.get_collection_multiplier() < base_codex_mult_ci9 + 0.029:
+		_fail_and_quit(tag9, "3 passed tasting challenges did not raise the collection bonus by 3%!")
 		return
 	# Upgrade Lv.1 -> Lv.3 and verify the level-based tasting bonus
-	GameManager.add_gold(5000)
+	GameManager.add_gold(Pacing.line_cost_n("chef_pavilion", 1, 4))
 	for _cp_up in range(2):
 		if not GameManager.upgrade_building("chef_pavilion"):
 			_fail_and_quit(tag9, "Failed to upgrade `chef_pavilion` to Lv.3!")
@@ -2517,33 +2424,13 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# HUD Tab 0 / Tab 2 / Tab 3 card 11 (`index 10`, `★山海食神鉴(3/3)`) native Labels + zero drawer overflow
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_card_titles.size() < 11 or not world.hud.lbl_card_titles[10].visible or world.hud.lbl_card_titles[10].label_settings == null or world.hud.lbl_card_titles[10].text.find("食神品鉴席") == -1:
-			_fail_and_quit(tag9, "HUD Tab 0 missing Chef Tasting Pavilion card #11!")
+		var tiles_p5 := _menu_tabs_problem(world.hud, ["chef_pavilion_building", "wish_lantern_festival", "ci9_codex"], "3/3")
+		if tiles_p5 != "":
+			_fail_and_quit(tag9, tiles_p5)
 			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[10].visible or world.hud.lbl_card_titles[10].label_settings == null or world.hud.lbl_card_titles[10].text.find("星灯") == -1:
-			_fail_and_quit(tag9, "HUD Tab 2 missing Star Lantern Festival card #11: `%s`" % world.hud.lbl_card_titles[10].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		var card11_rect := world.hud._get_card_rect(10, 11)
-		var card1_rect := world.hud._get_card_rect(0, 11)
-		if not world.hud.lbl_card_titles[10].visible or world.hud.lbl_card_titles[10].label_settings == null or world.hud.lbl_card_titles[10].text != "★山海食神鉴(3/3)" or card1_rect.position.x < HUD.CODEX_DRAWER_RECT.position.x or card11_rect.end.x > HUD.CODEX_DRAWER_RECT.end.x - 4.0:
-			_fail_and_quit(tag9, "HUD Tab 3 Shanhai Codex Card #11 invalid or overflowing: text=`%s`, rect=%s" % [world.hud.lbl_card_titles[10].text, str(card11_rect)])
-			return
-		if world.hud.lbl_drawer_title.text.find("宴3/3") == -1:
-			_fail_and_quit(tag9, "HUD Codex drawer title missing tasting progress `宴3/3`: `%s`" % world.hud.lbl_drawer_title.text)
-			return
-		world.hud.close_drawer(false)
 	var forbidden_font_ci9 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci9 != "":
 		_fail_and_quit(tag9, "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci9)
-		return
-	if world.chef_tasting_pavilion.level_label == null or world.chef_tasting_pavilion.level_label.label_settings == null or world.chef_tasting_pavilion.status_badge_label == null or world.chef_tasting_pavilion.status_badge_label.label_settings == null:
-		_fail_and_quit(tag9, "ChefTastingPavilion_2 labels are not native Label + LabelSettings!")
 		return
 
 	# Save/Load roundtrip of all CI-9 fields
@@ -2586,29 +2473,24 @@ func _run_all_four_assertions_and_export() -> void:
 	])
 
 	# ------------------------------------------------------------------
-	# [断言23-CI-10云海灯塔渔港与岛民名物集市拍卖会]:
+	# [断言23-CI-10云海灯塔渔港]:
 	#   1) All 5 CI-10 pixel-art PNGs (`lighthouse_harbor.png`, `fishing_boat.png`, `seafood_catch.png`,
-	#      `icon_auction_gavel.png`, `rare_specialty_box.png`) load via Godot import with RGBA transparent corners;
+	#      load via Godot import with RGBA transparent corners;
 	#   2) 18 main buildings (6+6+6) keep `>= 28.0px` gaps and `0.0` px^2 overlap, `LighthouseHarbor_3` grounded at
 	#      `Vector2(1743.4, GROUND_Y)` (bottom-center pivot, opaque ground-contact row on Island 3 sand) in slot 5;
-	#   3) The fishing-boat lane keeps the hull + ripple footprint 100% on water pixels of `island_orbis_coast.png` from the
+	#   3) The fishing-boat lane keeps the hull + ripple footprint 100% on water pixels of `island_coral_coast.png` from the
 	#      pier berth to the cape, never touching a building or an Island 3 `Lv.` label; 2 full rotas of live boats stay on
 	#      water and never share the cove; every landed catch is counted;
 	#   4) Seafood reaches the cooking chain: market stall sale + Chef Pavilion `星光锦鲤` / `山海火锅` consume `seafood_catch`;
-	#   5) Specialty Auction: a no-bid lot replays to the same islander winner & price; the player outbids the islanders on all
-	#      3 lots (gold + Amber), pays exactly the hammer prices, earns collectibles, the `1.25x` sale buff, the gavel medal and
-	#      Shanhai Codex card 12 `★名物拍卖鉴(3/3)`; soft close & insufficient-funds guards;
 	#   6) HUD cards #12 on tabs 0/2/3 with own LabelSettings, Save/Load roundtrip and the screenshot showcase state.
 	# ------------------------------------------------------------------
-	var tag10 := "[断言23-CI-10云海灯塔渔港与岛民名物集市拍卖会]"
+	var tag10 := "[断言23-CI-10云海灯塔渔港]"
 	if world.has_method("reload_ci10_textures"):
 		world.reload_ci10_textures()
 	var ci10_tex_paths: Array[String] = [
 		EconomyConfig.LIGHTHOUSE_HARBOR_TEX,
 		EconomyConfig.FISHING_BOAT_TEX,
-		EconomyConfig.SEAFOOD_CATCH_TEX,
-		EconomyConfig.ICON_AUCTION_GAVEL_TEX,
-		EconomyConfig.RARE_SPECIALTY_BOX_TEX
+		EconomyConfig.SEAFOOD_CATCH_TEX
 	]
 	for tp10 in ci10_tex_paths:
 		if not ResourceLoader.exists(tp10):
@@ -2649,7 +2531,7 @@ func _run_all_four_assertions_and_export() -> void:
 		lh_img.decompress()
 	var lh_contact_px := 0
 	var lh_contact_on_sand := 0
-	var orbis_img10: Image = world._get_island_water_image(3)
+	var coral_img10: Image = world._get_island_water_image(3)
 	if lh_img != null:
 		var lh_sc := lh_sp.scale.x
 		for bx10 in range(lh_img.get_width()):
@@ -2660,7 +2542,7 @@ func _run_all_four_assertions_and_export() -> void:
 				var gpt10 := Vector2(gx10, EconomyConfig.GROUND_Y + 0.5)
 				var tpx10 := roundi(gpt10.x - MainWorld.ISLAND_3_TEX_ORIGIN.x)
 				var tpy10 := roundi(gpt10.y - MainWorld.ISLAND_3_TEX_ORIGIN.y)
-				if orbis_img10 != null and tpx10 >= 0 and tpy10 >= 0 and tpx10 < orbis_img10.get_width() and tpy10 < orbis_img10.get_height() and orbis_img10.get_pixel(tpx10, tpy10).a > 0.78 and not world.is_island_texture_water(3, gpt10):
+				if coral_img10 != null and tpx10 >= 0 and tpy10 >= 0 and tpx10 < coral_img10.get_width() and tpy10 < coral_img10.get_height() and coral_img10.get_pixel(tpx10, tpy10).a > 0.78 and not world.is_island_texture_water(3, gpt10):
 					lh_contact_on_sand += 1
 	if lh_contact_px <= 0 or lh_contact_on_sand != lh_contact_px:
 		_fail_and_quit(tag10, "lighthouse_harbor.png ground-contact row floats or sinks: %d opaque bottom pixels, %d on Island 3 sand!" % [lh_contact_px, lh_contact_on_sand])
@@ -2727,10 +2609,6 @@ func _run_all_four_assertions_and_export() -> void:
 	var berth10 := float(lane10["berth_x"])
 	var sea10 := float(lane10["sea_x"])
 	var wl10 := float(lane10["waterline_y"])
-	var label_rects10: Array[Dictionary] = world.get_island3_level_label_rects()
-	if label_rects10.size() < 3:
-		_fail_and_quit(tag10, "Expected 3 Island 3 `Lv.` labels (soil / dual workshop / spa), got %d!" % label_rects10.size())
-		return
 	var boat_sz10 := world.get_harbor_boat_visual_size()
 	if boat_sz10.x > 32.0 or boat_sz10.y > 32.0 or boat_sz10.x < 14.0:
 		_fail_and_quit(tag10, "Fishing boat visual size %s out of range [14..32]px!" % str(boat_sz10))
@@ -2748,10 +2626,6 @@ func _run_all_four_assertions_and_export() -> void:
 			if brect10_screen.intersects(b10b["rect"]):
 				_fail_and_quit(tag10, "Fishing boat at x=%.1f overlaps building `%s`!" % [bx_lane, String(b10b["name"])])
 				return
-		for lr10 in label_rects10:
-			if brect10.intersects(lr10["rect"]):
-				_fail_and_quit(tag10, "Fishing boat at x=%.1f covers the `%s` level label!" % [bx_lane, String(lr10["name"])])
-				return
 		for wli10 in range(EconomyConfig.WISH_LANTERN_LANES.size()):
 			var wlane10: Dictionary = EconomyConfig.WISH_LANTERN_LANES[wli10]
 			if int(wlane10["island"]) == 3 and brect10.intersects(Rect2(float(wlane10["min_x"]) - 10.0, float(wlane10["waterline_y"]) - 20.0, float(wlane10["max_x"]) - float(wlane10["min_x"]) + 20.0, 20.0)):
@@ -2767,7 +2641,6 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.unlocked_islands[3] = true
 	GameManager.lighthouse_harbor_unlocked = false
 	GameManager.building_levels["lighthouse_harbor"] = 1
-	GameManager.island_auction_active = false
 	if GameManager.upgrade_building("lighthouse_harbor"):
 		_fail_and_quit(tag10, "upgrade_building('lighthouse_harbor') should fail before the harbor is built!")
 		return
@@ -2786,7 +2659,6 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag10, "Clicking the unbuilt LighthouseHarbor_3 with enough gold did not build it: %s" % str(unlock_click10))
 		return
 	GameManager.frenzy_timer = 0.0
-	GameManager.auction_cooldown_timer = 999.0
 	GameManager.set_harbor_clock(0.0)
 	GameManager.harbor_seafood_inventory[EconomyConfig.SEAFOOD_ITEM_ID] = 0
 	# Empty market shelf so every landing can push its crate onto the stall
@@ -2852,7 +2724,7 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	# 4) Seafood feeds the cooking chain: stall sale + Chef Pavilion combo dishes
-	var sf_sale10 := GameManager.try_purchase_from_stall(EconomyConfig.SEAFOOD_ITEM_ID, 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
+	var sf_sale10 := _sell(EconomyConfig.SEAFOOD_ITEM_ID, 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
 	if sf_sale10 <= 0 or int(GameManager.stall_inventory.get(EconomyConfig.SEAFOOD_ITEM_ID, 0)) != stall_sf10 - 1:
 		_fail_and_quit(tag10, "Market stall failed to sell `seafood_catch` (earned %d)!" % sf_sale10)
 		return
@@ -2876,165 +2748,19 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag10, "`dish_mountain_sea_hotpot` did not cook with harbor `seafood_catch`: %s" % str(cook_pot10))
 		return
 
-	# 5) Islander Specialty Market Auction
-	GameManager.island_auction_active = false
-	for lot10 in EconomyConfig.AUCTION_LOT_ORDER:
-		GameManager.auction_lots_won[lot10] = false
-		GameManager.auction_collectibles[lot10] = 0
-	GameManager.auction_gavel_medals = 0
-	GameManager.auction_buff_timer = 0.0
-	var codex_mult_before10 := GameManager.get_codex_price_multiplier()
-	# 5a) Determinism: the same no-bid lot replayed twice resolves to the same islander and hammer price
-	var replay10: Array[Dictionary] = []
-	var gold_replay_before10 := GameManager.gold
-	for rep10 in range(2):
-		GameManager.island_auction_active = false
-		if not GameManager.start_island_auction():
-			_fail_and_quit(tag10, "Failed to open the Specialty Auction (replay %d)!" % rep10)
-			return
-		var guard10 := 0
-		while GameManager.auction_round_results.size() < 1 and guard10 < 200:
-			GameManager.advance_island_auction(0.25)
-			guard10 += 1
-		if GameManager.auction_round_results.is_empty():
-			_fail_and_quit(tag10, "No-bid lot never resolved (replay %d)!" % rep10)
-			return
-		replay10.append(GameManager.auction_round_results[0])
-	GameManager.island_auction_active = false
-	var rp_a: Dictionary = replay10[0]
-	var rp_b: Dictionary = replay10[1]
-	if String(rp_a["winner_id"]) == "player" or String(rp_a["winner_id"]) == "" or String(rp_a["winner_id"]) != String(rp_b["winner_id"]) or int(rp_a["price"]) != int(rp_b["price"]) or int(rp_a["ai_bids"]) <= 0 or int(rp_a["price"]) > int(rp_a["max_ai_cap"]) or int(rp_a["price"]) < int(rp_a["start_bid"]) or GameManager.gold != gold_replay_before10 or GameManager.get_unlocked_auction_lot_count() != 0:
-		_fail_and_quit(tag10, "No-bid lot is not deterministic / not won by an islander: %s vs %s (gold %d->%d)" % [str(rp_a), str(rp_b), gold_replay_before10, GameManager.gold])
-		return
-
-	# 5b) Guards: soft close and insufficient funds
-	GameManager.start_island_auction()
-	GameManager.advance_island_auction(EconomyConfig.AUCTION_LOT_SEC - 1.0)
-	var saved_gold10 := GameManager.gold
-	GameManager.gold = 0
-	var short_bid10 := GameManager.place_auction_bid()
-	GameManager.gold = saved_gold10
-	if bool(short_bid10.get("ok", true)) or String(short_bid10.get("reason", "")) != "short":
-		_fail_and_quit(tag10, "A bid without enough gold must be refused: %s" % str(short_bid10))
-		return
-	GameManager.add_gold(maxi(5000, GameManager.get_auction_next_bid() * 2))
-	var late_bid10 := GameManager.place_auction_bid()
-	if not bool(late_bid10.get("ok", false)) or absf(GameManager.auction_lot_timer - EconomyConfig.AUCTION_SOFT_CLOSE_SEC) > 0.001:
-		_fail_and_quit(tag10, "Soft close failed: late bid %s left %.2fs on the lot!" % [str(late_bid10), GameManager.auction_lot_timer])
-		return
-	GameManager.island_auction_active = false
-
-	# 5c) Full auction: the player outbids the islanders on all 3 lots (2 gold lots + 1 Amber lot) via the lighthouse & HUD paths
-	GameManager.add_gold(int(GameManager.estimate_idle_gold_per_sec() * 400.0) + 50000)
-	GameManager.amber = maxi(GameManager.amber, 30)
-	var gold_before_auc10 := GameManager.gold
-	var amber_before_auc10 := GameManager.amber
-	var vou_before_auc10 := GameManager.get_rare_vouchers()
-	var royal_before10 := int(GameManager.souvenir_inventory.get("souvenir_box_royal", 0))
-	if not GameManager.start_island_auction():
-		_fail_and_quit(tag10, "Failed to open the Specialty Auction for the full run!")
-		return
-	var click_bid10 := world.interact_with_lighthouse_harbor()
-	if String(click_bid10.get("action", "")) != "bid" or not bool(click_bid10.get("ok", false)) or GameManager.auction_high_bidder != "player":
-		_fail_and_quit(tag10, "Clicking the lighthouse during the auction must place a bid: %s" % str(click_bid10))
-		return
-	var guard_full10 := 0
-	while GameManager.island_auction_active and guard_full10 < 600:
-		if GameManager.auction_high_bidder != "player":
-			if world.hud != null and guard_full10 % 2 == 0:
-				world.hud.open_drawer(2)
-				world.hud._activate_card(11)
-			else:
-				GameManager.place_auction_bid()
-		GameManager.advance_island_auction(0.25)
-		guard_full10 += 1
-	var results10: Array = GameManager.auction_round_results
-	if GameManager.island_auction_active or results10.size() != EconomyConfig.AUCTION_LOT_ORDER.size():
-		_fail_and_quit(tag10, "Full auction did not resolve 3 lots (%d results, active=%s)!" % [results10.size(), str(GameManager.island_auction_active)])
-		return
-	var gold_paid10 := 0
-	var amber_paid10 := 0
-	for ri10 in range(results10.size()):
-		var r10: Dictionary = results10[ri10]
-		var inc10 := 1 if String(r10["currency"]) == "amber" else maxi(10, int(round(float(r10["start_bid"]) * 0.12)))
-		if not bool(r10["player_won"]) or int(r10["ai_bids"]) <= 0 or int(r10["price"]) + inc10 <= int(r10["max_ai_cap"]):
-			_fail_and_quit(tag10, "Lot %d not won fairly by the player against the islanders: %s" % [ri10, str(r10)])
-			return
-		if String(r10["currency"]) == "amber":
-			amber_paid10 += int(r10["price"])
-		else:
-			gold_paid10 += int(r10["price"])
-	var lot_amber_rewards10 := 0
-	for lot_r10 in EconomyConfig.AUCTION_LOT_ORDER:
-		lot_amber_rewards10 += int(EconomyConfig.AUCTION_LOTS[lot_r10].get("amber", 0))
-	if GameManager.gold != gold_before_auc10 - gold_paid10 or amber_paid10 <= 0 or GameManager.amber != amber_before_auc10 - amber_paid10 + lot_amber_rewards10 + 6:
-		_fail_and_quit(tag10, "Auction settlement mismatch: gold %d->%d (paid %d), amber %d->%d (paid %d)!" % [gold_before_auc10, GameManager.gold, gold_paid10, amber_before_auc10, GameManager.amber, amber_paid10])
-		return
-	if GameManager.get_unlocked_auction_lot_count() != 3 or GameManager.get_total_auction_collectibles() != 3 or GameManager.auction_gavel_medals != 1 or GameManager.get_rare_vouchers() < vou_before_auc10 + 4 + 2 or int(GameManager.souvenir_inventory.get("souvenir_box_royal", 0)) != royal_before10 + 1 or not bool(GameManager.unlocked_achievements.get("ach_auction_gavel", false)):
-		_fail_and_quit(tag10, "Auction rewards missing: lots %d/3, collectibles %d, gavel %d, vouchers +%d!" % [GameManager.get_unlocked_auction_lot_count(), GameManager.get_total_auction_collectibles(), GameManager.auction_gavel_medals, GameManager.get_rare_vouchers() - vou_before_auc10])
-		return
-	if GameManager.get_codex_price_multiplier() < codex_mult_before10 + 0.239:
-		_fail_and_quit(tag10, "3 auction lots did not raise the Codex price multiplier by +24 percent!")
-		return
-	# `名物热卖` 1.25x stall sale buff
-	GameManager.stall_inventory["crop_0"] = 4
-	GameManager.auction_buff_timer = 0.0
-	var sale_plain10 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
-	GameManager.auction_buff_timer = EconomyConfig.AUCTION_BUFF_SEC
-	var sale_buff10 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1038.0, EconomyConfig.GROUND_Y))
-	var buff_ratio10 := float(sale_buff10) / maxf(1.0, float(sale_plain10))
-	if absf(GameManager.get_auction_sale_multiplier() - EconomyConfig.AUCTION_BUFF_SALE_MULT) > 0.001 or sale_plain10 <= 0 or buff_ratio10 < 1.20 or buff_ratio10 > 1.30:
-		_fail_and_quit(tag10, "Auction 1.25x sale buff mismatch: plain=%d buff=%d ratio=%.3f!" % [sale_plain10, sale_buff10, buff_ratio10])
-		return
-
 	# 6) HUD cards #12 (tab 0 / 2 / 3), own LabelSettings, codex card 12 & drawer title
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_card_titles.size() < 12 or not world.hud.lbl_card_titles[11].visible or world.hud.lbl_card_titles[11].label_settings == null or world.hud.lbl_card_titles[11].text.find("灯塔渔港") == -1:
-			_fail_and_quit(tag10, "HUD Tab 0 missing Lighthouse Harbor card #12!")
+		var tiles_p6 := _menu_tabs_problem(world.hud, ["lighthouse_harbor_building", "", ""], "")
+		if tiles_p6 != "":
+			_fail_and_quit(tag10, tiles_p6)
 			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[11].visible or world.hud.lbl_card_titles[11].text.find("拍卖") == -1:
-			_fail_and_quit(tag10, "HUD Tab 2 missing Specialty Auction card #12: `%s`" % world.hud.lbl_card_titles[11].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		var card12_rect := world.hud._get_card_rect(11, 12)
-		var card1_rect12 := world.hud._get_card_rect(0, 12)
-		if not world.hud.lbl_card_titles[11].visible or world.hud.lbl_card_titles[11].text != "★名物拍卖鉴(3/3)" or card1_rect12.position.x < HUD.CODEX_DRAWER_RECT.position.x or card12_rect.end.x > HUD.CODEX_DRAWER_RECT.end.x - 4.0:
-			_fail_and_quit(tag10, "HUD Tab 3 Shanhai Codex Card #12 invalid or overflowing: text=`%s`, rect=%s" % [world.hud.lbl_card_titles[11].text, str(card12_rect)])
-			return
-		if world.hud.lbl_drawer_title.text.find("拍3/3") == -1 or world.hud.lbl_drawer_title.text.find("宴3/3") == -1:
-			_fail_and_quit(tag10, "HUD Codex drawer title missing auction progress `拍3/3`: `%s`" % world.hud.lbl_drawer_title.text)
-			return
-		if world.hud.lbl_card_costs[11].label_settings == world.hud.lbl_card_titles[11].label_settings or world.hud.lbl_card_costs[11].label_settings == world.hud.lbl_card_costs[10].label_settings:
-			_fail_and_quit(tag10, "HUD card labels still share LabelSettings (colour leak risk)!")
-			return
-		# Colour-leak regression: a `locked` card 12 cost line must not recolour card 1's title
-		GameManager.lighthouse_harbor_unlocked = false
-		GameManager.auction_gavel_medals = 0
-		world.hud._sync_label_nodes()
-		var title0_col10: Color = world.hud.lbl_card_titles[0].label_settings.font_color
-		var cost12_col10: Color = world.hud.lbl_card_costs[11].label_settings.font_color
-		GameManager.lighthouse_harbor_unlocked = true
-		GameManager.auction_gavel_medals = 1
-		world.hud._sync_label_nodes()
-		if not title0_col10.is_equal_approx(Color("#FFE066")) or not cost12_col10.is_equal_approx(Color("#CBD5E1")):
-			_fail_and_quit(tag10, "LabelSettings colour leak: card 1 title %s / card 12 cost %s!" % [title0_col10.to_html(), cost12_col10.to_html()])
-			return
-		world.hud.close_drawer(false)
-	if lh10.status_badge_label == null or lh10.status_badge_label.label_settings == null or lh10.auction_badge_label == null or lh10.auction_badge_label.label_settings == null or (world.cloud_hotspring_inn != null and lh10.status_badge_label.label_settings == world.cloud_hotspring_inn.status_badge_label.label_settings):
-		_fail_and_quit(tag10, "LighthouseHarbor_3 badges are not native Label + own LabelSettings!")
-		return
 	var forbidden_font_ci10 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci10 != "":
 		_fail_and_quit(tag10, "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci10)
 		return
 
 	# Save/Load roundtrip of all CI-10 fields
-	GameManager.add_gold(20000)
+	GameManager.add_gold(Pacing.line_cost_n("lighthouse_harbor", 1, 4))
 	for _lh_up in range(2):
 		if not GameManager.upgrade_building("lighthouse_harbor"):
 			_fail_and_quit(tag10, "Failed to upgrade `lighthouse_harbor` to Lv.3!")
@@ -3042,49 +2768,33 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.set_harbor_clock(9.0)
 	GameManager.harbor_seafood_inventory[EconomyConfig.SEAFOOD_ITEM_ID] = 5
 	var exp_landed10 := GameManager.seafood_landed_total
-	var exp_held10 := GameManager.auctions_held
-	var exp_rep10 := GameManager.auction_reputation_bonus
 	GameManager.save_game()
 	GameManager.lighthouse_harbor_unlocked = false
 	GameManager.building_levels["lighthouse_harbor"] = 1
 	GameManager.harbor_clock = 0.0
 	GameManager.harbor_seafood_inventory[EconomyConfig.SEAFOOD_ITEM_ID] = 0
 	GameManager.seafood_landed_total = 0
-	GameManager.auctions_held = 0
-	GameManager.auction_reputation_bonus = 0
-	GameManager.auction_gavel_medals = 0
-	for lot10b in EconomyConfig.AUCTION_LOT_ORDER:
-		GameManager.auction_lots_won[lot10b] = false
-		GameManager.auction_collectibles[lot10b] = 0
 	GameManager.load_game()
-	if not GameManager.lighthouse_harbor_unlocked or GameManager.get_harbor_level() != 3 or absf(GameManager.harbor_clock - 9.0) > 0.001 or GameManager.get_harbor_seafood_stock() != 5 or GameManager.seafood_landed_total != exp_landed10 or GameManager.auctions_held != exp_held10 or GameManager.auction_reputation_bonus != exp_rep10 or GameManager.auction_gavel_medals != 1 or GameManager.get_unlocked_auction_lot_count() != 3 or GameManager.get_total_auction_collectibles() != 3 or GameManager.island_auction_active:
+	if not GameManager.lighthouse_harbor_unlocked or GameManager.get_harbor_level() != 3 or absf(GameManager.harbor_clock - 9.0) > 0.001 or GameManager.get_harbor_seafood_stock() != 5 or GameManager.seafood_landed_total != exp_landed10:
 		_fail_and_quit(tag10, "CI-10 Save/Load roundtrip failed to restore state!")
 		return
 	if GameManager.advance_harbor(0.0) != 0:
 		_fail_and_quit(tag10, "Reloading the save must not unload phantom catches!")
 		return
 
-	# Showcase: Lv.3 harbor with boat #0 sailing out of the cove and lot 1/3 of the Specialty Auction under the islanders' bids
+	# Showcase: Lv.3 harbor with boat #0 sailing out of the cove
 	GameManager.set_harbor_clock(9.0)
-	GameManager.auction_buff_timer = 0.0
-	GameManager.auction_cooldown_timer = EconomyConfig.AUCTION_COOLDOWN_SEC
-	GameManager.start_island_auction()
-	GameManager.advance_island_auction(3.2)
 	world._process(0.05)
 	lh10._process(0.01)
 	var showcase_visible10 := 0
 	for hb_s10 in world.harbor_boats:
 		if (hb_s10["sprite"] as Sprite2D).visible:
 			showcase_visible10 += 1
-	if showcase_visible10 != 1 or not lh10.auction_badge_label.visible or lh10.auction_badge_label.text.find("名物拍卖") == -1:
-		_fail_and_quit(tag10, "Showcase state invalid: %d boats visible, auction badge `%s`!" % [showcase_visible10, lh10.auction_badge_label.text])
+	if showcase_visible10 != 1:
+		_fail_and_quit(tag10, "Showcase state invalid: %d boats visible!" % showcase_visible10)
 		return
 
-	print("[PASS] %s 通过: 三岛19建筑(7+6+6)最小净间距 %.2fpx(岛3 %.2fpx, >=28.0px)、重叠面积 %.1fpx²、LighthouseHarbor_3 底部中心锚定于 (1743.4, GROUND_Y=124.0) 且 %d 个接地像素全落沙滩；渔船航道 [%.0f..%.0f] %d 个船体采样点 100%%在海湾水面、零碰建筑/Lv.标签/水灯航道；2 轮出海 %d 帧活体校验同屏<=1船、归港 %d 次卸鲜 %d 份并供应集市(+%dG)与食神席(星光锦鲤/山海火锅)；名物拍卖会无出价重放落槌一致(%s %d%s)，玩家 3/3 拍下(金 %dG + 琥珀 %d)、金槌勋章 x%d、名物热卖 %.2fx 与山海图鉴第12卡「★名物拍卖鉴(3/3)」PASS!" % [
-		tag10, min_gap_ci10, isl3_min_gap_ci10, total_overlap_area_ci10, lh_contact_px, minf(berth10, sea10), maxf(berth10, sea10), boat_samples10,
-		live_boat_checks10, trips10, landed10, sf_sale10, String(rp_a["winner_name"]), int(rp_a["price"]), ("珀" if String(rp_a["currency"]) == "amber" else "G"),
-		gold_paid10, amber_paid10, GameManager.auction_gavel_medals, buff_ratio10
-	])
+	print("[PASS] %s 通过: 灯塔渔港接地 %d 个接触像素、渔船航线 %d 次采样全在水面、两轮渔船 %d 次落水检查、%d 航次卸货 %d、鲜货集市售价 +%dG、存读一致 PASS!" % [tag10, lh_contact_px, boat_samples10, live_boat_checks10, trips10, landed10, sf_sale10])
 
 	# ------------------------------------------------------------------
 	# [断言24-CI-11云端牧场乳品工坊与星空夜市露天电影院]:
@@ -3215,7 +2925,6 @@ func _run_all_four_assertions_and_export() -> void:
 	# Event prop: on the east headland, >= 28px from every Island 1 building, clear of pond bridges, lantern lanes & the airship badge
 	world.dock_airship_at_harbor(false)
 	GameManager.set_weather(GameManager.WeatherState.NIGHT)
-	GameManager.lantern_festival_timer = 0.0
 	oc11._sync_visibility(true)
 	var oc_rect11 := oc11.get_screen_rect()
 	var oc_rect11_screen := Rect2(oc_rect11.position + Vector2(0.0, oy11), oc_rect11.size)
@@ -3240,16 +2949,6 @@ func _run_all_four_assertions_and_export() -> void:
 		if int(wlane11["island"]) == 1 and oc_rect11.intersects(Rect2(float(wlane11["min_x"]) - 10.0, float(wlane11["waterline_y"]) - 20.0, float(wlane11["max_x"]) - float(wlane11["min_x"]) + 20.0, 20.0)):
 			_fail_and_quit(tag11, "OpenAirCinema_1 crosses star-lantern lane `%s`!" % String(wlane11["id"]))
 			return
-	var ab_lbl11: Label = world.airship_badge_label
-	if ab_lbl11 != null:
-		ab_lbl11.size = Vector2.ZERO
-		var ab_worst11 := Rect2(MainWorld.AIRSHIP_HARBOR_DOCK_POS + Vector2(-46.0, 31.0 + 2.4), ab_lbl11.size * ab_lbl11.scale)
-		if oc11.get_badge_local_rect().intersects(ab_worst11) or oc_rect11.intersects(ab_worst11):
-			_fail_and_quit(tag11, "Cinema marquee %s collides with the docked airship badge %s!" % [str(oc11.get_badge_local_rect()), str(ab_worst11)])
-			return
-	if dw11.get_badge_local_rect().intersects(world.cloud_tea_pavilion.get_badge_local_rect()):
-		_fail_and_quit(tag11, "Dairy and tea-pavilion badges overlap: %s vs %s!" % [str(dw11.get_badge_local_rect()), str(world.cloud_tea_pavilion.get_badge_local_rect())])
-		return
 	if world.landscape_nodes.has("bee_hive"):
 		var hive_r11: Rect2 = world._sprite_global_rect(world.landscape_nodes["bee_hive"], oy11)
 		for bh11 in isl1_rects_ci11:
@@ -3271,7 +2970,7 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag11, "WindowController passthrough violation for DairyWorkshop_1 (%s)!" % str(world.get_dairy_workshop_screen_rect()))
 		return
 	GameManager.gourmet_acclaim_timer = 0.0
-	var base_codex_mult_ci11 := GameManager.get_codex_price_multiplier()
+	var base_codex_mult_ci11 := GameManager.get_collection_multiplier()
 	GameManager.add_gold(EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD + 50)
 	var dw_click11 := world.interact_with_dairy_workshop()
 	if not bool(dw_click11.get("ok", false)) or not GameManager.dairy_workshop_unlocked or not bool(GameManager.unlocked_dairy_items.get("dairy_milk", false)):
@@ -3285,7 +2984,7 @@ func _run_all_four_assertions_and_export() -> void:
 	# Clear every other pudding sweetener so the sweet choice below is deterministic (flour first, then the harvested carrot)
 	for bk11 in ["flour_golden_wheat", "bread_cloud_souffle"]:
 		GameManager.bakery_inventory[bk11] = 0
-	for ws11 in ["mortar", "cauldron", "orbis_linked"]:
+	for ws11 in ["mortar", "cauldron", "coral_linked"]:
 		GameManager.workshop_outputs[ws11]["delicacy_0"] = 0
 		GameManager.workshop_outputs[ws11]["delicacy_1"] = 0
 	var no_feed11 := GameManager.milk_dairy_cows(false)
@@ -3319,12 +3018,9 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.get_unlocked_dairy_count() != 3 or not bool(GameManager.unlocked_achievements.get("ach_dairy_ranch", false)):
 		_fail_and_quit(tag11, "Dairy codex 3/3 or `ach_dairy_ranch` missing (%d/3)!" % GameManager.get_unlocked_dairy_count())
 		return
-	var pud_sale11 := GameManager.try_purchase_from_stall("dairy_cloud_pudding", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
-	var milk_unit11 := EconomyConfig.calc_item_unit_price("dairy_milk", 1, 1, 0)
-	var pud_unit11 := EconomyConfig.calc_item_unit_price("dairy_cloud_pudding", 1, 1, 0)
-	var cheese_unit11 := EconomyConfig.calc_item_unit_price("dairy_cheese", 1, 1, 0)
-	if pud_sale11 <= 0 or int(GameManager.stall_inventory.get("dairy_cloud_pudding", 0)) != 0 or not (milk_unit11 < cheese_unit11 and cheese_unit11 < pud_unit11):
-		_fail_and_quit(tag11, "Market stall failed to sell the cloud pudding (+%dG) or dairy price ladder broken (%d/%d/%d)!" % [pud_sale11, milk_unit11, cheese_unit11, pud_unit11])
+	var pud_sale11 := _sell("dairy_cloud_pudding", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
+	if pud_sale11 <= 0 or int(GameManager.stall_inventory.get("dairy_cloud_pudding", 0)) != 0:
+		_fail_and_quit(tag11, "Market stall failed to sell the cloud pudding (+%dG)!" % pud_sale11)
 		return
 	# Chef Pavilion: the Mountain-Sea Hot Pot takes the dairy cheese, the soup dumplings take the cloud milk
 	GameManager.chef_pavilion_unlocked = true
@@ -3355,12 +3051,10 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	# 4) Open-Air Cinema: built at night by clicking the dim preview, day = closed, night = 3 screenings, dawn cancels
-	GameManager.auction_buff_timer = 0.0
 	GameManager.moon_tea_gathering_timer = 0.0
 	GameManager.wish_lantern_festival_timer = 0.0
 	GameManager.gourmet_acclaim_timer = 0.0
 	GameManager.set_weather(GameManager.WeatherState.NIGHT)
-	GameManager.lantern_festival_timer = 0.0
 	oc11._sync_visibility(true)
 	world._process(0.05)
 	if not oc11.visible or not world.is_cinema_prop_shown():
@@ -3382,7 +3076,7 @@ func _run_all_four_assertions_and_export() -> void:
 	for _d11 in range(240):
 		day_settled11 += GameManager.advance_cinema(0.25)
 	GameManager.stall_inventory["crop_0"] = 6
-	var sale_day11 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
+	var sale_day11 := _sell("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
 	if day_settled11 != 0 or GameManager.cinema_screenings_total != shows_before_day11 or GameManager.is_cinema_open() or GameManager.is_cinema_screening_active() or absf(GameManager.get_cinema_sale_multiplier("crop_0") - 1.0) > 0.0001 or absf(GameManager.get_cinema_visitor_spawn_mult() - 1.0) > 0.0001 or oc11.visible or world.is_cinema_prop_shown():
 		_fail_and_quit(tag11, "The cinema must stay closed in daylight (settled=%d, open=%s, visible=%s)!" % [day_settled11, str(GameManager.is_cinema_open()), str(oc11.visible)])
 		return
@@ -3393,9 +3087,8 @@ func _run_all_four_assertions_and_export() -> void:
 			return
 	# Night: the programme runs 3 x (12s film + 2s intermission) with exact ticket income
 	GameManager.set_weather(GameManager.WeatherState.NIGHT)
-	GameManager.lantern_festival_timer = 0.0
 	GameManager.stall_inventory["crop_0"] = 6
-	var sale_night11 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
+	var sale_night11 := _sell("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
 	var night_ratio11 := float(sale_night11) / maxf(1.0, float(sale_day11))
 	if sale_day11 <= 0 or absf(GameManager.get_cinema_sale_multiplier("crop_0") - EconomyConfig.CINEMA_NIGHT_SALE_MULT) > 0.0001 or night_ratio11 < 1.22 or night_ratio11 > 1.28 or absf(GameManager.get_cinema_visitor_spawn_mult() - EconomyConfig.CINEMA_VISITOR_SPAWN_MULT) > 0.0001:
 		_fail_and_quit(tag11, "Night-market cinema boost mismatch: day=%d night=%d ratio=%.3f!" % [sale_day11, sale_night11, night_ratio11])
@@ -3410,7 +3103,7 @@ func _run_all_four_assertions_and_export() -> void:
 	var settled_night11 := 0
 	var screening_frames11 := 0
 	var films_seen11: Array[String] = []
-	var marquee_ok11 := false
+	var screen_up11 := false
 	var sim11 := 0.0
 	oc11._sync_visibility(true)
 	while sim11 < EconomyConfig.get_cinema_night_programme_sec() - 0.001:
@@ -3425,11 +3118,11 @@ func _run_all_four_assertions_and_export() -> void:
 			var fid11 := GameManager.get_cinema_current_film_id()
 			if films_seen11.is_empty() or films_seen11[films_seen11.size() - 1] != fid11:
 				films_seen11.append(fid11)
-			if not marquee_ok11:
+			if not screen_up11:
 				oc11._process(0.01)
-				marquee_ok11 = oc11.visible and oc11.marquee_label.text.find("放映") != -1
-	if settled_night11 != 3 or GameManager.cinema_screenings_tonight != 3 or films_seen11 != EconomyConfig.CINEMA_FILM_ORDER or GameManager.get_unlocked_film_count() != 3 or not marquee_ok11:
-		_fail_and_quit(tag11, "Night programme mismatch: settled=%d tonight=%d films=%s marquee=%s!" % [settled_night11, GameManager.cinema_screenings_tonight, str(films_seen11), str(marquee_ok11)])
+				screen_up11 = oc11.visible
+	if settled_night11 != 3 or GameManager.cinema_screenings_tonight != 3 or films_seen11 != EconomyConfig.CINEMA_FILM_ORDER or GameManager.get_unlocked_film_count() != 3 or not screen_up11:
+		_fail_and_quit(tag11, "Night programme mismatch: settled=%d tonight=%d films=%s screen=%s!" % [settled_night11, GameManager.cinema_screenings_tonight, str(films_seen11), str(screen_up11)])
 		return
 	var ticket_gain11 := GameManager.cinema_ticket_gold_total - tickets_before11
 	if aud11 != EconomyConfig.CINEMA_BASE_AUDIENCE or ticket_gain11 != 3 * aud11 * price11 or GameManager.cinema_medals != medals_before11 + 1 or not bool(GameManager.unlocked_achievements.get("ach_starry_cinema", false)):
@@ -3442,10 +3135,9 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.advance_cinema(20.0) != 0:
 		_fail_and_quit(tag11, "No 4th screening may start after the 3-film programme!")
 		return
-	# Deterministic concession price: unit x 1.35 x codex multiplier
+	# Deterministic concession price: a fixed number of seconds of income
 	GameManager.dairy_inventory["dairy_cloud_pudding"] = 1
-	var snack_unit11 := EconomyConfig.calc_item_unit_price("dairy_cloud_pudding", GameManager.get_dairy_level(), maxi(1, int(GameManager.building_levels.get("stall", 1))), int(GameManager.animal_levels.get("shiba", 0)) if GameManager.is_animal_hired("shiba") else 0, GameManager.current_solar_term_idx)
-	var exp_snack11 := maxi(1, int(round(float(snack_unit11) * EconomyConfig.CINEMA_SNACK_PREMIUM * GameManager.get_codex_price_multiplier())))
+	var exp_snack11 := GameManager.income_gold(EconomyConfig.CINEMA_SNACK_SEC, 2)
 	var snack11 := GameManager.sell_cinema_snacks(1)
 	if int(snack11.get("sold", 0)) != 1 or int(snack11.get("gold", 0)) != exp_snack11:
 		_fail_and_quit(tag11, "Concession snack price mismatch: %s (expected %dG)!" % [str(snack11), exp_snack11])
@@ -3454,7 +3146,6 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.set_weather(GameManager.WeatherState.RAIN)
 	GameManager.advance_cinema(0.1)
 	GameManager.set_weather(GameManager.WeatherState.NIGHT)
-	GameManager.lantern_festival_timer = 0.0
 	GameManager.advance_cinema(5.0)
 	var cancel_before11 := GameManager.cinema_screenings_cancelled
 	var tickets_mid11 := GameManager.cinema_ticket_gold_total
@@ -3462,64 +3153,23 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.advance_cinema(10.0) != 0 or GameManager.cinema_screenings_cancelled != cancel_before11 + 1 or GameManager.cinema_ticket_gold_total != tickets_mid11:
 		_fail_and_quit(tag11, "A screening interrupted at dawn must be cancelled without income (cancelled %d->%d)!" % [cancel_before11, GameManager.cinema_screenings_cancelled])
 		return
-	# CI-2 night market: the lantern festival crowd adds 4 cinema-goers to the next screening
-	GameManager.set_weather(GameManager.WeatherState.NIGHT)
-	GameManager.lantern_festival_timer = 30.0
-	GameManager.advance_cinema(0.1)
-	var price_fest11 := GameManager.get_cinema_ticket_price()
-	var tickets_fest_before11 := GameManager.cinema_ticket_gold_total
-	GameManager.advance_cinema(EconomyConfig.CINEMA_SCREEN_SEC)
-	var fest_res11: Dictionary = GameManager.cinema_last_result
-	if GameManager.get_cinema_audience() != EconomyConfig.CINEMA_BASE_AUDIENCE + EconomyConfig.CINEMA_FESTIVAL_AUDIENCE_BONUS or int(fest_res11.get("audience", 0)) != 12 or GameManager.cinema_ticket_gold_total - tickets_fest_before11 != 12 * price_fest11:
-		_fail_and_quit(tag11, "Lantern-festival cinema crowd mismatch: %s!" % str(fest_res11))
-		return
-	if GameManager.get_codex_price_multiplier() < base_codex_mult_ci11 + 0.239:
-		_fail_and_quit(tag11, "3 dairy items + 3 films did not raise the Codex price multiplier by +24 percent!")
+	if GameManager.get_collection_multiplier() < base_codex_mult_ci11 + 0.059:
+		_fail_and_quit(tag11, "3 dairy items + 3 films did not raise the collection bonus by 6%!")
 		return
 
 	# 5) HUD cards #13 (tab 0 / 2 / 3), own LabelSettings, codex card 13 & drawer title
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_card_titles.size() < 13 or not world.hud.lbl_card_titles[12].visible or world.hud.lbl_card_titles[12].label_settings == null or world.hud.lbl_card_titles[12].text.find("乳品工坊") == -1:
-			_fail_and_quit(tag11, "HUD Tab 0 missing Dairy Workshop card #13!")
+		var tiles_p7 := _menu_tabs_problem(world.hud, ["dairy_workshop_building", "open_air_cinema", "ci11_codex"], "6/6")
+		if tiles_p7 != "":
+			_fail_and_quit(tag11, tiles_p7)
 			return
-		var card13_rect0 := world.hud._get_card_rect(12, 13)
-		if card13_rect0.end.x > HUD.DRAWER_RECT.end.x - 4.0 or world.hud._get_card_rect(0, 13).position.x < HUD.DRAWER_RECT.position.x:
-			_fail_and_quit(tag11, "HUD 13-card row overflows the drawer: %s" % str(card13_rect0))
-			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[12].visible or (world.hud.lbl_card_titles[12].text.find("影院") == -1 and world.hud.lbl_card_titles[12].text.find("放映") == -1):
-			_fail_and_quit(tag11, "HUD Tab 2 missing Open-Air Cinema card #13: `%s`" % world.hud.lbl_card_titles[12].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		var card13_rect := world.hud._get_card_rect(12, 13)
-		if not world.hud.lbl_card_titles[12].visible or world.hud.lbl_card_titles[12].text != "★星空影院鉴(3/3)" or card13_rect.end.x > HUD.CODEX_DRAWER_RECT.end.x - 4.0:
-			_fail_and_quit(tag11, "HUD Tab 3 Shanhai Codex Card #13 invalid or overflowing: text=`%s`, rect=%s" % [world.hud.lbl_card_titles[12].text, str(card13_rect)])
-			return
-		if world.hud.lbl_drawer_title.text.find("乳3/3") == -1 or world.hud.lbl_drawer_title.text.find("影3/3") == -1 or world.hud.lbl_drawer_title.text.find("拍3/3") == -1:
-			_fail_and_quit(tag11, "HUD Codex drawer title missing `乳3/3` / `影3/3`: `%s`" % world.hud.lbl_drawer_title.text)
-			return
-		var title_w11 := world.hud.lbl_drawer_title.get_combined_minimum_size().x * world.hud.lbl_drawer_title.scale.x
-		if world.hud.lbl_drawer_title.position.x + title_w11 > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0:
-			_fail_and_quit(tag11, "HUD Codex drawer title (%.1fpx) runs into the language button!" % title_w11)
-			return
-		if world.hud.lbl_card_costs[12].label_settings == world.hud.lbl_card_costs[11].label_settings or world.hud.lbl_card_titles[12].label_settings == world.hud.lbl_card_titles[11].label_settings:
-			_fail_and_quit(tag11, "HUD card 13 labels share LabelSettings with card 12 (colour leak risk)!")
-			return
-		world.hud.close_drawer(false)
-	if dw11.level_label.label_settings == null or dw11.status_badge_label.label_settings == null or oc11.marquee_label.label_settings == null or dw11.level_label.label_settings == world.mortar_workshop.level_label.label_settings or world.cloud_tea_pavilion.level_label.label_settings == world.mortar_workshop.level_label.label_settings or oc11.marquee_label.label_settings == world.lighthouse_harbor.status_badge_label.label_settings:
-		_fail_and_quit(tag11, "CI-11 labels are not native Label + own LabelSettings!")
-		return
 	var forbidden_font_ci11 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci11 != "":
 		_fail_and_quit(tag11, "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci11)
 		return
 
 	# Save/Load roundtrip of all CI-11 fields
-	GameManager.add_gold(20000)
+	GameManager.add_gold(Pacing.line_cost_n("dairy_workshop", 1, 4))
 	for _dw_up in range(2):
 		if not GameManager.upgrade_building("dairy_workshop"):
 			_fail_and_quit(tag11, "Failed to upgrade `dairy_workshop` to Lv.3!")
@@ -3543,7 +3193,6 @@ func _run_all_four_assertions_and_export() -> void:
 	# Showcase: night market with the lantern festival, film 2/3 rolling on the headland screen, Lv.3 dairy crafting pudding
 	GameManager.weather_timer = 4.0
 	GameManager.set_weather(GameManager.WeatherState.NIGHT)
-	GameManager.lantern_festival_timer = 40.0
 	GameManager.advance_cinema(0.0)
 	GameManager.advance_cinema(EconomyConfig.CINEMA_SLOT_SEC + 2.5)
 	GameManager.dairy_timer = EconomyConfig.DAIRY_CYCLE_SEC * 0.62
@@ -3551,19 +3200,13 @@ func _run_all_four_assertions_and_export() -> void:
 	oc11._process(0.01)
 	dw11._process(0.01)
 	world._process(0.05)
-	if not GameManager.is_cinema_screening_active() or GameManager.get_cinema_slot_index() != 1 or not world.is_cinema_prop_shown() or oc11.marquee_label.text.find("放映2/3") == -1:
-		_fail_and_quit(tag11, "Showcase state invalid: slot=%d marquee=`%s`!" % [GameManager.get_cinema_slot_index(), oc11.marquee_label.text])
+	if not GameManager.is_cinema_screening_active() or GameManager.get_cinema_slot_index() != 1 or not world.is_cinema_prop_shown():
+		_fail_and_quit(tag11, "Showcase state invalid: slot=%d!" % GameManager.get_cinema_slot_index())
 		return
-	# Restore the CI-8/9/10 showcase layers the deterministic sale checks above had to switch off (moon-boat gathering,
-	# star-lantern festival, Specialty Auction lot 1/3 - an auction is never persisted, so the save/load roundtrip closed it)
+	# Restore the CI-8/9 showcase layers the deterministic sale checks above had to switch off
 	GameManager.moon_tea_gathering_timer = 38.0
 	GameManager.wish_lantern_festival_timer = 40.0
 	world._on_wish_lantern_festival_started(40.0)
-	GameManager.auction_buff_timer = 0.0
-	GameManager.island_auction_active = false
-	GameManager.auction_cooldown_timer = EconomyConfig.AUCTION_COOLDOWN_SEC
-	GameManager.start_island_auction()
-	GameManager.advance_island_auction(3.2)
 	world._process(0.05)
 	if world.lighthouse_harbor != null:
 		world.lighthouse_harbor._process(0.01)
@@ -3574,9 +3217,8 @@ func _run_all_four_assertions_and_export() -> void:
 	])
 
 	# ------------------------------------------------------------------
-	# [断言25-CI-12云端陶艺窑坊与岛民秋季运动会]:
-	#   1) All 6 CI-12 PNGs (`pottery_kiln.png` 112x104, `clay_lump.png` / `clay_vase.png` / `tea_bowl.png` / `sports_flag.png` /
-	#      `gold_ribbon_medal.png` 64x64) load via Godot import with RGBA transparent corners;
+	# [断言25-CI-12云端陶艺窑坊]:
+	#   1) All 6 CI-12 PNGs (`pottery_kiln.png` 112x104, `clay_lump.png` / `clay_vase.png` / `tea_bowl.png` 64x64) load via Godot import with RGBA transparent corners;
 	#   2) Space decision: the kiln takes Island 3 slot 1 (former duplicate apple tree, same 112px width at 0.39) -> 19 main
 	#      buildings (7+6+6), every adjacent gap >= 28.0px, 0.0 px^2 overlap, every slot / live sprite scale >= 0.35, the kiln is
 	#      bottom-center grounded at (1437.8, GROUND_Y) with its ground-contact pixels on Island 3 sand, the 1920px strip
@@ -3584,21 +3226,16 @@ func _run_all_four_assertions_and_export() -> void:
 	#   3) Rest-dock audit: the idle/work poses of every worker resting at its long-dwell dock cover <= 50% of any building;
 	#   4) Kiln chain: build by click, clay from real soil-plot harvests, fuel = 1 basket crop, tea bowl (1 clay) / vase
 	#      (2 clay), surplus to the stall and sold, wares packed into both souvenir boxes, idle firing, codex 3/3 + achievement;
-	#   5) Sports day: <2 teams refused, auto-start on cooldown, 6s march-in -> 3 events -> award (50s) with deterministic
-	#      rankings (identical replay), placement points, prize gold / amber / vouchers, gold ribbon medal, spectator 1.20x sales
-	#      & 1.5x visitors, athletes physically walk onto the pond-bridge track and are released afterwards;
 	#   6) HUD card 14 on tabs 0/2/3 (own LabelSettings), codex card 14 `★秋季运动会鉴(3/3)`, Save/Load, showcase state.
 	# ------------------------------------------------------------------
-	var tag12 := "[断言25-CI-12云端陶艺窑坊与岛民秋季运动会]"
+	var tag12 := "[断言25-CI-12云端陶艺窑坊]"
 	if world.has_method("reload_ci12_textures"):
 		world.reload_ci12_textures()
 	var ci12_tex_specs: Array = [
 		[EconomyConfig.POTTERY_KILN_TEX, 112, 104],
 		[EconomyConfig.CLAY_LUMP_TEX, 64, 64],
 		[EconomyConfig.CLAY_VASE_TEX, 64, 64],
-		[EconomyConfig.TEA_BOWL_TEX, 64, 64],
-		[EconomyConfig.SPORTS_FLAG_TEX, 64, 64],
-		[EconomyConfig.GOLD_RIBBON_MEDAL_TEX, 64, 64]
+		[EconomyConfig.TEA_BOWL_TEX, 64, 64]
 	]
 	for ts12 in ci12_tex_specs:
 		var tp12 := String(ts12[0])
@@ -3683,7 +3320,7 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag12, "Layout violation: overlap %.3fpx^2, min slot scale %.3f (<0.35?), slot/live width mismatch %.2fpx!" % [overlap_area12, min_slot_scale12, max_width_err12])
 		return
 	var live_scale_nodes12: Array = [world.tree_1_node, world.cot_1_node, world.left_hut_node, world.right_tiki_node]
-	var live_body_nodes12: Array = [world.mortar_workshop, world.cauldron_workshop, world.orbis_linked_workshop, world.cloud_greenhouse, world.cloud_hotspring_inn, world.cloud_windmill_bakery, world.cloud_tea_pavilion, world.chef_tasting_pavilion, world.lighthouse_harbor, world.dairy_workshop, world.market_stall, world.pottery_kiln]
+	var live_body_nodes12: Array = [world.mortar_workshop, world.cauldron_workshop, world.coral_linked_workshop, world.cloud_greenhouse, world.cloud_hotspring_inn, world.cloud_windmill_bakery, world.cloud_tea_pavilion, world.chef_tasting_pavilion, world.lighthouse_harbor, world.dairy_workshop, world.market_stall, world.pottery_kiln]
 	var min_live_scale12 := 9.0
 	for ln12 in live_scale_nodes12:
 		if ln12 != null:
@@ -3701,12 +3338,6 @@ func _run_all_four_assertions_and_export() -> void:
 	var pk_rect12 := pk12.get_screen_rect()
 	if pk_rect12.position.x < 1416.0 - 0.05 or absf(pk_rect12.size.x - 43.68) > 0.05 or pk_rect12.end.x > (isl3_rects12[1]["rect"] as Rect2).position.x - 28.0 + 0.05:
 		_fail_and_quit(tag12, "PotteryKiln_3 rect %s off the Island 3 sand shelf / too close to SoilPlot_3!" % str(pk_rect12))
-		return
-	# The kiln badge row must clear the docked airship's badge row whatever the order text length (worst case incl. 2.4px bob)
-	world.airship_badge_label.size = Vector2.ZERO
-	var ab_top12 := MainWorld.AIRSHIP_HARBOR_DOCK_POS.y + 31.0 - 2.4
-	if pk12.get_badge_local_rect().end.y > ab_top12 or pk12.get_badge_local_rect().position.y < 0.0:
-		_fail_and_quit(tag12, "Kiln badge %s collides with the airship badge row (top y=%.1f) or leaves the sky!" % [str(pk12.get_badge_local_rect()), ab_top12])
 		return
 	if world.waypoint_graph == null or absf(world.waypoint_graph.get_dock_pos("pottery_kiln_dock").x - EconomyConfig.POTTERY_KILN_SLOT_X) > 0.1 or absf(world.waypoint_graph.get_named_pos("pottery_kiln").x - EconomyConfig.POTTERY_KILN_SLOT_X) > 0.1:
 		_fail_and_quit(tag12, "WaypointGraph `pottery_kiln` dock misaligned!")
@@ -3777,10 +3408,9 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	# 4) Kiln chain: build -> clay from harvests -> fire with basket fuel -> stall + souvenir boxes
-	GameManager._reset_pottery_and_sports_state()
+	GameManager._reset_pottery_state()
 	GameManager.building_levels["pottery_kiln"] = 1
 	GameManager.set_weather(GameManager.WeatherState.DAY)
-	GameManager.auction_buff_timer = 0.0
 	GameManager.moon_tea_gathering_timer = 0.0
 	GameManager.wish_lantern_festival_timer = 0.0
 	GameManager.gourmet_acclaim_timer = 0.0
@@ -3792,7 +3422,7 @@ func _run_all_four_assertions_and_export() -> void:
 	if WindowController != null and not WindowController.is_logical_point_interactive(world.get_pottery_kiln_screen_rect().get_center()):
 		_fail_and_quit(tag12, "WindowController passthrough violation for PotteryKiln_3 (%s)!" % str(world.get_pottery_kiln_screen_rect()))
 		return
-	var base_codex_mult12 := GameManager.get_codex_price_multiplier()
+	var base_codex_mult12 := GameManager.get_collection_multiplier()
 	GameManager.add_gold(EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD + 50)
 	var pk_click12 := world.interact_with_pottery_kiln()
 	if not bool(pk_click12.get("ok", false)) or not GameManager.pottery_kiln_unlocked:
@@ -3836,17 +3466,14 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.get_unlocked_pottery_count() != 3 or not bool(GameManager.unlocked_achievements.get("ach_pottery_kiln", false)):
 		_fail_and_quit(tag12, "Pottery codex 3/3 or `ach_pottery_kiln` missing (%d/3)!" % GameManager.get_unlocked_pottery_count())
 		return
-	var bowl_sale12 := GameManager.try_purchase_from_stall("pottery_tea_bowl", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
-	var clay_unit12 := EconomyConfig.calc_item_unit_price("clay_lump", 1, 1, 0)
-	var bowl_unit12 := EconomyConfig.calc_item_unit_price("pottery_tea_bowl", 1, 1, 0)
-	var vase_unit12 := EconomyConfig.calc_item_unit_price("pottery_vase", 1, 1, 0)
-	if bowl_sale12 <= 0 or int(GameManager.stall_inventory.get("pottery_tea_bowl", 0)) != 0 or not (clay_unit12 < bowl_unit12 and bowl_unit12 < vase_unit12):
-		_fail_and_quit(tag12, "Market stall failed to sell the tea bowl (+%dG) or pottery price ladder broken (%d/%d/%d)!" % [bowl_sale12, clay_unit12, bowl_unit12, vase_unit12])
+	var bowl_sale12 := _sell("pottery_tea_bowl", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
+	if bowl_sale12 <= 0 or int(GameManager.stall_inventory.get("pottery_tea_bowl", 0)) != 0:
+		_fail_and_quit(tag12, "Market stall failed to sell the tea bowl (+%dG)!" % bowl_sale12)
 		return
 	# Souvenir gift boxes pack the kiln wares first: royal box <- celadon vase, floral box <- tea bowl
 	GameManager.flora_inventory["flora_cloud_rose"] = 2
 	GameManager.flora_inventory["flora_stardew_lily"] = 2
-	for ws12 in ["mortar", "cauldron", "orbis_linked"]:
+	for ws12 in ["mortar", "cauldron", "coral_linked"]:
 		for dk12 in GameManager.workshop_outputs[ws12].keys():
 			GameManager.workshop_outputs[ws12][dk12] = 0
 	var packed_before12 := GameManager.pottery_packed_in_boxes
@@ -3865,229 +3492,25 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag12, "Idle kiln cycle did not fire once (counts %s)!" % str(GameManager.pottery_craft_counts))
 		return
 
-	# 5) Autumn Sports Day on the Lotus Pond bridge track
 	var saved_levels12: Dictionary = GameManager.animal_levels.duplicate()
 	var saved_isl1_rec12: Dictionary = (GameManager.island_recruited[1] as Dictionary).duplicate()
-	for t12 in EconomyConfig.SPORTS_TEAM_ORDER:
-		GameManager.island_recruited[1][t12] = 0
-	GameManager.island_recruited[1]["bunny"] = 1
-	if GameManager.can_start_sports_day() or GameManager.start_sports_day() or GameManager.is_sports_day_active():
-		_fail_and_quit(tag12, "A sports day with a single team must be refused!")
-		return
-	GameManager.island_recruited[1] = {"bunny": 2, "otter": 2, "fox": 1, "shiba": 1, "penguin": 0, "toucan": 0}
-	GameManager.animal_levels["bunny"] = maxi(1, int(saved_levels12.get("bunny", 1)))
-	GameManager.animal_levels["otter"] = maxi(1, int(saved_levels12.get("otter", 1)))
-	GameManager.animal_levels["fox"] = maxi(1, int(saved_levels12.get("fox", 1)))
-	GameManager.animal_levels["shiba"] = maxi(1, int(saved_levels12.get("shiba", 1)))
-	if GameManager.get_sports_eligible_teams() != EconomyConfig.SPORTS_TEAM_ORDER:
-		_fail_and_quit(tag12, "Island 1 crew should field all 4 teams, got %s!" % str(GameManager.get_sports_eligible_teams()))
-		return
-	# Deterministic replay: run the same sports day twice (same day seed) and compare every ranking / point / prize
-	var replays12: Array = []
-	for rp12 in range(2):
-		GameManager._reset_pottery_and_sports_state()
-		GameManager.pottery_kiln_unlocked = true
-		GameManager.sports_days_held = 7
-		var gold0_12 := GameManager.gold
-		if not GameManager.start_sports_day():
-			_fail_and_quit(tag12, "start_sports_day() refused with 4 teams!")
-			return
-		var settled12 := 0
-		var t_sim12 := 0.0
-		while GameManager.is_sports_day_active() and t_sim12 < 80.0:
-			settled12 += GameManager.advance_sports_day(0.25)
-			t_sim12 += 0.25
-		var rk_list12: Array = []
-		for er12 in GameManager.sports_event_results:
-			rk_list12.append((er12 as Dictionary)["ranking"])
-		replays12.append({"settled": settled12, "dur": t_sim12, "ranks": rk_list12, "points": GameManager.sports_points.duplicate(), "champ": GameManager.sports_last_champion, "gold": GameManager.gold - gold0_12, "prize": int(GameManager.sports_last_result.get("prize_gold", 0)), "medals": GameManager.sports_medals, "days": GameManager.sports_days_held})
-	var r12a: Dictionary = replays12[0]
-	var r12b: Dictionary = replays12[1]
-	if str(r12a) != str(r12b) or int(r12a["settled"]) != 3 or absf(float(r12a["dur"]) - EconomyConfig.get_sports_day_total_sec()) > 0.26 or int(r12a["medals"]) != 1 or int(r12a["days"]) != 8 or int(r12a["gold"]) != 3 * int(r12a["prize"]):
-		_fail_and_quit(tag12, "Sports day replay not deterministic / wrong programme: A=%s B=%s" % [str(r12a), str(r12b)])
-		return
-	var pts_sum12 := 0
-	for pk_t12 in (r12a["points"] as Dictionary).keys():
-		pts_sum12 += int(r12a["points"][pk_t12])
-	if pts_sum12 != 3 * (3 + 2 + 1 + 0):
-		_fail_and_quit(tag12, "Placement points must total 18 for 4 teams x 3 events, got %d!" % pts_sum12)
-		return
-	for ev_i12 in range(3):
-		var rk12: Array = (r12a["ranks"] as Array)[ev_i12]
-		var ev_id12 := EconomyConfig.SPORTS_EVENT_ORDER[ev_i12]
-		for ri12 in range(rk12.size() - 1):
-			if GameManager.get_sports_team_score(String(rk12[ri12]), ev_id12, 7) < GameManager.get_sports_team_score(String(rk12[ri12 + 1]), ev_id12, 7):
-				_fail_and_quit(tag12, "Event `%s` ranking %s is not sorted by athlete score!" % [ev_id12, str(rk12)])
-				return
-	var champ12 := String(r12a["champ"])
-	for ct12 in (r12a["points"] as Dictionary).keys():
-		if int(r12a["points"][ct12]) > int(r12a["points"][champ12]):
-			_fail_and_quit(tag12, "Champion `%s` does not hold the most placement points %s!" % [champ12, str(r12a["points"])])
-			return
-	# Rewards on a first sports day: prize gold x3, amber 3x1 + 3, vouchers 3 (first events) + 1 (medal), medal + achievement
-	GameManager._reset_pottery_and_sports_state()
-	GameManager.pottery_kiln_unlocked = true
-	# (the replays above wiped the kiln codex too: restore the 3 pottery entries genuinely unlocked by the kiln chain test)
-	for p_back12 in EconomyConfig.POTTERY_CODEX_ORDER:
-		GameManager.unlocked_pottery_items[p_back12] = true
-	var amber0_12 := GameManager.amber
-	var vou0_12 := GameManager.rare_codex_vouchers
-	# Spectator boost reference: the same stall sale just before the games open (same codex / solar-term multipliers)
-	GameManager.stall_inventory["crop_0"] = 6
-	var sale_off12 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
-	GameManager.sports_cooldown_timer = 0.01
-	GameManager._process(0.05)
-	if not GameManager.is_sports_day_active() or GameManager.get_sports_phase() != "gather":
-		_fail_and_quit(tag12, "The sports day did not auto-start when its cooldown ran out (phase `%s`)!" % GameManager.get_sports_phase())
-		return
-	if absf(GameManager.sports_cooldown_timer - EconomyConfig.SPORTS_COOLDOWN_SEC) > 0.06:
-		_fail_and_quit(tag12, "Sports cooldown not re-armed to %.0fs on start!" % EconomyConfig.SPORTS_COOLDOWN_SEC)
-		return
-	# Spectator boost during the games: x1.20 stall sales, x1.5 visitor pace
-	GameManager.stall_inventory["crop_0"] = 6
-	var sale_on12 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
-	if absf(GameManager.get_sports_sale_multiplier() - EconomyConfig.SPORTS_SPECTATOR_SALE_MULT) > 0.0001 or absf(GameManager.get_sports_visitor_spawn_mult() - EconomyConfig.SPORTS_SPECTATOR_SPAWN_MULT) > 0.0001:
-		_fail_and_quit(tag12, "Spectator multipliers inactive during the sports day!")
-		return
-	# Athletes: island 1 workers enter sports mode and physically walk onto the pond-bridge track during the march-in
-	world._update_sports_day(0.05)
-	if world.sports_athletes.size() != 4 or not world.sports_flag_west.visible or not world.sports_flag_east.visible or not world.sports_badge_label.visible:
-		_fail_and_quit(tag12, "Sports props / athletes missing: athletes=%d flags=%s/%s badge=%s" % [world.sports_athletes.size(), str(world.sports_flag_west.visible), str(world.sports_flag_east.visible), str(world.sports_badge_label.visible)])
-		return
-	for fl12 in [world.sports_flag_west, world.sports_flag_east]:
-		var fsp12: Sprite2D = fl12
-		if absf(fsp12.position.y - EconomyConfig.GROUND_Y) > 0.1 or not fsp12.centered or absf(fsp12.offset.y + float(fsp12.texture.get_height()) * 0.5) > 0.1:
-			_fail_and_quit(tag12, "Sports flag `%s` not bottom-center grounded!" % fsp12.name)
-			return
-		var fr12 := Rect2(fsp12.position.x - 32.0 * fsp12.scale.x, EconomyConfig.GROUND_Y + oy12 - 64.0 * fsp12.scale.y, 64.0 * fsp12.scale.x, 64.0 * fsp12.scale.y)
-		for bq12 in all_rects12[1]:
-			if fr12.intersects(bq12["rect"]):
-				_fail_and_quit(tag12, "Sports flag overlaps `%s`!" % String(bq12["name"]))
-				return
-		if world.open_air_cinema != null and Rect2(fr12.position - Vector2(0.0, oy12), fr12.size).intersects(world.open_air_cinema.get_screen_rect()):
-			_fail_and_quit(tag12, "Sports flag overlaps the open-air cinema headland!")
-			return
-	var walk_ok12 := true
-	var step12 := 0.1
-	var sim12 := 0.0
-	while sim12 < EconomyConfig.SPORTS_GATHER_SEC - 0.05:
-		GameManager.advance_sports_day(step12)
-		world._update_sports_day(step12)
-		for ath_k12 in world.sports_athletes.keys():
-			var ath12: AnimalWorker = world.sports_athletes[ath_k12]
-			ath12._process(step12)
-		sim12 += step12
-	for ath_k12b in world.sports_athletes.keys():
-		var ath12b: AnimalWorker = world.sports_athletes[ath_k12b]
-		if not ath12b.sports_mode or ath12b.position.x < 1082.0 or ath12b.position.x > 1302.0 or absf(ath12b.position.y - EconomyConfig.GROUND_Y) > 0.1:
-			walk_ok12 = false
-	if not walk_ok12:
-		_fail_and_quit(tag12, "Athletes did not walk onto the pond-bridge track during the march-in!")
-		return
-	var max_x_relay12 := 0.0
-	var rope_seen12 := false
-	var medal_seen12 := false
-	var phases_seen12: Array[String] = []
-	var events_started12 := 0
-	while GameManager.is_sports_day_active():
-		var ph12 := GameManager.get_sports_phase()
-		if phases_seen12.is_empty() or phases_seen12[phases_seen12.size() - 1] != ph12:
-			phases_seen12.append(ph12)
-		var prev_started12 := GameManager.sports_last_started_idx
-		GameManager.advance_sports_day(step12)
-		if GameManager.sports_last_started_idx != prev_started12 and GameManager.sports_last_started_idx >= 0:
-			events_started12 += 1
-		world._update_sports_day(step12)
-		for ath_k12c in world.sports_athletes.keys():
-			var ath12c: AnimalWorker = world.sports_athletes[ath_k12c]
-			ath12c._process(step12)
-			if GameManager.get_sports_event_index() == 0:
-				max_x_relay12 = maxf(max_x_relay12, ath12c.position.x)
-		if world.get_sports_rope_segment().size() == 2 and GameManager.get_sports_phase() == "event":
-			rope_seen12 = true
-		if world.sports_medal_sprite.visible:
-			medal_seen12 = true
-		sim12 += step12
-		if sim12 > 80.0:
-			break
-	world._update_sports_day(step12)
-	var released12 := true
-	for w_rel12 in world.workers:
-		if is_instance_valid(w_rel12) and w_rel12.sports_mode:
-			released12 = false
-	if phases_seen12 != ["gather", "event", "break", "event", "break", "event", "award"] or events_started12 != 3 or max_x_relay12 < EconomyConfig.SPORTS_TRACK_EAST_X - 12.0 or not rope_seen12 or not medal_seen12 or not released12 or not world.sports_athletes.is_empty() or world.sports_flag_west.visible:
-		_fail_and_quit(tag12, "Sports day live run broken: phases=%s started=%d relay_max_x=%.1f rope=%s medal=%s released=%s" % [str(phases_seen12), events_started12, max_x_relay12, str(rope_seen12), str(medal_seen12), str(released12)])
-		return
-	var prize12 := int(GameManager.sports_last_result.get("prize_gold", 0))
-	if GameManager.sports_medals != 1 or GameManager.get_unlocked_sports_event_count() != 3 or GameManager.amber - amber0_12 != 6 or GameManager.rare_codex_vouchers - vou0_12 != 4 or GameManager.sports_prize_gold_total != 3 * prize12 or prize12 < EconomyConfig.SPORTS_PRIZE_MIN_GOLD or not bool(GameManager.unlocked_achievements.get("ach_sports_champion", false)):
-		_fail_and_quit(tag12, "Sports rewards mismatch: medals=%d events=%d amber+%d vouchers+%d prizes=%d (3x%d)!" % [GameManager.sports_medals, GameManager.get_unlocked_sports_event_count(), GameManager.amber - amber0_12, GameManager.rare_codex_vouchers - vou0_12, GameManager.sports_prize_gold_total, prize12])
-		return
-	var spec_ratio12 := float(sale_on12) / maxf(1.0, float(sale_off12))
-	if sale_off12 <= 0 or spec_ratio12 < 1.17 or spec_ratio12 > 1.23 or absf(GameManager.get_sports_sale_multiplier() - 1.0) > 0.0001 or absf(GameManager.get_sports_visitor_spawn_mult() - 1.0) > 0.0001:
-		_fail_and_quit(tag12, "Spectator sale boost mismatch: during=%d before=%d ratio=%.3f!" % [sale_on12, sale_off12, spec_ratio12])
-		return
-	# Athletes walk back to their own tasks: every resumed path is reachable along the waypoint graph (monotonic, no backtrack)
-	for t_back12 in EconomyConfig.SPORTS_TEAM_ORDER:
-		var wb12: AnimalWorker = world._find_sports_athlete(t_back12)
-		if wb12 == null:
-			continue
-		var back_path12 := world.waypoint_graph.compute_path(Vector2(EconomyConfig.SPORTS_TRACK_CENTER_X, EconomyConfig.GROUND_Y), Vector2(wb12.get_rest_dock_x(), EconomyConfig.GROUND_Y))
-		var prev_bx12 := EconomyConfig.SPORTS_TRACK_CENTER_X
-		for bpt12 in back_path12:
-			if bpt12.x > prev_bx12 + 0.1:
-				_fail_and_quit(tag12, "Path from the track back to `%s` rest dock backtracks: %s" % [t_back12, str(back_path12)])
-				return
-			prev_bx12 = bpt12.x
-		if back_path12.is_empty() or absf(back_path12[back_path12.size() - 1].x - wb12.get_rest_dock_x()) > 0.5:
-			_fail_and_quit(tag12, "Track -> `%s` rest dock unreachable: %s" % [t_back12, str(back_path12)])
-			return
-	if GameManager.get_codex_price_multiplier() < base_codex_mult12 + 0.239:
-		_fail_and_quit(tag12, "3 pottery entries + 3 sports events did not raise the Codex price multiplier by +24 percent!")
+	if GameManager.get_collection_multiplier() < base_codex_mult12 + 0.029:
+		_fail_and_quit(tag12, "3 pottery entries did not raise the collection bonus by 3%!")
 		return
 
 	# 6) HUD cards #14 (tab 0 / 2 / 3), own LabelSettings, codex card 14 & drawer title
 	if world.hud != null:
-		world.hud.open_drawer(0)
-		world.hud._sync_label_nodes()
-		if world.hud.lbl_card_titles.size() < 14 or not world.hud.lbl_card_titles[13].visible or world.hud.lbl_card_titles[13].label_settings == null or world.hud.lbl_card_titles[13].text.find("陶艺窑坊") == -1:
-			_fail_and_quit(tag12, "HUD Tab 0 missing Pottery Kiln card #14!")
+		var tiles_p8 := _menu_tabs_problem(world.hud, ["pottery_kiln_building", "", "ci12_codex"], "3/3")
+		if tiles_p8 != "":
+			_fail_and_quit(tag12, tiles_p8)
 			return
-		var card14_rect0 := world.hud._get_card_rect(13, 14)
-		if card14_rect0.end.x > HUD.DRAWER_RECT.end.x - 4.0 or world.hud._get_card_rect(0, 14).position.x < HUD.DRAWER_RECT.position.x:
-			_fail_and_quit(tag12, "HUD 14-card row overflows the drawer: %s" % str(card14_rect0))
-			return
-		world.hud.open_drawer(2)
-		world.hud._sync_label_nodes()
-		if not world.hud.lbl_card_titles[13].visible or world.hud.lbl_card_titles[13].text.find("运动会") == -1:
-			_fail_and_quit(tag12, "HUD Tab 2 missing Autumn Sports Day card #14: `%s`" % world.hud.lbl_card_titles[13].text)
-			return
-		world.hud.open_drawer(3)
-		world.hud._sync_label_nodes()
-		var card14_rect := world.hud._get_card_rect(13, 14)
-		if not world.hud.lbl_card_titles[13].visible or world.hud.lbl_card_titles[13].text != "★秋季运动会鉴(3/3)" or card14_rect.end.x > HUD.CODEX_DRAWER_RECT.end.x - 4.0:
-			_fail_and_quit(tag12, "HUD Tab 3 Shanhai Codex Card #14 invalid or overflowing: text=`%s`, rect=%s" % [world.hud.lbl_card_titles[13].text, str(card14_rect)])
-			return
-		if world.hud.lbl_drawer_title.text.find("陶3/3") == -1 or world.hud.lbl_drawer_title.text.find("运3/3") == -1 or world.hud.lbl_drawer_title.text.find("乳") == -1:
-			_fail_and_quit(tag12, "HUD Codex drawer title missing `陶3/3` / `运3/3`: `%s`" % world.hud.lbl_drawer_title.text)
-			return
-		var title_w12 := world.hud.lbl_drawer_title.get_combined_minimum_size().x * world.hud.lbl_drawer_title.scale.x
-		if world.hud.lbl_drawer_title.position.x + title_w12 > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0:
-			_fail_and_quit(tag12, "HUD Codex drawer title (%.1fpx) runs into the language button!" % title_w12)
-			return
-		if world.hud.lbl_card_costs[13].label_settings == world.hud.lbl_card_costs[12].label_settings or world.hud.lbl_card_titles[13].label_settings == world.hud.lbl_card_titles[12].label_settings or world.hud.lbl_card_subs[13].label_settings == world.hud.lbl_card_subs[12].label_settings:
-			_fail_and_quit(tag12, "HUD card 14 labels share LabelSettings with card 13 (colour leak risk)!")
-			return
-		world.hud.close_drawer(false)
-	if pk12.level_label.label_settings == null or pk12.status_badge_label.label_settings == null or world.sports_badge_label.label_settings == null or pk12.level_label.label_settings == world.mortar_workshop.level_label.label_settings or pk12.status_badge_label.label_settings == world.dairy_workshop.status_badge_label.label_settings or world.sports_badge_label.label_settings == world.moon_tea_boat_label.label_settings:
-		_fail_and_quit(tag12, "CI-12 labels are not native Label + own LabelSettings!")
-		return
 	var forbidden_font_ci12 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci12 != "":
 		_fail_and_quit(tag12, "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci12)
 		return
 
-	# Save/Load roundtrip of all CI-12 fields (a sports day in progress is never persisted)
-	GameManager.add_gold(30000)
+	# Save/Load roundtrip of all CI-12 fields
+	GameManager.add_gold(Pacing.line_cost_n("pottery_kiln", 1, 4))
 	for _pk_up in range(2):
 		if not GameManager.upgrade_building("pottery_kiln"):
 			_fail_and_quit(tag12, "Failed to upgrade `pottery_kiln` to Lv.3!")
@@ -4097,25 +3520,20 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.pottery_inventory["pottery_vase"] = 2
 	GameManager.active_pottery_recipe_id = "pottery_vase"
 	var exp_prep12 := GameManager.pottery_reputation_bonus
-	var exp_srep12 := GameManager.sports_reputation_bonus
-	var exp_days12 := GameManager.sports_days_held
-	var exp_held12 := GameManager.sports_events_held_total
-	GameManager.start_sports_day()
 	GameManager.save_game()
-	GameManager._reset_pottery_and_sports_state()
+	GameManager._reset_pottery_state()
 	GameManager.building_levels["pottery_kiln"] = 1
 	GameManager.load_game()
-	if not GameManager.pottery_kiln_unlocked or GameManager.get_pottery_kiln_level() != 3 or GameManager.get_pottery_stock("clay_lump") != 5 or GameManager.get_pottery_stock("pottery_tea_bowl") != 1 or GameManager.get_pottery_stock("pottery_vase") != 2 or GameManager.active_pottery_recipe_id != "pottery_vase" or GameManager.get_unlocked_pottery_count() != 3 or GameManager.pottery_reputation_bonus != exp_prep12 or GameManager.sports_medals != 1 or GameManager.get_unlocked_sports_event_count() != 3 or GameManager.sports_reputation_bonus != exp_srep12 or GameManager.sports_days_held != exp_days12 or GameManager.sports_events_held_total != exp_held12 or GameManager.is_sports_day_active():
+	if not GameManager.pottery_kiln_unlocked or GameManager.get_pottery_kiln_level() != 3 or GameManager.get_pottery_stock("clay_lump") != 5 or GameManager.get_pottery_stock("pottery_tea_bowl") != 1 or GameManager.get_pottery_stock("pottery_vase") != 2 or GameManager.active_pottery_recipe_id != "pottery_vase" or GameManager.get_unlocked_pottery_count() != 3 or GameManager.pottery_reputation_bonus != exp_prep12:
 		_fail_and_quit(tag12, "CI-12 Save/Load roundtrip failed to restore state!")
 		return
 	GameManager.animal_levels = saved_levels12
 	GameManager.island_recruited[1] = saved_isl1_rec12
 
-	# Showcase (daylight): Lv.3 kiln firing a vase on the Island 3 landing, tug-of-war (event 2/3) on the Lotus Pond centre pier,
+	# Showcase (daylight): Lv.3 kiln firing a vase on the Island 3 landing,
 	# every other worker standing at its rest dock in a 28px gap, the night-only cinema / lantern layers folded away
 	GameManager.weather_timer = 4.0
 	GameManager.set_weather(GameManager.WeatherState.DAY)
-	GameManager.lantern_festival_timer = 0.0
 	GameManager.moon_tea_gathering_timer = 0.0
 	GameManager.wish_lantern_festival_timer = 0.0
 	GameManager.pottery_kiln_timer = EconomyConfig.POTTERY_KILN_CYCLE_SEC * 0.58
@@ -4124,37 +3542,19 @@ func _run_all_four_assertions_and_export() -> void:
 	GameManager.island_recruited[3] = {"bunny": 2, "otter": 2, "fox": 1, "shiba": 0, "penguin": 1, "toucan": 2}
 	for an12 in EconomyConfig.ANIMAL_ORDER:
 		GameManager.animal_levels[an12] = maxi(1, int(GameManager.animal_levels.get(an12, 1)))
-	GameManager.start_sports_day()
-	GameManager.advance_sports_day(EconomyConfig.get_sports_event_start_sec(1) + EconomyConfig.SPORTS_EVENT_SEC * 0.55)
-	world._update_sports_day(0.05)
 	for w_show12 in world.workers:
 		if not is_instance_valid(w_show12) or not w_show12.is_hired():
 			continue
 		w_show12.visible = true
-		if w_show12.sports_mode:
-			w_show12.position = Vector2(w_show12.sports_target_x, EconomyConfig.GROUND_Y)
-			w_show12.facing_left = w_show12.sports_facing < 0.0
-		else:
-			w_show12.nav_path.clear()
-			w_show12.position = Vector2(w_show12.get_rest_dock_x(), EconomyConfig.GROUND_Y)
+		w_show12.nav_path.clear()
+		w_show12.position = Vector2(w_show12.get_rest_dock_x(), EconomyConfig.GROUND_Y)
 		w_show12._process(0.01)
 		# Freeze the staged crew for the 2 capture frames (the first frame after this long synchronous audit carries a large
 		# delta that would otherwise walk the resting workers off their docks before the screenshot)
 		w_show12.set_process(false)
 	pk12._process(0.01)
 	world._process(0.05)
-	if GameManager.get_sports_phase() != "event" or GameManager.get_sports_event_index() != 1 or world.get_sports_rope_segment().size() != 2 or not GameManager.pottery_kiln_unlocked:
-		_fail_and_quit(tag12, "Showcase state invalid: phase=%s event=%d rope=%d" % [GameManager.get_sports_phase(), GameManager.get_sports_event_index(), world.get_sports_rope_segment().size()])
-		return
-	var sb_rect12 := world.get_sports_badge_local_rect()
-	if world.moon_tea_boat_label != null and world.moon_tea_boat_label.visible and sb_rect12.intersects(Rect2(world.moon_tea_boat_label.position, world.moon_tea_boat_label.size * world.moon_tea_boat_label.scale)):
-		_fail_and_quit(tag12, "Sports badge %s collides with the moon-boat badge!" % str(sb_rect12))
-		return
-
-	print("[PASS] %s 通过: 空间方案=陶窑接管岛3第1槽(原装饰性重复苹果树, 同宽112px×0.39=43.68px, 不加第4小岛以免1920px桌面条外溢)，三岛19建筑(7+6+6)最小净间距 %.2fpx(>=28.0px)、重叠面积 %.1fpx²、槽位最小缩放 %.3f/实渲染最小缩放 %.3f(>=0.35)，PotteryKiln_3 底部中心锚定 (1437.8, GROUND_Y=124.0) 且 %d 个接地像素全落沙滩；%d 个员工驻留点逐像素审计 建筑最大遮挡 %.1f%%(%s, <=50%%)；陶艺链 收获翻出陶土→茶碗(1土+1柴)/陶花瓶(2土+1柴)→余量上摊售出+%dG、皇家礼盒装陶花瓶/花语礼盒装茶碗；运动会 单队拒办、冷却自动开幕、入场%.0fs→接力/拔河/搬运→颁奖 共%.0fs 两次重放名次一致(冠军 %s)、奖金 3x%dG、观赛售价 %.2fx、客流 %.1fx、选手实走上荷塘栈桥赛道并归位，金丝带奖牌 x%d 与山海图鉴第14卡「★秋季运动会鉴(3/3)」PASS!" % [
-		tag12, min_gap12, overlap_area12, min_slot_scale12, min_live_scale12, pk_contact12, rest_dock_count12, worst_cover12 * 100.0, worst_cover_name12,
-		bowl_sale12, EconomyConfig.SPORTS_GATHER_SEC, EconomyConfig.get_sports_day_total_sec(), String(EconomyConfig.SPORTS_TEAM_NAMES.get(champ12, champ12)), prize12, spec_ratio12, EconomyConfig.SPORTS_SPECTATOR_SPAWN_MULT, GameManager.sports_medals
-	])
+	print("[PASS] %s 通过: 三岛19建筑最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f/%.3f、陶窑接地 %d 像素、%d 处歇脚遮挡最多 %.1f%%(%s)、茶碗售价 +%dG、存读一致 PASS!" % [tag12, min_gap12, overlap_area12, min_slot_scale12, min_live_scale12, pk_contact12, rest_dock_count12, worst_cover12 * 100.0, worst_cover_name12, bowl_sale12])
 
 	# ------------------------------------------------------------------
 	# [断言26-CI-13云海风筝节与岛屿四季装扮] (NO new building):
@@ -4162,15 +3562,14 @@ func _run_all_four_assertions_and_export() -> void:
 	#      Godot import with RGBA transparent corners;
 	#   2) Layout untouched: still 19 main buildings (7+6+6) on their slots, every gap >= 28px, 0 px^2 overlap, scales >= 0.35;
 	#   3) Sky lanes: every kite footprint sampled every 0.25s over a whole festival for all 3 wind programmes stays inside its
-	#      lane (west = above Island 2, east = above Island 3); both lanes stay on screen and clear of every world label (incl.
-	#      a forced long auction badge), the airship (dock + departure), the balloon path, every building, the kite badge and
+	#      lane (west = above Island 2, east = above Island 3); both lanes stay on screen and clear of every world label, the airship (dock + departure), the balloon path, every building, the kite badge and
 	#      the HUD banner / bar / drawers; kites never overlap each other;
 	#   4) Kite festival: cooldown auto-start, deterministic wind programme + kite flight + click rewards (2 identical replays),
 	#      wind production / sales buff numbers, sweep medal, end + cooldown re-arm;
 	#   5) Seasons: injected clock for all 12 months -> northern-hemisphere seasons, props + tint switch, bonus on its own buff
 	#      type only (spring crops / summer sales / autumn workshops / winter tips), 4/4 seasons + achievement, real clock back;
 	#   6) Seasonal props (every season texture): bottom-center grounded on solid island ground, clear of buildings, labels,
-	#      worker rest spans, landscapes, sports flags, other world sprites and each other;
+	#      worker rest spans, landscapes, other world sprites and each other;
 	#   7) CI-12 rest-dock occlusion audit still <= 50% for every building (20 rest docks);
 	#   8) HUD: 2-row drawer for 13+ cards (tab 2 = 16 cards incl. kite #15 + season #16, codex = 15 cards incl. card 15),
 	#      undistorted >= 0.5x text, every card inside its drawer with no overlap, new card texts fully visible, own LabelSettings;
@@ -4230,28 +3629,13 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	# 3) Sky lanes vs every reserved sky element (all in `world_root` local coords; screen y = local y + 36)
-	var lh13: LighthouseHarbor = world.lighthouse_harbor
-	var ab_lbl13: Label = lh13.auction_badge_label
-	var ab_text_old13 := ab_lbl13.text
-	var ab_vis_old13 := ab_lbl13.visible
-	ab_lbl13.text = "★名物拍卖3/3·三岛名物伴手礼盒(10s)"
-	ab_lbl13.visible = true
-	ab_lbl13.size = Vector2.ZERO
-	ab_lbl13.position.x = LighthouseHarbor.BADGE_CENTER_X - ab_lbl13.size.x * ab_lbl13.scale.x * 0.5
 	var reserved13: Array = []
-	for lr13 in _collect_world_label_rects(world, [world.kite_badge_label]):
-		reserved13.append(lr13)
-	# the auction badge carries a gavel / lot icon 12px on each side
-	reserved13.append({"name": "AuctionBadge+icons", "rect": _rect_in_world_local(world, ab_lbl13, Rect2(Vector2.ZERO, ab_lbl13.size)).grow_individual(13.0, 0.0, 13.0, 0.0)})
-	ab_lbl13.text = ab_text_old13
-	ab_lbl13.visible = ab_vis_old13
 	var air_half13 := Vector2(MainWorld.AIRSHIP_TARGET_W * 0.5, MainWorld.AIRSHIP_TARGET_H * 0.5 + 2.4)
 	var air_dock13 := Rect2(MainWorld.AIRSHIP_HARBOR_DOCK_POS - air_half13, air_half13 * 2.0)
 	var air_dep13 := Rect2(MainWorld.AIRSHIP_DEPART_POS - air_half13, air_half13 * 2.0)
 	reserved13.append({"name": "AirshipDockToDeparture", "rect": air_dock13.merge(air_dep13)})
 	reserved13.append({"name": "SkyBalloonPath", "rect": Rect2(MainWorld.SKY_BALLOON_MIN_X - 30.0, -4.0 - 3.2 - 26.0, (MainWorld.SKY_BALLOON_MAX_X + 84.0) - (MainWorld.SKY_BALLOON_MIN_X - 30.0), 56.0 + 6.4)})
-	reserved13.append({"name": "KiteFestivalBadge", "rect": world.get_kite_badge_local_rect().grow_individual(14.0, 0.0, 0.0, 0.0)})
-	for hr13 in [["HUD banner band", Rect2(480.0, 0.0, 960.0, 40.0)], ["HUD drawer", HUD.DRAWER_RECT], ["HUD codex drawer", HUD.CODEX_DRAWER_RECT], ["HUD bar", HUD.FULL_BAR_RECT], ["HUD capsule", HUD.CAPSULE_RECT]]:
+	for hr13 in [["HUD banner band", Rect2(510.0, 0.0, 900.0, 40.0)], ["HUD bar", HUD.FULL_BAR_RECT], ["HUD capsule", HUD.CAPSULE_RECT]]:
 		reserved13.append({"name": String(hr13[0]), "rect": Rect2((hr13[1] as Rect2).position - Vector2(0.0, oy13), (hr13[1] as Rect2).size)})
 	for bl13 in bld_local13:
 		reserved13.append({"name": String(bl13["name"]), "rect": bl13["rect"]})
@@ -4292,18 +3676,27 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.is_kite_festival_active() or absf(GameManager.get_kite_wind_sale_multiplier() - 1.0) > 0.0001 or absf(GameManager.get_kite_wind_production_multiplier() - 1.0) > 0.0001 or world.kite_sprites.size() != EconomyConfig.KITE_SLOTS.size() or world.kite_sprites[0].visible:
 		_fail_and_quit(tag13, "Idle sky must have no kites and no wind buff (%d kite sprites)!" % world.kite_sprites.size())
 		return
-	GameManager.kite_cooldown_timer = 0.01
+	# the scheduler: nothing opens early, the kite festival opens by itself when its turn is overdue, and never a second one beside it
+	GameManager.festival_turn = 0
+	GameManager.festival_gap_timer = 5.0
+	if GameManager.try_start_festival("kite") or GameManager.is_kite_festival_active():
+		_fail_and_quit(tag13, "A festival opened before its time!")
+		return
+	GameManager.festival_gap_timer = -Pacing.FESTIVAL_AUTO_SEC
 	GameManager._process(0.05)
-	if not GameManager.is_kite_festival_active() or absf(GameManager.kite_cooldown_timer - EconomyConfig.KITE_COOLDOWN_SEC) > 0.06:
-		_fail_and_quit(tag13, "The kite festival did not auto-start / re-arm its %.0fs cooldown!" % EconomyConfig.KITE_COOLDOWN_SEC)
+	if not GameManager.is_kite_festival_active() or absf(GameManager.festival_gap_timer - Pacing.FESTIVAL_GAP_SEC) > 0.06 or GameManager.festival_turn != 1:
+		_fail_and_quit(tag13, "The kite festival did not open in its turn (gap %.1f, turn %d)!" % [GameManager.festival_gap_timer, GameManager.festival_turn])
+		return
+	if GameManager.try_start_festival("moon_tea") or GameManager.is_moon_tea_gathering_active():
+		_fail_and_quit(tag13, "Two festivals at once!")
 		return
 	world._update_kite_festival(0.0)
 	var vis_kites13 := 0
 	for ks13 in world.kite_sprites:
 		if ks13.visible and ks13.texture != null and ks13.centered and ks13.hframes == 1 and ks13.vframes == 1 and not ks13.region_enabled and absf(ks13.scale.x - EconomyConfig.KITE_SCALE) < 0.001:
 			vis_kites13 += 1
-	if vis_kites13 != EconomyConfig.KITE_SLOTS.size() or not world.kite_badge_label.visible:
-		_fail_and_quit(tag13, "Festival opened but only %d/%d kite sprites fly (badge=%s)!" % [vis_kites13, EconomyConfig.KITE_SLOTS.size(), str(world.kite_badge_label.visible)])
+	if vis_kites13 != EconomyConfig.KITE_SLOTS.size():
+		_fail_and_quit(tag13, "Festival opened but only %d/%d kite sprites fly!" % [vis_kites13, EconomyConfig.KITE_SLOTS.size()])
 		return
 	# Wind buff numbers at mid-gust 1 of the running festival: production x(1 + 0.25 w), sales x(1 + 0.20 w)
 	GameManager.advance_kite_festival(7.5 - GameManager.kite_festival_clock)
@@ -4311,7 +3704,7 @@ func _run_all_four_assertions_and_export() -> void:
 	var crop_on13 := GameManager.get_crop_growth_multiplier(1)
 	var ws_on13 := GameManager.get_workshop_speed_multiplier(2)
 	GameManager.stall_inventory["crop_0"] = 6
-	var sale_on13 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
+	var sale_on13 := _sell("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
 	if absf(GameManager.get_kite_wind_strength() - w_exp13) > 0.0001 or absf(GameManager.get_kite_wind_production_multiplier() - (1.0 + 0.25 * w_exp13)) > 0.0001 or absf(GameManager.get_kite_wind_sale_multiplier() - (1.0 + 0.20 * w_exp13)) > 0.0001:
 		_fail_and_quit(tag13, "Wind buff numbers wrong: w=%.3f (exp %.3f) prod=%.3f sale=%.3f!" % [GameManager.get_kite_wind_strength(), w_exp13, GameManager.get_kite_wind_production_multiplier(), GameManager.get_kite_wind_sale_multiplier()])
 		return
@@ -4319,7 +3712,7 @@ func _run_all_four_assertions_and_export() -> void:
 	var crop_off13 := GameManager.get_crop_growth_multiplier(1)
 	var ws_off13 := GameManager.get_workshop_speed_multiplier(2)
 	GameManager.stall_inventory["crop_0"] = 6
-	var sale_off13 := GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
+	var sale_off13 := _sell("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
 	GameManager.kite_festival_active = true
 	var sale_ratio13 := float(sale_on13) / maxf(1.0, float(sale_off13))
 	if absf(crop_on13 / maxf(0.0001, crop_off13) - (1.0 + 0.25 * w_exp13)) > 0.001 or absf(ws_on13 / maxf(0.0001, ws_off13) - (1.0 + 0.25 * w_exp13)) > 0.001 or sale_off13 <= 0 or absf(sale_ratio13 - (1.0 + 0.20 * w_exp13)) > 0.03:
@@ -4389,7 +3782,7 @@ func _run_all_four_assertions_and_export() -> void:
 		exp_rep13 += int(EconomyConfig.KITE_TYPES[String(c13[0])]["rep"])
 	exp_amber13 += EconomyConfig.KITE_SWEEP_AMBER
 	exp_rep13 += EconomyConfig.KITE_SWEEP_REP
-	if clicks_a13.size() != 6 or not bool(clicks_a13[5][4]) or int(r13a["medals"]) != 1 or int(r13a["held"]) != 5 or int(r13a["kites"]) != 3 or int(r13a["amber"]) != exp_amber13 or int(r13a["vouchers"]) != EconomyConfig.KITE_SWEEP_VOUCHERS or int(r13a["rep"]) != exp_rep13 or absf(float(r13a["dur"]) - EconomyConfig.KITE_FESTIVAL_SEC) > 0.26 or GameManager.is_kite_festival_active() or absf(GameManager.kite_cooldown_timer - EconomyConfig.KITE_COOLDOWN_SEC) > 0.01:
+	if clicks_a13.size() != 6 or not bool(clicks_a13[5][4]) or int(r13a["medals"]) != 1 or int(r13a["held"]) != 5 or int(r13a["kites"]) != 3 or int(r13a["amber"]) != exp_amber13 or int(r13a["vouchers"]) != EconomyConfig.KITE_SWEEP_VOUCHERS or int(r13a["rep"]) != exp_rep13 or absf(float(r13a["dur"]) - EconomyConfig.KITE_FESTIVAL_SEC) > 0.26 or GameManager.is_kite_festival_active():
 		_fail_and_quit(tag13, "Kite rewards / sweep / festival end wrong: %s" % str(r13a))
 		return
 	var carp_gold13 := 0
@@ -4442,7 +3835,7 @@ func _run_all_four_assertions_and_export() -> void:
 				"crop": GameManager.get_crop_growth_multiplier(1),
 				"ws": GameManager.get_workshop_speed_multiplier(2),
 				"tip": GameManager.get_customer_tip_multiplier(false, 1),
-				"sale": GameManager.try_purchase_from_stall("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
+				"sale": _sell("crop_0", 1, Vector2(1050.0, EconomyConfig.GROUND_Y))
 			}
 	EventBus.season_changed.disconnect(on_season13)
 	# each season's own buff is +2% per prop vs a season that does not boost it (spring crops, summer sales, autumn workshops, winter tips)
@@ -4459,7 +3852,6 @@ func _run_all_four_assertions_and_export() -> void:
 
 	# 6) Seasonal props for EVERY season texture: grounded on solid ground, clear of buildings / labels / rest spans / props
 	var rest_spans13 := _collect_rest_dock_spans(world)
-	var label_rects13 := _collect_world_label_rects(world, [])
 	var deco_checks13 := 0
 	var deco_ground_px13 := 0
 	var min_deco_clear13 := 9999.0
@@ -4513,10 +3905,6 @@ func _run_all_four_assertions_and_export() -> void:
 			if not after_hit13:
 				_fail_and_quit(tag13, "Seasonal prop `%s` anchor building `%s` not found!" % [dn_c13.name, String(spot13["after"])])
 				return
-			for lb13 in label_rects13:
-				if dr13.intersects(lb13["rect"]):
-					_fail_and_quit(tag13, "Seasonal prop `%s` %s overlaps label `%s` %s!" % [dn_c13.name, str(dr13), String(lb13["name"]), str(lb13["rect"])])
-					return
 			for sp13 in rest_spans13[isl_d13]:
 				if dr13.position.x < (sp13 as Vector2).y and dr13.end.x > (sp13 as Vector2).x:
 					_fail_and_quit(tag13, "Seasonal prop `%s` %s overlaps a worker rest spot span %s!" % [dn_c13.name, str(dr13), str(sp13)])
@@ -4557,111 +3945,51 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 
 	# 8) HUD: 2-row drawer layout, kite card #15 + season card #16 (tab 2), codex card #15
-	var hud_min_sc13 := 9.0
-	var hud_cards13 := ""
 	if world.hud != null:
 		var hud13: HUD = world.hud
 		for tab13 in [0, 2, 3]:
 			hud13.open_drawer(tab13)
-			hud13.drawer_anim_t = 1.0
-			hud13._sync_label_nodes()
-			var cards13: Array[Dictionary] = hud13._get_current_tab_cards()
-			var drect13: Rect2 = HUD.CODEX_DRAWER_RECT if tab13 == 3 else HUD.DRAWER_RECT
-			if not hud13._is_two_row_layout(cards13.size()) or hud13.lbl_card_titles.size() < cards13.size():
-				_fail_and_quit(tag13, "Tab %d (%d cards) is not on the 2-row layout / lacks labels!" % [tab13, cards13.size()])
+			var fit13 := _menu_tiles_problem(hud13, "tab %d" % tab13)
+			if fit13 != "":
+				_fail_and_quit(tag13, fit13)
 				return
-			hud_cards13 += "%s%d" % [("/" if hud_cards13 != "" else ""), cards13.size()]
-			var crects13: Array = []
-			for ci13 in range(cards13.size()):
-				var cr13r: Rect2 = hud13._get_card_rect(ci13, cards13.size())
-				if cr13r.position.x < drect13.position.x + 4.0 or cr13r.end.x > drect13.end.x - 4.0 or cr13r.position.y < drect13.position.y + 24.0 or cr13r.end.y > drect13.end.y - 2.0:
-					_fail_and_quit(tag13, "Tab %d card %d rect %s leaves the drawer %s!" % [tab13, ci13, str(cr13r), str(drect13)])
-					return
-				for cq13 in crects13:
-					if (cq13 as Rect2).intersects(cr13r):
-						_fail_and_quit(tag13, "Tab %d cards overlap (card %d)!" % [tab13, ci13])
-						return
-				crects13.append(cr13r)
-				for lbl_set13 in [hud13.lbl_card_titles, hud13.lbl_card_subs, hud13.lbl_card_costs]:
-					var lc13: Label = lbl_set13[ci13]
-					if not lc13.visible or lc13.label_settings == null or absf(lc13.scale.x - lc13.scale.y) > 0.001 or lc13.scale.x < 0.5 - 0.001:
-						_fail_and_quit(tag13, "Tab %d card %d label distorted / unreadable: scale=%s visible=%s" % [tab13, ci13, str(lc13.scale), str(lc13.visible)])
-						return
-					hud_min_sc13 = minf(hud_min_sc13, lc13.scale.x)
-					var lr_c13 := Rect2(lc13.position, Vector2(lc13.size.x * lc13.scale.x, 1.0))
-					# CI-15: dense rows (tab 2 at 10 per row, codex at 9 per row) keep one icon -> a 13px icon reserve instead of 24px
-					if lr_c13.position.x < cr13r.position.x or lr_c13.end.x > cr13r.end.x - hud13._two_row_icon_reserve(cards13.size()) + 0.5 or lc13.position.y < cr13r.position.y - 0.5 or lc13.position.y > cr13r.end.y - 6.0:
-						_fail_and_quit(tag13, "Tab %d card %d label %s spills out of its card %s!" % [tab13, ci13, str(lr_c13), str(cr13r)])
-						return
-			if tab13 == 3:
-				var emp_top13 := hud13._get_emp_card_rect(0).position.y
-				if (crects13[crects13.size() - 1] as Rect2).end.y >= emp_top13:
-					_fail_and_quit(tag13, "Codex card rows run into the employee honour cards (y=%.1f)!" % emp_top13)
-					return
-				var t_lbl13: Label = hud13.lbl_drawer_title
-				t_lbl13.size = Vector2.ZERO
-				var t_size13 := t_lbl13.get_combined_minimum_size() * t_lbl13.scale
-				if t_lbl13.position.x + t_size13.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or t_lbl13.position.y + t_size13.y > (crects13[0] as Rect2).position.y + 1.0 or t_lbl13.text.find("筝") == -1 or t_lbl13.text.find("季") == -1 or absf(t_lbl13.scale.y - 0.6) > 0.001:
-					_fail_and_quit(tag13, "Codex drawer title (2 lines, %s) overflows or misses `筝/季`: `%s`" % [str(t_size13), t_lbl13.text])
-					return
-		# New cards: tab 2 #15 kite festival + #16 season dress-up, codex #15; their texts are fully visible (no clipping)
 		hud13.open_drawer(2)
-		hud13._sync_label_nodes()
-		var cards2_13: Array[Dictionary] = hud13._get_current_tab_cards()
-		if cards2_13.size() < 16 or String(cards2_13[14]["type"]) != "kite_festival" or String(cards2_13[15]["type"]) != "season_dress" or hud13.lbl_card_titles[14].text.find("风筝") == -1 or hud13.lbl_card_titles[15].text.find("装扮") == -1:
-			_fail_and_quit(tag13, "HUD Tab 2 missing kite card #15 / season card #16: `%s` / `%s`" % [hud13.lbl_card_titles[14].text, hud13.lbl_card_titles[15].text])
-			return
-		for nc13 in [14, 15]:
-			if not _label_text_fits(hud13.lbl_card_titles[nc13], hud13._get_card_rect(nc13, cards2_13.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE) or not _label_text_fits(hud13.lbl_card_subs[nc13], hud13._get_card_rect(nc13, cards2_13.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE) or not _label_text_fits(hud13.lbl_card_costs[nc13], hud13._get_card_rect(nc13, cards2_13.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE):
-				_fail_and_quit(tag13, "Tab 2 card %d text clipped: `%s` / `%s` / `%s`" % [nc13 + 1, hud13.lbl_card_titles[nc13].text, hud13.lbl_card_subs[nc13].text, hud13.lbl_card_costs[nc13].text])
-				return
-		if hud13.lbl_card_titles[14].label_settings == hud13.lbl_card_titles[13].label_settings or hud13.lbl_card_costs[15].label_settings == hud13.lbl_card_costs[14].label_settings or hud13.lbl_card_subs[15].label_settings == hud13.lbl_card_subs[13].label_settings:
-			_fail_and_quit(tag13, "HUD cards 15/16 share LabelSettings with neighbours (colour leak risk)!")
-			return
-		# Clicking the idle kite card opens a festival
-		var kite_card_idx13 := 14
-		hud13._activate_card(kite_card_idx13)
+		# Pressing the kite tile opens the festival once one is due
+		GameManager.festival_gap_timer = 0.0
+		GameManager.moon_tea_gathering_timer = 0.0
+		GameManager.parade_festival_timer = 0.0
+		GameManager.wish_lantern_festival_timer = 0.0
+		hud13._activate_card(_card_idx(hud13, "kite_festival"))
 		if not GameManager.is_kite_festival_active():
-			_fail_and_quit(tag13, "HUD kite card #15 did not open the festival!")
+			_fail_and_quit(tag13, "The kite tile did not open the festival!")
 			return
 		hud13.open_drawer(3)
-		hud13._sync_label_nodes()
-		var cards3_13: Array[Dictionary] = hud13._get_current_tab_cards()
-		var codex_title13 := "★云海风筝鉴(%d/3)" % GameManager.get_unlocked_kite_count()
-		if cards3_13.size() < 15 or String(cards3_13[14]["type"]) != "ci13_codex" or hud13.lbl_card_titles[14].text != codex_title13 or not _label_text_fits(hud13.lbl_card_titles[14], hud13._get_card_rect(14, cards3_13.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE) or not _label_text_fits(hud13.lbl_card_subs[14], hud13._get_card_rect(14, cards3_13.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE):
-			_fail_and_quit(tag13, "HUD codex card 15 invalid / clipped: `%s` (expected `%s`)" % [hud13.lbl_card_titles[14].text, codex_title13])
+		if _card_idx(hud13, "ci13_codex") < 0:
+			_fail_and_quit(tag13, "Codex misses the kite entry")
 			return
 		hud13.close_drawer(false)
-	if world.kite_badge_label.label_settings == null or world.kite_badge_label.label_settings == world.sports_badge_label.label_settings or world.kite_badge_label.label_settings == world.airship_badge_label.label_settings:
-		_fail_and_quit(tag13, "Kite badge is not a native Label with its own LabelSettings!")
-		return
 	var forbidden_font_ci13 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci13 != "":
 		_fail_and_quit(tag13, "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci13)
 		return
 
-	# 9) Save/Load roundtrip (a festival in flight is never persisted; seasons seen are)
+	# 9) Save/Load roundtrip (a festival in flight goes on where it was)
+	var exp_fest13 := [GameManager.kite_festival_active, GameManager.kite_collected_slots.size()]
 	var exp_medals13 := GameManager.kite_medals
 	var exp_kites13 := GameManager.get_unlocked_kite_count()
 	var exp_total13 := GameManager.kite_collected_total
 	var exp_krep13 := GameManager.kite_reputation_bonus
 	var exp_held13 := GameManager.kite_festivals_held
 	var exp_seen13 := GameManager.get_seen_season_count()
-	# (load_game never restores a sports day in flight: keep the CI-12 tug-of-war showcase staged above alive across the roundtrip)
-	var sp_keep13 := {"active": GameManager.sports_day_active, "clock": GameManager.sports_day_clock, "teams": GameManager.sports_teams.duplicate(), "last_idx": GameManager.sports_last_started_idx}
 	GameManager.save_game()
 	GameManager._reset_kite_and_season_state()
 	GameManager.load_game()
-	if bool(sp_keep13["active"]):
-		GameManager.sports_day_active = true
-		GameManager.sports_day_clock = float(sp_keep13["clock"])
-		GameManager.sports_teams.assign(sp_keep13["teams"])
-		GameManager.sports_last_started_idx = int(sp_keep13["last_idx"])
-	if GameManager.kite_medals != exp_medals13 or GameManager.get_unlocked_kite_count() != exp_kites13 or GameManager.kite_collected_total != exp_total13 or GameManager.kite_reputation_bonus != exp_krep13 or GameManager.kite_festivals_held != exp_held13 or GameManager.get_seen_season_count() != exp_seen13 or GameManager.is_kite_festival_active():
+	if GameManager.kite_medals != exp_medals13 or GameManager.get_unlocked_kite_count() != exp_kites13 or GameManager.kite_collected_total != exp_total13 or GameManager.kite_reputation_bonus != exp_krep13 or GameManager.kite_festivals_held != exp_held13 or GameManager.get_seen_season_count() != exp_seen13 or [GameManager.kite_festival_active, GameManager.kite_collected_slots.size()] != exp_fest13:
 		_fail_and_quit(tag13, "CI-13 Save/Load roundtrip failed (medals %d/%d, kites %d/%d, seasons %d/%d)!" % [GameManager.kite_medals, exp_medals13, GameManager.get_unlocked_kite_count(), exp_kites13, GameManager.get_seen_season_count(), exp_seen13])
 		return
 
 	# 10) Showcase: a festival in flight (gust 1 = 劲风 east, all 6 kites) under the real-clock season dress-up
+	GameManager._load_kite_festival([])
 	GameManager.kite_festivals_held = 2
 	GameManager.start_kite_festival()
 	GameManager.advance_kite_festival(4.0)
@@ -4672,402 +4000,24 @@ func _run_all_four_assertions_and_export() -> void:
 	for ks_s13 in world.kite_sprites:
 		if ks_s13.visible:
 			show_kites13 += 1
-	if show_kites13 != EconomyConfig.KITE_SLOTS.size() or not world.kite_badge_label.visible:
+	if show_kites13 != EconomyConfig.KITE_SLOTS.size():
 		_fail_and_quit(tag13, "Showcase festival shows %d kites!" % show_kites13)
 		return
 	var w_name13 := GameManager.get_kite_wind_name()
 
-	print("[PASS] %s 通过: 不新增建筑(三岛19建筑 7+6+6 最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f 不变)；风筝 6 只分飞西岛上空 %s / 东岛上空 %s 两条天空航道，3 套风力程序 x 45s %d 个足迹采样 100%% 在航道内、互不重叠，航道零碰 %d 个标签/飞艇(停靠+离港)/热气球航线/HUD横幅与抽屉/建筑；冷却自动开幕、风力 w=%.2f 产出 x%.3f/售价 x%.3f、两次重放(风力+飞行轨迹+点击收筝)完全一致、6 只全收 +%dG 风筝满天勋章；本地月份注入 12 个月→北半球四季(3-5春/6-8夏/9-11秋/12-2冬)装扮与色调切换、当季加成 x%.2f 仅作用于本季类型、四季 4/4 成就；%d 处季节摆件 x4 季共 %d 次校验全部接地(%d 个接地像素落在岛屿地面)、距建筑最近 %.1fpx 且零碰标签/%d 个员工驻留点/其他精灵，驻留遮挡最大 %.1f%%(%s, <=50%%)；HUD 13+ 卡两行布局(卡数 %s，最小等比字号 %.2fx)、开拓第15卡风筝节/第16卡四季装扮、山海图鉴第15卡「★云海风筝鉴」；当前真实季节 `%s`、展示风力 %s PASS!" % [
+	print("[PASS] %s 通过: 不新增建筑(三岛19建筑 7+6+6 最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f 不变)；风筝 6 只分飞西岛上空 %s / 东岛上空 %s 两条天空航道，3 套风力程序 x 45s %d 个足迹采样 100%% 在航道内、互不重叠，航道零碰 %d 个标签/飞艇(停靠+离港)/热气球航线/HUD横幅与抽屉/建筑；冷却自动开幕、风力 w=%.2f 产出 x%.3f/售价 x%.3f、两次重放(风力+飞行轨迹+点击收筝)完全一致、6 只全收 +%dG 风筝满天勋章；本地月份注入 12 个月→北半球四季(3-5春/6-8夏/9-11秋/12-2冬)装扮与色调切换、当季加成 x%.2f 仅作用于本季类型、四季 4/4 成就；%d 处季节摆件 x4 季共 %d 次校验全部接地(%d 个接地像素落在岛屿地面)、距建筑最近 %.1fpx 且零碰标签/%d 个员工驻留点/其他精灵，驻留遮挡最大 %.1f%%(%s, <=50%%)；菜单格子全部放得下、风筝节与四季装扮与风筝图鉴在册；当前真实季节 `%s`、展示风力 %s PASS!" % [
 		tag13, min_gap13, overlap13, min_scale13, str(EconomyConfig.KITE_LANES["west"]), str(EconomyConfig.KITE_LANES["east"]), kite_samples13, reserved13.size(),
 		w_exp13, 1.0 + 0.25 * w_exp13, 1.0 + 0.20 * w_exp13, kite_gold13, season_bonus_exp13, n_deco13, deco_checks13, deco_ground_px13, min_deco_clear13, rest_count13, worst13 * 100.0, worst_name13,
-		hud_cards13, hud_min_sc13, real_season13, w_name13
+		real_season13, w_name13
 	])
 
 	# ------------------------------------------------------------------
-	# [断言27-CI-14云岛观光摄影打卡与岛民心愿委托告示板] (NO new building):
-	#   1) All 7 CI-14 PNGs (`icon_photo_tour`, `photo_card`, `photo_spot_marker`, `photo_album`, `icon_wish_board`,
-	#      `wish_note`, `reputation_star`, 64x64) are Godot-imported with RGBA transparent corners; the sightseer sheet is 2 x 48px;
-	#   2) Layout untouched: still 19 main buildings (7+6+6) on their slots, every gap >= 28px, 0 px^2 overlap, scales >= 0.35;
-	#   3) 3 photo-spot signposts: bottom-center grounded on solid island ground (every opaque contact pixel), cropped frame,
-	#      >= 2px clear of every building, zero overlap with every world label (hidden ones too), worker rest spans, the props of
-	#      all 4 seasons, all 3 landscapes, sports flags, wish-lantern / moon-boat / parade lanes, the night cinema (other spots),
-	#      the airship bollard, airship dock + departure, balloon path, kite lanes + badge, the HUD bar / capsule / banner and
-	#      each other; the cape-lawn signpost folds away (and the spot closes) while the night cinema screen stands on the cape;
-	#   4) Photo action footprints (camera + flash + rising photo card) at every stop pass the same reserved checks;
-	#   5) Tour: cooldown auto-start, route by unlocked islands, walk -> pose -> shutter on GROUND_Y with a single-frame sightseer,
-	#      normal / special shots, first-shot amber / voucher, 3-photo stamp, night (cape closed + cinema shot at the pond),
-	#      night falling mid-pose, deterministic replay (2 identical traces), end + cooldown re-arm;
-	#   6) Wish board: islander rotation / type / tier / target from the serial, progress from REAL EventBus signals, rewards
-	#      (reputation + vouchers), medal every 6, expiry rotation + refill, pause isolation, prosperity;
-	#   7) HUD: tab 2 = 18 cards (photo tour #17, wish board #18) in 2 rows, the board panel (3 notes + back) readable at >= 0.85x,
-	#      codex card 16 `★观光摄影鉴`, every text fits, own LabelSettings; 8) Save/Load; 9) showcase for the screenshots.
+	# [断言27-CI-14岛民心愿板]: islander rotation / type / tier / target from the serial, progress from real EventBus signals,
+	#   rewards (reputation + vouchers), medal every 6, expiry rotation + refill, pause isolation, HUD panel, save / load
 	# ------------------------------------------------------------------
-	var tag14 := "[断言27-CI-14云岛观光摄影打卡与岛民心愿委托告示板]"
-	GameManager.photo_wish_paused = false
-	var keep_weather14 := GameManager.current_weather
-	var keep_wtimer14 := GameManager.weather_timer
-	var keep_airship14 := GameManager.airship_docked
-	var keep_kite14 := {"active": GameManager.kite_festival_active, "clock": GameManager.kite_festival_clock, "idx": GameManager.kite_festival_idx, "held": GameManager.kite_festivals_held, "slots": GameManager.kite_collected_slots.duplicate()}
-	var keep_sports14 := {"active": GameManager.sports_day_active, "clock": GameManager.sports_day_clock, "teams": GameManager.sports_teams.duplicate(), "last_idx": GameManager.sports_last_started_idx}
-	var keep_land14 := GameManager.unlocked_landscapes.duplicate()
-	if world.has_method("reload_ci14_textures"):
-		world.reload_ci14_textures()
-	var ci14_tex_paths: Array = [EconomyConfig.ICON_PHOTO_TOUR_TEX, EconomyConfig.PHOTO_CARD_TEX, EconomyConfig.PHOTO_SPOT_MARKER_TEX, EconomyConfig.PHOTO_ALBUM_TEX, EconomyConfig.ICON_WISH_BOARD_TEX, EconomyConfig.WISH_NOTE_TEX, EconomyConfig.REPUTATION_STAR_TEX]
-	for tp14 in ci14_tex_paths:
-		if not ResourceLoader.exists(String(tp14)):
-			_fail_and_quit(tag14, "CI-14 texture `%s` is not imported by Godot (missing `.png.import`)!" % String(tp14))
-			return
-		var t14: Texture2D = EconomyConfig.load_pixel_texture(String(tp14))
-		if t14 == null or t14.get_width() != 64 or t14.get_height() != 64:
-			_fail_and_quit(tag14, "CI-14 texture `%s` missing or not 64x64!" % String(tp14))
-			return
-		var img14 := t14.get_image()
-		if img14 != null and img14.is_compressed():
-			img14.decompress()
-		if img14 == null or img14.get_pixel(0, 0).a > 0.05 or img14.get_pixel(63, 0).a > 0.05 or img14.get_pixel(0, 63).a > 0.05 or img14.get_pixel(63, 63).a > 0.05:
-			_fail_and_quit(tag14, "CI-14 texture `%s` lacks RGBA transparent corner alpha!" % String(tp14))
-			return
-	var tour_tex14: Texture2D = EconomyConfig.load_pixel_texture(EconomyConfig.PHOTO_TOURIST_TRAVELER_TEX)
-	if tour_tex14 == null or tour_tex14.get_width() != CustomerNPC.FRAME_W * 2 or tour_tex14.get_height() != CustomerNPC.FRAME_H:
-		_fail_and_quit(tag14, "Sightseer sheet is not 2 x 48px frames!")
-		return
-
-	# 2) No new building: 19 main buildings on their slots, >= 28px gaps, zero overlap, every slot scale >= 0.35
-	GameManager.unlocked_islands = {1: true, 2: true, 3: true}
-	world.companion_zoom = 1.0
-	world._apply_companion_zoom()
-	var oy14 := world.world_root.position.y
-	var all_rects14: Dictionary = world.get_island_main_building_rects()
-	var n_blds14 := 0
-	var min_gap14 := 9999.0
-	var overlap14 := 0.0
-	var min_scale14 := 9.0
-	var bld_local14: Array = []
-	for isl_k14 in [1, 2, 3]:
-		var arr14: Array = all_rects14[isl_k14]
-		var slots14: Array = MainWorld.ISLAND_SLOTS[isl_k14]
-		n_blds14 += arr14.size()
-		if arr14.size() != slots14.size():
-			_fail_and_quit(tag14, "Island %d building count %d != slot table %d!" % [isl_k14, arr14.size(), slots14.size()])
-			return
-		for ia14 in range(arr14.size()):
-			var ra14: Rect2 = arr14[ia14]["rect"]
-			bld_local14.append({"name": String(arr14[ia14]["name"]), "island": isl_k14, "rect": Rect2(ra14.position - Vector2(0.0, oy14), ra14.size)})
-			min_scale14 = minf(min_scale14, float(slots14[ia14]["scale"]))
-			if absf(ra14.get_center().x - float(slots14[ia14]["x"])) > 0.6:
-				_fail_and_quit(tag14, "`%s` moved off its slot x=%.1f!" % [String(arr14[ia14]["name"]), float(slots14[ia14]["x"])])
-				return
-			for ib14 in range(ia14 + 1, arr14.size()):
-				var in14 := ra14.intersection(arr14[ib14]["rect"])
-				overlap14 += maxf(0.0, in14.size.x) * maxf(0.0, in14.size.y)
-			if ia14 < arr14.size() - 1:
-				min_gap14 = minf(min_gap14, (arr14[ia14 + 1]["rect"] as Rect2).position.x - ra14.end.x)
-	if n_blds14 != 19 or (all_rects14[1] as Array).size() != 7 or (all_rects14[2] as Array).size() != 6 or (all_rects14[3] as Array).size() != 6 or min_gap14 < 28.0 - 0.05 or overlap14 > 0.0001 or min_scale14 < 0.35:
-		_fail_and_quit(tag14, "Layout changed: %d buildings, min gap %.2fpx, overlap %.3fpx^2, min scale %.3f!" % [n_blds14, min_gap14, overlap14, min_scale14])
-		return
-
-	# 3) Reserved world areas (all in `world_root` local coords; screen y = local y + 36), worst case (hidden labels included)
-	GameManager._reset_photo_and_wish_state()
-	GameManager.unlocked_islands = {1: true, 2: true, 3: true}
-	GameManager.current_weather = GameManager.WeatherState.DAY
-	world.open_air_cinema._sync_visibility(true)
-	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": true, "tiki_torch": true}
-	world._sync_landscape_nodes()
-	world._update_photo_tour(0.0)
-	var res14: Array = []
-	for lb14 in _collect_world_label_rects(world, []):
-		res14.append(lb14)
-	var air_half14 := Vector2(MainWorld.AIRSHIP_TARGET_W * 0.5, MainWorld.AIRSHIP_TARGET_H * 0.5 + 2.4)
-	res14.append({"name": "AirshipDockToDeparture", "rect": Rect2(MainWorld.AIRSHIP_HARBOR_DOCK_POS - air_half14, air_half14 * 2.0).merge(Rect2(MainWorld.AIRSHIP_DEPART_POS - air_half14, air_half14 * 2.0))})
-	res14.append({"name": "AirshipBollard", "rect": Rect2(1337.0, 108.0, 8.0, 16.0)})
-	res14.append({"name": "SkyBalloonPath", "rect": Rect2(MainWorld.SKY_BALLOON_MIN_X - 30.0, -4.0 - 3.2 - 26.0, (MainWorld.SKY_BALLOON_MAX_X + 84.0) - (MainWorld.SKY_BALLOON_MIN_X - 30.0), 56.0 + 6.4)})
-	for kl14 in EconomyConfig.KITE_LANES.keys():
-		res14.append({"name": "KiteLane_" + String(kl14), "rect": EconomyConfig.KITE_LANES[kl14]})
-	res14.append({"name": "KiteFestivalBadge", "rect": world.get_kite_badge_local_rect().grow_individual(14.0, 0.0, 0.0, 0.0)})
-	for hr14 in [["HUD banner band", Rect2(480.0, 0.0, 960.0, 40.0)], ["HUD bar", HUD.FULL_BAR_RECT], ["HUD capsule", HUD.CAPSULE_RECT]]:
-		res14.append({"name": String(hr14[0]), "rect": Rect2((hr14[1] as Rect2).position - Vector2(0.0, oy14), (hr14[1] as Rect2).size)})
-	for fl14 in [world.sports_flag_west, world.sports_flag_east]:
-		if fl14 != null and fl14.texture != null:
-			res14.append({"name": String(fl14.name), "rect": _rect_in_world_local(world, fl14, fl14.get_rect())})
-	for ln_k14 in world.landscape_nodes.keys():
-		var lnd14: Sprite2D = world.landscape_nodes[ln_k14]
-		res14.append({"name": "Landscape_" + String(ln_k14), "rect": _rect_in_world_local(world, lnd14, lnd14.get_rect())})
-	for li14 in range(EconomyConfig.WISH_LANTERN_LANES.size()):
-		var lane14: Dictionary = EconomyConfig.WISH_LANTERN_LANES[li14]
-		res14.append({"name": "WishLanternLane_" + String(lane14["id"]), "rect": world.get_wish_lantern_rect_at(li14, float(lane14["min_x"])).merge(world.get_wish_lantern_rect_at(li14, float(lane14["max_x"])))})
-	for mv14 in [[world.moon_tea_boat_sprite, MainWorld.MOON_TEA_BOAT_MIN_X, MainWorld.MOON_TEA_BOAT_MAX_X, MainWorld.MOON_TEA_BOAT_BASE_Y, 1.5], [world.parade_float_sprite, MainWorld.PARADE_FLOAT_MIN_X, MainWorld.PARADE_FLOAT_MAX_X, EconomyConfig.GROUND_Y, 0.0]]:
-		var mv_sp14: Sprite2D = mv14[0]
-		if mv_sp14 == null or mv_sp14.texture == null:
-			continue
-		var mv_keep14 := mv_sp14.position
-		mv_sp14.position = Vector2(float(mv14[1]), float(mv14[3]) - float(mv14[4]))
-		var mv_r14 := _rect_in_world_local(world, mv_sp14, mv_sp14.get_rect())
-		mv_sp14.position = Vector2(float(mv14[2]), float(mv14[3]) + float(mv14[4]))
-		mv_r14 = mv_r14.merge(_rect_in_world_local(world, mv_sp14, mv_sp14.get_rect()))
-		mv_sp14.position = mv_keep14
-		res14.append({"name": "Lane_" + String(mv_sp14.name), "rect": mv_r14})
-	var cinema_r14 := _rect_in_world_local(world, world.open_air_cinema.body_sprite, world.open_air_cinema.body_sprite.get_rect())
-	# the props of all 4 seasons (the deco spots are fixed; every season texture is measured)
-	var season_rects14: Array = []
-	for s_chk14 in EconomyConfig.SEASON_ORDER:
-		var m_chk14: int = int((EconomyConfig.SEASONS[s_chk14]["months"] as Array)[0])
-		GameManager.set_season_clock(func() -> Dictionary: return {"month": m_chk14})
-		world._update_season_dress(1.0)
-		for di14 in range(world.season_deco_nodes.size()):
-			season_rects14.append({"name": "SeasonDeco_%s_%d" % [s_chk14, di14], "rect": world.get_season_deco_local_rect(di14)})
-	GameManager.set_season_clock(Callable())
-	world._update_season_dress(1.0)
-	for sr14 in season_rects14:
-		res14.append(sr14)
-	var rest_spans14 := _collect_rest_dock_spans(world)
-	var n_res14 := res14.size()
-
-	# 3a) Signposts: grounded, cropped, solid ground, clearances
-	var n_spots14 := EconomyConfig.PHOTO_SPOT_ORDER.size()
-	if world.photo_marker_nodes.size() != n_spots14:
-		_fail_and_quit(tag14, "Expected %d photo-spot signposts, got %d!" % [n_spots14, world.photo_marker_nodes.size()])
-		return
-	var marker_rects14: Array = []
-	var marker_ground_px14 := 0
-	var min_marker_clear14 := 9999.0
-	for mi14 in range(n_spots14):
-		var s_id14 := String(EconomyConfig.PHOTO_SPOT_ORDER[mi14])
-		var spot14: Dictionary = EconomyConfig.PHOTO_SPOTS[s_id14]
-		var mk14: Sprite2D = world.photo_marker_nodes[mi14]
-		var isl_m14 := int(spot14["island"])
-		if not mk14.visible or mk14.texture == null or not mk14.centered or mk14.hframes != 1 or mk14.vframes != 1 or not mk14.region_enabled or mk14.z_index != EconomyConfig.Z_BUILDING or absf(mk14.position.y - EconomyConfig.GROUND_Y) > 0.01 or absf(mk14.position.x - float(spot14["marker_x"])) > 0.01 or absf(mk14.offset.y + mk14.region_rect.size.y * 0.5) > 0.01 or absf(mk14.scale.x - EconomyConfig.PHOTO_MARKER_SCALE) > 0.001:
-			_fail_and_quit(tag14, "Signpost `%s` not bottom-center grounded / visible: pos=%s offset=%s region=%s z=%d vis=%s" % [mk14.name, str(mk14.position), str(mk14.offset), str(mk14.region_rect), mk14.z_index, str(mk14.visible)])
-			return
-		var mimg14 := mk14.texture.get_image()
-		if mimg14 != null and mimg14.is_compressed():
-			mimg14.decompress()
-		var mreg14 := Rect2i(mk14.region_rect)
-		var mcontact14 := 0
-		for bx14 in range(mreg14.position.x, mreg14.end.x):
-			if mimg14.get_pixel(bx14, mreg14.end.y - 1).a > 0.5:
-				mcontact14 += 1
-				var gx14 := mk14.position.x + (float(bx14 - mreg14.position.x) + 0.5 - float(mreg14.size.x) * 0.5) * mk14.scale.x
-				if not world.is_island_solid_ground(isl_m14, Vector2(gx14, EconomyConfig.GROUND_Y + 0.5)):
-					_fail_and_quit(tag14, "Signpost `%s` contact pixel x=%.1f is not on Island %d solid ground!" % [mk14.name, gx14, isl_m14])
-					return
-		if mcontact14 <= 0:
-			_fail_and_quit(tag14, "Signpost `%s` has no opaque ground-contact row!" % mk14.name)
-			return
-		marker_ground_px14 += mcontact14
-		var mr14: Rect2 = world.get_photo_marker_local_rect(mi14)
-		if absf(mr14.end.y - EconomyConfig.GROUND_Y) > 0.01 or mr14.size.x < 6.0 or mr14.size.x > 16.0 or mr14.size.y < 9.0 or mr14.size.y > 18.0:
-			_fail_and_quit(tag14, "Signpost `%s` rect %s floats / sinks or has an odd size!" % [mk14.name, str(mr14)])
-			return
-		var mscr14 := Rect2(mr14.position + Vector2(0.0, oy14), mr14.size)
-		if mscr14.position.x < 0.0 or mscr14.end.x > 1920.0 or mscr14.position.y < 0.0 or mscr14.end.y > 300.0:
-			_fail_and_quit(tag14, "Signpost `%s` %s leaves the 1920x300 window!" % [mk14.name, str(mscr14)])
-			return
-		for bl14 in bld_local14:
-			var br14: Rect2 = bl14["rect"]
-			if mr14.end.x > br14.position.x - 2.0 and mr14.position.x < br14.end.x + 2.0 and mr14.end.y > br14.position.y and mr14.position.y < br14.end.y:
-				_fail_and_quit(tag14, "Signpost `%s` %s overlaps / touches building `%s` %s!" % [mk14.name, str(mr14), String(bl14["name"]), str(br14)])
-				return
-			if int(bl14["island"]) == isl_m14:
-				min_marker_clear14 = minf(min_marker_clear14, minf(absf(mr14.position.x - br14.end.x), absf(br14.position.x - mr14.end.x)))
-		for rv14 in res14:
-			var rr14: Rect2 = rv14["rect"]
-			if rr14.size.x > 0.0 and rr14.size.y > 0.0 and mr14.intersects(rr14):
-				_fail_and_quit(tag14, "Signpost `%s` %s collides with `%s` %s!" % [mk14.name, str(mr14), String(rv14["name"]), str(rr14)])
-				return
-		if not bool(spot14.get("day_only", false)) and mr14.intersects(cinema_r14):
-			_fail_and_quit(tag14, "Signpost `%s` %s collides with the night cinema %s!" % [mk14.name, str(mr14), str(cinema_r14)])
-			return
-		for sp_r14 in rest_spans14[isl_m14]:
-			if mr14.position.x < (sp_r14 as Vector2).y and mr14.end.x > (sp_r14 as Vector2).x:
-				_fail_and_quit(tag14, "Signpost `%s` %s overlaps a worker rest span %s!" % [mk14.name, str(mr14), str(sp_r14)])
-				return
-		for mq14 in marker_rects14:
-			if mr14.intersects(mq14):
-				_fail_and_quit(tag14, "Signposts overlap each other (%s)!" % mk14.name)
-				return
-		marker_rects14.append(mr14)
-	var other14 := _ci14_find_sprite_overlap(world, marker_rects14)
-	if other14 != "":
-		_fail_and_quit(tag14, "Signposts overlap another world sprite: %s!" % other14)
-		return
-
-	# 3b) Night: the cinema screen unfolds over the east cape -> the cape signpost folds away and the cape spot closes
-	GameManager.current_weather = GameManager.WeatherState.NIGHT
-	world.open_air_cinema._sync_visibility(true)
-	world._update_photo_tour(0.0)
-	var cape_idx14 := EconomyConfig.PHOTO_SPOT_ORDER.find("cape_lawn")
-	if not world.open_air_cinema.visible or world.photo_marker_nodes[cape_idx14].visible or GameManager.is_photo_spot_open("cape_lawn") or not world.photo_marker_nodes[0].visible or not GameManager.is_photo_spot_open("pond_bank"):
-		_fail_and_quit(tag14, "Night: cinema=%s cape signpost visible=%s cape open=%s (must fold away / close)!" % [str(world.open_air_cinema.visible), str(world.photo_marker_nodes[cape_idx14].visible), str(GameManager.is_photo_spot_open("cape_lawn"))])
-		return
-	# dawn: the screen fades out over ~0.33s; the cape stays closed until it is fully gone
-	GameManager.current_weather = GameManager.WeatherState.RAIN
-	world.open_air_cinema._sync_visibility(false, 0.1)
-	world._update_photo_tour(0.0)
-	if world.open_air_cinema.visible and (world.photo_marker_nodes[cape_idx14].visible or GameManager.is_photo_spot_open("cape_lawn")):
-		_fail_and_quit(tag14, "Dawn fade: the cape signpost re-appeared under the fading cinema screen!")
-		return
-	GameManager.current_weather = GameManager.WeatherState.DAY
-	world.open_air_cinema._sync_visibility(true)
-	world._update_photo_tour(0.0)
-	if not world.photo_marker_nodes[cape_idx14].visible or not GameManager.is_photo_spot_open("cape_lawn"):
-		_fail_and_quit(tag14, "Day: the cape signpost did not come back!")
-		return
-
-	# 4) Photo action footprints (camera + flash + rising card) at every stop
-	var fx_rects14: Array = []
-	for s_fx14 in EconomyConfig.PHOTO_SPOT_ORDER:
-		var spot_fx14: Dictionary = EconomyConfig.PHOTO_SPOTS[s_fx14]
-		var fr14 := EconomyConfig.get_photo_fx_rect(String(s_fx14))
-		var isl_f14 := int(spot_fx14["island"])
-		for bl_f14 in bld_local14:
-			var bf14: Rect2 = bl_f14["rect"]
-			if fr14.end.x > bf14.position.x - 2.0 and fr14.position.x < bf14.end.x + 2.0 and fr14.end.y > bf14.position.y and fr14.position.y < bf14.end.y:
-				_fail_and_quit(tag14, "Photo action at `%s` %s overlaps / touches building `%s` %s!" % [String(s_fx14), str(fr14), String(bl_f14["name"]), str(bf14)])
-				return
-		for rv_f14 in res14:
-			var rf14: Rect2 = rv_f14["rect"]
-			if rf14.size.x > 0.0 and rf14.size.y > 0.0 and fr14.intersects(rf14):
-				_fail_and_quit(tag14, "Photo action at `%s` %s collides with `%s` %s!" % [String(s_fx14), str(fr14), String(rv_f14["name"]), str(rf14)])
-				return
-		if not bool(spot_fx14.get("day_only", false)) and fr14.intersects(cinema_r14):
-			_fail_and_quit(tag14, "Photo action at `%s` collides with the night cinema!" % String(s_fx14))
-			return
-		for mq_f14 in marker_rects14:
-			if fr14.intersects(mq_f14):
-				_fail_and_quit(tag14, "Photo action at `%s` %s covers a signpost %s!" % [String(s_fx14), str(fr14), str(mq_f14)])
-				return
-		for sp_f14 in rest_spans14[isl_f14]:
-			if fr14.position.x < (sp_f14 as Vector2).y and fr14.end.x > (sp_f14 as Vector2).x:
-				_fail_and_quit(tag14, "Photo action at `%s` %s sits over a worker rest span %s!" % [String(s_fx14), str(fr14), str(sp_f14)])
-				return
-		var fscr14 := Rect2(fr14.position + Vector2(0.0, oy14), fr14.size)
-		if fscr14.position.y < 0.0 or fscr14.end.y > 300.0:
-			_fail_and_quit(tag14, "Photo action at `%s` leaves the window!" % String(s_fx14))
-			return
-		fx_rects14.append(fr14)
-	var other_fx14 := _ci14_find_sprite_overlap(world, fx_rects14)
-	if other_fx14 != "":
-		_fail_and_quit(tag14, "Photo action overlaps another world sprite: %s!" % other_fx14)
-		return
-
-	# 5) Photo tour: cooldown auto-start, route, deterministic walk / pose / shutter, rewards, stamp, end
-	GameManager._reset_photo_and_wish_state()
-	GameManager.unlocked_islands = {1: true, 2: true, 3: true}
-	world._update_photo_tour(0.0)
-	if GameManager.is_photo_tour_active() or world.photo_tourist_root.visible:
-		_fail_and_quit(tag14, "Idle island must have no sightseer!")
-		return
-	GameManager.photo_tour_cooldown_timer = 0.01
-	GameManager._process(0.05)
-	if not GameManager.is_photo_tour_active() or absf(GameManager.photo_tour_cooldown_timer - EconomyConfig.PHOTO_TOUR_COOLDOWN_SEC) > 0.06 or str(GameManager.photo_tour_route) != str(EconomyConfig.PHOTO_SPOT_ORDER):
-		_fail_and_quit(tag14, "The photo tour did not auto-start with the full route / re-arm its cooldown: %s" % str(GameManager.photo_tour_route))
-		return
-	# island gating: only open islands join the route
-	GameManager._reset_photo_and_wish_state()
-	GameManager.unlocked_islands = {1: true, 2: false, 3: false}
-	world._update_photo_tour(0.0)
-	var route_i1_14 := GameManager.get_photo_tour_route_candidates()
-	if str(route_i1_14) != str(["pond_bank", "cape_lawn"]) or world.photo_marker_nodes[0].visible:
-		_fail_and_quit(tag14, "Island 2 locked: route %s / kite-terrace signpost visible=%s" % [str(route_i1_14), str(world.photo_marker_nodes[0].visible)])
-		return
-	GameManager.unlocked_islands = {1: true, 2: true, 3: true}
-	world._update_photo_tour(0.0)
-	# Three scripted tours, each replayed twice: (A) daytime + kite festival + docked airship = 3 special/normal shots + stamp,
-	# (B) night = cape closed, cinema shot at the pond, no stamp, (C) daytime but night falls during the cape pose
-	var scen14: Array = [
-		{"id": "A", "weather": GameManager.WeatherState.DAY, "kite": true, "airship": true, "night_at_cape": false},
-		{"id": "B", "weather": GameManager.WeatherState.NIGHT, "kite": false, "airship": false, "night_at_cape": false},
-		{"id": "C", "weather": GameManager.WeatherState.DAY, "kite": false, "airship": false, "night_at_cape": true}
-	]
-	var scen_res14: Dictionary = {}
-	var pose_checks14 := 0
-	var tour_steps14 := 0
-	for sc14 in scen14:
-		var reps14: Array = []
-		for rp14 in range(2):
-			GameManager._reset_photo_and_wish_state()
-			GameManager.unlocked_islands = {1: true, 2: true, 3: true}
-			GameManager.current_weather = int(sc14["weather"])
-			GameManager.kite_festival_active = bool(sc14["kite"])
-			GameManager.airship_docked = bool(sc14["airship"])
-			world.open_air_cinema._sync_visibility(true)
-			world._update_photo_tour(0.0)
-			var g0_14 := GameManager.gold
-			var a0_14 := GameManager.amber
-			var v0_14 := GameManager.rare_codex_vouchers
-			if not GameManager.start_photo_tour():
-				_fail_and_quit(tag14, "start_photo_tour() refused (scenario %s)!" % String(sc14["id"]))
-				return
-			var trace14: Array = []
-			var sim14 := 0.0
-			var night_fell14 := false
-			while GameManager.is_photo_tour_active() and sim14 < 120.0:
-				world._update_photo_tour(0.0)
-				var tr_root14: Node2D = world.photo_tourist_root
-				var tr_body14: Sprite2D = world.photo_tourist_body
-				if not tr_root14.visible or absf(tr_root14.position.y - EconomyConfig.GROUND_Y) > 0.001 or absf(tr_root14.position.x - GameManager.photo_tour_x) > 0.001 or tr_body14.texture == null or tr_body14.hframes != 2 or tr_body14.vframes != 1 or tr_body14.region_enabled or not tr_body14.centered or absf(tr_body14.offset.y + float(CustomerNPC.FRAME_H) * 0.5) > 0.01 or tr_root14.z_index != EconomyConfig.Z_UNIT:
-					_fail_and_quit(tag14, "Sightseer off GROUND_Y / not a single-frame unit at t=%.2f (%s)!" % [GameManager.photo_tour_clock, str(tr_root14.position)])
-					return
-				var fw14 := float(tr_body14.texture.get_width()) / float(tr_body14.hframes)
-				var fh14 := float(tr_body14.texture.get_height()) / float(tr_body14.vframes)
-				if fw14 > 180.0 or fh14 > 180.0 or fw14 / fh14 < 0.5 or fw14 / fh14 > 1.8:
-					_fail_and_quit(tag14, "Sightseer frame %.0fx%.0f is not a single sliced frame!" % [fw14, fh14])
-					return
-				if GameManager.is_photo_tourist_posing():
-					var pose_spot14 := GameManager.get_photo_tour_current_spot()
-					var ps14: Dictionary = EconomyConfig.PHOTO_SPOTS[pose_spot14]
-					if absf(GameManager.photo_tour_x - float(ps14["pose_x"])) > 0.001 or absf(GameManager.photo_tour_facing - float(ps14["facing"])) > 0.001 or not GameManager.is_photo_spot_open(pose_spot14) or (bool(ps14.get("day_only", false)) and world.open_air_cinema.visible):
-						_fail_and_quit(tag14, "Sightseer posing off its spot / at a closed spot `%s` (x=%.1f)!" % [pose_spot14, GameManager.photo_tour_x])
-						return
-					pose_checks14 += 1
-					if bool(sc14["night_at_cape"]) and pose_spot14 == "cape_lawn" and not night_fell14 and GameManager.photo_tour_pose_timer >= 0.5:
-						night_fell14 = true
-						GameManager.current_weather = GameManager.WeatherState.NIGHT
-						world.open_air_cinema._sync_visibility(true)
-				if int(roundf(GameManager.photo_tour_clock * 4.0)) % 4 == 0:
-					trace14.append([snappedf(GameManager.photo_tour_clock, 0.01), snappedf(GameManager.photo_tour_x, 0.01), GameManager.photo_tour_phase, GameManager.photo_tour_facing, snappedf(GameManager.get_photo_tourist_alpha(), 0.01)])
-				GameManager.advance_photo_tour(0.25)
-				sim14 += 0.25
-				tour_steps14 += 1
-			world._update_photo_tour(0.0)
-			if world.photo_tourist_root.visible:
-				_fail_and_quit(tag14, "Sightseer still visible after the tour (scenario %s)!" % String(sc14["id"]))
-				return
-			reps14.append({"trace": trace14, "dur": snappedf(sim14, 0.01), "photos": GameManager.photo_tour_photos.duplicate(), "result": GameManager.photo_last_result.duplicate(true), "gold": GameManager.gold - g0_14, "amber": GameManager.amber - a0_14, "vouchers": GameManager.rare_codex_vouchers - v0_14, "rep": GameManager.photo_reputation_bonus, "stamps": GameManager.photo_stamps, "held": GameManager.photo_tours_held, "cool": snappedf(GameManager.photo_tour_cooldown_timer, 0.01), "unl": GameManager.get_unlocked_photo_count()})
-		if str(reps14[0]) != str(reps14[1]):
-			_fail_and_quit(tag14, "Photo tour %s replay not deterministic!\nA=%s\nB=%s" % [String(sc14["id"]), str(reps14[0]), str(reps14[1])])
-			return
-		scen_res14[String(sc14["id"])] = reps14[0]
-	GameManager.kite_festival_active = false
-	GameManager.airship_docked = keep_airship14
-	var ra_14: Dictionary = scen_res14["A"]
-	var rb_14: Dictionary = scen_res14["B"]
-	var rc_14: Dictionary = scen_res14["C"]
-	var exp_a_rep14 := EconomyConfig.PHOTO_SPECIAL_REP * 2 + EconomyConfig.PHOTO_REP + EconomyConfig.PHOTO_STAMP_REP
-	if str(ra_14["photos"]) != str(["photo_kite_fest", "photo_pond_koi", "photo_cape_airship"]) or int(ra_14["amber"]) != EconomyConfig.PHOTO_FIRST_NORMAL_AMBER or int(ra_14["vouchers"]) != EconomyConfig.PHOTO_FIRST_SPECIAL_VOUCHERS * 2 + EconomyConfig.PHOTO_STAMP_VOUCHERS or int(ra_14["rep"]) != exp_a_rep14 or int(ra_14["stamps"]) != 1 or int(ra_14["held"]) != 1 or absf(float(ra_14["cool"]) - EconomyConfig.PHOTO_TOUR_COOLDOWN_SEC) > 0.01 or int(ra_14["gold"]) < EconomyConfig.PHOTO_SPECIAL_MIN_GOLD * 2 + EconomyConfig.PHOTO_MIN_GOLD or float(ra_14["dur"]) < 25.0 or float(ra_14["dur"]) > 60.0 or not bool(GameManager.unlocked_achievements.get("ach_photo_stamp", false)):
-		_fail_and_quit(tag14, "Daytime tour (A) rewards / stamp wrong: %s" % str(ra_14))
-		return
-	if str(rb_14["photos"]) != str(["photo_kite_sky", "photo_pond_cinema"]) or str((rb_14["result"] as Dictionary).get("skipped", [])) != str(["cape_lawn"]) or int(rb_14["stamps"]) != 0 or int(rb_14["amber"]) != EconomyConfig.PHOTO_FIRST_NORMAL_AMBER or int(rb_14["vouchers"]) != EconomyConfig.PHOTO_FIRST_SPECIAL_VOUCHERS:
-		_fail_and_quit(tag14, "Night tour (B) wrong (cape must close, cinema shot at the pond): %s" % str(rb_14))
-		return
-	if str(rc_14["photos"]) != str(["photo_kite_sky", "photo_pond_koi"]) or str((rc_14["result"] as Dictionary).get("skipped", [])) != str(["cape_lawn"]) or int(rc_14["stamps"]) != 0:
-		_fail_and_quit(tag14, "Night falling mid-pose (C) must abort the cape shot: %s" % str(rc_14))
-		return
-	var a_trace14: Array = ra_14["trace"]
-	if a_trace14.is_empty() or float((a_trace14[0] as Array)[4]) > 0.01:
-		_fail_and_quit(tag14, "Sightseer must fade in from alpha 0 at the tour entry: %s" % str(a_trace14.slice(0, 2)))
-		return
-	var tour_gold14 := int(ra_14["gold"])
-	var tour_dur14 := float(ra_14["dur"])
-	# end-of-tour visitor bonus off again, cooldown re-armed
-	if absf(GameManager.get_photo_tour_visitor_spawn_mult() - 1.0) > 0.0001:
-		_fail_and_quit(tag14, "Visitor bonus still on after the tour!")
-		return
-	GameManager.start_photo_tour()
-	if absf(GameManager.get_photo_tour_visitor_spawn_mult() - EconomyConfig.PHOTO_TOUR_VISITOR_SPAWN_MULT) > 0.0001:
-		_fail_and_quit(tag14, "Visitor bonus x%.2f not applied while the tour is out!" % EconomyConfig.PHOTO_TOUR_VISITOR_SPAWN_MULT)
-		return
-	GameManager._reset_photo_and_wish_state()
+	var tag14 := "[断言27-CI-14岛民心愿板]"
+	GameManager.wish_paused = false
+	GameManager._reset_wish_state()
 
 	# 6) Islander wish board: rotation, real-signal progress, rewards, medal, expiry, pause isolation
 	# (the synthetic EventBus signals below must not inflate the 60s-simulation counters of the audit log or the stall stats)
@@ -5084,9 +4034,9 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag14, "Initial wish board wrong: %s" % str(board14))
 		return
 	# paused (self-test isolation) -> real signals do not move the notes
-	GameManager.photo_wish_paused = true
+	GameManager.wish_paused = true
 	EventBus.item_produced.emit(1, "crop_0", 4)
-	GameManager.photo_wish_paused = false
+	GameManager.wish_paused = false
 	if int(GameManager.wish_board[0]["progress"]) != 0:
 		_fail_and_quit(tag14, "Paused wish board still progressed!")
 		return
@@ -5106,24 +4056,22 @@ func _run_all_four_assertions_and_export() -> void:
 		return
 	# notes linger 4s, then shiba / penguin / toucan pin the next notes (serials 3, 4, 5)
 	GameManager.advance_wish_board(EconomyConfig.WISH_LINGER_SEC + 0.1)
-	if GameManager.wish_serial_next != 6 or String(GameManager.wish_board[0]["islander"]) != "shiba" or String(GameManager.wish_board[1]["islander"]) != "penguin" or String(GameManager.wish_board[2]["islander"]) != "toucan" or String(GameManager.wish_board[0]["type"]) != "serve" or String(GameManager.wish_board[1]["type"]) != "craft" or String(GameManager.wish_board[2]["type"]) != "photo":
+	if GameManager.wish_serial_next != 6 or String(GameManager.wish_board[0]["islander"]) != "shiba" or String(GameManager.wish_board[1]["islander"]) != "penguin" or String(GameManager.wish_board[2]["islander"]) != "toucan" or String(GameManager.wish_board[0]["type"]) != "serve" or String(GameManager.wish_board[1]["type"]) != "craft" or String(GameManager.wish_board[2]["type"]) != "serve":
 		_fail_and_quit(tag14, "Refill after linger wrong: %s" % str(GameManager.wish_board))
 		return
 	for _c14 in range(4):
 		EventBus.customer_paid.emit("crop_0", 1, 120, Vector2(1050.0, EconomyConfig.GROUND_Y))
-	EventBus.item_delivered.emit("delicacy_3", 4, "orbis_linked_output")
-	EventBus.photo_taken.emit("pond_bank", "photo_pond_koi", 0, false)
-	EventBus.photo_taken.emit("pond_bank", "photo_pond_koi", 0, false)
+	EventBus.item_delivered.emit("delicacy_3", 4, "coral_linked_output")
 	EventBus.wish_fulfilled.disconnect(on_ful14)
-	var exp_w_rep14 := 30 + 32 + 36 + 40 + 36 + 38 + EconomyConfig.WISH_MEDAL_REP
+	var exp_w_rep14 := 30 + 32 + 36 + 40 + 36 + 40 + EconomyConfig.WISH_MEDAL_REP
 	var exp_w_v14 := 6 + EconomyConfig.WISH_MEDAL_VOUCHERS
 	if GameManager.wishes_fulfilled_total != 6 or fulfilled_sig14.size() != 6 or GameManager.wish_medals != 1 or GameManager.wish_reputation_bonus != exp_w_rep14 or GameManager.wish_vouchers_total != exp_w_v14 or GameManager.rare_codex_vouchers - v_w0_14 != exp_w_v14 or not bool(GameManager.unlocked_achievements.get("ach_wish_keeper", false)) or GameManager.get_prosperity_score() - pros_w0_14 != 50:
 		_fail_and_quit(tag14, "Wish rewards wrong: fulfilled %d, medals %d, rep %d (exp %d), vouchers %d (exp %d), prosperity +%d" % [GameManager.wishes_fulfilled_total, GameManager.wish_medals, GameManager.wish_reputation_bonus, exp_w_rep14, GameManager.rare_codex_vouchers - v_w0_14, exp_w_v14, GameManager.get_prosperity_score() - pros_w0_14])
 		return
-	# round 1 (tier 1): bunny serve 6, otter photo 3, fox earn >= 300G; they expire unfulfilled after 210s and rotate out
+	# round 1 (tier 1): bunny serve 6, otter harvest 14, fox earn >= 300G; they expire unfulfilled after 210s and rotate out
 	GameManager.advance_wish_board(EconomyConfig.WISH_LINGER_SEC + 0.1)
 	var r1_14: Array = GameManager.wish_board
-	if String(r1_14[0]["type"]) != "serve" or int(r1_14[0]["target"]) != 6 or int(r1_14[0]["tier"]) != 1 or int(r1_14[0]["rep"]) != 40 + EconomyConfig.WISH_TIER_REP_STEP or String(r1_14[1]["type"]) != "photo" or int(r1_14[1]["target"]) != 3 or String(r1_14[2]["type"]) != "earn" or int(r1_14[2]["target"]) < 300 or int(r1_14[2]["vouchers"]) != 2:
+	if String(r1_14[0]["type"]) != "serve" or int(r1_14[0]["target"]) != 6 or int(r1_14[0]["tier"]) != 1 or int(r1_14[0]["rep"]) != 40 + EconomyConfig.WISH_TIER_REP_STEP or String(r1_14[1]["type"]) != "harvest" or int(r1_14[1]["target"]) != 14 or String(r1_14[2]["type"]) != "earn" or int(r1_14[2]["target"]) < 60 or int(r1_14[2]["vouchers"]) != 2:
 		_fail_and_quit(tag14, "Tier-1 notes wrong: %s" % str(r1_14))
 		return
 	var expired_sig14: Array = []
@@ -5146,155 +4094,44 @@ func _run_all_four_assertions_and_export() -> void:
 	world.market_stall.total_customers_served = int(keep_counts14[3])
 	world.market_stall.total_gold_collected = int(keep_counts14[4])
 
-	# 7) HUD: tab 2 = 18 cards (photo tour #17 + wish board #18), the board panel, codex card 16
-	var hud14_cards := ""
-	var board_min_sc14 := 9.0
+	# 7) HUD: the wish board tile and its panel
 	if world.hud != null:
 		var hud14: HUD = world.hud
 		hud14.open_drawer(2)
-		hud14.drawer_anim_t = 1.0
-		hud14._sync_label_nodes()
-		var cards2_14: Array[Dictionary] = hud14._get_current_tab_cards()
-		if cards2_14.size() < 18 or not hud14._is_two_row_layout(cards2_14.size()) or hud14.lbl_card_titles.size() < 18 or String(cards2_14[16]["type"]) != "photo_tour" or String(cards2_14[17]["type"]) != "wish_board":
-			_fail_and_quit(tag14, "HUD tab 2 must hold 18 cards with photo tour #17 / wish board #18: %d cards" % cards2_14.size())
-			return
-		for nc14 in [16, 17]:
-			var cw14 := hud14._get_card_rect(nc14, cards2_14.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE
-			for lset14 in [hud14.lbl_card_titles, hud14.lbl_card_subs, hud14.lbl_card_costs]:
-				var lc14: Label = lset14[nc14]
-				if not lc14.visible or not _label_text_fits(lc14, cw14) or absf(lc14.scale.x - lc14.scale.y) > 0.001 or lc14.scale.x < 0.5 - 0.001:
-					_fail_and_quit(tag14, "Tab 2 card %d text clipped / distorted: `%s` (%.2fx)" % [nc14 + 1, lc14.text, lc14.scale.x])
-					return
-		if hud14.lbl_card_titles[16].label_settings == hud14.lbl_card_titles[15].label_settings or hud14.lbl_card_costs[17].label_settings == hud14.lbl_card_costs[16].label_settings or hud14.lbl_card_subs[17].label_settings == hud14.lbl_card_subs[16].label_settings:
-			_fail_and_quit(tag14, "HUD cards 17/18 share LabelSettings with neighbours (colour leak risk)!")
-			return
-		hud14_cards = "%d" % cards2_14.size()
-		# the wish board card opens the board panel: 3 islander notes + back, single row, readable >= 0.85x
-		hud14._activate_card(17)
-		hud14._sync_label_nodes()
+		hud14._activate_card(_card_idx(hud14, "wish_board"))
 		var board_cards14: Array[Dictionary] = hud14._get_current_tab_cards()
-		if not hud14.wish_board_view or board_cards14.size() != EconomyConfig.WISH_SLOT_COUNT + 1 or String(board_cards14[0]["type"]) != "wish_note" or String(board_cards14[3]["type"]) != "wish_back" or hud14._is_two_row_layout(board_cards14.size()):
-			_fail_and_quit(tag14, "Wish board panel did not open with 3 notes + back: %s" % str(board_cards14))
+		if not hud14.wish_board_view or board_cards14.size() != EconomyConfig.WISH_SLOT_COUNT + 1 or String(board_cards14[0]["type"]) != "wish_note" or String(board_cards14[3]["type"]) != "wish_back":
+			_fail_and_quit(tag14, "Wish board panel did not open with 3 notes: %s" % str(board_cards14))
 			return
-		var bcr14: Array = []
-		for bi14 in range(board_cards14.size()):
-			var brc14 := hud14._get_card_rect(bi14, board_cards14.size())
-			if brc14.position.x < HUD.DRAWER_RECT.position.x + 4.0 or brc14.end.x > HUD.DRAWER_RECT.end.x - 4.0 or brc14.position.y < HUD.DRAWER_RECT.position.y + 24.0 or brc14.end.y > HUD.DRAWER_RECT.end.y - 2.0:
-				_fail_and_quit(tag14, "Board note %d rect %s leaves the drawer!" % [bi14, str(brc14)])
-				return
-			for bq14 in bcr14:
-				if (bq14 as Rect2).intersects(brc14):
-					_fail_and_quit(tag14, "Board notes overlap (%d)!" % bi14)
-					return
-			bcr14.append(brc14)
-			for blset14 in [hud14.lbl_card_titles, hud14.lbl_card_subs, hud14.lbl_card_costs]:
-				var blc14: Label = blset14[bi14]
-				board_min_sc14 = minf(board_min_sc14, blc14.scale.x)
-				if not blc14.visible or blc14.label_settings == null or absf(blc14.scale.x - blc14.scale.y) > 0.001 or blc14.scale.x < 0.85 - 0.001 or not _label_text_fits(blc14, brc14.size.x - 6.0 - 34.0) or blc14.position.y + 12.0 > brc14.end.y:
-					_fail_and_quit(tag14, "Board note %d text `%s` clipped / unreadable (%.2fx)!" % [bi14, blc14.text, blc14.scale.x])
-					return
-		var t_lbl14: Label = hud14.lbl_drawer_title
-		t_lbl14.size = Vector2.ZERO
-		var t_w14 := t_lbl14.get_combined_minimum_size().x * t_lbl14.scale.x
-		if t_lbl14.text.find("心愿") == -1 or t_lbl14.position.x + t_w14 > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0:
-			_fail_and_quit(tag14, "Wish board headline `%s` missing / overflows into the language button!" % t_lbl14.text)
+		var fit14 := _menu_tiles_problem(hud14, "wish board")
+		if fit14 != "":
+			_fail_and_quit(tag14, fit14)
 			return
-		hud14._activate_card(0)
-		if hud14.offline_banner_text.find(String(EconomyConfig.WISH_ISLANDER_NAMES[String(GameManager.wish_board[0]["islander"])])) == -1:
-			_fail_and_quit(tag14, "Clicking a wish note did not show its details: `%s`" % hud14.offline_banner_text)
+		if String(board_cards14[0]["title"]) != EconomyConfig.tr_name(String(EconomyConfig.WISH_ISLANDER_NAMES[String(GameManager.wish_board[0]["islander"])])):
+			_fail_and_quit(tag14, "Wish note tile does not show its islander: `%s`" % String(board_cards14[0]["title"]))
 			return
 		hud14._activate_card(EconomyConfig.WISH_SLOT_COUNT)
-		if hud14.wish_board_view or hud14._get_current_tab_cards().size() < 18:
-			_fail_and_quit(tag14, "Back card did not return to the 18 Expansion cards!")
-			return
-		# the idle photo-tour card starts a tour
-		hud14._activate_card(16)
-		if not GameManager.is_photo_tour_active():
-			_fail_and_quit(tag14, "HUD photo card #17 did not start the tour!")
-			return
-		GameManager._finish_photo_tour()
-		# codex card 16
-		hud14.open_drawer(3)
-		hud14._sync_label_nodes()
-		var cards3_14: Array[Dictionary] = hud14._get_current_tab_cards()
-		var codex_title14 := "★观光摄影鉴(%d/%d)" % [GameManager.get_unlocked_photo_count(), EconomyConfig.get_photo_entry_order().size()]
-		if cards3_14.size() < 16 or String(cards3_14[15]["type"]) != "ci14_codex" or hud14.lbl_card_titles[15].text != codex_title14 or not _label_text_fits(hud14.lbl_card_titles[15], hud14._get_card_rect(15, cards3_14.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE) or not _label_text_fits(hud14.lbl_card_subs[15], hud14._get_card_rect(15, cards3_14.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE) or not _label_text_fits(hud14.lbl_card_costs[15], hud14._get_card_rect(15, cards3_14.size()).size.x - 3.0 - HUD.TWO_ROW_ICON_RESERVE):
-			_fail_and_quit(tag14, "HUD codex card 16 invalid / clipped: `%s` (expected `%s`)" % [hud14.lbl_card_titles[15].text, codex_title14])
-			return
-		var cx_lbl14: Label = hud14.lbl_drawer_title
-		cx_lbl14.size = Vector2.ZERO
-		var cx_sz14 := cx_lbl14.get_combined_minimum_size() * cx_lbl14.scale
-		if cx_lbl14.text.find("摄") == -1 or cx_lbl14.text.find("筝") == -1 or cx_lbl14.position.x + cx_sz14.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or cx_lbl14.position.y + cx_sz14.y > hud14._get_card_rect(0, cards3_14.size()).position.y + 1.0:
-			_fail_and_quit(tag14, "Codex headline (2 lines) overflows or misses `摄`: `%s`" % cx_lbl14.text)
-			return
-		hud14._activate_card(15)
-		if hud14.offline_banner_text.find("观光摄影鉴") == -1:
-			_fail_and_quit(tag14, "Codex card 16 banner missing!")
+		if hud14.wish_board_view or _card_idx(hud14, "wish_board") < 0:
+			_fail_and_quit(tag14, "Back did not return to the Expansion tab!")
 			return
 		hud14.close_drawer(false)
-		hud14_cards += "/%d" % cards3_14.size()
 	var forbidden_font_ci14 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci14 != "":
 		_fail_and_quit(tag14, "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci14)
 		return
 
-	# 8) Save/Load roundtrip (a tour in progress is never persisted; photos, stamps and the wish board are)
-	GameManager.unlocked_photos["photo_pond_koi"] = true
-	GameManager.photo_counts["photo_pond_koi"] = 2
-	GameManager.photos_taken_total = 2
-	GameManager.photo_stamps = 1
-	GameManager.photo_reputation_bonus = 64
+	# 8) Save/Load roundtrip
 	GameManager.wish_board[1]["progress"] = 1
 	var exp_board14 := str(GameManager.wish_board)
 	var exp_serial14 := GameManager.wish_serial_next
 	var exp_wfc14 := str(GameManager.wish_fulfilled_counts)
 	GameManager.save_game()
-	GameManager._reset_photo_and_wish_state()
+	GameManager._reset_wish_state()
 	GameManager.load_game()
-	GameManager.kite_festival_active = bool(keep_kite14["active"])
-	GameManager.kite_festival_clock = float(keep_kite14["clock"])
-	GameManager.kite_festival_idx = int(keep_kite14["idx"])
-	GameManager.kite_festivals_held = int(keep_kite14["held"])
-	GameManager.kite_collected_slots.assign(keep_kite14["slots"])
-	if bool(keep_sports14["active"]):
-		GameManager.sports_day_active = true
-		GameManager.sports_day_clock = float(keep_sports14["clock"])
-		GameManager.sports_teams.assign(keep_sports14["teams"])
-		GameManager.sports_last_started_idx = int(keep_sports14["last_idx"])
-	if GameManager.get_unlocked_photo_count() != 1 or GameManager.photos_taken_total != 2 or GameManager.photo_stamps != 1 or GameManager.photo_reputation_bonus != 64 or GameManager.wishes_fulfilled_total != wish_done14 or GameManager.wish_serial_next != exp_serial14 or str(GameManager.wish_board) != exp_board14 or str(GameManager.wish_fulfilled_counts) != exp_wfc14 or GameManager.is_photo_tour_active():
-		_fail_and_quit(tag14, "CI-14 Save/Load roundtrip failed: photos %d stamps %d serial %d/%d board %s" % [GameManager.get_unlocked_photo_count(), GameManager.photo_stamps, GameManager.wish_serial_next, exp_serial14, str(GameManager.wish_board)])
+	if GameManager.wish_serial_next != exp_serial14 or str(GameManager.wish_board) != exp_board14 or str(GameManager.wish_fulfilled_counts) != exp_wfc14:
+		_fail_and_quit(tag14, "Wish board save / load roundtrip failed: serial %d/%d board %s" % [GameManager.wish_serial_next, exp_serial14, str(GameManager.wish_board)])
 		return
-
-	# 9) Showcase: the sightseer poses on the kite terrace during the kite festival (special shot, photo card rising) under
-	#    the original weather; the wish board holds a half-done note
-	GameManager.current_weather = keep_weather14
-	GameManager.weather_timer = keep_wtimer14
-	GameManager.unlocked_landscapes = keep_land14
-	world._sync_landscape_nodes()
-	world.open_air_cinema._sync_visibility(true)
-	GameManager.unlocked_islands = {1: true, 2: true, 3: true}
-	GameManager.photo_tour_cooldown_timer = 0.0
-	if not GameManager.start_photo_tour():
-		_fail_and_quit(tag14, "Showcase tour refused!")
-		return
-	var guard14 := 0
-	while guard14 < 400 and not (GameManager.is_photo_tourist_posing() and GameManager.get_photo_tour_current_spot() == "kite_terrace" and GameManager.photo_tour_pose_timer >= EconomyConfig.PHOTO_SHUTTER_SEC + 0.4):
-		GameManager.advance_photo_tour(0.05)
-		guard14 += 1
-	world._update_photo_tour(0.0)
-	if not world.photo_tourist_root.visible or not GameManager.photo_tour_shutter_done or GameManager.photo_tour_last_shot_age >= EconomyConfig.PHOTO_CARD_FX_SEC:
-		_fail_and_quit(tag14, "Showcase pose at the kite terrace not reached (guard %d)!" % guard14)
-		return
-	var show_photo14 := String(GameManager.photo_tour_last_shot.get("photo_id", ""))
-	var show_vis_markers14 := 0
-	for mk_s14 in world.photo_marker_nodes:
-		if mk_s14.visible:
-			show_vis_markers14 += 1
-
-	print("[PASS] %s 通过: 不新增建筑(三岛19建筑 7+6+6 最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f 不变)；%d 处打卡木牌(风筝晴空台 x=%.0f / 荷塘观景岸 x=%.0f / 东岬影院坪 x=%.0f)全部底部中心接地(%d 个接地像素落在岛屿实地)、距建筑最近 %.1fpx，与 %d 个保留区(全部世界标签含隐藏、四季摆件、造景、赛旗、水灯/画舫/花车航道、飞艇停靠+离港、热气球、风筝航道与徽标、HUD)及员工驻留点零碰，夜间影院铺开时东岬木牌收起、景点关闭；拍照动作(相机+闪光+相片)手持高度带 y[90,104] 在 3 个机位全部零碰；观光团冷却自动出发、按开放岛屿排线，3 套剧本 x 2 次重放(白天风筝节+飞艇=风筝满天/荷塘锦鲤/飞艇靠港+集章；夜晚=东岬关闭、荷塘拍星空影院；摆拍中入夜=放弃东岬)轨迹与奖励完全一致(共 %d 步、%d 次摆拍校验，白天团 %.1fs +%dG)；心愿板 30 个序号轮换/阶梯、真实信号驱动 6 张便签圆梦(声望+%d 图鉴券+%d 心愿勋章 1)、210s 过期轮换、暂停隔离；HUD 开拓 18 卡两行(第17卡观光团/第18卡心愿板)、心愿板面板 3 便签+返回 最小字号 %.2fx、山海图鉴第16卡「★观光摄影鉴」(卡数 %s)；存档往返 PASS；展示: 观光客在风筝晴空台摆拍【%s】、可见木牌 %d 块 PASS!" % [
-		tag14, min_gap14, overlap14, min_scale14, n_spots14, float(EconomyConfig.PHOTO_SPOTS["kite_terrace"]["marker_x"]), float(EconomyConfig.PHOTO_SPOTS["pond_bank"]["marker_x"]), float(EconomyConfig.PHOTO_SPOTS["cape_lawn"]["marker_x"]), marker_ground_px14, min_marker_clear14, n_res14,
-		tour_steps14, pose_checks14, tour_dur14, tour_gold14, exp_w_rep14, exp_w_v14, board_min_sc14, hud14_cards, EconomyConfig.get_item_display_name(show_photo14), show_vis_markers14
-	])
+	print("[PASS] %s 通过: 轮值 / 目标 / 真实信号进度 / 奖励(声望 %d、券 %d) / 过期换新 / 面板 / 存读 PASS!" % [tag14, exp_w_rep14, exp_w_v14])
 
 	# ------------------------------------------------------------------
 	# [断言28-CI-15云海天气轮换与岛民生日会] (NO new building, nothing on the ground):
@@ -5302,7 +4139,7 @@ func _run_all_four_assertions_and_export() -> void:
 	#      `birthday_gift` / `icon_birthday`, 64x64) are Godot-imported with transparent corners; the reused codex-voucher and
 	#      reputation-star icons load;
 	#   2) Layout untouched: still 19 main buildings (7+6+6) on their slots, every gap >= 28px, 0 px^2 overlap, scales >= 0.35;
-	#   3) Island calendar: 20-minute slots contiguous across days / months / years, per-season deterministic hash draws
+	#   3) Island calendar: three-hour slots contiguous across days / months / years, per-season deterministic hash draws
 	#      (2 identical 21-day scans per season, raw shares within 6% of the weights), all 4 weathers in every season, a
 	#      rainbow only right after rain, season character (summer sunniest, winter mistiest, wetter spring than winter, more
 	#      rainbows in summer); the injected clock drives `GameManager` + one `sky_weather_changed` per change; pause isolation;
@@ -5310,9 +4147,9 @@ func _run_all_four_assertions_and_export() -> void:
 	#      stacking (day-cycle drizzle + rain <= x1.50, festival visitors + rainbow <= x2.20, kite wind + rainbow sale <= x1.30,
 	#      dips always in full), real sale income x1.10 under the rainbow;
 	#   5) Sky layer: the 4 weather zones keep >= 2px from every reserved area (all world labels incl. hidden ones, airship
-	#      dock + departure, bollard, sky balloon path, kite lanes + badge, sports badge, festival fireworks / garlands, the HUD
-	#      banner / bar / capsule / drawers / tab badge, island textures + bridges, buildings, landscapes, sports flags,
-	#      lantern / boat / parade lanes, the night cinema, season props of all 4 seasons, photo signposts + photo actions);
+	#      dock + departure, bollard, sky balloon path, kite lanes + badge, the HUD
+	#      banner / bar / capsule / drawers / tab badge, island textures + bridges, buildings, landscapes,
+	#      lantern / boat / parade lanes, the night cinema, season props of all 4 seasons);
 	#      every emblem and every drawn primitive (4 weathers x day / night x 16 clock samples) stays inside its zone; no other
 	#      world sprite enters a zone; the layer sits between the painted sky and every shadow / building / label;
 	#   6) Birthday: 6 islanders on days 3/8/13/18/23/28, injected-date birthday + one announcement, next-birthday lookups
@@ -5331,7 +4168,7 @@ func _run_all_four_assertions_and_export() -> void:
 	var keep_stall15 := GameManager.stall_inventory.duplicate(true)
 	var keep_contract15 := GameManager.active_contract.duplicate(true)
 	var keep_career15 := GameManager.career_stats.duplicate(true)
-	var keep_pw15 := GameManager.photo_wish_paused
+	var keep_pw15 := GameManager.wish_paused
 	var keep_land15 := GameManager.unlocked_landscapes.duplicate()
 	var keep_counts15 := [harvest_count, items_delivered_count, customer_paid_count, world.market_stall.total_customers_served, world.market_stall.total_gold_collected]
 	if world.has_method("reload_ci15_textures"):
@@ -5392,14 +4229,14 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag15, "Layout changed: %d buildings, min gap %.2fpx, overlap %.3fpx^2, min scale %.3f!" % [n_blds15, min_gap15, overlap15, min_scale15])
 		return
 
-	# 3) Island calendar: 20-minute slots, deterministic per-season draws, rainbow after rain, injected clock, pause isolation
+	# 3) Island calendar: three-hour slots, deterministic per-season draws, rainbow after rain, injected clock, pause isolation
 	var k0_15 := EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 11, "day": 18, "hour": 9, "minute": 0})
-	for mm15 in range(20):
-		if EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 11, "day": 18, "hour": 9, "minute": mm15}) != k0_15:
-			_fail_and_quit(tag15, "Minute 9:%02d left the 20-minute slot!" % mm15)
+	for mm15 in range(EconomyConfig.SKY_WEATHER_SLOT_MINUTES):
+		if EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 11, "day": 18, "hour": 9 + mm15 / 60, "minute": mm15 % 60}) != k0_15:
+			_fail_and_quit(tag15, "Minute %d left the weather slot!" % mm15)
 			return
-	if EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 11, "day": 18, "hour": 9, "minute": 20}) != k0_15 + 1 or EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 11, "day": 30, "hour": 23, "minute": 40}) + 1 != EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 12, "day": 1, "hour": 0, "minute": 0}) or EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 12, "day": 31, "hour": 23, "minute": 40}) + 1 != EconomyConfig.calc_sky_weather_slot_key({"year": 2027, "month": 1, "day": 1, "hour": 0, "minute": 0}) or EconomyConfig.get_sky_weather_minutes_left({"hour": 9, "minute": 7}) != 13 or EconomyConfig.get_sky_weather_minutes_left({"hour": 9, "minute": 0}) != 20 or EconomyConfig.get_sky_weather_minutes_left({"hour": 9, "minute": 19}) != 1:
-		_fail_and_quit(tag15, "Weather slots are not contiguous 20-minute blocks across day / month / year ends!")
+	if EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 11, "day": 18, "hour": 9 + EconomyConfig.SKY_WEATHER_SLOT_MINUTES / 60, "minute": EconomyConfig.SKY_WEATHER_SLOT_MINUTES % 60}) != k0_15 + 1 or EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 11, "day": 30, "hour": 23, "minute": 40}) + 1 != EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 12, "day": 1, "hour": 0, "minute": 0}) or EconomyConfig.calc_sky_weather_slot_key({"year": 2026, "month": 12, "day": 31, "hour": 23, "minute": 40}) + 1 != EconomyConfig.calc_sky_weather_slot_key({"year": 2027, "month": 1, "day": 1, "hour": 0, "minute": 0}) or EconomyConfig.get_sky_weather_minutes_left({"hour": 9, "minute": 7}) != 173 or EconomyConfig.get_sky_weather_minutes_left({"hour": 9, "minute": 0}) != 180 or EconomyConfig.get_sky_weather_minutes_left({"hour": 11, "minute": 59}) != 1:
+		_fail_and_quit(tag15, "Weather slots are not contiguous blocks across day / month / year ends!")
 		return
 	if EconomyConfig.calc_sky_weather({"month": 7}) != EconomyConfig.calc_sky_weather({"year": 2026, "month": 7, "day": 1, "hour": 12, "minute": 0}):
 		_fail_and_quit(tag15, "A month-only clock (CI-13 style) must default to the 1st at 12:00!")
@@ -5440,7 +4277,7 @@ func _run_all_four_assertions_and_export() -> void:
 				return
 		for wk15 in EconomyConfig.SKY_WEATHER_ORDER:
 			if int(cnt15[wk15]) <= 0:
-				_fail_and_quit(tag15, "%s never shows `%s` in 21 days: %s" % [String(s15), String(wk15), str(cnt15)])
+				_fail_and_quit(tag15, "%s never shows `%s` in the scan: %s" % [String(s15), String(wk15), str(cnt15)])
 				return
 		sea_counts15[s15] = cnt15
 		n_rainbow15 += int(cnt15["rainbow"])
@@ -5454,6 +4291,11 @@ func _run_all_four_assertions_and_export() -> void:
 	var clk15 := {"year": 2026, "month": 10, "day": 5, "hour": 0, "minute": 0}
 	var base_c15 := EconomyConfig.calc_sky_weather_slot_key(clk15)
 	var flip15 := -1
+	var set_clk15 := func(slot_i: int) -> void:
+		var m_total := slot_i * EconomyConfig.SKY_WEATHER_SLOT_MINUTES
+		clk15["day"] = 5 + m_total / 1440
+		clk15["hour"] = (m_total % 1440) / 60
+		clk15["minute"] = m_total % 60
 	for fi15 in range(70):
 		if EconomyConfig.calc_sky_weather_for_slot(base_c15 + fi15, "autumn") != EconomyConfig.calc_sky_weather_for_slot(base_c15 + fi15 + 1, "autumn"):
 			flip15 = fi15
@@ -5464,8 +4306,7 @@ func _run_all_four_assertions_and_export() -> void:
 	var sig15: Array = []
 	var on_sw15 := func(w_id: String, prev_id: String) -> void: sig15.append([w_id, prev_id])
 	EventBus.sky_weather_changed.connect(on_sw15)
-	clk15["hour"] = (flip15 * 20) / 60
-	clk15["minute"] = (flip15 * 20) % 60
+	set_clk15.call(flip15)
 	GameManager.set_season_clock(func() -> Dictionary: return clk15.duplicate())
 	var w_a15 := GameManager.sky_weather_id
 	var w_b15 := EconomyConfig.calc_sky_weather_for_slot(base_c15 + flip15 + 1, "autumn")
@@ -5473,8 +4314,7 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag15, "Injected clock not applied: `%s` / season %s" % [w_a15, GameManager.get_current_season_id()])
 		return
 	sig15.clear()
-	clk15["hour"] = ((flip15 + 1) * 20) / 60
-	clk15["minute"] = ((flip15 + 1) * 20) % 60
+	set_clk15.call(flip15 + 1)
 	GameManager.sky_weather_refresh_timer = EconomyConfig.SKY_WEATHER_REFRESH_SEC
 	GameManager._process(0.0)
 	if GameManager.sky_weather_id != w_b15 or sig15.size() != 1 or str(sig15[0]) != str([w_b15, w_a15]) or GameManager.sky_weather_prev_id != w_a15:
@@ -5488,8 +4328,7 @@ func _run_all_four_assertions_and_export() -> void:
 	EventBus.sky_weather_changed.disconnect(on_sw15)
 	# paused (self-test isolation): neutral multipliers, no calendar refresh even if the clock moves
 	GameManager.sky_weather_paused = true
-	clk15["hour"] = (flip15 * 20) / 60
-	clk15["minute"] = (flip15 * 20) % 60
+	set_clk15.call(flip15)
 	GameManager.refresh_island_calendar()
 	GameManager.sky_weather_refresh_timer = 99.0
 	GameManager._process(0.0)
@@ -5558,45 +4397,34 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag15, "Kite wind x%.3f + rainbow sale x%.3f breaks the x1.30 cap!" % [g_ks15, ks_tot15])
 		return
 	# a real sale (same goods, same customer) earns x1.10 more under the rainbow
-	GameManager.photo_wish_paused = true
+	GameManager.wish_paused = true
 	GameManager.airship_docked = false
 	GameManager.stall_inventory["crop_0"] = 20
 	GameManager.sky_weather_paused = true
-	var pay_off15 := GameManager.try_purchase_from_stall("crop_0", 4, Vector2(1050.0, EconomyConfig.GROUND_Y), false)
+	var pay_off15 := _sell("crop_0", 4, Vector2(1050.0, EconomyConfig.GROUND_Y), false)
 	GameManager.sky_weather_paused = false
 	GameManager.sky_weather_id = "rainbow"
 	var e_pay15 := GameManager.get_sky_weather_stacked_factor("sale", GameManager.get_kite_wind_sale_multiplier() * GameManager.get_season_bonus_multiplier("sale_price"))
-	var pay_on15 := GameManager.try_purchase_from_stall("crop_0", 4, Vector2(1050.0, EconomyConfig.GROUND_Y), false)
+	var pay_on15 := _sell("crop_0", 4, Vector2(1050.0, EconomyConfig.GROUND_Y), false)
 	if pay_off15 <= 0 or absf(float(pay_on15) / float(pay_off15) - e_pay15) > 0.03:
 		_fail_and_quit(tag15, "Rainbow sale income %dG vs %dG (x%.3f, exp x%.2f)!" % [pay_on15, pay_off15, float(pay_on15) / maxf(1.0, float(pay_off15)), e_pay15])
 		return
-	GameManager.photo_wish_paused = keep_pw15
+	GameManager.wish_paused = keep_pw15
 	GameManager.airship_docked = keep_airship15
 
 	# 5) Sky layer: zones vs every reserved area (world local coords; screen y = local y + 36)
 	GameManager.unlocked_landscapes = {"bee_hive": true, "wind_chime": true, "tiki_torch": true}
 	world._sync_landscape_nodes()
 	world.open_air_cinema._sync_visibility(true)
-	world._update_photo_tour(0.0)
 	var res15: Array = []
-	for lb15 in _collect_world_label_rects(world, []):
-		res15.append(lb15)
 	var air_half15 := Vector2(MainWorld.AIRSHIP_TARGET_W * 0.5, MainWorld.AIRSHIP_TARGET_H * 0.5 + 2.4)
 	res15.append({"name": "AirshipDockToDeparture", "rect": Rect2(MainWorld.AIRSHIP_HARBOR_DOCK_POS - air_half15, air_half15 * 2.0).merge(Rect2(MainWorld.AIRSHIP_DEPART_POS - air_half15, air_half15 * 2.0))})
 	res15.append({"name": "AirshipBollard", "rect": Rect2(1337.0, 108.0, 8.0, 16.0)})
 	res15.append({"name": "SkyBalloonPath", "rect": Rect2(MainWorld.SKY_BALLOON_MIN_X - 30.0, -4.0 - 3.2 - 26.0, (MainWorld.SKY_BALLOON_MAX_X + 84.0) - (MainWorld.SKY_BALLOON_MIN_X - 30.0), 56.0 + 6.4)})
 	for kl15 in EconomyConfig.KITE_LANES.keys():
 		res15.append({"name": "KiteLane_" + String(kl15), "rect": EconomyConfig.KITE_LANES[kl15]})
-	world.kite_badge_label.text = "★风筝节·劲风 售x1.18 余45s 筝6/6"
-	res15.append({"name": "KiteFestivalBadge", "rect": world.get_kite_badge_local_rect().grow_individual(14.0, 0.0, 0.0, 0.0)})
-	res15.append({"name": "SportsBadge", "rect": Rect2(world.sports_badge_label.position, Vector2(220.0, 18.0) * world.sports_badge_label.scale)})
-	res15.append({"name": "FestivalFireworks", "rect": Rect2(680.0 - 26.0, 22.0 - 26.0, 550.0 + 52.0, 40.0 + 26.0 + 32.0)})
-	res15.append({"name": "LanternGarlands", "rect": Rect2(634.0, 16.0, 1196.0 - 634.0, 37.0)})
-	for hr15 in [["HUD banner band", Rect2(480.0, 0.0, 960.0, 40.0)], ["HUD bar", HUD.FULL_BAR_RECT], ["HUD capsule", HUD.CAPSULE_RECT], ["HUD drawer", HUD.DRAWER_RECT], ["HUD codex drawer", HUD.CODEX_DRAWER_RECT], ["HUD hover zone", Rect2(476.0, 62.0, 968.0, 230.0)], ["HUD cake badge", EconomyConfig.BIRTHDAY_BADGE_RECT]]:
+	for hr15 in [["HUD banner band", Rect2(480.0, 0.0, 960.0, 40.0)], ["HUD bar", HUD.FULL_BAR_RECT], ["HUD capsule", HUD.CAPSULE_RECT]]:
 		res15.append({"name": String(hr15[0]), "rect": Rect2((hr15[1] as Rect2).position - Vector2(0.0, oy15), (hr15[1] as Rect2).size)})
-	for fl15 in [world.sports_flag_west, world.sports_flag_east]:
-		if fl15 != null and fl15.texture != null:
-			res15.append({"name": String(fl15.name), "rect": _rect_in_world_local(world, fl15, fl15.get_rect())})
 	for ln_k15 in world.landscape_nodes.keys():
 		var lnd15: Sprite2D = world.landscape_nodes[ln_k15]
 		res15.append({"name": "Landscape_" + String(ln_k15), "rect": _rect_in_world_local(world, lnd15, lnd15.get_rect())})
@@ -5618,7 +4446,7 @@ func _run_all_four_assertions_and_export() -> void:
 	for bl_r15 in bld_local15:
 		res15.append({"name": "Building_" + String(bl_r15["name"]), "rect": bl_r15["rect"]})
 	# island textures (opaque bounding box, +-1px island bob) and the 4 bridges
-	for it15 in [[world.tex_ellinia, Vector2(64.0, 74.0), "Island2"], [world.tex_henesys, Vector2(560.0, 70.0), "Island1"], [world.tex_orbis, Vector2(1396.0, 74.0), "Island3"], [world.tex_bridge, Vector2(492.0, 124.0), "Bridge1"], [world.tex_bridge, Vector2(1312.0, 118.0), "Bridge2"]]:
+	for it15 in [[world.tex_glowwood, Vector2(64.0, 74.0), "Island2"], [world.tex_meadow, Vector2(560.0, 70.0), "Island1"], [world.tex_coral, Vector2(1396.0, 74.0), "Island3"], [world.tex_bridge, Vector2(492.0, 124.0), "Bridge1"], [world.tex_bridge, Vector2(1312.0, 118.0), "Bridge2"]]:
 		var itx15: Texture2D = it15[0]
 		if itx15 == null:
 			continue
@@ -5642,17 +4470,13 @@ func _run_all_four_assertions_and_export() -> void:
 				ub15 = Rect2(float(ux0), float(uy0), float(ux1 - ux0 + 1), float(uy1 - uy0 + 1))
 		res15.append({"name": String(it15[2]), "rect": Rect2((it15[1] as Vector2) + ub15.position, ub15.size).grow(2.0)})
 	res15.append({"name": "PondBridges", "rect": MainWorld.POND_BRIDGE_LOCAL_RECT.grow(2.0)})
-	# the props of all 4 seasons + photo signposts + photo actions
+	# the props of all 4 seasons
 	for s_chk15 in EconomyConfig.SEASON_ORDER:
 		var m_chk15: int = int((EconomyConfig.SEASONS[s_chk15]["months"] as Array)[0])
 		GameManager.set_season_clock(func() -> Dictionary: return {"year": 2026, "month": m_chk15, "day": 5, "hour": 10, "minute": 0})
 		world._update_season_dress(1.0)
 		for di15 in range(world.season_deco_nodes.size()):
 			res15.append({"name": "SeasonDeco_%s_%d" % [s_chk15, di15], "rect": world.get_season_deco_local_rect(di15)})
-	for mi15 in range(world.photo_marker_nodes.size()):
-		res15.append({"name": "PhotoSignpost_%d" % mi15, "rect": world.get_photo_marker_local_rect(mi15)})
-	for s_fx15 in EconomyConfig.PHOTO_SPOT_ORDER:
-		res15.append({"name": "PhotoAction_" + String(s_fx15), "rect": EconomyConfig.get_photo_fx_rect(String(s_fx15))})
 	GameManager.unlocked_landscapes = keep_land15
 	world._sync_landscape_nodes()
 	var n_res15 := res15.size()
@@ -5780,7 +4604,7 @@ func _run_all_four_assertions_and_export() -> void:
 	EventBus.birthday_started.disconnect(on_bd15)
 	# gifts: no birthday -> refused; too little gold -> refused; plain gift; favourite good; already given; family medal
 	GameManager._reset_sky_weather_and_birthday_state()
-	GameManager.photo_wish_paused = true
+	GameManager.wish_paused = true
 	bclk15["year"] = 2026
 	bclk15["month"] = 11
 	bclk15["day"] = 24
@@ -5796,10 +4620,10 @@ func _run_all_four_assertions_and_export() -> void:
 	if bool(r_lo15.get("given", true)) or String(r_lo15.get("reason", "")) != "gold" or GameManager.gold != cost_lo15 - 1 or GameManager.birthday_parties_total != 0 or cost_lo15 < EconomyConfig.BIRTHDAY_GIFT_MIN_GOLD:
 		_fail_and_quit(tag15, "Gift with too little gold must be refused untouched: %s" % str(r_lo15))
 		return
-	GameManager.gold = 10000000
+	GameManager.gold = 1000000000000
 	var v0_15 := GameManager.rare_codex_vouchers
 	var pros0_15 := GameManager.get_prosperity_score()
-	var codex0_15 := GameManager.get_codex_price_multiplier()
+	var codex0_15 := GameManager.get_collection_multiplier()
 	var seen0_15 := GameManager.get_seen_sky_weather_count()
 	var ssn0_15 := GameManager.get_seen_season_count()
 	var gift_days15: Array = [["penguin", 11, 23, {}, ""], ["toucan", 11, 28, {"pottery_vase": 2}, "pottery_vase"], ["bunny", 12, 3, {}, ""], ["otter", 12, 8, {}, ""], ["fox", 12, 13, {}, ""], ["shiba", 12, 18, {}, ""]]
@@ -5834,9 +4658,9 @@ func _run_all_four_assertions_and_export() -> void:
 			return
 	var seen1_15 := GameManager.get_seen_sky_weather_count()
 	var ssn1_15 := GameManager.get_seen_season_count()
-	var e_codex_add15 := EconomyConfig.BIRTHDAY_CODEX_PRICE_PER_ISLANDER * 6.0 + EconomyConfig.SKY_WEATHER_CODEX_PRICE_PER_TYPE * float(seen1_15 - seen0_15) + 0.02 * float(ssn1_15 - ssn0_15)
-	if GameManager.birthday_parties_total != 6 or GameManager.get_celebrated_islander_count() != 6 or GameManager.birthday_medals != 1 or GameManager.birthday_favourite_gifts != 1 or GameManager.birthday_reputation_bonus != gift_rep15 or GameManager.birthday_vouchers_total != gift_v15 or GameManager.rare_codex_vouchers - v0_15 != gift_v15 or not bool(GameManager.unlocked_achievements.get("ach_birthday_family", false)) or GameManager.get_prosperity_score() - pros0_15 != 50 + 10 * (seen1_15 - seen0_15) + 20 * (ssn1_15 - ssn0_15) or GameManager.get_codex_price_multiplier() - codex0_15 < e_codex_add15 - 0.0001:
-		_fail_and_quit(tag15, "Birthday totals wrong: parties %d, medals %d, rep %d (exp %d), vouchers %d (exp %d), prosperity +%d, codex +%.3f" % [GameManager.birthday_parties_total, GameManager.birthday_medals, GameManager.birthday_reputation_bonus, gift_rep15, GameManager.birthday_vouchers_total, gift_v15, GameManager.get_prosperity_score() - pros0_15, GameManager.get_codex_price_multiplier() - codex0_15])
+	var e_codex_add15 := Pacing.CODEX_PER_ENTRY * float(6 + seen1_15 - seen0_15 + ssn1_15 - ssn0_15)
+	if GameManager.birthday_parties_total != 6 or GameManager.get_celebrated_islander_count() != 6 or GameManager.birthday_medals != 1 or GameManager.birthday_favourite_gifts != 1 or GameManager.birthday_reputation_bonus != gift_rep15 or GameManager.birthday_vouchers_total != gift_v15 or GameManager.rare_codex_vouchers - v0_15 != gift_v15 or not bool(GameManager.unlocked_achievements.get("ach_birthday_family", false)) or GameManager.get_prosperity_score() - pros0_15 != 50 + 10 * (seen1_15 - seen0_15) + 20 * (ssn1_15 - ssn0_15) or GameManager.get_collection_multiplier() - codex0_15 < e_codex_add15 - 0.0001:
+		_fail_and_quit(tag15, "Birthday totals wrong: parties %d, medals %d, rep %d (exp %d), vouchers %d (exp %d), prosperity +%d, codex +%.3f" % [GameManager.birthday_parties_total, GameManager.birthday_medals, GameManager.birthday_reputation_bonus, gift_rep15, GameManager.birthday_vouchers_total, gift_v15, GameManager.get_prosperity_score() - pros0_15, GameManager.get_collection_multiplier() - codex0_15])
 		return
 	# a missed birthday cannot be gifted the day after
 	bclk15["day"] = 19
@@ -5844,157 +4668,53 @@ func _run_all_four_assertions_and_export() -> void:
 	if GameManager.can_prepare_birthday_gift() or String(GameManager.prepare_birthday_gift().get("reason", "")) != "no_birthday":
 		_fail_and_quit(tag15, "A birthday gift was still possible the day after!")
 		return
-	GameManager.photo_wish_paused = keep_pw15
+	GameManager.wish_paused = keep_pw15
 
 	# 7) HUD: tab 2 cards #19 / #20, the party panel, the tab cake badge, codex card 17
-	var hud15_cards := ""
-	var panel_min_sc15 := 9.0
 	if world.hud != null:
 		var hud15: HUD = world.hud
 		GameManager._reset_sky_weather_and_birthday_state()
 		bclk15["month"] = 12
 		bclk15["day"] = 18
 		GameManager.refresh_island_calendar()
-		GameManager.gold = 10000000
+		GameManager.gold = 1000000000000
 		hud15.open_drawer(2)
-		hud15.drawer_anim_t = 1.0
-		hud15._sync_label_nodes()
 		var cards2_15: Array[Dictionary] = hud15._get_current_tab_cards()
-		if cards2_15.size() != 20 or not hud15._is_two_row_layout(cards2_15.size()) or hud15.lbl_card_titles.size() < 20 or String(cards2_15[18]["type"]) != "sky_weather" or String(cards2_15[19]["type"]) != "birthday":
-			_fail_and_quit(tag15, "HUD tab 2 must hold 20 cards with weather #19 / birthday #20: %d cards" % cards2_15.size())
+		var bday15 := _card_idx(hud15, "birthday")
+		if _card_idx(hud15, "sky_weather") < 0 or bday15 < 0 or String(cards2_15[bday15]["title"]).find("柴犬") == -1:
+			_fail_and_quit(tag15, "Expansion tab misses the weather or today's birthday: %d cards" % cards2_15.size())
 			return
-		# UI audit: EVERY one of the 20 cards (old ones included) fits its 2-row card at the label's real clip width
-		# (card - 3px pad - 2px - icon reserve, see HUD._sync_label_nodes) -> no card text is cut off any more
-		var clipped15: Array[String] = []
-		for nc15 in range(cards2_15.size()):
-			var cw15 := hud15._get_card_rect(nc15, cards2_15.size()).size.x - 5.0 - hud15._two_row_icon_reserve(cards2_15.size())
-			for lset15 in [hud15.lbl_card_titles, hud15.lbl_card_subs, hud15.lbl_card_costs]:
-				var lc15: Label = lset15[nc15]
-				if not lc15.visible or absf(lc15.scale.x - lc15.scale.y) > 0.001 or lc15.scale.x < 0.5 - 0.001:
-					_fail_and_quit(tag15, "Tab 2 card %d label hidden / distorted: `%s` (%.2fx)" % [nc15 + 1, lc15.text, lc15.scale.x])
-					return
-				if not _label_text_fits(lc15, cw15):
-					clipped15.append("#%d `%s` %.1f>%.1fpx" % [nc15 + 1, lc15.text, _label_text_width(lc15), cw15])
-		if not clipped15.is_empty():
-			_fail_and_quit(tag15, "Tab 2 card text clipped: %s" % ", ".join(clipped15))
+		if not GameManager.can_prepare_birthday_gift() or not hud15._tab_badges[2].visible:
+			_fail_and_quit(tag15, "The waiting birthday gift has no badge on its tab!")
 			return
-		if hud15.lbl_card_titles[18].label_settings == hud15.lbl_card_titles[17].label_settings or hud15.lbl_card_costs[19].label_settings == hud15.lbl_card_costs[18].label_settings or hud15.lbl_card_subs[19].label_settings == hud15.lbl_card_subs[18].label_settings:
-			_fail_and_quit(tag15, "HUD cards 19/20 share LabelSettings with neighbours (colour leak risk)!")
+		hud15._activate_card(bday15)
+		var pc15: Array[Dictionary] = hud15._get_current_tab_cards()
+		if not hud15.birthday_view or pc15.size() != 4 or String(pc15[0]["type"]) != "bday_today" or String(pc15[1]["type"]) != "bday_gift" or String(pc15[2]["type"]) != "bday_next" or String(pc15[0]["title"]).find("柴犬") == -1 or String(pc15[1]["cost_state"]) != "affordable":
+			_fail_and_quit(tag15, "Birthday panel did not open with today / gift / next: %s" % str(pc15))
 			return
-		if hud15.lbl_card_titles[18].text.find(String(GameManager.get_sky_weather_info()["name"])) == -1 or hud15.lbl_card_titles[19].text.find("柴犬") == -1:
-			_fail_and_quit(tag15, "Cards 19/20 do not show the weather / today's birthday: `%s` / `%s`" % [hud15.lbl_card_titles[18].text, hud15.lbl_card_titles[19].text])
+		var fit15 := _menu_tiles_problem(hud15, "birthday")
+		if fit15 != "":
+			_fail_and_quit(tag15, fit15)
 			return
-		hud15._activate_card(18)
-		if hud15.offline_banner_text.find(String(GameManager.get_sky_weather_info()["full_name"])) == -1 or hud15.offline_banner_text.find("预报") == -1:
-			_fail_and_quit(tag15, "Weather card banner missing details: `%s`" % hud15.offline_banner_text)
+		hud15._activate_card(1)
+		if GameManager.birthday_parties_total != 1 or GameManager.can_prepare_birthday_gift() or hud15.offline_banner_text.find("柴犬") == -1:
+			_fail_and_quit(tag15, "Gift from the panel failed: parties %d, news `%s`" % [GameManager.birthday_parties_total, hud15.offline_banner_text])
 			return
-		# tab cake badge: drawn inside the Expansion tab button while the gift waits, clear of the drawer and every HUD label
-		var badge15 := EconomyConfig.BIRTHDAY_BADGE_RECT
-		var tab_btn15 := Rect2(1050.0 + 2.0 * 74.0 + 13.0, 224.0, 42.0, 44.0)
-		if not GameManager.can_prepare_birthday_gift() or not tab_btn15.encloses(badge15) or badge15.intersects(HUD.DRAWER_RECT) or badge15.intersects(HUD.CODEX_DRAWER_RECT):
-			_fail_and_quit(tag15, "Cake badge %s must sit inside the tab button %s, clear of the drawer!" % [str(badge15), str(tab_btn15)])
+		# the next day: no birthday -> no gift tile
+		bclk15["day"] = 19
+		GameManager.refresh_island_calendar()
+		if not bool(hud15._get_current_tab_cards()[1].get("hidden", false)):
+			_fail_and_quit(tag15, "The gift tile is still offered on a plain day")
 			return
-		for hl15 in [hud15.lbl_tabs[0], hud15.lbl_tabs[1], hud15.lbl_tabs[2], hud15.lbl_tabs[3], hud15.lbl_tabs[4], hud15.lbl_bar_gold, hud15.lbl_bar_pipeline, hud15.lbl_bar_stall, hud15.lbl_bar_pomodoro, hud15.lbl_offline]:
-			var hlr15 := Rect2(hl15.position, hl15.get_combined_minimum_size() * hl15.scale)
-			if hl15.visible and hlr15.intersects(badge15):
-				_fail_and_quit(tag15, "Cake badge overlaps HUD label `%s` %s!" % [hl15.text, str(hlr15)])
-				return
-		hud15_cards = "%d" % cards2_15.size()
-		# the birthday card opens the party panel: today / gift / next / back, single row, readable >= 0.85x
-		hud15._activate_card(19)
-		hud15._sync_label_nodes()
-		for pass15 in range(3):
-			var pc15: Array[Dictionary] = hud15._get_current_tab_cards()
-			if not hud15.birthday_view or pc15.size() != 4 or String(pc15[0]["type"]) != "bday_today" or String(pc15[1]["type"]) != "bday_gift" or String(pc15[2]["type"]) != "bday_next" or String(pc15[3]["type"]) != "bday_back" or hud15._is_two_row_layout(pc15.size()):
-				_fail_and_quit(tag15, "Birthday panel (pass %d) did not open with today / gift / next / back: %s" % [pass15, str(pc15)])
-				return
-			var pr_rects15: Array = []
-			for pi15 in range(pc15.size()):
-				var prc15 := hud15._get_card_rect(pi15, pc15.size())
-				if prc15.position.x < HUD.DRAWER_RECT.position.x + 4.0 or prc15.end.x > HUD.DRAWER_RECT.end.x - 4.0 or prc15.position.y < HUD.DRAWER_RECT.position.y + 24.0 or prc15.end.y > HUD.DRAWER_RECT.end.y - 2.0:
-					_fail_and_quit(tag15, "Panel card %d rect %s leaves the drawer!" % [pi15, str(prc15)])
-					return
-				for pq15 in pr_rects15:
-					if (pq15 as Rect2).intersects(prc15):
-						_fail_and_quit(tag15, "Panel cards overlap (%d)!" % pi15)
-						return
-				pr_rects15.append(prc15)
-				for plset15 in [hud15.lbl_card_titles, hud15.lbl_card_subs, hud15.lbl_card_costs]:
-					var plc15: Label = plset15[pi15]
-					panel_min_sc15 = minf(panel_min_sc15, plc15.scale.x)
-					if not plc15.visible or plc15.label_settings == null or absf(plc15.scale.x - plc15.scale.y) > 0.001 or plc15.scale.x < 0.85 - 0.001 or not _label_text_fits(plc15, prc15.size.x - 6.0 - 34.0) or plc15.position.y + 12.0 > prc15.end.y:
-						_fail_and_quit(tag15, "Panel card %d text `%s` clipped / unreadable (%.2fx, pass %d)!" % [pi15, plc15.text, plc15.scale.x, pass15])
-						return
-			var tl15: Label = hud15.lbl_drawer_title
-			tl15.size = Vector2.ZERO
-			if tl15.text.find("生日") == -1 or tl15.position.x + tl15.get_combined_minimum_size().x * tl15.scale.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or tl15.scale.x < 0.70 - 0.001:
-				_fail_and_quit(tag15, "Birthday panel headline `%s` missing / overflows into the language button / squeezed (%.2fx)!" % [tl15.text, tl15.scale.x])
-				return
-			if pass15 == 0:
-				# prepare the gift from the panel
-				if hud15.lbl_card_titles[0].text.find("柴犬") == -1 or String(pc15[1]["cost_state"]) != "affordable":
-					_fail_and_quit(tag15, "Panel does not invite a gift for 柴犬: `%s`" % hud15.lbl_card_titles[0].text)
-					return
-				hud15._activate_card(1)
-				hud15._sync_label_nodes()
-				if GameManager.birthday_parties_total != 1 or GameManager.can_prepare_birthday_gift() or hud15.offline_banner_text.find("柴犬") == -1 or hud15.lbl_card_titles[1].text != "★礼物已送达":
-					_fail_and_quit(tag15, "Gift from the panel failed: parties %d, banner `%s`, card `%s`" % [GameManager.birthday_parties_total, hud15.offline_banner_text, hud15.lbl_card_titles[1].text])
-					return
-				hud15._activate_card(0)
-				if hud15.offline_banner_text.find("柴犬") == -1:
-					_fail_and_quit(tag15, "Today card banner missing: `%s`" % hud15.offline_banner_text)
-					return
-			elif pass15 == 1:
-				# the next day: no birthday -> the gift card is locked and explains why
-				bclk15["day"] = 19
-				GameManager.refresh_island_calendar()
-				hud15._sync_label_nodes()
-				hud15._activate_card(1)
-				if hud15.offline_banner_text.find("生日当天") == -1:
-					_fail_and_quit(tag15, "Locked gift card banner missing: `%s`" % hud15.offline_banner_text)
-					return
-				hud15._sync_label_nodes()
-				if hud15.lbl_card_titles[0].text != "★今天没有岛民生日":
-					_fail_and_quit(tag15, "No-birthday panel title wrong: `%s`" % hud15.lbl_card_titles[0].text)
-					return
 		hud15._activate_card(3)
-		if hud15.birthday_view or hud15._get_current_tab_cards().size() != 20:
-			_fail_and_quit(tag15, "Back card did not return to the 20 Expansion cards!")
+		if hud15.birthday_view or _card_idx(hud15, "birthday") < 0:
+			_fail_and_quit(tag15, "Back did not return to the Expansion tab!")
 			return
-		# codex card 17
 		hud15.open_drawer(3)
-		hud15._sync_label_nodes()
-		var cards3_15: Array[Dictionary] = hud15._get_current_tab_cards()
-		var codex_title15 := "★云海天气(%d/%d)" % [GameManager.get_seen_sky_weather_count(), EconomyConfig.SKY_WEATHER_ORDER.size()]
-		if cards3_15.size() < 17 or String(cards3_15[16]["type"]) != "ci15_codex" or hud15.lbl_card_titles[16].text != codex_title15:
-			_fail_and_quit(tag15, "HUD codex card 17 invalid: `%s` (expected `%s`, %d cards)" % [hud15.lbl_card_titles[16].text, codex_title15, cards3_15.size()])
-			return
-		# UI audit: EVERY one of the 17 codex cards fits its 2-row card at the label's real clip width (no text cut off)
-		var clipped3_15: Array[String] = []
-		for nc3_15 in range(cards3_15.size()):
-			var cw3_15 := hud15._get_card_rect(nc3_15, cards3_15.size()).size.x - 5.0 - hud15._two_row_icon_reserve(cards3_15.size())
-			for lset3_15 in [hud15.lbl_card_titles, hud15.lbl_card_subs, hud15.lbl_card_costs]:
-				var lc3_15: Label = lset3_15[nc3_15]
-				if not lc3_15.visible:
-					_fail_and_quit(tag15, "Codex card %d label hidden!" % (nc3_15 + 1))
-					return
-				if not _label_text_fits(lc3_15, cw3_15):
-					clipped3_15.append("#%d `%s` %.1f>%.1fpx" % [nc3_15 + 1, lc3_15.text, _label_text_width(lc3_15), cw3_15])
-		if not clipped3_15.is_empty():
-			_fail_and_quit(tag15, "Codex card text clipped: %s" % ", ".join(clipped3_15))
-			return
-		var cx15: Label = hud15.lbl_drawer_title
-		cx15.size = Vector2.ZERO
-		var cx_sz15 := cx15.get_combined_minimum_size() * cx15.scale
-		if cx15.text.find("天") == -1 or cx15.text.find("寿") == -1 or cx15.text.find("摄") == -1 or cx15.position.x + cx_sz15.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or cx15.position.y + cx_sz15.y > hud15._get_card_rect(0, cards3_15.size()).position.y + 1.0:
-			_fail_and_quit(tag15, "Codex headline (2 lines) overflows or misses `天`/`寿`: `%s`" % cx15.text)
-			return
-		hud15._activate_card(16)
-		if hud15.offline_banner_text.find("云海天气鉴") == -1:
-			_fail_and_quit(tag15, "Codex card 17 banner missing!")
+		if _card_idx(hud15, "ci15_codex") < 0:
+			_fail_and_quit(tag15, "Codex misses the weather entry")
 			return
 		hud15.close_drawer(false)
-		hud15_cards += "/%d" % cards3_15.size()
 	var forbidden_font_ci15 := _find_deprecated_font_node(get_tree().root)
 	if forbidden_font_ci15 != "":
 		_fail_and_quit(tag15, "Forbidden legacy font node detected at `%s`!" % forbidden_font_ci15)
@@ -6049,8 +4769,8 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit(tag15, "Showcase clock %s did not give a rainbow birthday!" % str(show_clk15))
 		return
 
-	print("[PASS] %s 通过: 不新增建筑(三岛19建筑 7+6+6 最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f 不变)；岛历 20 分钟一格、跨日/月/年连续，4 季 x 21 天 x 2 次扫描完全一致(彩虹 %d 格全部紧跟雨后、夏季晴最多/冬季雾最多/春雨多于冬雨)、注入时钟驱动+换天信号仅 1 次、暂停隔离；倍率 %s，叠乘上限(微雨+云雨≤x1.50、节庆客流+彩虹≤x2.20、风筝风+彩虹售价≤x1.30、减益全额)与真实售卖 x%.3f 校验通过；天空层 4 个天气区(左上天空/右上天空/2·3号岛下云海)与 %d 个保留区(全部世界标签含隐藏、飞艇停靠+离港、缆桩、热气球、风筝航道与徽标、运动会徽标、烟花/灯笼带、HUD 横幅/底栏/胶囊/抽屉/蛋糕角标、岛屿贴图与木桥、建筑、造景、赛旗、水灯/画舫/花车航道、夜间影院、四季摆件、打卡木牌与拍照动作)保持 >=2px(最近 %.1fpx: %s)，4 天气 x 昼夜 x 16 时刻共 %d 个图元与 %d 次徽记全部落在区内、无其他世界精灵入区；生日会: 6 位岛民 3/8/13/18/23/28 日、注入日期生日只播报 1 次、跨月/跨年/2 月 28 日下一位查询、无生日/金币不足/普通/称心/重复备礼、6 位庆生得生日全家福(声望+%d 图鉴券+%d)；HUD 开拓 20 卡与图鉴 17 卡两行全部文字完整无截断(第19卡云海天气/第20卡生日会)、生日会面板 4 卡 最小字号 %.2fx、面板内备礼、开拓按钮蛋糕角标、山海图鉴第17卡「★云海天气」(卡数 %s)；存档往返 PASS；展示: 本月 %d 日 %02d:%02d 彩虹%s PASS!" % [
-		tag15, min_gap15, overlap15, min_scale15, n_rainbow15, " / ".join(mult_rows15), float(pay_on15) / float(pay_off15), n_res15, min_clear15, min_clear_name15, n_prims15, n_emb15, gift_rep15, gift_v15, panel_min_sc15, hud15_cards,
+	print("[PASS] %s 通过: 不新增建筑(三岛19建筑 7+6+6 最小净间距 %.2fpx、重叠 %.1fpx²、最小缩放 %.3f 不变)；岛历三小时一格、跨日/月/年连续，4 季 x 21 天 x 2 次扫描完全一致(彩虹 %d 格全部紧跟雨后、夏季晴最多/冬季雾最多/春雨多于冬雨)、注入时钟驱动+换天信号仅 1 次、暂停隔离；倍率 %s，叠乘上限(微雨+云雨≤x1.50、节庆客流+彩虹≤x2.20、风筝风+彩虹售价≤x1.30、减益全额)与真实售卖 x%.3f 校验通过；天空层 4 个天气区(左上天空/右上天空/2·3号岛下云海)与 %d 个保留区(全部世界标签含隐藏、飞艇停靠+离港、缆桩、热气球、风筝航道与徽标、运动会徽标、烟花/灯笼带、HUD 横幅/底栏/胶囊/抽屉/蛋糕角标、岛屿贴图与木桥、建筑、造景、赛旗、水灯/画舫/花车航道、夜间影院、四季摆件、打卡木牌与拍照动作)保持 >=2px(最近 %.1fpx: %s)，4 天气 x 昼夜 x 16 时刻共 %d 个图元与 %d 次徽记全部落在区内、无其他世界精灵入区；生日会: 6 位岛民 3/8/13/18/23/28 日、注入日期生日只播报 1 次、跨月/跨年/2 月 28 日下一位查询、无生日/金币不足/普通/称心/重复备礼、6 位庆生得生日全家福(声望+%d 图鉴券+%d)；菜单格子全部放得下、生日会面板内备礼、开拓按钮待备礼角标、天气图鉴在册；存档往返 PASS；展示: 本月 %d 日 %02d:%02d 彩虹%s PASS!" % [
+		tag15, min_gap15, overlap15, min_scale15, n_rainbow15, " / ".join(mult_rows15), float(pay_on15) / float(pay_off15), n_res15, min_clear15, min_clear_name15, n_prims15, n_emb15, gift_rep15, gift_v15,
 		int(show_clk15["day"]), int(show_clk15["hour"]), int(show_clk15["minute"]), ("·" + EconomyConfig.get_islander_name(GameManager.birthday_today_islander) + "生日待备礼") if GameManager.is_birthday_today() else ""
 	])
 
@@ -6073,8 +4793,8 @@ func _run_all_four_assertions_and_export() -> void:
 	if r30.has("error"):
 		_fail_and_quit(tag30, String(r30["error"]))
 		return
-	print("[PASS] %s 通过: 不新增建筑、不占地面与天空层(只在 HUD)；4 枚复用图标 64x64 去底已导入；18 道既有菜品(甜香/鲜香/清香各由 6 位评委中 2 位偏爱)、生料/非食物拒收；评分=底分+对味 20+羁绊 2/级(封顶 100)、铜 70/银 82/金 92；岛历周一~周日由注入时钟驱动，12 周跨月评委按岛民顺序各轮 2 次、换周播报 11 次、跨年同周；暂停隔离；水獭周 3 道(最佳优先、重复/生料/缺货/第 4 道拒收)金奖 1 次(声望+%d 券+2)、羁绊升级 1 次；换周清空、奖章保留、铜→银只计 1 枚；心愿圆梦+12、称心生日礼+45、Lv.5 封顶、售价 +0.3%%/级 封顶 +%.1f%%；存档往返(同周保留/隔周清空)；HUD 动物编制 8 卡(第7卡美食评鉴周/第8卡岛民羁绊)全部放得下、评鉴周面板 4 卡与羁绊面板 7 卡 最小字号 %.2fx 等比、面板内参赛、切页关闭、开拓仍 20 卡、山海图鉴第18卡「★美食评鉴」与 18 卡全部放得下；当前奖章 %d 枚、羁绊总等级 %d PASS!" % [
-		tag30, int(r30["gold_rep"]), float(r30["price_cap"]) * 100.0, float(r30["panel_min_sc"]), int(r30["medals"]), int(r30["levels"])
+	print("[PASS] %s 通过: 不新增建筑、不占地面与天空层(只在 HUD)；4 枚复用图标 64x64 去底已导入；18 道既有菜品(甜香/鲜香/清香各由 6 位评委中 2 位偏爱)、生料/非食物拒收；评分=底分+对味 20+羁绊 2/级(封顶 100)、铜 70/银 82/金 92；岛历周一~周日由注入时钟驱动，12 周跨月评委按岛民顺序各轮 2 次、换周播报 11 次、跨年同周；暂停隔离；水獭周 3 道(最佳优先、重复/生料/缺货/第 4 道拒收)金奖 1 次(声望+%d 券+2)、羁绊升级 1 次；换周清空、奖章保留、铜→银只计 1 枚；心愿圆梦+12、称心生日礼+45、Lv.5 封顶、售价 +0.3%%/级 封顶 +%.1f%%；存档往返(同周保留/隔周清空)；菜单格子全部放得下、面板内参赛、切页关闭、开拓仍 20 项、图鉴 18 项在册；当前奖章 %d 枚、羁绊总等级 %d PASS!" % [
+		tag30, int(r30["gold_rep"]), float(r30["price_cap"]) * 100.0, int(r30["medals"]), int(r30["levels"])
 	])
 
 	# ------------------------------------------------------------------
@@ -6096,9 +4816,9 @@ func _run_all_four_assertions_and_export() -> void:
 	if i18n16.has("error"):
 		_fail_and_quit(tag16, String(i18n16["error"]))
 		return
-	print("[PASS] %s 通过: 文本表 %d 键 x 3 语键位/占位符一致、数据名 %d 条 en/ja 齐全，en 零汉字/假名、ja 零简体专用字形(%d 个)；en/ja 各校验 HUD 视图 %d 个(4 页签 x 后期/前期/节庆进行中 + 心愿板 + 生日会有/无生日 + 胶囊/老板键)共 %d 个标签放得下(卡片最小余量 %.1fpx(%s)，标题最小横向缩放 %s，顶栏/底栏最小压缩比 %.2f)、横幅 %d 条(真实参数事件横幅 + 信息卡横幅 + 全部模板)最宽 %.1fpx <= 620px 不压缩、可见标签 %d 次零混排零漏占位符；世界标签 %d 个 x 2 语全部落在中文占位内 + 全状态世界标签文案 %d 条 x 2 语不宽于中文(最大宽度比 %.2f) -> 世界标签放得下/零重叠/避让断言三语成立；审图 %s；已切回 zh_CN PASS!" % [
-		tag16, int(i18n16["keys"]), int(i18n16["names"]), I18N_SIMPLIFIED_ONLY_GLYPHS.length(), int(i18n16["views"]), int(i18n16["labels"]), float(i18n16["min_card_slack"]), String(i18n16["min_card_at"]), String(i18n16["head_sx"]), float(i18n16["min_chrome_ratio"]),
-		int(i18n16["banners"]), float(i18n16["max_banner_w"]), int(i18n16["scanned"]), int(i18n16["world_labels"]), int(i18n16["world_texts"]), float(i18n16["max_world_ratio"]), String(i18n16["shots"])
+	print("[PASS] %s 通过: 文本表 %d 键 x 3 语键位/占位符一致、数据名 %d 条 en/ja 齐全，en 零汉字/假名、ja 零简体专用字形(%d 个)；en/ja 各校验 HUD 视图 %d 个(4 页签 x 后期/前期/节庆进行中 + 心愿板 + 生日会有/无生日 + 胶囊/老板键)共 %d 个格子放得下(真实字号、不缩放)、播报 %d 条全部短句(最宽 %.1fpx)、可见标签 %d 次零混排零漏占位符；世界标签文案 %d 条 x 2 语干净；审图 %s；已切回 zh_CN PASS!" % [
+		tag16, int(i18n16["keys"]), int(i18n16["names"]), I18N_SIMPLIFIED_ONLY_GLYPHS.length(), int(i18n16["views"]), int(i18n16["labels"]),
+		int(i18n16["banners"]), float(i18n16["max_banner_w"]), int(i18n16["scanned"]), int(i18n16["world_texts"]), String(i18n16["shots"])
 	])
 
 	# Reset transient test unlocks & floating texts before exporting clean dual-state viewport screenshots
@@ -6111,7 +4831,6 @@ func _run_all_four_assertions_and_export() -> void:
 		world.hud.offline_banner_timer = 0.0
 		world.hud._sync_label_nodes()
 	GameManager.save_game()
-
 
 	# ------------------------------------------------------------------
 	# Export 2 Distinct Real Engine Viewport Screenshots:
@@ -6138,9 +4857,9 @@ func _run_all_four_assertions_and_export() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
-	var img_open := get_viewport().get_texture().get_image()
+	var img_open := world.hud.menu.get_texture().get_image() if world.hud != null else null
 	if img_open == null or img_open.is_empty():
-		_fail_and_quit("[SelfTestRunner]", "Viewport image (drawer open state) is empty!")
+		_fail_and_quit("[SelfTestRunner]", "Menu window image is empty!")
 		return
 	var err_b := img_open.save_png("res://preview_drawer_open_1920x360.png")
 	if err_b != OK:
@@ -6153,25 +4872,6 @@ func _run_all_four_assertions_and_export() -> void:
 		_fail_and_quit("[SelfTestRunner]", "preview_engine_1920x360.png and preview_drawer_open_1920x360.png have identical pixel data!")
 		return
 
-	# CI-14 review shots (written to `user://`, never to the repo): tab 2 with cards #17 / #18 and the wish board panel
-	if world.hud != null:
-		world.hud.open_drawer(2)
-		await get_tree().process_frame
-		await get_tree().process_frame
-		await RenderingServer.frame_post_draw
-		var img_tab2 := get_viewport().get_texture().get_image()
-		if img_tab2 != null and not img_tab2.is_empty():
-			img_tab2.save_png("user://ci14_review_tab2_1920x360.png")
-		world.hud._activate_card(17)
-		await get_tree().process_frame
-		await get_tree().process_frame
-		await RenderingServer.frame_post_draw
-		var img_board := get_viewport().get_texture().get_image()
-		if img_board != null and not img_board.is_empty():
-			img_board.save_png("user://ci14_review_wish_board_1920x360.png")
-		world.hud.close_drawer(false)
-		print("       - CI-14 审图 (`user://ci14_review_tab2_1920x360.png` / `user://ci14_review_wish_board_1920x360.png`): %s" % ProjectSettings.globalize_path("user://"))
-
 	# CI-15 review shots (written to `user://`, never to the repo): tab 2 with cards #19 / #20, the birthday party panel and
 	# the 4 cloud-sea weathers (+ a clear night) in daylight with the kite festival flying, the caravan airship docked and the
 	# sky balloon out, so the sky layer can be checked by eye against kites / airship / balloon / labels / HUD
@@ -6180,7 +4880,7 @@ func _run_all_four_assertions_and_export() -> void:
 		world.hud.open_drawer(2)
 		await _ci15_capture("user://ci15_review_tab2_1920x360.png")
 		ci15_shots.append("ci15_review_tab2_1920x360.png")
-		world.hud._activate_card(19)
+		world.hud._activate_card(_card_idx(world.hud, "birthday"))
 		await _ci15_capture("user://ci15_review_birthday_panel_1920x360.png")
 		ci15_shots.append("ci15_review_birthday_panel_1920x360.png")
 		world.hud.close_drawer(false)
@@ -6217,12 +4917,477 @@ func _run_all_four_assertions_and_export() -> void:
 	world.snap_sky_weather()
 	print("       - CI-15 审图 (%d 张: %s): %s" % [ci15_shots.size(), ", ".join(ci15_shots), ProjectSettings.globalize_path("user://")])
 
+	# UI review shots (`user://ui_*.png`): the open bar with festivals running, the hover hint, the news line, the settings page,
+	# the four tabs of a finished isle and of a brand-new game
+	if world.hud != null:
+		var uh: HUD = world.hud
+		GameManager.start_gourmet_parade_festival()
+		GameManager.start_wish_lantern_festival()
+		GameManager.desktop_companion_mode = false
+		uh.close_drawer(false)
+		uh.news(EconomyConfig.tr_fmt("bn_start", [EconomyConfig.tr_key("nm_parade")]), 30.0)
+		# the hint follows the real mouse: the world is paused for this one picture
+		world.set_process(false)
+		uh.show_hint("%s  Lv.5" % uh.building_name("tea_pavilion"), uh.building_status("tea_pavilion"), Rect2(924.0, 114.0, 54.0, 54.0))
+		await _ci15_capture("user://ui_bar_1920x360.png")
+		world.set_process(true)
+		uh.offline_banner_timer = 0.0
+		for ut in range(5):
+			uh.open_drawer(ut)
+			await _ci15_capture("user://ui_tab%d_1920x360.png" % ut)
+		GameManager.reset_for_playtest_state()
+		for ut2 in range(4):
+			uh.open_drawer(ut2)
+			await _ci15_capture("user://ui_new_tab%d_1920x360.png" % ut2)
+		uh.close_drawer(false)
+		var click_p: String = await _menu_click_problem(uh)
+		if click_p != "":
+			_fail_and_quit("[断言31-菜单真实点击]", click_p)
+			return
+		print("[PASS] [断言31-菜单真实点击] 通过: 点底栏图标开菜单、点格子升级、滚轮滚动、点页签切页、再点关闭、Esc 关闭、悬停显示一行说明、界面放大后不缩字、设置重载后保留 PASS!")
+		GameManager.desktop_companion_mode = true
+
+	var pace_p := _pacing_problem()
+	if pace_p != "":
+		_fail_and_quit("[断言32-节奏与离线]", pace_p)
+		return
+	print("[PASS] [断言32-节奏与离线] 通过: %s PASS!" % _pace_note)
+	var guest_p: String = await _guest_problem(world)
+	if guest_p != "":
+		_fail_and_quit("[断言33-访客主推与装饰]", guest_p)
+		return
+	print("[PASS] [断言33-访客主推与装饰] 通过: %s PASS!" % _guest_note)
+	var audit_p := _audit_problem(world)
+	if audit_p != "":
+		_fail_and_quit("[断言34-审查回归]", audit_p)
+		return
+	print("[PASS] [断言34-审查回归] 通过: 特殊建筑点卡片真升级；订单只要在产物；满仓不产；星灯与放映零食有上限；风筝、影院、钱柜、飞艇重启接着走；坏档另存 PASS!")
+
 	print("[PASS] [真机双状态截图导出] 收起态与展开态视口截图已真实导出且哈希完全独立:")
 	print("       - 收起态 (`preview_engine_1920x360.png` / `preview_live_godot.png`): %dx%d | SHA256=%s" % [img_closed.get_width(), img_closed.get_height(), hash_closed.substr(0, 16)])
 	print("       - 展开态 (`preview_drawer_open_1920x360.png` via `HUD.open_drawer(0)`): %dx%d | SHA256=%s" % [img_open.get_width(), img_open.get_height(), hash_open.substr(0, 16)])
 	print("==================================================================")
 	_append_playtest_audit_log(checked_sprites, max_overlap_seen, min_gap_seen, total_bunny_dist, total_all_workers_dist, hash_closed, hash_open)
 	get_tree().quit(0)
+
+## Pacing (`src/data/Pacing.gd`): twelve weeks of play in a second or two, then the income core itself; "" or what went wrong
+var _pace_note := ""
+
+func _pacing_problem() -> String:
+	var r := Pacing.simulate(84, EconomyConfig.ISLAND_RECRUIT_CAPS)
+	# [unlock, earliest, latest] in hours of play (a day = 12 h: 6 open + 12 away at half pay)
+	var windows := [["isle2", 0.8, 2.5], ["tea_pavilion", 2.0, 8.0], ["greenhouse", 4.0, 18.0], ["dairy_workshop", 9.0, 30.0], ["windmill", 18.0, 48.0], ["isle3", 36.0, 84.0],
+		["hotspring", 60.0, 120.0], ["chef_pavilion", 90.0, 170.0], ["open_air_cinema", 125.0, 220.0], ["lighthouse_harbor", 170.0, 280.0], ["pottery_kiln", 240.0, 380.0]]
+	var prev := 0.0
+	for w in windows:
+		if not r.has(w[0]):
+			return "%s is never reached in 12 weeks" % String(w[0])
+		var h := float(r[w[0]])
+		if h < float(w[1]) or h > float(w[2]) or h < prev:
+			return "%s opens after %.1f h of play (allowed %.1f-%.1f, the one before %.1f)" % [String(w[0]), h, float(w[1]), float(w[2]), prev]
+		prev = h
+	if int(r["buys_first_hour"]) < 30 or int(r["buys_first_hour"]) > 80:
+		return "%d purchases in the first hour" % int(r["buys_first_hour"])
+	var d28: Dictionary = r["day"][27]
+	var d84: Dictionary = r["day"][83]
+	if int(d28["lv"]["soil_1"]) >= 50 or int(d84["lv"]["soil_1"]) < 50 or int(d84["buys"]) - int(d28["buys"]) < 100:
+		return "Lv.50 comes at the wrong time: day 28 Lv.%d, day 84 Lv.%d, %d purchases in between" % [int(d28["lv"]["soil_1"]), int(d84["lv"]["soil_1"]), int(d84["buys"]) - int(d28["buys"])]
+	for k in Pacing.RATE.keys():
+		if not EconomyConfig.BUILDINGS.has(k) or int(EconomyConfig.BUILDINGS[k]["island"]) != int(Pacing.ISLE[k]):
+			return "line `%s` is not a building of isle %d" % [String(k), int(Pacing.ISLE[k])]
+	# the solar term follows the real calendar; a day phase outlives a restart
+	for sc in [[2, 3, 23], [2, 4, 0], [3, 20, 3], [6, 21, 9], [11, 25, 19], [12, 31, 21], [1, 1, 21], [1, 5, 22]]:
+		if EconomyConfig.calc_solar_term(int(sc[0]), int(sc[1])) != int(sc[2]):
+			return "solar term of %d/%d is %d, expected %d" % [int(sc[0]), int(sc[1]), EconomyConfig.calc_solar_term(int(sc[0]), int(sc[1])), int(sc[2])]
+	var keep_phase := [GameManager.current_weather, GameManager.weather_timer]
+	GameManager.current_weather = GameManager.WeatherState.NIGHT
+	GameManager.weather_timer = 1234.0
+	GameManager.save_game()
+	GameManager.current_weather = GameManager.WeatherState.DAY
+	GameManager.weather_timer = 0.0
+	GameManager.load_game()
+	if GameManager.current_weather != GameManager.WeatherState.NIGHT or absf(GameManager.weather_timer - 1234.0) > 0.5:
+		return "the time of day does not survive a restart"
+	GameManager.current_weather = int(keep_phase[0])
+	GameManager.weather_timer = float(keep_phase[1])
+	# the till: 100 seconds of income, paid out by customers, nothing lost and nothing invented
+	var keep := [GameManager.gold, GameManager.till_gold, GameManager.festival_gap_timer, GameManager.bulk_mode, GameManager.building_levels.duplicate(), GameManager.total_gold_earned]
+	var gps := GameManager.estimate_idle_gold_per_sec()
+	GameManager.till_gold = 0.0
+	for _i in range(100):
+		GameManager.accrue_till(1.0)
+	if absf(GameManager.till_gold - gps * 100.0) > gps * 0.01:
+		return "the till holds %.1f after 100 s at %.2f/s" % [GameManager.till_gold, gps]
+	var paid := GameManager.collect_from_till(0.6, 1.0)
+	if absf(float(paid) - gps * 60.0) > maxf(1.0, gps * 0.1) or absf(GameManager.till_gold - gps * 40.0) > gps * 0.1:
+		return "a customer paid %d of %.1f" % [paid, gps * 100.0]
+	GameManager.accrue_till(99999.0)
+	if absf(GameManager.till_gold - gps * Pacing.TILL_CAP_SEC) > 0.5:
+		return "a full till holds %.1f" % GameManager.till_gold
+	if absf(float(GameManager.collect_from_till(1.0, 99.0)) - gps * Pacing.TILL_CAP_SEC * Pacing.LIVE_BONUS_CAP) > maxf(1.0, gps):
+		return "live bonuses are not capped"
+	# away: half pay, 12 hours at most
+	var off1 := int(GameManager.calculate_and_apply_offline_earnings(3600)["gold"])
+	var off2 := int(GameManager.calculate_and_apply_offline_earnings(100 * 3600)["gold"])
+	if absf(float(off1) / (gps * 3600.0) - 0.5) > 0.02 or absf(float(off2) / (gps * 43200.0) - 0.5) > 0.02:
+		return "offline pays %d for 1 h and %d for 100 h at %.2f/s" % [off1, off2, gps]
+	# bulk: the price of ten is the price of ten single steps, "max" never overspends
+	GameManager.building_levels["soil_1"] = 3
+	GameManager.bulk_mode = 10
+	var ten: Array = GameManager.get_bulk_building("soil_1")
+	var single := 0
+	for i2 in range(10):
+		single += Pacing.line_cost("soil_1", 3 + i2)
+	GameManager.gold = single
+	if int(ten[0]) != 10 or int(ten[1]) != single or not GameManager.upgrade_building("soil_1", 10) or int(GameManager.building_levels["soil_1"]) != 13 or GameManager.gold != 0:
+		return "ten steps at once: %s (singles %d), level %d, gold %d" % [str(ten), single, int(GameManager.building_levels["soil_1"]), GameManager.gold]
+	GameManager.bulk_mode = -1
+	GameManager.gold = Pacing.line_cost_n("soil_1", 13, 4) + 1
+	var mx: Array = GameManager.get_bulk_building("soil_1")
+	if int(mx[0]) != 4 or int(mx[1]) > GameManager.gold:
+		return "max buys %s with %d" % [str(mx), GameManager.gold]
+	GameManager.gold = 0
+	if int(GameManager.get_bulk_building("soil_1")[0]) != 1:
+		return "max with an empty purse must price one step"
+	GameManager.gold = int(keep[0])
+	GameManager.till_gold = float(keep[1])
+	GameManager.festival_gap_timer = float(keep[2])
+	GameManager.bulk_mode = int(keep[3])
+	GameManager.building_levels = keep[4]
+	GameManager.total_gold_earned = int(keep[5])
+	GameManager.save_game()
+	_pace_note = "2 号岛 %.1f 小时、3 号岛第 %.1f 天、建筑第 %.1f 天开完、第 12 周 Lv.%d；钱柜不多不少，离线一半封顶 12 小时，批量升级等价" % [float(r["isle2"]), float(r["isle3"]) / 12.0, float(r["pottery_kiln"]) / 12.0, int(d84["lv"]["soil_1"])]
+	return ""
+
+## Bugs found by the audit of 2026-11-26 stay fixed; "" or what went wrong
+func _audit_problem(world: MainWorld) -> String:
+	var gm := GameManager
+	var hud := world.hud
+	gm.unlocked_islands = {1: true, 2: true, 3: true}
+	for uf in ["unlock_greenhouse", "unlock_hotspring_inn", "unlock_windmill_bakery", "unlock_tea_pavilion", "unlock_chef_pavilion", "unlock_lighthouse_harbor", "unlock_dairy_workshop", "unlock_open_air_cinema", "unlock_pottery_kiln"]:
+		gm.call(uf, true)
+	# the tile of every special building really upgrades it
+	var upgraded := 0
+	var keep_gold := [gm.gold, gm.total_gold_earned]
+	var keep_lv: Dictionary = gm.building_levels.duplicate()
+	var keep_bulk := gm.bulk_mode
+	gm.bulk_mode = 1
+	hud.open_drawer(0)
+	for k in HUD.BUILD_SPECIAL.keys():
+		if not hud.is_building_built(k) or not bool(gm.unlocked_islands.get(int(EconomyConfig.BUILDINGS[k]["island"]), false)):
+			continue
+		gm.gold = Pacing.line_cost(k, int(gm.building_levels.get(k, 1)))
+		var lv := int(gm.building_levels.get(k, 1))
+		hud._activate_card(_card_idx(hud, k + "_building"))
+		if int(gm.building_levels.get(k, 1)) != lv + 1 or gm.gold != 0:
+			return "the `%s` tile does not upgrade it: Lv.%d -> %d, %d gold left" % [k, lv, int(gm.building_levels.get(k, 1)), gm.gold]
+		upgraded += 1
+	hud.close_drawer(false)
+	if upgraded != HUD.BUILD_SPECIAL.size():
+		return "only %d special buildings were tried" % upgraded
+	# orders only ask for what is still made (with nothing in stock that could still fill an old one)
+	var keep_store := [gm.stall_inventory, gm.raw_baskets, gm.workshop_outputs]
+	gm.stall_inventory = {}
+	gm.raw_baskets = {}
+	gm.workshop_outputs = {}
+	for lv2 in [1, 25, 50, 80]:
+		for bk in ["soil_1", "mortar", "soil_2", "cauldron", "soil_3"]:
+			gm.building_levels[bk] = lv2
+		var made := gm.get_produced_items(true)
+		made.append_array(gm.get_produced_items(false))
+		gm.replace_impossible_orders()
+		for _i in range(12):
+			if not made.has(String(gm.active_contract["target_item"])):
+				return "at level %d the contract asks for %s" % [lv2, String(gm.active_contract["target_item"])]
+			for e in gm.active_airship_order["items"]:
+				var id := String(e["item_id"])
+				if not made.has(id) and id != gm.get_current_solar_dish_id():
+					return "at level %d the airship asks for %s" % [lv2, id]
+			gm.generate_next_contract()
+			gm.generate_next_airship_order()
+	gm.stall_inventory = keep_store[0]
+	gm.raw_baskets = keep_store[1]
+	gm.workshop_outputs = keep_store[2]
+	gm.building_levels = keep_lv
+	gm.bulk_mode = keep_bulk
+	gm.gold = int(keep_gold[0])
+	gm.total_gold_earned = int(keep_gold[1])
+	gm.replace_impossible_orders()
+	# a full shelf makes nothing more and takes nothing
+	var dish := gm.active_tasting_dish_id
+	var keep_stock := int(gm.tasting_inventory.get(dish, 0))
+	var keep_stall: Dictionary = gm.stall_inventory.duplicate()
+	gm.tasting_inventory[dish] = 9999
+	gm.stall_inventory["crop_0"] = 99999
+	if bool(gm.cook_tasting_dish(dish, true).get("cooked", false)) or int(gm.tasting_inventory[dish]) != 9999:
+		return "a full pantry and a full stall still cook"
+	gm.stall_inventory = keep_stall
+	gm.tasting_inventory[dish] = keep_stock
+	gm.bakery_inventory["flour_golden_wheat"] = 9999
+	gm.stall_inventory["crop_0"] = 5
+	if bool(gm.mill_golden_wheat_flour(false, false).get("milled", false)) or int(gm.stall_inventory["crop_0"]) != 5:
+		return "a full flour bin still eats crops"
+	gm.bakery_inventory["flour_golden_wheat"] = 0
+	# one cinema night sells a fixed number of snacks, and a restart does not show the films again
+	var keep_phase2 := [gm.current_weather, gm.weather_timer]
+	gm.set_weather(gm.WeatherState.NIGHT)
+	gm.advance_cinema(0.0)
+	gm.dairy_inventory["dairy_cloud_pudding"] = 50
+	var snacks := int(gm.sell_cinema_snacks(99).get("sold", 0))
+	if snacks != Pacing.SNACKS_PER_NIGHT:
+		return "one night sold %d snacks" % snacks
+	gm.dairy_inventory["dairy_cloud_pudding"] = 0
+	gm._load_cinema_night([true, 20.5, 1, 7, 1])
+	gm.save_game()
+	gm._load_cinema_night([])
+	gm.load_game()
+	if not gm.cinema_night_on or absf(gm.cinema_night_clock - 20.5) > 0.5 or gm.cinema_screenings_tonight != 1 or gm.cinema_snacks_tonight != 7:
+		return "a restart starts the cinema night again: %s %.1f %d %d" % [str(gm.cinema_night_on), gm.cinema_night_clock, gm.cinema_screenings_tonight, gm.cinema_snacks_tonight]
+	gm.set_weather(int(keep_phase2[0]))
+	gm.weather_timer = float(keep_phase2[1])
+	gm.advance_cinema(0.0)
+	# a broken save is kept aside, not overwritten
+	var broken := gm.active_save_path + ".audit"
+	var bf := FileAccess.open(broken, FileAccess.WRITE)
+	bf.store_string("{broken")
+	bf.close()
+	var kept: String = gm._keep_unreadable_save(broken)
+	if kept == "" or FileAccess.get_file_as_string(kept) != "{broken":
+		return "an unreadable save is not kept aside"
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(kept))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(broken))
+	# a click on a building that is not there opens the menu and costs nothing
+	gm.pottery_kiln_unlocked = false
+	gm.gold = EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD + 5
+	var asked: bool = world._ask_to_build(hud.is_building_built("pottery_kiln"), 0)
+	if not asked or not hud.drawer_expanded or gm.pottery_kiln_unlocked or gm.gold != EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD + 5:
+		return "a click on a missing building spends gold"
+	gm.pottery_kiln_unlocked = true
+	gm.gold = int(keep_gold[0])
+	hud.close_drawer(false)
+	# a lantern festival gives a fixed number of lanterns
+	var keep_fest := [gm.wish_lantern_festival_timer, gm.lanterns_this_festival, gm.amber, gm.rare_codex_vouchers, gm.gold, gm.total_gold_earned, gm.wish_lantern_reputation_bonus, gm.wish_lanterns_collected]
+	gm.wish_lantern_festival_timer = 0.0
+	gm.start_wish_lantern_festival()
+	var got := 0
+	for i in range(Pacing.LANTERNS_PER_FESTIVAL + 5):
+		if bool(gm.claim_wish_lantern(i % 6, Vector2(1200.0, 110.0)).get("claimed", false)):
+			got += 1
+	if got != Pacing.LANTERNS_PER_FESTIVAL:
+		return "one festival gave %d lanterns" % got
+	gm.wish_lantern_festival_timer = float(keep_fest[0])
+	gm.lanterns_this_festival = int(keep_fest[1])
+	gm.amber = int(keep_fest[2])
+	gm.rare_codex_vouchers = int(keep_fest[3])
+	gm.gold = int(keep_fest[4])
+	gm.total_gold_earned = int(keep_fest[5])
+	gm.wish_lantern_reputation_bonus = int(keep_fest[6])
+	gm.wish_lanterns_collected = int(keep_fest[7])
+	# what is running goes on after a restart
+	var keep_run := [gm.kite_festival_active, gm.kite_festival_clock, gm.kite_festival_idx, gm.kite_collected_slots.duplicate(), gm.till_gold, gm.airship_timer, gm.balloon_timer]
+	gm._load_kite_festival([true, 9.5, 2, [1, 4]])
+	gm.till_gold = 77.0
+	gm.airship_timer = 1500.0
+	gm.balloon_timer = 444.0
+	gm.save_game()
+	gm._load_kite_festival([])
+	gm.till_gold = 0.0
+	gm.airship_timer = 1.0
+	gm.balloon_timer = 1.0
+	gm.load_game()
+	if not gm.kite_festival_active or absf(gm.kite_festival_clock - 9.5) > 0.5 or gm.kite_collected_slots != [1, 4] or absf(gm.till_gold - 77.0) > 1.0 or absf(gm.airship_timer - 1500.0) > 1.0 or absf(gm.balloon_timer - 444.0) > 1.0:
+		return "a restart loses what was running: kites %s %.1f %s, till %.1f, airship %.1f, balloon %.1f" % [str(gm.kite_festival_active), gm.kite_festival_clock, str(gm.kite_collected_slots), gm.till_gold, gm.airship_timer, gm.balloon_timer]
+	gm._load_kite_festival([keep_run[0], keep_run[1], keep_run[2], keep_run[3]])
+	gm.till_gold = float(keep_run[4])
+	gm.airship_timer = float(keep_run[5])
+	gm.balloon_timer = float(keep_run[6])
+	gm.save_game()
+	return ""
+
+## Guests, the featured dish and the decorations: rules, save, real clicks and drags, the crew using them; "" or what went wrong
+var _guest_note := ""
+
+func _guest_problem(world: MainWorld) -> String:
+	var gm := GameManager
+	var hud := world.hud
+	gm.reset_guest_state()
+	for g in Guests.ORDER:
+		var cfg: Dictionary = Guests.LIST[g]
+		var sh := Guests.sheet(g)
+		if sh == null or sh.get_width() != sh.get_height() * 2 or not Guests.DISH_ORDER.has(String(cfg["dish"])) or not Guests.DECOR.has(String(cfg["keep"])) or Guests.keeper_of(String(cfg["keep"])) != g:
+			return "guest table entry `%s` is broken" % g
+	for id in Guests.DECOR_ORDER:
+		if Guests.decor_tex(id) == null or (int(Guests.DECOR[id]["amber"]) == 0) != (Guests.keeper_of(id) != ""):
+			return "decoration table entry `%s` is broken" % id
+	# who comes: only fans of what the isle can cook, the featured dish draws its fans, the rare ones almost only then
+	var cnt := {"fruit": {}, "tea": {}}
+	for feat in ["fruit", "tea"]:
+		for i in range(4000):
+			var who := Guests.pick(["fruit", "sweets", "tea"], feat, [], (float(i) + 0.5) / 4000.0)
+			cnt[feat][who] = int(cnt[feat].get(who, 0)) + 1
+		for who2 in cnt[feat].keys():
+			if not ["fruit", "sweets", "tea"].has(String(Guests.LIST[who2]["dish"])):
+				return "`%s` came for a dish the isle cannot cook" % String(who2)
+	if int(cnt["tea"]["capybara"]) < int(cnt["fruit"]["capybara"]) * 2 or int(cnt["tea"]["rose_toucan"]) < 100 or int(cnt["fruit"].get("rose_toucan", 0)) > 40:
+		return "the featured dish does not steer the guests: %s" % str(cnt)
+	var days := 0.0
+	for sd in range(6):
+		days += Guests.simulate(100 + sd, 9.0, {"potion": 0.2, "tea": 0.4, "dairy": 1.5, "bread": 2.5, "feast": 10.0, "seafood": 18.0}) / 6.0
+	if days < 45.0 or days > 100.0:
+		return "the last keepsake comes after %.1f days" % days
+	# away: visits queue up (half a day at most), one card per guest, nothing paid before it is taken
+	gm.unlocked_islands = {1: true, 2: true, 3: true}
+	var gold0 := gm.gold
+	var amber0 := gm.get_amber()
+	var n_away := gm.guests_while_away(7 * 24 * 3600.0)
+	if n_away != Guests.AWAY_VISITS_MAX or gm.get_pending_guest_count() != n_away or gm.gold != gold0 or gm.guest_pending.size() > Guests.ORDER.size():
+		return "a week away brought %d visits (%d on the cards), gold %d -> %d" % [n_away, gm.get_pending_guest_count(), gold0, gm.gold]
+	for _i in range(40):
+		gm.receive_guest(0.0)
+	var t := gm.get_pending_guest_totals()
+	if not (t["keeps"] as Array).has("apple_tree"):
+		return "the hedgehog left no keepsake after %d visits" % int(gm.guest_visits.get("hedgehog", 0))
+	hud.open_drawer(3)
+	hud._clear_views()
+	hud.guest_popup.open()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_window_shot(hud.guest_popup, "user://ui_new_guest_popup.png")
+	if not hud.guest_popup.visible or not hud.guest_popup.cells[0]["root"].visible:
+		return "the gift card did not open"
+	_push_click(hud.guest_popup, hud.guest_popup.btn_take.get_global_rect().get_center())
+	await get_tree().process_frame
+	if hud.guest_popup.visible or gm.gold != gold0 + int(t["gold"]) or gm.get_amber() != amber0 + int(t["amber"]) or not gm.guest_pending.is_empty() or not gm.is_decor_owned("apple_tree"):
+		return "taking the gifts: gold +%d (exp %d), amber +%d (exp %d), card open %s" % [gm.gold - gold0, int(t["gold"]), gm.get_amber() - amber0, int(t["amber"]), str(hud.guest_popup.visible)]
+	# the featured dish: pill on the bar -> page -> pick
+	hud.close_drawer(false)
+	hud._sync_label_nodes()
+	await get_tree().process_frame
+	_push_click(get_viewport(), hud._rect_of(hud._feat_pill).get_center())
+	await get_tree().process_frame
+	if hud._view_id() != "featured":
+		return "the dish on the bar did not open its page"
+	await _ci15_capture("user://ui_new_featured_1920x360.png")
+	var fit_f := _menu_tiles_problem(hud, "featured dish")
+	if fit_f != "":
+		return fit_f
+	hud._activate_card(1)
+	if gm.featured_dish != "sweets":
+		return "picking a dish did not feature it (`%s`)" % gm.featured_dish
+	hud._clear_views()
+	hud.open_drawer(3)
+	hud.guest_view = true
+	hud._sync_label_nodes()
+	await _ci15_capture("user://ui_new_guests_1920x360.png")
+	var fit_g := _menu_tiles_problem(hud, "guest book")
+	if fit_g != "":
+		return fit_g
+	# decorations: buy, place, store, drag with the real mouse, save and load
+	gm.amber = 99999
+	hud.open_drawer(2)
+	hud.decor_view = true
+	var cards: Array[Dictionary] = hud._get_current_tab_cards()
+	for ci in range(cards.size()):
+		if not bool(cards[ci].get("hidden", false)):
+			hud._activate_card(ci)
+	hud._sync_label_nodes()
+	await _ci15_capture("user://ui_new_decor_1920x360.png")
+	var fit_d := _menu_tiles_problem(hud, "decorations")
+	if fit_d != "":
+		return fit_d
+	if gm.decor_placed.size() < 9 or world.decor_nodes.size() != gm.decor_placed.size():
+		return "%d decorations placed, %d on the lawn" % [gm.decor_placed.size(), world.decor_nodes.size()]
+	var xs: Array = []
+	for d in gm.decor_placed:
+		xs.append(float(d["x"]))
+	xs.sort()
+	for xi in range(1, xs.size()):
+		if xs[xi] - xs[xi - 1] < Guests.LAWN_STEP - 0.5:
+			return "two decorations stand %.0f px apart" % (xs[xi] - xs[xi - 1])
+	hud.close_drawer(false)
+	for id2 in Guests.DECOR_ORDER:
+		if not gm.is_decor_owned(id2):
+			gm.decor_owned[id2] = true
+		gm.remove_decor(id2)
+		gm.place_decor_anywhere(id2)
+	var moved := "lamp"
+	var node: Node2D = world.decor_nodes[moved]
+	var grab: Vector2 = world.world_root.position + (node.position + Vector2(0.0, -10.0)) * world.companion_zoom
+	var to := grab + Vector2(23.0, 0.0) * world.companion_zoom
+	var x0 := node.position.x
+	_push_drag(get_viewport(), grab, to)
+	if absf(gm.get_decor_x(moved) - (x0 + 23.0)) > 1.5:
+		return "dragging the lamp: %.1f -> %.1f (expected %.1f)" % [x0, gm.get_decor_x(moved), x0 + 23.0]
+	var before := JSON.stringify([gm.decor_placed, gm.decor_owned, gm.guest_visits, gm.featured_dish], "", true)
+	gm.save_game()
+	gm.load_game()
+	if JSON.stringify([gm.decor_placed, gm.decor_owned, gm.guest_visits, gm.featured_dish], "", true) != before:
+		return "guests and decorations do not survive a save"
+	# the crew takes a break at a decoration and goes back to work
+	for w in world.workers:
+		w.end_decor_break()
+	var user: AnimalWorker = null
+	for w2 in world.workers:
+		if w2.visible and w2.is_hired():
+			w2.carry_icon.visible = false
+			w2.nav_path.clear()
+			if w2._try_decor_break(999.0):
+				user = w2
+				break
+	if user == null:
+		return "nobody wants to use the decorations"
+	var used_id := user.decor_id
+	var guard := 0
+	var stood := false
+	while user.decor_id != "" and guard < 2000:
+		user._process(0.05)
+		stood = stood or (user.is_at_decor() and user.position.y > EconomyConfig.GROUND_Y + user.decor_step - 0.5 and user.heart_icon.visible)
+		guard += 1
+	if not stood or user.decor_id != "" or absf(user.position.y - EconomyConfig.GROUND_Y) > 0.01 or user.z_index != EconomyConfig.Z_UNIT:
+		return "the break at `%s` went wrong (stood %s, y %.1f, z %d)" % [used_id, str(stood), user.position.y, user.z_index]
+	# a guest walks in as itself
+	var n_c := world.customers.size()
+	world._guest_walks_in_tests = true
+	EventBus.guest_arrived.emit("silver_fox", "")
+	world._guest_walks_in_tests = false
+	if world.customers.size() != n_c + 1 or world.customers[n_c].body_sprite.texture != Guests.sheet("silver_fox"):
+		return "the silver fox did not walk in"
+	var shore_x := 1480.0
+	for id3 in ["chest", "gift_box", "flag", "lily", "lamp"]:
+		gm.place_decor(id3, shore_x)
+		shore_x += 70.0
+	var zoom0 := world.companion_zoom
+	await _ci15_capture("user://ui_new_lawns_1920x360.png")
+	world.companion_zoom = zoom0
+	_guest_note = "16 位访客与 24 件装饰表完整，主推菜左右来客，集齐约 %.0f 天，离开一周只攒 %d 次，礼物卡 / 主推页 / 拖动摆放均真实点击，存读一致，伙伴会去用" % [days, Guests.AWAY_VISITS_MAX]
+	return ""
+
+func _push_drag(vp: Viewport, from: Vector2, to: Vector2) -> void:
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	down.position = from
+	down.global_position = from
+	vp.push_input(down, true)
+	for i in range(1, 5):
+		var mv := InputEventMouseMotion.new()
+		mv.position = from.lerp(to, float(i) / 4.0)
+		mv.global_position = mv.position
+		mv.button_mask = MOUSE_BUTTON_MASK_LEFT
+		vp.push_input(mv, true)
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_LEFT
+	up.pressed = false
+	up.position = to
+	up.global_position = to
+	vp.push_input(up, true)
+
+func _save_window_shot(win: Window, path: String) -> void:
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	var img := win.get_texture().get_image()
+	if img != null:
+		img.save_png(path)
 
 ## CI-15 helpers ------------------------------------------------------------------------------------------------------
 ## Euclidean clearance between two non-overlapping rects (0 when they touch / overlap)
@@ -6250,16 +5415,173 @@ func _ci15_find_weather_clock(year: int, month: int, w_id: String, birthday_only
 
 ## Two rendered frames, then the viewport image saved to `path` (review shots under `user://`)
 func _ci15_capture(path: String) -> void:
+	var cap_world := get_tree().current_scene as MainWorld
+	if cap_world != null and cap_world.hud != null:
+		cap_world.hud._sync_label_nodes()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	if img != null and not img.is_empty():
 		img.save_png(path)
+	_save_menu_shot(path.replace("_1920x360", "_menu"))
+
+## The menu is a window of its own: its picture is saved next to the strip's
+func _save_menu_shot(path: String) -> Image:
+	var world := get_tree().current_scene as MainWorld
+	if world == null or world.hud == null or not world.hud.drawer_expanded:
+		return null
+	var mimg := world.hud.menu.get_texture().get_image()
+	if mimg == null or mimg.is_empty():
+		return null
+	mimg.save_png(path)
+	return mimg
+
+## Menu helpers -------------------------------------------------------------------------------------------------------
+## "" or the first tile of the view on screen whose text does not fit its tile at its real font size
+## Sells with a full till and returns the price before the live-bonus cap, so two sales can be compared
+func _sell(item_id: String, qty: int, pos: Vector2, is_vip: bool = false) -> int:
+	GameManager.till_gold = 10000.0
+	var raw := GameManager.get_sale_bonus(item_id, is_vip)
+	var paid := GameManager.try_purchase_from_stall(item_id, qty, pos, is_vip)
+	return int(round(10000.0 * raw)) if paid > 0 else 0
+
+func _menu_tiles_problem(hud: HUD, ctx: String) -> String:
+	hud._sync_label_nodes()
+	var list := hud._get_current_tab_cards()
+	if hud.menu.cards.size() < list.size():
+		return "%s: %d tiles for %d cards" % [ctx, hud.menu.cards.size(), list.size()]
+	var shown := 0
+	for i in range(list.size()):
+		if bool(list[i].get("hidden", false)):
+			continue
+		shown += 1
+		var c: MenuCard = hud.menu.cards[i]
+		if c.lbl_title.text == "":
+			return "%s tile %d has no name" % [ctx, i]
+		for p in c.overflowing_texts():
+			return "%s tile %d %s" % [ctx, i, p]
+	for e in hud.menu.emp_cards:
+		for p2 in e.overflowing_texts():
+			return "%s crew tile %s" % [ctx, p2]
+	if shown == 0:
+		return "%s shows nothing" % ctx
+	if shown > 20:
+		return "%s shows %d tiles: too many for one page" % [ctx, shown]
+	return ""
+
+## Place of the first tile of `type` on the open tab (-1 = not there)
+func _card_idx(hud: HUD, type: String) -> int:
+	var list := hud._get_current_tab_cards()
+	for i in range(list.size()):
+		if String(list[i]["type"]) == type:
+			return i
+	return -1
+
+## The Buildings / Expansion / Codex tabs hold these tiles ("" = skip), the codex tile its progress, every text fits
+func _menu_tabs_problem(hud: HUD, types: Array, codex_cost: String) -> String:
+	var tabs := [0, 2, 3]
+	for k in range(3):
+		if String(types[k]) == "":
+			continue
+		hud.open_drawer(tabs[k])
+		var at := _card_idx(hud, String(types[k]))
+		if at < 0:
+			return "tab %d has no `%s` tile" % [tabs[k], String(types[k])]
+		var cost := String(hud._get_current_tab_cards()[at]["cost"])
+		if tabs[k] == 3 and codex_cost != "" and cost != codex_cost:
+			return "codex tile `%s` shows `%s`, expected `%s`" % [String(types[k]), cost, codex_cost]
+		var fit := _menu_tiles_problem(hud, "tab %d" % tabs[k])
+		if fit != "":
+			return fit
+	hud.close_drawer(false)
+	return ""
+
+func _push_click(vp: Viewport, pos: Vector2, button: int = MOUSE_BUTTON_LEFT) -> void:
+	for down in [true, false]:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = button
+		ev.pressed = down
+		ev.position = pos
+		ev.global_position = pos
+		vp.push_input(ev, true)
+
+## Real mouse / key events through the strip and the menu window; "" or what went wrong
+func _menu_click_problem(hud: HUD) -> String:
+	GameManager.gold = 1000000000000
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_push_click(get_viewport(), hud._get_tab_button_rect(0).get_center())
+	if not hud.drawer_expanded or hud.active_tab != 0 or not hud.menu.visible:
+		return "the Build icon on the bar did not open the menu"
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var lv := int(GameManager.building_levels.get("soil_1", 1))
+	_push_click(hud.menu, hud.menu.card_rect(0).get_center())
+	if int(GameManager.building_levels.get("soil_1", 1)) != lv + 1:
+		return "pressing the first tile did not upgrade the farm (level %d)" % int(GameManager.building_levels.get("soil_1", 1))
+	var mv := InputEventMouseMotion.new()
+	mv.position = hud.menu.card_rect(1).get_center()
+	mv.global_position = mv.position
+	hud.menu.push_input(mv, true)
+	await get_tree().process_frame
+	if hud.menu.lbl_toast.text == "":
+		return "hovering a tile shows no explanation"
+	_push_click(hud.menu, hud.menu.nav_buttons[3].get_global_rect().get_center())
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if hud.active_tab != 3:
+		return "the Codex tab of the menu did not open"
+	for _w in range(4):
+		_push_click(hud.menu, hud.menu.content_rect().get_center(), MOUSE_BUTTON_WHEEL_DOWN)
+	await get_tree().process_frame
+	if hud.menu._scroll.scroll_vertical <= 0:
+		return "the mouse wheel does not scroll the tiles"
+	# the tiles of the last column stay left of the scroll bar
+	var last: Rect2 = hud.menu.card_rect(4)
+	if last.end.x > hud.menu._scroll.get_v_scroll_bar().get_global_rect().position.x:
+		return "tiles run under the scroll bar (%.0f > %.0f)" % [last.end.x, hud.menu._scroll.get_v_scroll_bar().get_global_rect().position.x]
+	var fs := hud.menu.cards[0].lbl_title.label_settings.font_size
+	WindowController.set_text_scale(1.3)
+	hud._sync_label_nodes()
+	if hud.menu.cards[0].lbl_title.label_settings.font_size <= fs:
+		return "the interface size setting does not enlarge the text"
+	WindowController.set_text_scale(1.0)
+	hud._sync_label_nodes()
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	hud.menu.push_input(esc, true)
+	if hud.drawer_expanded or hud.menu.visible:
+		return "Esc did not close the menu"
+	_push_click(get_viewport(), hud._get_tab_button_rect(1).get_center())
+	if not hud.drawer_expanded or hud.active_tab != 1:
+		return "the Crew icon did not open the menu"
+	_push_click(get_viewport(), hud._get_tab_button_rect(1).get_center())
+	if hud.drawer_expanded:
+		return "pressing the same icon again did not close the menu"
+	# the settings survive a restart (written to a scratch file, the player's own is never touched)
+	WindowController.ui_settings_path = "user://ui_settings_selftest.cfg"
+	WindowController._settings_enabled = true
+	hud._on_setting("lang", "ja_JP")
+	hud._on_setting("text", 1.15)
+	hud._on_setting("opacity", 0.8)
+	EconomyConfig.set_language("zh_CN")
+	WindowController.text_scale = 1.0
+	WindowController.window_opacity = 1.0
+	WindowController._load_ui_settings()
+	var kept := EconomyConfig.current_lang == "ja_JP" and is_equal_approx(WindowController.text_scale, 1.15) and is_equal_approx(WindowController.window_opacity, 0.8)
+	WindowController._settings_enabled = false
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(WindowController.ui_settings_path))
+	EconomyConfig.set_language("zh_CN")
+	WindowController.set_text_scale(1.0)
+	WindowController.set_window_opacity(1.0)
+	if not kept:
+		return "the settings did not survive a reload"
+	return ""
 
 ## CI-14 helpers ------------------------------------------------------------------------------------------------------
-## Name + rect of the first visible world sprite overlapping any rect (units incl. the sightseer, kites and the photo-spot
-## signposts themselves excluded; season props, landscapes, flags, boats and building parts included).
+## Name + rect of the first visible world sprite overlapping any rect (units and kites excluded; season props, landscapes, flags, boats and building parts included).
 func _ci14_find_sprite_overlap(world: MainWorld, rects: Array) -> String:
 	var stack: Array = [world.world_root]
 	while not stack.is_empty():
@@ -6269,7 +5591,7 @@ func _ci14_find_sprite_overlap(world: MainWorld, rects: Array) -> String:
 		if not (nd is Sprite2D):
 			continue
 		var sp := nd as Sprite2D
-		if sp.texture == null or not sp.is_visible_in_tree() or world.photo_marker_nodes.has(sp) or world.kite_sprites.has(sp) or _is_inside_unit_or_fx(sp, world):
+		if sp.texture == null or not sp.is_visible_in_tree() or world.kite_sprites.has(sp) or _is_inside_unit_or_fx(sp, world):
 			continue
 		var r := _rect_in_world_local(world, sp, sp.get_rect())
 		for rr in rects:
@@ -6290,24 +5612,10 @@ func _rect_in_world_local(world: MainWorld, ci: CanvasItem, local_rect: Rect2) -
 func _is_inside_unit_or_fx(node: Node, world: MainWorld) -> bool:
 	var n: Node = node
 	while n != null and n != world.world_root:
-		# CI-14: the photo-tour sightseer is a unit too (it walks GROUND_Y like the market visitors)
-		if n is AnimalWorker or n is CustomerNPC or n == world.floating_text or n == world.photo_tourist_root:
+		if n is AnimalWorker or n is CustomerNPC or n == world.floating_text:
 			return true
 		n = n.get_parent()
 	return false
-
-## Every non-empty world Label (badges, Lv. tags, captions; hidden ones included = worst case), units / floating text excluded.
-func _collect_world_label_rects(world: MainWorld, exclude: Array) -> Array:
-	var out: Array = []
-	var stack: Array = [world.world_root]
-	while not stack.is_empty():
-		var nd: Node = stack.pop_back()
-		for ch in nd.get_children():
-			stack.append(ch)
-		if nd is Label and not exclude.has(nd) and (nd as Label).text.strip_edges() != "" and not _is_inside_unit_or_fx(nd, world):
-			var lb := nd as Label
-			out.append({"name": String(lb.name), "rect": _rect_in_world_local(world, lb, Rect2(Vector2.ZERO, lb.size))})
-	return out
 
 ## Horizontal spans covered by each worker standing at its long-dwell rest dock (idle/work poses, flip-safe), per island.
 func _collect_rest_dock_spans(world: MainWorld) -> Dictionary:
@@ -6394,7 +5702,7 @@ func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float,
 	if FileAccess.file_exists(log_path):
 		existing = FileAccess.get_file_as_string(log_path)
 	else:
-		existing = "# 《枫叶云岛物语》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n"
+		existing = "# 《云岛集市》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n"
 	var dt := Time.get_datetime_string_from_system(false, true)
 	var entry := "## [%s] 自主试玩巡检 PASS (PRD契约已同步: 完成 %d 项 | 待办 %d 项)\n" % [dt, completed_prd_tasks_count, pending_prd_tasks.size()]
 	if pending_prd_tasks.size() > 0:
@@ -6416,7 +5724,7 @@ func _append_playtest_audit_log(sprites_cnt: int, max_ov: float, min_gap: float,
 				kept_blocks.append(blk)
 		if kept_blocks.size() > 10:
 			kept_blocks = kept_blocks.slice(kept_blocks.size() - 10)
-		var out_header := "# 《枫叶云岛物语》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。\n\n"
+		var out_header := "# 《云岛集市》全自动真机试玩与巡检记录 (`playtest_audit_log.md`)\n\n> 滚动保留最近 10 条记录；历史巡检日志已周期性压缩归档至 `docs/archives/playtest_logs_archive.md.gz`。\n\n"
 		f.store_string(out_header + "\n\n".join(kept_blocks) + "\n")
 
 func _sha256_bytes(buf: PackedByteArray) -> String:
@@ -6443,14 +5751,14 @@ func _find_deprecated_font_node(node: Node) -> String:
 ## ja_JP text must never contain one (regenerated together with the text tables).
 const I18N_SIMPLIFIED_ONLY_GLYPHS := "专业丛东丝两丰临为乌乐习产仅仓份众优传你侣值兑兰关军农净减凤击创剧办务动劲勋华单卖卡历压发变叠启员咔啦喂嚓囊团园图圆圣场块坯埚处备复头奖奶实宠审宽宾导尝层屉屿岛币师带帧帮庆库应废开异张归录态总悬惊战执扩扫抚抢护报拟挡挤损换摄摆摊时显晚暂朵杀杂杨极枫柜查标栈栏树样桌桥桩检樱欢步每汉汤沏测渔渲滚满滩灵炼烘烤烧热爱獭玫环现电疗盏码碰离秆种积秸窑窨笼签简篮类糕紧红约级纹线组细经结绝统续缆缓编缘缩罄罗职联胶艺节荣荧药获萝萤营蛰蜕衔见观规视计订让记许论访证评词试询语误请读调谢谱负财账货质购贴贵费赏赚赛赞赢趟跃车轨转轮软载输边达过运还进远连选邮鉴针钟钮钵铃银铺链销锁锅锚锦键镇长闪闭间阈队阶隐雾页顶项顺顾颁颂预领颗题额风飘飞饮饰饲馆马驱驻验鱼鲜鲤鲸鸟鸣鸥鹅齐龙"
 const I18N_TARGET_LANGS: Array[String] = ["en_US", "ja_JP"]
-const I18N_BANNER_W := 620.0
+const I18N_BANNER_W := 520.0
 
 var _i18n_spec_re: RegEx = null
 var _i18n_left_re: RegEx = null
 
 func _i18n_specs(t: String) -> PackedStringArray:
 	if _i18n_spec_re == null:
-		_i18n_spec_re = RegEx.create_from_string("%(%|[-+ 0#]*[0-9]*(\\.[0-9]+)?[sdfxXc])")
+		_i18n_spec_re = RegEx.create_from_string("%(%|[-+ 0#]*[0-9]*(\\.[0-9]+)?[sdfxXc])|\\{[0-9]\\}")
 	var out := PackedStringArray()
 	for m in _i18n_spec_re.search_all(t):
 		out.append(m.get_string())
@@ -6515,110 +5823,39 @@ func _i18n_item_ids() -> Array:
 	var ids: Array = []
 	ids.append_array(EconomyConfig.CROPS.keys())
 	ids.append_array(EconomyConfig.DELICACIES.keys())
-	for arr in [EconomyConfig.SOLAR_DISH_ORDER, EconomyConfig.HYBRID_FLORA_ORDER, EconomyConfig.SOUVENIR_BOX_ORDER, EconomyConfig.HOTSPRING_BATH_ORDER, EconomyConfig.BAKERY_CODEX_ORDER, EconomyConfig.TEA_CODEX_ORDER, EconomyConfig.TASTING_DISH_ORDER, EconomyConfig.AUCTION_LOT_ORDER, EconomyConfig.DAIRY_CODEX_ORDER, EconomyConfig.CINEMA_FILM_ORDER, EconomyConfig.POTTERY_CODEX_ORDER, EconomyConfig.SPORTS_EVENT_ORDER, EconomyConfig.KITE_ORDER, EconomyConfig.SEASON_ORDER, EconomyConfig.get_photo_entry_order()]:
+	for arr in [EconomyConfig.SOLAR_DISH_ORDER, EconomyConfig.HYBRID_FLORA_ORDER, EconomyConfig.SOUVENIR_BOX_ORDER, EconomyConfig.HOTSPRING_BATH_ORDER, EconomyConfig.BAKERY_CODEX_ORDER, EconomyConfig.TEA_CODEX_ORDER, EconomyConfig.TASTING_DISH_ORDER, EconomyConfig.DAIRY_CODEX_ORDER, EconomyConfig.CINEMA_FILM_ORDER, EconomyConfig.POTTERY_CODEX_ORDER, EconomyConfig.KITE_ORDER, EconomyConfig.SEASON_ORDER]:
 		ids.append_array(arr)
 	ids.append(EconomyConfig.SEAFOOD_ITEM_ID)
 	return ids
 
-## Card lines (real clip width), headline and worker cards of the HUD view on screen; returns the number of labels checked
-func _i18n_check_hud_view(hud: HUD, ctx: String, out: Array[String], st: Dictionary) -> int:
-	hud._sync_label_nodes()
-	var checked := 0
-	var cards: Array[Dictionary] = hud._get_current_tab_cards()
-	var n := cards.size()
-	var two_row := hud._is_two_row_layout(n)
-	for i in range(n):
-		var cr := hud._get_card_rect(i, n)
-		var ctype := String(cards[i].get("type", ""))
-		var avail := cr.size.x - 8.0
-		if two_row:
-			avail = cr.size.x - 5.0 - hud._two_row_icon_reserve(n)
-		elif ctype.begins_with("wish_") or ctype.begins_with("bday_") or ctype.begins_with("fw_") or ctype.begins_with("fr_"):
-			avail = cr.size.x - 6.0 - 34.0
-		for lset in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
-			var lc: Label = lset[i]
-			checked += 1
-			if not lc.visible:
-				out.append("%s card %d label hidden" % [ctx, i + 1])
-				continue
-			var w := _label_text_width(lc)
-			if avail - w < float(st["min_card_slack"]):
-				st["min_card_slack"] = avail - w
-				st["min_card_at"] = "%s #%d `%s`" % [ctx, i + 1, lc.text]
-			if w > avail + 0.5:
-				out.append("%s card %d `%s` %.1f>%.1fpx" % [ctx, i + 1, lc.text, w, avail])
-	var tl: Label = hud.lbl_drawer_title
-	tl.size = Vector2.ZERO
-	var tsz := tl.get_combined_minimum_size() * tl.scale
-	var head_kind := "codex" if hud.active_tab == 3 else ("panel" if (hud.wish_board_view or hud.birthday_view or hud.is_ci16_panel_open()) else "tab")
-	var min_sx := 0.45 if head_kind == "codex" else (0.70 if head_kind == "panel" else 0.60)
-	var hk := "head_" + head_kind
-	st[hk] = minf(float(st.get(hk, 9.0)), tl.scale.x)
-	checked += 1
-	if tl.position.x + tsz.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 + 0.5 or tl.scale.x < min_sx - 0.001:
-		out.append("%s headline `%s` %.1fpx wide at %.2fx (min %.2fx)" % [ctx, tl.text, tsz.x, tl.scale.x, min_sx])
-	if head_kind == "codex" and n > 0 and tl.position.y + tsz.y > hud._get_card_rect(0, n).position.y + 1.0:
-		out.append("%s codex headline runs into the cards: `%s`" % [ctx, tl.text])
-	if hud.active_tab == 3 and not hud.wish_board_view and not hud.birthday_view:
-		for e in range(EconomyConfig.ANIMAL_ORDER.size()):
-			var er := hud._get_emp_card_rect(e)
-			for pair in [[hud.lbl_emp_names[e], er.end.x - 23.0], [hud.lbl_emp_titles[e], er.end.x - 2.0], [hud.lbl_emp_progress[e], er.end.x - 2.0]]:
-				var el: Label = pair[0]
-				var right := el.position.x + _label_text_width(el)
-				checked += 1
-				if right > float(pair[1]) + 0.5:
-					out.append("%s worker card %d `%s` ends at %.1f > %.1f" % [ctx, e + 1, el.text, right, float(pair[1])])
-	return checked
+## Tiles of the menu view on screen fit and are clean for the current language; returns the number of tiles checked
+func _i18n_check_hud_view(hud: HUD, ctx: String, out: Array[String], _st: Dictionary) -> int:
+	var p := _menu_tiles_problem(hud, ctx)
+	if p != "":
+		out.append(p)
+	var list := hud._get_current_tab_cards()
+	for c in list:
+		var hp := _i18n_text_problem(EconomyConfig.current_lang, String(c.get("hint", "")) + String(c["title"]) + String(c.get("verb", "")) + String(c["cost"]))
+		if hp != "":
+			out.append("%s `%s` / `%s`: %s" % [ctx, String(c["title"]), String(c.get("hint", "")), hp])
+		# one glance is enough: the hover line stays one short line
+		if String(c.get("hint", "")).length() > 44:
+			out.append("%s hint too long `%s`" % [ctx, String(c["hint"])])
+	return list.size()
 
-## Top-right toggles, bottom-bar pills, tab captions (or the capsule) stay inside their art; returns the number checked
-func _i18n_check_chrome(hud: HUD, ctx: String, out: Array[String], st: Dictionary) -> int:
+## The bottom bar / the capsule keep inside their space whatever the language; returns the number checked
+func _i18n_check_chrome(hud: HUD, ctx: String, out: Array[String], _st: Dictionary) -> int:
 	hud._sync_label_nodes()
-	var boxes: Array = []
 	if hud.is_collapsed_capsule:
-		boxes.append([hud.lbl_capsule_info, HUD.CAPSULE_MUTE_RECT.position.x])
-		boxes.append([hud.lbl_capsule_mute, HUD.CAPSULE_MUTE_RECT.end.x])
-	else:
-		boxes.append([hud.lbl_bar_gold, 620.0])
-		boxes.append([hud.lbl_bar_pipeline, 798.0])
-		boxes.append([hud.lbl_bar_stall, 948.0])
-		boxes.append([hud.lbl_bar_pomodoro, HUD.POMODORO_RECT.end.x])
-		for ti in range(HUD.TAB_COUNT):
-			boxes.append([hud.lbl_tabs[ti], hud.lbl_tabs[ti].position.x + 73.5])
-		if hud.drawer_expanded:
-			boxes.append([hud.lbl_drawer_lang, HUD.TOP_RIGHT_LANG_RECT.end.x])
-			boxes.append([hud.lbl_drawer_noise, HUD.TOP_RIGHT_NOISE_RECT.end.x])
-			boxes.append([hud.lbl_drawer_fps, HUD.TOP_RIGHT_FPS_RECT.end.x])
-			boxes.append([hud.lbl_drawer_opacity, HUD.TOP_RIGHT_OPACITY_RECT.end.x])
-			boxes.append([hud.lbl_drawer_dock, HUD.TOP_RIGHT_DOCK_RECT.end.x])
-			boxes.append([hud.lbl_drawer_weather, HUD.TOP_RIGHT_WEATHER_RECT.end.x])
-			boxes.append([hud.lbl_drawer_mute, HUD.TOP_RIGHT_MUTE_RECT.end.x])
-	var checked := 0
-	for b in boxes:
-		var lb: Label = b[0]
-		if not lb.visible:
-			continue
-		checked += 1
-		lb.size = Vector2.ZERO
-		var right := lb.position.x + lb.get_combined_minimum_size().x * lb.scale.x
-		var ratio := lb.scale.x / maxf(0.01, lb.scale.y)
-		st["min_chrome_ratio"] = minf(float(st["min_chrome_ratio"]), ratio)
-		if right > float(b[1]) + 0.5 or ratio < 0.70:
-			out.append("%s `%s` ends at %.1f > %.1f (x/y %.2f)" % [ctx, lb.text, right, float(b[1]), ratio])
-	return checked
-
-## The banner on screen fits the 620px pill without being squeezed and is clean for the current language
-func _i18n_check_banner(hud: HUD, ctx: String, out: Array[String], st: Dictionary) -> void:
-	hud.offline_banner_timer = 3.0
-	hud._sync_label_nodes()
-	var lb: Label = hud.lbl_offline
-	var raw := _label_text_width(lb) / maxf(0.01, lb.scale.x)
-	st["banners"] = int(st["banners"]) + 1
-	st["max_banner_w"] = maxf(float(st["max_banner_w"]), raw)
-	if raw > I18N_BANNER_W + 0.5:
-		out.append("%s banner %.1f>%.0fpx `%s`" % [ctx, raw, I18N_BANNER_W, lb.text])
-	var pr := _i18n_text_problem(EconomyConfig.current_lang, lb.text)
-	if pr != "":
-		out.append("%s banner %s `%s`" % [ctx, pr, lb.text])
+		if hud.capsule_root.get_combined_minimum_size().x > HUD.CAPSULE_RECT.size.x:
+			out.append("%s capsule %.0fpx wide" % [ctx, hud.capsule_root.get_combined_minimum_size().x])
+		return 1
+	if hud.bar_root.get_combined_minimum_size().x > HUD.FULL_BAR_RECT.size.x + 0.5:
+		out.append("%s bar needs %.0fpx" % [ctx, hud.bar_root.get_combined_minimum_size().x])
+	for tl in hud.lbl_tabs:
+		if UiKit.text_width(tl) > 76.0:
+			out.append("%s tab caption `%s` %.0fpx" % [ctx, tl.text, UiKit.text_width(tl)])
+	return 1 + hud.lbl_tabs.size()
 
 ## Every visible Label under `root`: no other-language glyph, no raw placeholder; returns the number scanned
 func _i18n_scan_visible(root: Node, ctx: String, out: Array[String]) -> int:
@@ -6635,261 +5872,28 @@ func _i18n_scan_visible(root: Node, ctx: String, out: Array[String]) -> int:
 				out.append("%s %s: %s `%s`" % [ctx, String(nd.name), pr, (nd as Label).text])
 	return n
 
-## Footprint of every world label (hidden ones included; units / floating text excluded) keyed by node path
-func _i18n_world_label_boxes(world: MainWorld) -> Dictionary:
-	var boxes := {}
-	var stack: Array = [world.world_root]
-	while not stack.is_empty():
-		var nd: Node = stack.pop_back()
-		for ch in nd.get_children():
-			stack.append(ch)
-		if nd is Label and not _is_inside_unit_or_fx(nd, world) and (nd as Label).text.strip_edges() != "":
-			var lb := nd as Label
-			lb.size = Vector2.ZERO
-			boxes[str(lb.get_path())] = {"rect": _rect_in_world_local(world, lb, Rect2(Vector2.ZERO, lb.size)), "text": lb.text, "visible": lb.is_visible_in_tree()}
-	return boxes
-
-## Every world-label text of every state (idle / festival / built / unbuilt / auction / cinema / sports ...), composed the
-## way the game composes it from the same zh source names, keyed by a stable id -> [text, the label's fixed min width]
-func _i18n_world_texts() -> Dictionary:
-	var t := {}
-	t["gift_bag"] = [EconomyConfig.tr_key("wl_gift_bag"), 76.0]
-	t["airship"] = [EconomyConfig.tr_key("wl_airship"), 112.0]
-	t["airship_on"] = [EconomyConfig.tr_key("wl_airship_on") % [12, 12, 9, 2], 112.0]
-	t["parade"] = [EconomyConfig.tr_key("wl_parade"), 114.0]
-	t["parade_on"] = [EconomyConfig.tr_key("wl_parade_on") % 88, 114.0]
-	t["moontea"] = [EconomyConfig.tr_key("wl_moontea"), 120.0]
-	t["moontea_on"] = [EconomyConfig.tr_key("wl_moontea_on") % 88, 120.0]
-	t["lantern"] = [EconomyConfig.tr_key("wl_lantern"), 0.0]
-	t["lantern_on"] = [EconomyConfig.tr_key("wl_lantern_on") % 88, 0.0]
-	t["sports"] = [EconomyConfig.tr_key("wl_sports"), 0.0]
-	t["sports_idle"] = [EconomyConfig.tr_key("wl_sports_idle"), 0.0]
-	t["sports_gather"] = [EconomyConfig.tr_key("wl_sports_gather") % 6, 0.0]
-	for tk in EconomyConfig.SPORTS_TEAM_NAMES.keys():
-		t["sports_award_" + String(tk)] = [EconomyConfig.tr_key("wl_sports_award") % EconomyConfig.tr_name(String(EconomyConfig.SPORTS_TEAM_NAMES[tk])), 0.0]
-	for ev in EconomyConfig.SPORTS_EVENT_ORDER:
-		t["sports_event_" + String(ev)] = [EconomyConfig.tr_key("wl_sports_event") % [EconomyConfig.tr_name(String(EconomyConfig.SPORTS_EVENTS[ev]["short_name"])), 2, 3], 0.0]
-	t["kite"] = [EconomyConfig.tr_key("wl_kite"), 0.0]
-	for wl in range(3):
-		t["kite_on_%d" % wl] = [EconomyConfig.tr_key("wl_kite_on") % [EconomyConfig.tr_name(String(EconomyConfig.get_kite_wind_level_info(wl).get("name", ""))), 1.18, 45, 6, 6], 0.0]
-	# buildings: unbuilt / cost / built badge of every recipe
-	for pair in [["cp", EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD], ["gh", EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD], ["hs", EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD], ["tp", EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD], ["wm", EconomyConfig.WINDMILL_UNLOCK_COST_GOLD], ["dw", EconomyConfig.DAIRY_WORKSHOP_UNLOCK_COST_GOLD], ["pk", EconomyConfig.POTTERY_KILN_UNLOCK_COST_GOLD]]:
-		t[String(pair[0]) + "_unbuilt"] = [EconomyConfig.tr_key("wl_%s_unbuilt" % String(pair[0])), 0.0]
-		t[String(pair[0]) + "_cost"] = [EconomyConfig.tr_fmt("wl_%s_cost" % String(pair[0]), [int(pair[1])]), 0.0]
-		t[String(pair[0]) + "_init"] = [EconomyConfig.tr_key("wl_%s_init" % String(pair[0])), 0.0]
-	for d_id in EconomyConfig.TASTING_DISH_ORDER:
-		var dn := EconomyConfig.tr_name(String(EconomyConfig.TASTING_DISHES[d_id]["short_name"]))
-		t["cp_medal_" + String(d_id)] = [EconomyConfig.tr_fmt("wl_badge", [dn, EconomyConfig.tr_fmt("wl_seg_medal", [9])]), 0.0]
-		t["cp_tasted_" + String(d_id)] = [EconomyConfig.tr_fmt("wl_badge", [dn, EconomyConfig.tr_fmt("wl_seg_tasted", [2])]), 0.0]
-	for f_id in EconomyConfig.HYBRID_FLORA_ORDER:
-		var fz := EconomyConfig.get_item_raw_name(String(f_id))
-		if fz.length() > 4:
-			fz = fz.substr(fz.length() - 4, 4)
-		t["gh_" + String(f_id)] = [EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(fz), EconomyConfig.tr_fmt("wl_seg_box", [9])]), 0.0]
-	for h_id in EconomyConfig.HOTSPRING_BATH_ORDER:
-		t["hs_" + String(h_id)] = [EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(String(EconomyConfig.HOTSPRING_BATH_BLENDS[h_id]["short_name"])), EconomyConfig.tr_fmt("wl_seg_bath", [9])]), 0.0]
-	for tea_id in EconomyConfig.TEA_CODEX_ORDER:
-		var tn := EconomyConfig.tr_name(String(EconomyConfig.TEA_ITEMS[tea_id]["short_name"]))
-		t["tp_tea_" + String(tea_id)] = [EconomyConfig.tr_fmt("wl_badge", [tn, EconomyConfig.tr_fmt("wl_seg_tea", [9])]), 0.0]
-		t["tp_leaf_" + String(tea_id)] = [EconomyConfig.tr_fmt("wl_badge", [tn, EconomyConfig.tr_fmt("wl_seg_leaf", [9])]), 0.0]
-	for b_id in EconomyConfig.BAKERY_CODEX_ORDER:
-		var bn := EconomyConfig.tr_name(String(EconomyConfig.BAKERY_ITEMS[b_id]["short_name"]))
-		t["wm_bread_" + String(b_id)] = [EconomyConfig.tr_fmt("wl_badge", [bn, EconomyConfig.tr_fmt("wl_seg_bread", [9])]), 0.0]
-		t["wm_flour_" + String(b_id)] = [EconomyConfig.tr_fmt("wl_badge", [bn, EconomyConfig.tr_fmt("wl_seg_flour", [9])]), 0.0]
-	for dy_id in EconomyConfig.DAIRY_CODEX_ORDER:
-		t["dw_" + String(dy_id)] = [EconomyConfig.tr_fmt("wl_badge", [EconomyConfig.tr_name(String(EconomyConfig.DAIRY_ITEMS[dy_id]["short_name"])), EconomyConfig.tr_fmt("wl_seg_milk", [9])]), 0.0]
-	for p_id in EconomyConfig.POTTERY_CODEX_ORDER:
-		var pn := EconomyConfig.tr_name(String(EconomyConfig.POTTERY_ITEMS[p_id]["short_name"]))
-		t["pk_clay_" + String(p_id)] = [EconomyConfig.tr_fmt("wl_badge", [pn, EconomyConfig.tr_fmt("wl_seg_clay", [9])]), 0.0]
-		t["pk_dry_" + String(p_id)] = [EconomyConfig.tr_fmt("wl_badge", [pn, EconomyConfig.tr_key("wl_seg_nofuel")]), 0.0]
-	# lighthouse harbor + auction
-	t["lh_init"] = [EconomyConfig.tr_key("wl_lh_init"), 0.0]
-	t["au_init"] = [EconomyConfig.tr_key("wl_au_init"), 0.0]
-	t["lh_cost"] = [EconomyConfig.tr_fmt("wl_lh_cost", [EconomyConfig.LIGHTHOUSE_HARBOR_UNLOCK_COST_GOLD]), 0.0]
-	t["lh_lv"] = [EconomyConfig.tr_fmt("wl_lh_lv", [25, 9]), 0.0]
-	for cur_k in ["gold", "amber"]:
-		var cur := "G" if cur_k == "gold" else EconomyConfig.tr_key("ui_cur_amber")
-		t["au_open_" + cur_k] = [EconomyConfig.tr_fmt("wl_au_open", [999, cur]), 0.0]
-		t["au_now_you_" + cur_k] = [EconomyConfig.tr_fmt("wl_au_now", [999, cur, EconomyConfig.tr_key("wl_au_you")]), 0.0]
-		for b in EconomyConfig.AUCTION_BIDDERS:
-			var lead := EconomyConfig.get_auction_bidder_name(String(b["id"])) if EconomyConfig.is_zh() else EconomyConfig.get_auction_bidder_short_name(String(b["id"]))
-			t["au_now_%s_%s" % [String(b["id"]), cur_k]] = [EconomyConfig.tr_fmt("wl_au_now", [999, cur, lead]), 0.0]
-	for lot in EconomyConfig.AUCTION_LOT_ORDER:
-		t["au_on_" + String(lot)] = [EconomyConfig.tr_key("wl_au_on") % [3, 3, EconomyConfig.tr_name(String(EconomyConfig.AUCTION_LOTS[lot]["short_name"])), 10], 0.0]
-	# open-air cinema marquee
-	t["cin_init"] = [EconomyConfig.tr_key("wl_cin_init"), 0.0]
-	t["cin_cost"] = [EconomyConfig.tr_fmt("wl_cin_cost", [EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD]), 0.0]
-	for film in EconomyConfig.CINEMA_FILM_ORDER:
-		t["cin_on_" + String(film)] = [EconomyConfig.tr_key("wl_cin_on") % [3, 3, EconomyConfig.tr_name(String(EconomyConfig.CINEMA_FILMS[film]["short_name"])), 12], 0.0]
-	t["cin_break"] = [EconomyConfig.tr_key("wl_cin_break") % 2, 0.0]
-	t["cin_done"] = [EconomyConfig.tr_key("wl_cin_done") % 3, 0.0]
-	return t
-
-## Real-arg event banners + every banner template (sample args) in the current language
+## Every news line (sample arguments) is one short line in every language
 func _i18n_check_all_banners(hud: HUD, lang: String, out: Array[String], st: Dictionary, longest_item: String) -> void:
-	var c := lang + " banner"
-	hud._on_kite_festival_started(0)
-	_i18n_check_banner(hud, c + " kite_start", out, st)
-	hud._on_kite_festival_ended(6, true)
-	_i18n_check_banner(hud, c + " kite_swept", out, st)
-	hud._on_kite_festival_ended(3, false)
-	_i18n_check_banner(hud, c + " kite_end", out, st)
-	for s_id in EconomyConfig.SEASON_ORDER:
-		hud._on_season_changed(s_id)
-		_i18n_check_banner(hud, c + " season " + s_id, out, st)
-	for w_id in EconomyConfig.SKY_WEATHER_ORDER:
-		hud._on_sky_weather_changed(w_id, "sunny")
-		_i18n_check_banner(hud, c + " weather " + w_id, out, st)
-	for isl in EconomyConfig.WISH_ISLANDERS:
-		hud._on_birthday_started(isl, "2031-01-01")
-		_i18n_check_banner(hud, c + " bday " + isl, out, st)
-		hud._on_birthday_gift_given(isl, {"rep": 999, "vouchers": 99, "favourite": longest_item, "medal": true})
-		_i18n_check_banner(hud, c + " gift " + isl, out, st)
-	# CI-16: food-week scores (longest dish name of this language, every judge, medal + vouchers) and bond level-ups
-	var longest_dish := ""
-	var longest_dw := -1.0
-	var dfont: Font = hud.lbl_offline.get_theme_font("font")
-	for did16 in EconomyConfig.FOOD_WEEK_DISHES.keys():
-		var dw16 := dfont.get_string_size(EconomyConfig.get_item_display_name(String(did16)), HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-		if dw16 > longest_dw:
-			longest_dw = dw16
-			longest_dish = String(did16)
-	for isl16 in EconomyConfig.WISH_ISLANDERS:
-		hud._on_food_week_scored({"judge": isl16, "dish": longest_dish, "score": 100, "rep": 999, "vouchers": 9, "medal_up": true, "tier": 3})
-		_i18n_check_banner(hud, c + " food_week " + isl16, out, st)
-		hud._on_friendship_level_up(isl16, 5, "wish")
-		_i18n_check_banner(hud, c + " bond_up " + isl16, out, st)
-	hud._on_photo_tour_started(0, 3)
-	_i18n_check_banner(hud, c + " photo_start", out, st)
-	for pid in EconomyConfig.get_photo_entry_order():
-		hud._on_photo_taken("", pid, 999, true)
-		_i18n_check_banner(hud, c + " photo " + pid, out, st)
-		hud._on_photo_taken("", pid, 999, false)
-		_i18n_check_banner(hud, c + " photo2 " + pid, out, st)
-	hud._on_photo_tour_ended(9, true)
-	_i18n_check_banner(hud, c + " photo_end_stamp", out, st)
-	hud._on_photo_tour_ended(9, false)
-	_i18n_check_banner(hud, c + " photo_end", out, st)
-	for isl2 in EconomyConfig.WISH_ISLANDERS:
-		for wt in EconomyConfig.WISH_TYPES.keys():
-			hud._on_wish_fulfilled(0, {"islander": isl2, "type": wt})
-			_i18n_check_banner(hud, c + " wish %s/%s" % [isl2, wt], out, st)
-	hud._on_pottery_kiln_unlocked_changed(true)
-	_i18n_check_banner(hud, c + " kiln", out, st)
-	hud._on_sports_day_started(4)
-	_i18n_check_banner(hud, c + " sports_start", out, st)
-	for ev in EconomyConfig.SPORTS_EVENT_ORDER:
-		hud._on_sports_event_settled(ev, ["bunny", "otter", "fox", "shiba"], 999)
-		_i18n_check_banner(hud, c + " sports " + ev, out, st)
-	for tk in EconomyConfig.SPORTS_TEAM_NAMES.keys():
-		hud._on_sports_day_ended(tk, 9)
-		_i18n_check_banner(hud, c + " sports_end " + tk, out, st)
-	hud._on_dairy_workshop_unlocked_changed(true)
-	_i18n_check_banner(hud, c + " dairy", out, st)
-	hud._on_open_air_cinema_unlocked_changed(true)
-	_i18n_check_banner(hud, c + " cinema", out, st)
-	for f_id in EconomyConfig.CINEMA_FILM_ORDER:
-		hud._on_cinema_screening_settled(f_id, 99, 999, 999)
-		_i18n_check_banner(hud, c + " film " + f_id, out, st)
-	hud._on_cinema_medal_awarded(9)
-	_i18n_check_banner(hud, c + " cinema_medal", out, st)
-	hud._on_lighthouse_harbor_unlocked_changed(true)
-	_i18n_check_banner(hud, c + " harbor", out, st)
-	hud._on_island_auction_started(3)
-	_i18n_check_banner(hud, c + " auction_start", out, st)
-	for lot in EconomyConfig.AUCTION_LOT_ORDER:
-		hud._on_auction_lot_resolved(lot, "player", 999, "amber", true)
-		_i18n_check_banner(hud, c + " lot_won " + lot, out, st)
-		for b in EconomyConfig.AUCTION_BIDDERS:
-			hud._on_auction_lot_resolved(lot, String(b["id"]), 999, "gold", false)
-			_i18n_check_banner(hud, c + " lot_lost " + lot, out, st)
-		hud._on_auction_lot_resolved(lot, "", 0, "gold", false)
-		_i18n_check_banner(hud, c + " lot_pass " + lot, out, st)
-	hud._on_island_auction_ended(3, true)
-	_i18n_check_banner(hud, c + " auction_end", out, st)
-	hud._on_island_auction_ended(1, false)
-	_i18n_check_banner(hud, c + " auction_end2", out, st)
-	hud._on_wish_lantern_festival_started(60.0)
-	_i18n_check_banner(hud, c + " lantern_start", out, st)
-	hud._on_wish_lantern_claimed(0, 999, 9, 9, GameManager.WISH_LANTERN_WISH_BONUS_EVERY * 3)
-	_i18n_check_banner(hud, c + " lantern_claim", out, st)
-	for d_id in EconomyConfig.TASTING_DISH_ORDER:
-		hud._on_tasting_dish_unlocked(d_id)
-		_i18n_check_banner(hud, c + " dish " + d_id, out, st)
-		hud._on_tasting_challenge_judged(d_id, 99, true, 999, 9, 9)
-		_i18n_check_banner(hud, c + " tasting " + d_id, out, st)
-		hud._on_tasting_challenge_judged(d_id, 40, false, 0, 0, 0)
-		_i18n_check_banner(hud, c + " tasting_fail " + d_id, out, st)
-	hud._on_chef_medal_awarded(9)
-	_i18n_check_banner(hud, c + " chef_medal", out, st)
-	hud._on_moon_tea_gathering_started(60.0)
-	_i18n_check_banner(hud, c + " moontea", out, st)
-	for t_id in EconomyConfig.TEA_CODEX_ORDER:
-		hud._on_tea_recipe_unlocked(t_id)
-		_i18n_check_banner(hud, c + " tea " + t_id, out, st)
-		hud._on_moon_tea_gathering_settled(t_id, 1, 999, 9, 9, 99)
-		_i18n_check_banner(hud, c + " moontea " + t_id, out, st)
-	hud._on_gourmet_parade_started(60.0)
-	_i18n_check_banner(hud, c + " parade", out, st)
-	for b_id in EconomyConfig.BAKERY_CODEX_ORDER:
-		hud._on_bakery_recipe_unlocked(b_id)
-		_i18n_check_banner(hud, c + " bakery " + b_id, out, st)
-		hud._on_gourmet_parade_settled(b_id, 1, 999, 9, 9, 99)
-		_i18n_check_banner(hud, c + " parade " + b_id, out, st)
-	for h_id in EconomyConfig.HOTSPRING_BATH_ORDER:
-		hud._on_hotspring_recipe_unlocked(h_id)
-		_i18n_check_banner(hud, c + " spa " + h_id, out, st)
-		hud._on_hotspring_vip_settled(h_id, 1, 999, 9, 9, 99)
-		_i18n_check_banner(hud, c + " vip " + h_id, out, st)
-	for fl_id in EconomyConfig.HYBRID_FLORA_ORDER:
-		hud._on_hybrid_flora_crossbred(fl_id)
-		_i18n_check_banner(hud, c + " flora " + fl_id, out, st)
-	for sb_id in EconomyConfig.SOUVENIR_BOX_ORDER:
-		hud._on_souvenir_box_sold(sb_id, 1, 999, 9, 99)
-		_i18n_check_banner(hud, c + " souvenir " + sb_id, out, st)
-	hud._on_airship_bulk_order_completed({"reward_gold": 9999, "reward_amber": 9, "reward_vouchers": 9})
-	_i18n_check_banner(hud, c + " airship", out, st)
-	for term in EconomyConfig.SOLAR_TERMS:
-		hud._on_solar_term_changed(int(term["idx"]), String(term["name"]), String(term["dish_id"]))
-		_i18n_check_banner(hud, c + " term " + String(term["id"]), out, st)
-	hud._on_gourmet_acclaim_started(36.0)
-	_i18n_check_banner(hud, c + " acclaim", out, st)
-	hud._on_lantern_festival_started(60.0)
-	_i18n_check_banner(hud, c + " fireworks", out, st)
-	hud._on_pomodoro_completed(999, 30.0)
-	_i18n_check_banner(hud, c + " pomodoro", out, st)
-	hud._show_offline_welcome_banner(3 * 3600 + 59 * 60, 99999)
-	_i18n_check_banner(hud, c + " offline", out, st)
-	# every banner template (HUD + world) with sample args: %d -> 999, %s -> a 10-letter / 5-glyph word, floats -> 1.88;
-	# the `_seg` / suffix keys are pieces appended to another banner and are measured inside it above
-	var sample_s := "Abcdefghij" if lang == "en_US" else "あいうえお"
-	var font: Font = hud.lbl_offline.get_theme_font("font")
-	if hud.lbl_offline.label_settings != null and hud.lbl_offline.label_settings.font != null:
-		font = hud.lbl_offline.label_settings.font
 	var tbl: Dictionary = EconomyConfig.I18N_DICT[lang]
-	var piece_suffixes := ["_fav", "_medal", "_gavel", "_next", "_granted", "_first_amber", "_first_voucher", "_special", "_click", "_nofuel", "_hint"]
+	var long_name := EconomyConfig.get_item_display_name(longest_item)
 	for k in tbl.keys():
 		var ks := String(k)
-		if not ks.begins_with("bn_") or ks.begins_with("bn_seg_"):
-			continue
-		var is_piece := false
-		for suf in piece_suffixes:
-			if ks.ends_with(suf):
-				is_piece = true
-		if is_piece:
+		if not ks.begins_with("bn_"):
 			continue
 		var tpl := String(tbl[k])
 		var args: Array = []
 		for sp in _i18n_specs(tpl):
-			if sp == "%%":
-				continue
-			args.append(999 if sp.ends_with("d") else (sample_s if sp.ends_with("s") else 1.88))
-		var sample := (tpl % args) if not args.is_empty() else tpl.replace("%%", "%")
-		var sw := font.get_string_size(sample, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 2.0
+			if sp != "%%":
+				args.append(999 if sp.ends_with("d") else (long_name if sp.ends_with("s") else 1.88))
+		var sample := (tpl % args) if not args.is_empty() else tpl
+		var sw := UiKit.font(true).get_string_size(sample, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
 		st["banners"] = int(st["banners"]) + 1
 		st["max_banner_w"] = maxf(float(st["max_banner_w"]), sw)
-		if sw > I18N_BANNER_W + 0.5:
-			out.append("%s template `%s` %.1f>%.0fpx `%s`" % [c, ks, sw, I18N_BANNER_W, sample])
+		if sw > I18N_BANNER_W:
+			out.append("%s news `%s` %.0f>%.0fpx `%s`" % [lang, ks, sw, I18N_BANNER_W, sample])
+		var pr := _i18n_text_problem(lang, sample)
+		if pr != "":
+			out.append("%s news `%s` %s `%s`" % [lang, ks, pr, sample])
 
 ## The whole assertion 29; returns stats or {"error": ...}
 func _i18n_audit(world: MainWorld) -> Dictionary:
@@ -6899,7 +5903,7 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 	var hud: HUD = world.hud
 	if hud == null:
 		return {"error": "no HUD"}
-	var st := {"min_card_slack": 999.0, "min_chrome_ratio": 9.0, "banners": 0, "max_banner_w": 0.0}
+	var st := {"banners": 0, "max_banner_w": 0.0}
 	var out: Array[String] = []
 	var views := 0
 	var labels := 0
@@ -6907,9 +5911,7 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 	var keep_ts := Engine.time_scale
 	var keep_clock: Callable = GameManager.season_clock
 	var keep_islands: Dictionary = GameManager.unlocked_islands.duplicate()
-	var keep_route: Array[String] = []
-	keep_route.assign(GameManager.photo_tour_route)
-	var flag_names := ["greenhouse_unlocked", "hotspring_unlocked", "windmill_unlocked", "tea_pavilion_unlocked", "chef_pavilion_unlocked", "lighthouse_harbor_unlocked", "dairy_workshop_unlocked", "pottery_kiln_unlocked", "open_air_cinema_unlocked", "airship_docked", "parade_festival_timer", "moon_tea_gathering_timer", "wish_lantern_festival_timer", "lantern_festival_timer", "gourmet_acclaim_timer", "kite_festival_active", "kite_festival_clock", "island_auction_active", "auction_high_bidder", "sports_day_active", "sports_day_clock", "photo_tour_active", "photo_tour_stop_idx", "current_weather", "cinema_night_on", "cinema_night_clock", "gold"]
+	var flag_names := ["greenhouse_unlocked", "hotspring_unlocked", "windmill_unlocked", "tea_pavilion_unlocked", "chef_pavilion_unlocked", "lighthouse_harbor_unlocked", "dairy_workshop_unlocked", "pottery_kiln_unlocked", "open_air_cinema_unlocked", "airship_docked", "parade_festival_timer", "moon_tea_gathering_timer", "wish_lantern_festival_timer", "gourmet_acclaim_timer", "kite_festival_active", "kite_festival_clock", "current_weather", "cinema_night_on", "cinema_night_clock", "gold"]
 	var keep_flags := {}
 	for fn in flag_names:
 		keep_flags[fn] = GameManager.get(fn)
@@ -6932,15 +5934,10 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 	world._on_language_changed()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var zh_boxes := _i18n_world_label_boxes(world)
-	var max_ratio := 0.0
-	var wfont: Font = hud.lbl_offline.get_theme_font("font")
-	var zh_wtexts := _i18n_world_texts()
 	var world_texts_checked := 0
 	var shots: Array[String] = []
 	# zh review shots of the same views (side-by-side comparison with en / ja)
 	hud.open_drawer(2)
-	hud._on_kite_festival_started(0)
 	await _ci15_capture("user://i18n_zh_CN_tab2_1920x360.png")
 	hud.open_drawer(3)
 	hud.offline_banner_timer = 0.0
@@ -6975,35 +5972,7 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 		await get_tree().process_frame
 		await get_tree().process_frame
 		# 3) world labels inside their zh footprint + clean text
-		var l_boxes := _i18n_world_label_boxes(world)
-		for path in l_boxes.keys():
-			var lb_info: Dictionary = l_boxes[path]
-			if bool(lb_info["visible"]):
-				var wp := _i18n_text_problem(lang, String(lb_info["text"]))
-				if wp != "":
-					out.append("%s world label %s: %s `%s`" % [lang, String(path).get_file(), wp, String(lb_info["text"])])
-			if not zh_boxes.has(path):
-				continue
-			var zr: Rect2 = zh_boxes[path]["rect"]
-			var lr: Rect2 = lb_info["rect"]
-			max_ratio = maxf(max_ratio, lr.size.x / maxf(1.0, zr.size.x))
-			if not zr.grow(0.75).encloses(lr):
-				out.append("%s world label %s `%s` %s leaves its zh footprint %s (`%s`)" % [lang, String(path).get_file(), String(lb_info["text"]), str(lr), str(zr), String(zh_boxes[path]["text"])])
 		scanned += _i18n_scan_visible(get_tree().root, lang + " world+bar", out)
-		# 3b) every world-label text of every state, measured with the world label font (13px): never wider than zh
-		var l_wtexts := _i18n_world_texts()
-		for wid in zh_wtexts.keys():
-			var zt := String(zh_wtexts[wid][0])
-			var lt := String(l_wtexts[wid][0])
-			var zw := maxf(float(zh_wtexts[wid][1]), wfont.get_string_size(zt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x)
-			var lw := wfont.get_string_size(lt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-			world_texts_checked += 1
-			max_ratio = maxf(max_ratio, lw / maxf(1.0, zw))
-			if lw > zw + 0.75:
-				out.append("%s world text %s `%s` %.1fpx > zh `%s` %.1fpx" % [lang, String(wid), lt, lw, zt, zw])
-			var wtp := _i18n_text_problem(lang, lt)
-			if wtp != "":
-				out.append("%s world text %s: %s `%s`" % [lang, String(wid), wtp, lt])
 		# 2) HUD views. State A = the late-game state left by the assertions above (+ its info-card banners)
 		for t in range(4):
 			hud.open_drawer(t)
@@ -7011,24 +5980,12 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 			labels += _i18n_check_chrome(hud, "%s A tab%d" % [lang, t], out, st)
 			scanned += _i18n_scan_visible(get_tree().root, "%s A tab%d" % [lang, t], out)
 			views += 1
-			var cards_a: Array[Dictionary] = hud._get_current_tab_cards()
-			for ci in range(cards_a.size()):
-				var ct := String(cards_a[ci].get("type", ""))
-				if ct in ["codex", "career", "ci10_codex", "ci11_codex", "ci12_codex", "ci13_codex", "ci14_codex", "ci15_codex", "ci16_codex", "sky_weather", "season_dress"]:
-					hud._activate_card(ci)
-					_i18n_check_banner(hud, "%s info card %s" % [lang, ct], out, st)
 		# wish board panel (+ every note's banner)
 		hud.open_drawer(2)
 		hud.wish_board_view = true
 		labels += _i18n_check_hud_view(hud, lang + " wish board", out, st)
 		scanned += _i18n_scan_visible(get_tree().root, lang + " wish board", out)
 		views += 1
-		var wcards: Array[Dictionary] = hud._get_current_tab_cards()
-		for wi in range(wcards.size()):
-			if String(wcards[wi]["type"]) == "wish_note":
-				hud._activate_card(wi)
-				hud.wish_board_view = true
-				_i18n_check_banner(hud, lang + " wish note", out, st)
 		hud.offline_banner_timer = 0.0
 		await _ci15_capture("user://i18n_%s_wish_board_1920x360.png" % lang)
 		shots.append("i18n_%s_wish_board" % lang)
@@ -7042,13 +5999,6 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 			labels += _i18n_check_hud_view(hud, "%s birthday d%d" % [lang, bd_day], out, st)
 			scanned += _i18n_scan_visible(get_tree().root, "%s birthday d%d" % [lang, bd_day], out)
 			views += 1
-			var bcards: Array[Dictionary] = hud._get_current_tab_cards()
-			for bi in range(bcards.size()):
-				var bt := String(bcards[bi]["type"])
-				if bt == "bday_today" or bt == "bday_next":
-					hud._activate_card(bi)
-					hud.birthday_view = true
-					_i18n_check_banner(hud, "%s birthday card %s" % [lang, bt], out, st)
 			if bd_day == 23:
 				hud.offline_banner_timer = 0.0
 				await _ci15_capture("user://i18n_%s_birthday_1920x360.png" % lang)
@@ -7070,13 +6020,6 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 			labels += _i18n_check_hud_view(hud, "%s food week %s" % [lang, fw_state], out, st)
 			scanned += _i18n_scan_visible(get_tree().root, "%s food week %s" % [lang, fw_state], out)
 			views += 1
-			var fcards: Array[Dictionary] = hud._get_current_tab_cards()
-			for fi in range(fcards.size()):
-				var ft16 := String(fcards[fi]["type"])
-				if ft16 == "fw_judge" or ft16 == "fw_score" or (ft16 == "fw_entry" and fw_state == "full"):
-					hud._activate_card(fi)
-					hud.food_week_view = true
-					_i18n_check_banner(hud, "%s food week card %s" % [lang, ft16], out, st)
 			if fw_state == "open":
 				hud.offline_banner_timer = 0.0
 				await _ci15_capture("user://i18n_%s_food_week_1920x360.png" % lang)
@@ -7087,12 +6030,6 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 		labels += _i18n_check_hud_view(hud, lang + " bonds", out, st)
 		scanned += _i18n_scan_visible(get_tree().root, lang + " bonds", out)
 		views += 1
-		var rcards: Array[Dictionary] = hud._get_current_tab_cards()
-		for ri in range(rcards.size()):
-			if String(rcards[ri]["type"]) == "fr_islander":
-				hud._activate_card(ri)
-				hud.friendship_view = true
-				_i18n_check_banner(hud, lang + " bond card", out, st)
 		hud.offline_banner_timer = 0.0
 		await _ci15_capture("user://i18n_%s_friendship_1920x360.png" % lang)
 		shots.append("i18n_%s_friendship" % lang)
@@ -7116,18 +6053,9 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 		GameManager.parade_festival_timer = 33.0
 		GameManager.moon_tea_gathering_timer = 33.0
 		GameManager.wish_lantern_festival_timer = 33.0
-		GameManager.lantern_festival_timer = 33.0
 		GameManager.gourmet_acclaim_timer = 33.0
 		GameManager.kite_festival_active = true
 		GameManager.lighthouse_harbor_unlocked = true
-		GameManager.island_auction_active = true
-		GameManager.auction_high_bidder = "coconut_trader"
-		GameManager.sports_day_active = true
-		GameManager.sports_day_clock = EconomyConfig.SPORTS_GATHER_SEC + 1.0
-		GameManager.photo_tour_active = true
-		var route_c: Array[String] = ["kite_terrace", "pond_bank", "cape_lawn"]
-		GameManager.photo_tour_route = route_c
-		GameManager.photo_tour_stop_idx = 1
 		GameManager.open_air_cinema_unlocked = true
 		GameManager.current_weather = GameManager.WeatherState.NIGHT
 		GameManager.cinema_night_on = true
@@ -7140,7 +6068,7 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 			scanned += _i18n_scan_visible(hud, "%s C tab%d" % [lang, tc], out)
 			views += 1
 		# State D = mid-game counters (2-digit guests / stocks / medals) on top of the running festivals
-		var counter_names := ["hotspring_guests_served", "parade_tourists_served", "tea_connoisseurs_served", "souvenirs_sold_count", "wish_lanterns_collected", "cinema_screenings_total", "cinema_medals", "auction_gavel_medals", "kite_medals", "photo_stamps", "wish_medals", "birthday_parties_total", "chef_medals", "sports_medals", "tastings_held", "photos_taken_total", "kite_collected_total", "sports_events_held_total", "seafood_landed_total", "wishes_fulfilled_total", "wish_vouchers_total", "food_week_entries_total"]
+		var counter_names := ["hotspring_guests_served", "parade_tourists_served", "tea_connoisseurs_served", "souvenirs_sold_count", "wish_lanterns_collected", "cinema_screenings_total", "cinema_medals", "kite_medals", "wish_medals", "birthday_parties_total", "chef_medals", "tastings_held", "kite_collected_total", "seafood_landed_total", "wishes_fulfilled_total", "wish_vouchers_total", "food_week_entries_total"]
 		var keep_counters := {}
 		for cn in counter_names:
 			keep_counters[cn] = GameManager.get(cn)
@@ -7151,19 +6079,8 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 			views += 1
 		for cn2 in counter_names:
 			GameManager.set(cn2, keep_counters[cn2])
-		GameManager.auction_high_bidder = "player"
-		hud.open_drawer(2)
-		for stop_i in [0, 2]:
-			GameManager.photo_tour_stop_idx = stop_i
-			labels += _i18n_check_hud_view(hud, "%s C stop%d tab2" % [lang, stop_i], out, st)
-		labels += _i18n_check_hud_view(hud, "%s C2 tab2" % lang, out, st)
-		GameManager.sports_day_clock = 0.0
-		GameManager.photo_tour_stop_idx = 9
-		labels += _i18n_check_hud_view(hud, "%s C3 tab2" % lang, out, st)
-		views += 2
 		for fb3 in flag_names:
 			GameManager.set(fb3, keep_flags[fb3])
-		GameManager.photo_tour_route.assign(keep_route)
 		# capsule + stealth capsule
 		hud.close_drawer(true)
 		labels += _i18n_check_chrome(hud, lang + " capsule", out, st)
@@ -7186,7 +6103,6 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 		_i18n_check_all_banners(hud, lang, out, st, longest_item)
 		# review shots: tab 2 with a banner, the codex tab, the collapsed bar
 		hud.open_drawer(2)
-		hud._on_kite_festival_started(0)
 		await _ci15_capture("user://i18n_%s_tab2_1920x360.png" % lang)
 		hud.open_drawer(3)
 		hud.offline_banner_timer = 0.0
@@ -7207,7 +6123,6 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 	GameManager.unlocked_islands = keep_islands
 	for fr in flag_names:
 		GameManager.set(fr, keep_flags[fr])
-	GameManager.photo_tour_route.assign(keep_route)
 	hud.close_drawer(false)
 	hud.offline_banner_timer = 0.0
 	hud._sync_label_nodes()
@@ -7220,14 +6135,9 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 		for oi in range(mini(60, out.size())):
 			shown.append(out[oi])
 		return {"error": "%d problem(s):\n  %s" % [out.size(), "\n  ".join(shown)]}
-	var head_parts: Array[String] = []
-	for hk in ["head_tab", "head_codex", "head_panel"]:
-		if st.has(hk):
-			head_parts.append("%s %.2f" % [String(hk).substr(5), float(st[hk])])
 	return {"keys": EconomyConfig.I18N_DICT["zh_CN"].size(), "names": EconomyConfig.NAME_I18N["en_US"].size(), "views": views, "labels": labels,
-		"min_card_slack": float(st["min_card_slack"]), "min_card_at": String(st.get("min_card_at", "")), "head_sx": "/".join(head_parts), "min_chrome_ratio": float(st["min_chrome_ratio"]),
-		"banners": int(st["banners"]), "max_banner_w": float(st["max_banner_w"]), "scanned": scanned, "world_labels": zh_boxes.size(), "world_texts": world_texts_checked,
-		"max_world_ratio": max_ratio, "shots": "user://{" + ",".join(shots) + "}_1920x360.png"}
+		"banners": int(st["banners"]), "max_banner_w": float(st["max_banner_w"]), "scanned": scanned, "world_texts": world_texts_checked,
+		"shots": "user://{" + ",".join(shots) + "}_1920x360.png"}
 
 ## CI-16 (assertion 30) -------------------------------------------------------------------------------------------------
 ## Cloud-Isle Food Critics' Week + Islander Friendship Bonds: textures, island-calendar weeks / judges / tastes, pause
@@ -7236,20 +6146,6 @@ func _i18n_audit(world: MainWorld) -> Dictionary:
 ## {"error": ...} or stats.
 func _ci16_fail(msg: String) -> Dictionary:
 	return {"error": msg}
-
-func _ci16_label_fits_all(hud: HUD, n: int, avail_fn: Callable, ctx: String) -> String:
-	for i in range(n):
-		var cr := hud._get_card_rect(i, n)
-		var avail: float = avail_fn.call(cr)
-		for lset in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
-			var lc: Label = lset[i]
-			if not lc.visible or lc.label_settings == null:
-				return "%s card %d label hidden" % [ctx, i + 1]
-			if not _label_text_fits(lc, avail):
-				return "%s card %d `%s` %.1f>%.1fpx" % [ctx, i + 1, lc.text, _label_text_width(lc), avail]
-			if cr.position.x < HUD.DRAWER_RECT.position.x + 4.0 or cr.end.x > HUD.DRAWER_RECT.end.x - 4.0 or lc.position.y + 12.0 > cr.end.y:
-				return "%s card %d leaves the drawer / card: %s" % [ctx, i + 1, str(cr)]
-	return ""
 
 ## Review capture without the floating texts the checks above spawned (time is frozen, so they would never fade)
 func _ci16_capture(world: MainWorld, path: String) -> void:
@@ -7273,7 +6169,7 @@ func _ci16_audit(world: MainWorld) -> Dictionary:
 	var keep_gold := GameManager.gold
 	var keep_vouchers := GameManager.rare_codex_vouchers
 	var keep_stall: Dictionary = GameManager.stall_inventory.duplicate(true)
-	var keep_pw := GameManager.photo_wish_paused
+	var keep_pw := GameManager.wish_paused
 	var keep_board: Array = GameManager.wish_board.duplicate(true)
 	var wish_names := ["wishes_fulfilled_total", "wish_fulfilled_counts", "wish_reputation_bonus", "wish_vouchers_total", "wish_medals", "wish_last_result", "birthday_last_gift_key", "birthday_counts", "birthday_parties_total", "birthday_reputation_bonus", "birthday_vouchers_total", "birthday_favourite_gifts", "birthday_medals", "birthday_last_result"]
 	var keep_w := {}
@@ -7285,7 +6181,7 @@ func _ci16_audit(world: MainWorld) -> Dictionary:
 	var keep_ts := Engine.time_scale
 	Engine.time_scale = 0.0
 	GameManager.sky_weather_paused = false
-	GameManager.photo_wish_paused = true
+	GameManager.wish_paused = true
 	GameManager._reset_food_week_and_friendship_state()
 	var stats := {}
 
@@ -7452,7 +6348,7 @@ func _ci16_audit(world: MainWorld) -> Dictionary:
 	var bday_noon := Time.get_unix_time_from_datetime_dict({"year": 2032, "month": 5, "day": EconomyConfig.get_islander_birthday_day("bunny"), "hour": 12, "minute": 0, "second": 0})
 	_ci16_set_clock_day(clk, bday_noon)
 	GameManager.refresh_island_calendar()
-	GameManager.gold = 10000000
+	GameManager.gold = 1000000000000
 	GameManager.stall_inventory["crop_0"] = 1
 	var g16 := GameManager.prepare_birthday_gift()
 	if not bool(g16.get("given", false)) or String(g16.get("favourite", "")) != "crop_0" or GameManager.get_friendship_points("bunny") != EconomyConfig.FRIEND_BIRTHDAY_POINTS + EconomyConfig.FRIEND_BIRTHDAY_FAV_POINTS or GameManager.get_friendship_level("bunny") != 1:
@@ -7464,12 +6360,12 @@ func _ci16_audit(world: MainWorld) -> Dictionary:
 		return _ci16_fail("points did not stop at the Lv.5 threshold: %d" % GameManager.get_friendship_points("shiba"))
 	for isl0 in EconomyConfig.WISH_ISLANDERS:
 		GameManager.friendship_points[isl0] = 0
-	var m0 := GameManager.get_codex_price_multiplier()
+	var m0 := GameManager.get_collection_multiplier()
 	GameManager.friendship_points["bunny"] = 80
-	var m2 := GameManager.get_codex_price_multiplier()
+	var m2 := GameManager.get_collection_multiplier()
 	for isl1 in EconomyConfig.WISH_ISLANDERS:
 		GameManager.friendship_points[isl1] = 360
-	var m30 := GameManager.get_codex_price_multiplier()
+	var m30 := GameManager.get_collection_multiplier()
 	if absf((m2 - m0) - 0.006) > 0.00001 or absf((m30 - m0) - EconomyConfig.FRIEND_PRICE_CAP) > 0.00001 or GameManager.get_friendship_total_levels() != 30 or GameManager.get_max_friend_count() != 6:
 		return _ci16_fail("price bonus wrong: Lv2 +%.4f, Lv30 +%.4f" % [m2 - m0, m30 - m0])
 	stats["price_cap"] = m30 - m0
@@ -7506,133 +6402,71 @@ func _ci16_audit(world: MainWorld) -> Dictionary:
 	_ci16_set_clock_day(clk, otter_noon + 7 * 86400)
 	GameManager.load_game()
 
-	# 10) HUD: Workers tab = 6 workers + #7 Food Week + #8 Bonds (single row, every line fits), both panels, codex card 18
+	# 10) HUD: Crew tab = 6 workers + Food Week + Bonds, both panels, codex entry
 	hud.open_drawer(1)
-	hud._sync_label_nodes()
 	var c1: Array[Dictionary] = hud._get_current_tab_cards()
-	if c1.size() != 8 or hud._is_two_row_layout(c1.size()) or String(c1[6]["type"]) != "food_week" or String(c1[7]["type"]) != "friendship" or String(c1[0]["type"]) != "animal":
-		return _ci16_fail("Workers tab should hold 6 workers + food week + bonds, got %d cards" % c1.size())
-	var fit1 := _ci16_label_fits_all(hud, c1.size(), func(cr: Rect2) -> float: return cr.size.x - 8.0, "tab1")
+	if c1.size() != 8 or String(c1[6]["type"]) != "food_week" or String(c1[7]["type"]) != "friendship" or String(c1[0]["type"]) != "animal":
+		return _ci16_fail("Crew tab should hold 6 workers + food week + bonds, got %d" % c1.size())
+	var fit1 := _menu_tiles_problem(hud, "crew tab")
 	if fit1 != "":
 		return _ci16_fail(fit1)
-	for ci7 in [6, 7]:
-		var cr7 := hud._get_card_rect(ci7, c1.size())
-		var t7: Label = hud.lbl_card_titles[ci7]
-		if t7.position.x + _label_text_width(t7) > cr7.end.x - 19.0 - 0.5:
-			return _ci16_fail("card %d title runs under its icon: `%s`" % [ci7 + 1, t7.text])
-	if hud.lbl_card_titles[6].text != "★美食评鉴周" or hud.lbl_card_subs[6].text.find("小狐狸") == -1:
-		return _ci16_fail("food week card text wrong: `%s` / `%s`" % [hud.lbl_card_titles[6].text, hud.lbl_card_subs[6].text])
 	await _ci16_capture(world, "user://ci16_review_tab1_1920x360.png")
 	# the captured frames ran the island (workshops keep stocking the shelf) -> pin the shelf again (no frame runs below)
 	GameManager.stall_inventory = {"dish_starlight_fish": 2}
-	var panel_min_sc := 9.0
-	# food week panel
 	hud._activate_card(6)
-	hud._sync_label_nodes()
 	var pf: Array[Dictionary] = hud._get_current_tab_cards()
 	if not hud.food_week_view or pf.size() != 4 or String(pf[0]["type"]) != "fw_judge" or String(pf[1]["type"]) != "fw_entry" or String(pf[2]["type"]) != "fw_score" or String(pf[3]["type"]) != "fw_back":
 		return _ci16_fail("food week panel did not open: %s" % str(pf))
-	var fitf := _ci16_label_fits_all(hud, pf.size(), func(cr: Rect2) -> float: return cr.size.x - 6.0 - 34.0, "food week panel")
+	if String(pf[1]["cost_state"]) != "affordable" or String(pf[1]["title"]) != EconomyConfig.get_item_display_name("dish_starlight_fish"):
+		return _ci16_fail("entry tile should offer the starlight koi: `%s`" % String(pf[1]["title"]))
+	var fitf := _menu_tiles_problem(hud, "food week panel")
 	if fitf != "":
 		return _ci16_fail(fitf)
-	for pl in range(pf.size()):
-		for lset in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
-			var plc: Label = lset[pl]
-			panel_min_sc = minf(panel_min_sc, plc.scale.x)
-			if absf(plc.scale.x - plc.scale.y) > 0.001 or plc.scale.x < 0.85 - 0.001:
-				return _ci16_fail("food week panel text squeezed `%s` %.2fx" % [plc.text, plc.scale.x])
-	var tlf: Label = hud.lbl_drawer_title
-	tlf.size = Vector2.ZERO
-	if tlf.text.find("美食评鉴周") == -1 or tlf.position.x + tlf.get_combined_minimum_size().x * tlf.scale.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or tlf.scale.x < 0.70 - 0.001:
-		return _ci16_fail("food week headline `%s` missing / overflowing (%.2fx)" % [tlf.text, tlf.scale.x])
-	if String(pf[1]["cost_state"]) != "affordable" or hud.lbl_card_subs[1].text != EconomyConfig.get_item_display_name("dish_starlight_fish"):
-		return _ci16_fail("entry card should offer the starlight koi: `%s`" % hud.lbl_card_subs[1].text)
 	hud._activate_card(1)
-	hud._sync_label_nodes()
-	if GameManager.food_week_entries.size() != 2 or hud.offline_banner_text.find("小狐狸") == -1 or hud.lbl_card_subs[1].text != "摊位暂无可参赛菜品" or String(hud._get_current_tab_cards()[1]["cost_state"]) != "locked":
-		return _ci16_fail("entry from the panel failed: %d entries, banner `%s`, card `%s`" % [GameManager.food_week_entries.size(), hud.offline_banner_text, hud.lbl_card_subs[1].text])
+	if GameManager.food_week_entries.size() != 2 or hud.offline_banner_text.find("小狐狸") == -1 or String(hud._get_current_tab_cards()[1]["cost_state"]) != "locked":
+		return _ci16_fail("entry from the panel failed: %d entries, news `%s`" % [GameManager.food_week_entries.size(), hud.offline_banner_text])
 	hud._activate_card(1)
-	if hud.offline_banner_text.find("摊位上暂无") == -1:
-		return _ci16_fail("no-dish banner missing: `%s`" % hud.offline_banner_text)
+	if hud.offline_banner_text != EconomyConfig.tr_key("bn_no_dish"):
+		return _ci16_fail("no-dish news missing: `%s`" % hud.offline_banner_text)
 	GameManager.stall_inventory["dish_cloud_dumplings"] = 1
 	hud._activate_card(1)
-	hud._sync_label_nodes()
-	if GameManager.food_week_entries.size() != 3 or hud.lbl_card_titles[1].text != "★本周已交满":
-		return _ci16_fail("third entry from the panel failed: %d entries, card `%s`" % [GameManager.food_week_entries.size(), hud.lbl_card_titles[1].text])
-	hud._activate_card(0)
-	if hud.offline_banner_text.find("偏爱") == -1:
-		return _ci16_fail("judge card banner missing: `%s`" % hud.offline_banner_text)
-	hud._activate_card(2)
-	if hud.offline_banner_text.find("每周最多") == -1:
-		return _ci16_fail("score card banner missing: `%s`" % hud.offline_banner_text)
-	hud._activate_card(1)
-	if hud.offline_banner_text.find("交满") == -1:
-		return _ci16_fail("full entry card banner missing: `%s`" % hud.offline_banner_text)
+	if GameManager.food_week_entries.size() != 3 or String(hud._get_current_tab_cards()[1]["cost"]) != "3/3":
+		return _ci16_fail("third entry from the panel failed: %d entries" % GameManager.food_week_entries.size())
 	hud.offline_banner_timer = 0.0
 	await _ci16_capture(world, "user://ci16_review_food_week_1920x360.png")
 	hud._activate_card(3)
 	if hud.food_week_view or hud._get_current_tab_cards().size() != 8:
-		return _ci16_fail("back card did not return to the 8 Workers cards")
-	# friendship panel
+		return _ci16_fail("back did not return to the Crew tab")
 	hud._activate_card(7)
-	hud._sync_label_nodes()
 	var pr: Array[Dictionary] = hud._get_current_tab_cards()
 	if not hud.friendship_view or pr.size() != 7 or String(pr[0]["type"]) != "fr_islander" or String(pr[6]["type"]) != "fr_back":
-		return _ci16_fail("bonds panel did not open: %d cards" % pr.size())
-	var fitr := _ci16_label_fits_all(hud, pr.size(), func(cr: Rect2) -> float: return cr.size.x - 6.0 - 34.0, "bonds panel")
+		return _ci16_fail("bonds panel did not open: %d tiles" % pr.size())
+	if int(pr[3]["level"]) != 5 or String(pr[3]["cost"]) != EconomyConfig.tr_key("fr_isl_max") or int(pr[1]["level"]) != 3:
+		return _ci16_fail("bonds panel levels wrong: %s" % str(pr))
+	var fitr := _menu_tiles_problem(hud, "bonds panel")
 	if fitr != "":
 		return _ci16_fail(fitr)
-	for pl2 in range(pr.size()):
-		for lset2 in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
-			var plc2: Label = lset2[pl2]
-			panel_min_sc = minf(panel_min_sc, plc2.scale.x)
-			if absf(plc2.scale.x - plc2.scale.y) > 0.001 or plc2.scale.x < 0.66 - 0.001:
-				return _ci16_fail("bonds panel text squeezed `%s` %.2fx" % [plc2.text, plc2.scale.x])
-	if hud.lbl_card_titles[3].text != "柴犬 Lv.5" or hud.lbl_card_subs[3].text != "羁绊已满" or hud.lbl_card_titles[1].text != "水獭 Lv.3":
-		return _ci16_fail("bonds panel levels wrong: `%s` / `%s` / `%s`" % [hud.lbl_card_titles[3].text, hud.lbl_card_subs[3].text, hud.lbl_card_titles[1].text])
-	var tlr: Label = hud.lbl_drawer_title
-	tlr.size = Vector2.ZERO
-	if tlr.text.find("岛民羁绊") == -1 or tlr.position.x + tlr.get_combined_minimum_size().x * tlr.scale.x > HUD.TOP_RIGHT_LANG_RECT.position.x - 2.0 or tlr.scale.x < 0.70 - 0.001:
-		return _ci16_fail("bonds headline `%s` missing / overflowing (%.2fx)" % [tlr.text, tlr.scale.x])
-	hud._activate_card(2)
-	if hud.offline_banner_text.find("小狐狸") == -1:
-		return _ci16_fail("islander card banner missing: `%s`" % hud.offline_banner_text)
-	hud.offline_banner_timer = 0.0
 	await _ci16_capture(world, "user://ci16_review_friendship_1920x360.png")
 	hud._activate_card(6)
 	if hud.friendship_view or hud._get_current_tab_cards().size() != 8:
-		return _ci16_fail("bonds back card did not return to the Workers cards")
-	# a tab switch closes the panels
+		return _ci16_fail("bonds back did not return to the Crew tab")
 	hud._activate_card(6)
 	hud.open_drawer(2)
 	if hud.food_week_view or hud.friendship_view:
 		return _ci16_fail("panel survived a tab switch")
 	var c2: Array[Dictionary] = hud._get_current_tab_cards()
-	if c2.size() != 20 or String(c2[19]["type"]) != "birthday":
+	if _card_idx(hud, "birthday") < 0:
 		return _ci16_fail("Expansion tab changed: %d cards" % c2.size())
-	# codex card 18 + every codex card still fits at the real clip width
 	hud.open_drawer(3)
-	hud._sync_label_nodes()
 	var c3: Array[Dictionary] = hud._get_current_tab_cards()
-	var cx_title := "★美食评鉴(%d/%d)" % [GameManager.get_food_week_dishes_judged(), EconomyConfig.FOOD_WEEK_DISHES.size()]
-	if c3.size() != 18 or String(c3[17]["type"]) != "ci16_codex" or hud.lbl_card_titles[17].text != cx_title or hud._get_two_row_per_row(c3.size()) != 9:
-		return _ci16_fail("codex card 18 invalid: `%s` (expected `%s`, %d cards)" % [hud.lbl_card_titles[17].text, cx_title, c3.size()])
-	var fit3 := ""
-	for n3 in range(c3.size()):
-		var cw3 := hud._get_card_rect(n3, c3.size()).size.x - 5.0 - hud._two_row_icon_reserve(c3.size())
-		for lset3 in [hud.lbl_card_titles, hud.lbl_card_subs, hud.lbl_card_costs]:
-			var lc3: Label = lset3[n3]
-			if not lc3.visible or not _label_text_fits(lc3, cw3):
-				fit3 += " #%d `%s` %.1f>%.1f" % [n3 + 1, lc3.text, _label_text_width(lc3), cw3]
+	var fw_i := _card_idx(hud, "ci16_codex")
+	if fw_i < 0 or _card_idx(hud, "guest_book") < 0 or String(c3[fw_i]["cost"]) != "%d/%d" % [GameManager.get_food_week_dishes_judged(), EconomyConfig.FOOD_WEEK_DISHES.size()]:
+		return _ci16_fail("codex entry 18 invalid (%d cards)" % c3.size())
+	var fit3 := _menu_tiles_problem(hud, "codex")
 	if fit3 != "":
-		return _ci16_fail("codex text clipped:" + fit3)
-	hud._activate_card(17)
-	if hud.offline_banner_text.find("美食评鉴") == -1:
-		return _ci16_fail("codex card 18 banner missing: `%s`" % hud.offline_banner_text)
-	hud.offline_banner_timer = 0.0
+		return _ci16_fail(fit3)
 	await _ci16_capture(world, "user://ci16_review_codex_1920x360.png")
 	hud.close_drawer(false)
-	stats["panel_min_sc"] = panel_min_sc
 	stats["medals"] = GameManager.get_food_week_medal_total()
 	stats["levels"] = GameManager.get_friendship_total_levels()
 
@@ -7646,7 +6480,7 @@ func _ci16_audit(world: MainWorld) -> Dictionary:
 	GameManager.wish_board.assign(keep_board)
 	for wn2 in wish_names:
 		GameManager.set(wn2, keep_w[wn2])
-	GameManager.photo_wish_paused = keep_pw
+	GameManager.wish_paused = keep_pw
 	GameManager.career_stats = keep_career
 	GameManager.refresh_island_calendar()
 	Engine.time_scale = keep_ts

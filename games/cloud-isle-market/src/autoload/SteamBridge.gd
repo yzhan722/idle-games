@@ -4,7 +4,6 @@ extends Node
 ## - Automatically syncs achievements & cloud save buffers when `Steam` singleton is mounted.
 
 const STEAM_APP_ID := 480
-const CLOUD_MIRROR_DIR := "user://"
 
 var steam_available: bool = false
 var steam_initialized: bool = false

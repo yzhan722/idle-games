@@ -4,19 +4,19 @@ class_name WaypointGraph
 ## Strictly enforces GEMINI.md Law 2.1 (`GROUND_Y = 124.0`) & Law 3.1 (1D Slot Coordinates):
 ## - Models all 3 islands' main roads (`island_2`, `island_1`, `island_3`),
 ## - Models both wooden bridges' (`bridge_wood`) west/arch/east endpoints and the Lotus Pond twin bridges,
-## - Models dedicated loading/unloading dock nodes for every building (`soil_*_load`, `basket_*`, `mortar_in/out`, `cauldron_in/out`, `orbis_in/out`, `stall_drop`, `stall_queue_*`),
+## - Models dedicated loading/unloading dock nodes for every building (`soil_*_load`, `basket_*`, `mortar_in/out`, `cauldron_in/out`, `coral_in/out`, `stall_drop`, `stall_queue_*`),
 ## - Provides weighted adjacency list & Dijkstra shortest-path queries for cross-island and intra-island navigation.
 
 const GROUND_Y := 124.0
 
 ## Master Waypoint Coordinates along unified `GROUND_Y = 124.0`
 const WAYPOINTS: Array[Vector2] = [
-	Vector2(89.1, GROUND_Y),    # 0: Island 2 Left Hut (Ellinia West Spawn)
+	Vector2(89.1, GROUND_Y),    # 0: Island 2 Left Hut (Glowwood West Spawn)
 	Vector2(171.4, GROUND_Y),   # 1: Island 2 SoilPlot & Basket Dock
 	Vector2(253.6, GROUND_Y),   # 2: Island 2 Cauldron Workshop Dock
 	Vector2(325.9, GROUND_Y),   # 3: Island 2 Cloud Greenhouse Dock
 	Vector2(397.9, GROUND_Y),   # 4: Island 2 Cloud Windmill Bakery Dock (CI-9: Chef Tasting Pavilion dock at +72.0)
-	Vector2(492.0, GROUND_Y),   # 5: Bridge 1 West Endpoint (Ellinia -> Henesys)
+	Vector2(492.0, GROUND_Y),   # 5: Bridge 1 West Endpoint (Glowwood -> Meadow)
 	Vector2(542.0, GROUND_Y),   # 6: Bridge 1 Center Arch
 	Vector2(586.0, GROUND_Y),   # 7: Bridge 1 East Endpoint
 	Vector2(590.0, GROUND_Y),   # 8: Island 1 Apple Tree (CI-11: tree sprite at 585.9; node kept east of Bridge 1 east endpoint)
@@ -28,8 +28,8 @@ const WAYPOINTS: Array[Vector2] = [
 	Vector2(1082.0, GROUND_Y),  # 14: Lotus Pond Bridge West
 	Vector2(1192.0, GROUND_Y),  # 15: Lotus Pond Bridge Center Pier
 	Vector2(1302.0, GROUND_Y),  # 16: Lotus Pond Bridge East
-	Vector2(1358.0, GROUND_Y),  # 17: Bridge 2 Center Arch (Henesys -> Orbis Coast)
-	Vector2(1414.0, GROUND_Y),  # 18: Bridge 2 East Endpoint (Orbis West Landing)
+	Vector2(1358.0, GROUND_Y),  # 17: Bridge 2 Center Arch (Meadow -> Coral Coast)
+	Vector2(1414.0, GROUND_Y),  # 18: Bridge 2 East Endpoint (Coral West Landing)
 	Vector2(1437.8, GROUND_Y),  # 19: Island 3 Cloud Pottery Kiln (CI-12: slot of the former duplicate apple tree)
 	Vector2(1519.7, GROUND_Y),  # 20: Island 3 SoilPlot & Basket Dock
 	Vector2(1601.3, GROUND_Y),  # 21: Island 3 Dual Linked Workshop Dock
@@ -65,7 +65,7 @@ const NAMED_WAYPOINTS: Dictionary = {
 	"pottery_kiln": 19,
 	"soil_3": 20,
 	"basket_3": 20,
-	"orbis_linked": 21,
+	"coral_linked": 21,
 	"hotspring_inn": 22,
 	"spawn_right": 23,
 	"right_tiki": 23
@@ -97,17 +97,17 @@ const BUILDING_DOCKS: Dictionary = {
 	"soil_3_slot_0": {"wp": 20, "dx": -38.0},
 	"soil_3_slot_1": {"wp": 20, "dx": 38.0},
 	"basket_3_pickup": {"wp": 20, "dx": 38.0},
-	"orbis_input": {"wp": 21, "dx": -32.0},
-	"orbis_chef": {"wp": 21, "dx": -37.55},
-	"orbis_chef_fox": {"wp": 21, "dx": -37.55},
-	"orbis_chef_penguin": {"wp": 21, "dx": 41.52},
-	"orbis_output": {"wp": 21, "dx": 36.0},
+	"coral_input": {"wp": 21, "dx": -32.0},
+	"coral_chef": {"wp": 21, "dx": -37.55},
+	"coral_chef_fox": {"wp": 21, "dx": -37.55},
+	"coral_chef_penguin": {"wp": 21, "dx": 41.52},
+	"coral_output": {"wp": 21, "dx": 36.0},
 	"hotspring_dock": {"wp": 22, "dx": 0.0},
 	"lighthouse_harbor_dock": {"wp": 22, "dx": 71.1},
 	"dairy_workshop_dock": {"wp": 10, "dx": 70.4},
 	"open_air_cinema_dock": {"wp": 16, "dx": 32.5},
 	## CI-12: Cloud Pottery Kiln (Island 3 slot 1) + idle rest docks in 28px gaps (soil|cottage, hut|soil, kiln|soil,
-	## greenhouse|windmill, lighthouse|tiki) + the Autumn Sports Day track on the Lotus Pond twin bridges
+	## greenhouse|windmill, lighthouse|tiki)
 	"pottery_kiln_dock": {"wp": 19, "dx": 0.0},
 	"otter_rest_1": {"wp": 9, "dx": 46.03},
 	"otter_rest_2": {"wp": 1, "dx": -46.09},
@@ -115,10 +115,7 @@ const BUILDING_DOCKS: Dictionary = {
 	## rejected because their heads would sit under the docked airship's `★商队` badge
 	"otter_rest_3": {"wp": 20, "dx": -42.03},
 	"toucan_rest_2": {"wp": 4, "dx": -35.82},
-	"toucan_rest_3": {"wp": 23, "dx": -35.48},
-	"sports_track_west": {"wp": 14, "dx": 12.0},
-	"sports_track_center": {"wp": 15, "dx": 0.0},
-	"sports_track_east": {"wp": 16, "dx": -12.0}
+	"toucan_rest_3": {"wp": 23, "dx": -35.48}
 }
 
 ## Weighted Graph Adjacency List (`node_idx -> Array[{to: int, cost: float, bridge_id: int}]`)
@@ -158,16 +155,6 @@ func get_dock_pos(dock_key: String) -> Vector2:
 		var dx := float(d.get("dx", 0.0))
 		return Vector2(WAYPOINTS[wp_idx].x + dx, GROUND_Y)
 	return get_named_pos(dock_key)
-
-func get_island_for_x(x_coord: float) -> int:
-	if x_coord < 538.0:
-		return 2
-	elif x_coord > 1358.0:
-		return 3
-	return 1
-
-func is_on_wooden_bridge(x_coord: float) -> bool:
-	return (x_coord >= 486.0 and x_coord <= 594.0) or (x_coord >= 1082.0 and x_coord <= 1416.0)
 
 func get_nearest_waypoint_index(pos: Vector2) -> int:
 	var best_idx := 0
@@ -250,17 +237,6 @@ func compute_path(from_pos: Vector2, to_pos: Vector2) -> Array[Vector2]:
 	else:
 		path[path.size() - 1] = final_pt
 	return path
-
-func compute_dock_to_dock_path(from_pos: Vector2, target_dock_key: String) -> Array[Vector2]:
-	return compute_path(from_pos, get_dock_pos(target_dock_key))
-
-func get_path_total_length(path: Array[Vector2]) -> float:
-	if path.size() <= 1:
-		return 0.0
-	var total := 0.0
-	for i in range(path.size() - 1):
-		total += path[i].distance_to(path[i + 1])
-	return total
 
 func constrain_to_walkable_surface(pos: Vector2) -> Vector2:
 	return Vector2(clampf(pos.x, 90.0, 1815.0), GROUND_Y)

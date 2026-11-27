@@ -6,7 +6,6 @@ class_name CloudWindmillBakery
 ## - `body_sprite`: `centered = true`, `hframes = 1`, `vframes = 1`, `region_enabled = false`,
 ##   `offset = Vector2(0.0, -float(tex_h) * 0.5)` so stone base aligns 100% flush with `GROUND_Y = 124.0`.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
-## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font, ZERO Emoji, ZERO SVG).
 
 ## CI-9: Island 2 re-slotted to 6 buildings (with `ChefTastingPavilion_2`), every adjacent clear gap >= 28px
 const SLOT_X := 397.9
@@ -21,8 +20,6 @@ var tex_parade_float_icon: Texture2D
 
 var body_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
-var status_badge_label: Label
 
 var anim_time: float = 0.0
 var bake_flash_timer: float = 0.0
@@ -52,34 +49,19 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "windmill", cur_lv)
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-	level_label.name = "WindmillLevelLabel"
-	level_label.position = Vector2(-34.0, 2.0)
-	level_label.custom_minimum_size = Vector2(68.0, 20.0)
-	add_child(level_label)
-
-	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_wm_init"), 13, Color("#FFE066"), true)
-	status_badge_label.name = "WindmillBadgeLabel"
-	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
-	status_badge_label.scale = Vector2(0.76, 0.76)
-	status_badge_label.position = Vector2(-45.0, -TARGET_VISUAL_H - 39.0)
-	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
-	status_badge_label.z_as_relative = false
-	add_child(status_badge_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 		EventBus.bakery_bread_baked.connect(_on_bakery_bread_baked)
 		EventBus.flour_milled.connect(_on_flour_milled)
 		EventBus.windmill_unlocked_changed.connect(_on_windmill_unlocked_changed)
 
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func setup_windmill_bakery(p_island: int = 2, p_pos: Vector2 = Vector2(SLOT_X, EconomyConfig.GROUND_Y)) -> void:
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	reload_ci7_textures()
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func reload_ci7_textures() -> void:
 	tex_windmill = EconomyConfig.load_pixel_texture(EconomyConfig.CLOUD_WINDMILL_BAKERY_TEX)
@@ -135,44 +117,22 @@ func _on_upgrade_purchased(category: String, key: String, new_level: int) -> voi
 	if category == "building" and key == "windmill":
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
-		_sync_labels_and_tint()
+		_sync_tint()
 
 func _on_bakery_bread_baked(_bread_id: String, _qty: int) -> void:
 	bake_flash_timer = 0.50
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_flour_milled(_qty: int, _stock: int) -> void:
 	bake_flash_timer = 0.38
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_windmill_unlocked_changed(_unlocked: bool) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
-func _sync_labels_and_tint() -> void:
-	if GameManager == null:
-		return
-	var built := is_windmill_built()
-	var cur_lv := get_windmill_level()
-	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_wm_unbuilt")
-		if level_label.label_settings != null:
-			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
-	if status_badge_label != null:
-		if built:
-			var bid := GameManager.active_windmill_bread_id
-			var bcfg: Dictionary = EconomyConfig.BAKERY_ITEMS.get(bid, {})
-			var sname := EconomyConfig.tr_name(String(bcfg.get("short_name", "舒芙蕾包")))
-			var bread_cnt := GameManager.get_total_bread_stock_count()
-			var flour_cnt := GameManager.get_flour_stock_count()
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, EconomyConfig.tr_fmt("wl_seg_bread", [bread_cnt]) if bread_cnt > 0 else EconomyConfig.tr_fmt("wl_seg_flour", [flour_cnt])])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#FFE066") if bread_cnt > 0 else Color("#FFD8A8")
-		else:
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_wm_cost", [EconomyConfig.WINDMILL_UNLOCK_COST_GOLD])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#CBD5E1")
-	if body_sprite != null:
-		body_sprite.modulate = Color.WHITE if built else Color(0.74, 0.80, 0.86, 0.72)
+func _sync_tint() -> void:
+	if body_sprite != null and GameManager != null:
+		body_sprite.modulate = Color.WHITE if is_windmill_built() else Color(0.74, 0.80, 0.86, 0.72)
 
 func _process(delta: float) -> void:
 	var isl_open := GameManager != null and bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -188,7 +148,7 @@ func _process(delta: float) -> void:
 			body_sprite.scale = Vector2(base_scale_vec.x * (1.0 + breathe), base_scale_vec.y * (1.0 - breathe))
 		else:
 			body_sprite.scale = base_scale_vec
-	_sync_labels_and_tint()
+	_sync_tint()
 	queue_redraw()
 
 func _draw() -> void:
@@ -212,6 +172,9 @@ func _draw() -> void:
 		var ma := (1.0 - phase) * 0.46
 		draw_rect(Rect2(roundf(mx), roundf(my), 3.0, 3.0), Color(1.0, 0.92, 0.68, ma), true)
 
+	# the bar and its icon only show while the mouse is on the building
+	if EconomyConfig.hovered_building != "windmill":
+		return
 	var prog := GameManager.get_windmill_bake_ratio()
 	var bar_w := 38.0
 	var bar_h := 4.5

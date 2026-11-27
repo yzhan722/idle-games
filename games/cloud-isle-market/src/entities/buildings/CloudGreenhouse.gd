@@ -6,7 +6,6 @@ class_name CloudGreenhouse
 ## - `body_sprite`: `centered = true`, `hframes = 1`, `vframes = 1`, `region_enabled = false`,
 ##   `offset = Vector2(0.0, -float(tex_h) * 0.5)` so bottom of greenhouse aligns 100% flush with `GROUND_Y = 124.0`.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
-## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font/emoji).
 
 ## CI-9: Island 2 re-slotted to 6 buildings (with `ChefTastingPavilion_2`), every adjacent clear gap >= 28px
 const SLOT_X := 325.9
@@ -21,8 +20,6 @@ var tex_souvenir_icons: Dictionary = {}
 
 var body_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
-var status_badge_label: Label
 
 var anim_time: float = 0.0
 var harvest_flash_timer: float = 0.0
@@ -52,33 +49,18 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "greenhouse", cur_lv)
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-	level_label.name = "GreenhouseLevelLabel"
-	level_label.position = Vector2(-34.0, 2.0)
-	level_label.custom_minimum_size = Vector2(68.0, 20.0)
-	add_child(level_label)
-
-	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_gh_init"), 13, Color("#8CE99A"), true)
-	status_badge_label.name = "GreenhouseBadgeLabel"
-	status_badge_label.custom_minimum_size = Vector2(116.0, 18.0)
-	status_badge_label.scale = Vector2(0.78, 0.78)
-	status_badge_label.position = Vector2(-45.0, -TARGET_VISUAL_H - 27.0)
-	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
-	status_badge_label.z_as_relative = false
-	add_child(status_badge_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 		EventBus.hybrid_flora_harvested.connect(_on_hybrid_flora_harvested)
 		EventBus.greenhouse_unlocked_changed.connect(_on_greenhouse_unlocked_changed)
 
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func setup_greenhouse(p_island: int = 2, p_pos: Vector2 = Vector2(SLOT_X, EconomyConfig.GROUND_Y)) -> void:
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	reload_ci5_textures()
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func reload_ci5_textures() -> void:
 	tex_greenhouse = EconomyConfig.load_pixel_texture(EconomyConfig.CLOUD_GREENHOUSE_TEX)
@@ -138,42 +120,18 @@ func _on_upgrade_purchased(category: String, key: String, new_level: int) -> voi
 	if category == "building" and key == "greenhouse":
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
-		_sync_labels_and_tint()
+		_sync_tint()
 
 func _on_hybrid_flora_harvested(_flora_id: String, _qty: int) -> void:
 	harvest_flash_timer = 0.45
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_greenhouse_unlocked_changed(_unlocked: bool) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
-func _sync_labels_and_tint() -> void:
-	if GameManager == null:
-		return
-	var built := is_greenhouse_built()
-	var cur_lv := get_greenhouse_level()
-	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_gh_unbuilt")
-		if level_label.label_settings != null:
-			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
-	if status_badge_label != null:
-		if built:
-			var fid := GameManager.active_greenhouse_flora_id
-			# the zh rule (last 4 glyphs) runs on the zh source name, then the result is shown in the current language
-			var fname := EconomyConfig.get_item_raw_name(fid)
-			if fname.length() > 4:
-				fname = fname.substr(fname.length() - 4, 4)
-			fname = EconomyConfig.tr_name(fname)
-			var box_cnt := GameManager.get_total_souvenir_box_count()
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [fname, EconomyConfig.tr_fmt("wl_seg_box", [box_cnt]) if box_cnt > 0 else ""])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#FFE066") if box_cnt > 0 else Color("#8CE99A")
-		else:
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_gh_cost", [EconomyConfig.GREENHOUSE_UNLOCK_COST_GOLD])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#CBD5E1")
-	if body_sprite != null:
-		body_sprite.modulate = Color.WHITE if built else Color(0.72, 0.78, 0.84, 0.72)
+func _sync_tint() -> void:
+	if body_sprite != null and GameManager != null:
+		body_sprite.modulate = Color.WHITE if is_greenhouse_built() else Color(0.74, 0.80, 0.86, 0.72)
 
 func _process(delta: float) -> void:
 	var isl_open := GameManager != null and bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -189,7 +147,7 @@ func _process(delta: float) -> void:
 			body_sprite.scale = Vector2(base_scale_vec.x * (1.0 + breathe), base_scale_vec.y * (1.0 - breathe))
 		else:
 			body_sprite.scale = base_scale_vec
-	_sync_labels_and_tint()
+	_sync_tint()
 	queue_redraw()
 
 func _draw() -> void:
@@ -206,6 +164,9 @@ func _draw() -> void:
 	var glow_a := 0.12 * pulse + (0.16 * (harvest_flash_timer / 0.45) if harvest_flash_timer > 0.0 else 0.0)
 	draw_circle(Vector2(0.0, -28.0), 18.0, Color(0.62, 0.98, 0.74, glow_a))
 
+	# the bar and its icon only show while the mouse is on the building
+	if EconomyConfig.hovered_building != "greenhouse":
+		return
 	var prog := GameManager.get_greenhouse_growth_ratio()
 	var bar_w := 38.0
 	var bar_h := 4.5

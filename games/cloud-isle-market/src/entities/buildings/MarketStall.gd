@@ -23,7 +23,6 @@ const SHIBA_MANAGER_CHECKOUT_SEC := 1.0
 var tex_stall: Texture2D
 var body_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
 
 var queue_customers: Array[Node2D] = []
 var anim_time: float = 0.0
@@ -53,12 +52,6 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "stall", cur_lv)
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-	level_label.name = "MarketStallLevelLabel"
-	level_label.position = Vector2(-28.0, 2.0)
-	level_label.custom_minimum_size = Vector2(56.0, 20.0)
-	add_child(level_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 		EventBus.customer_paid.connect(_on_customer_paid)
@@ -82,20 +75,11 @@ func get_checkout_duration() -> float:
 	var base_sec := maxf(0.45, SHIBA_MANAGER_CHECKOUT_SEC * pow(0.97, float(shiba_lv - 1)))
 	return maxf(0.32, base_sec / maxf(1.0, aura_mult))
 
-func get_price_bonus_multiplier() -> float:
-	return EconomyConfig.calc_shiba_price_bonus(get_shiba_level())
-
 func get_current_stock_count() -> int:
 	return GameManager.get_total_stall_count()
 
-func get_max_stock_capacity() -> int:
-	return GameManager.get_stall_max_capacity()
-
 func has_available_stock() -> bool:
 	return get_current_stock_count() > 0
-
-func get_inventory_snapshot() -> Dictionary:
-	return GameManager.stall_inventory.duplicate()
 
 func execute_customer_checkout(preferred_item_id: String, desired_qty: int, customer_pos: Vector2, is_vip: bool = false) -> int:
 	return GameManager.try_purchase_from_stall(preferred_item_id, desired_qty, customer_pos, is_vip)
@@ -107,8 +91,6 @@ func get_screen_rect() -> Rect2:
 
 func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
 	if category == "building" and key == "stall":
-		if level_label != null:
-			level_label.text = "Lv." + str(new_level)
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
 
@@ -137,10 +119,6 @@ func get_queue_slot_pos(cust: Node2D) -> Vector2:
 func is_front_of_queue(cust: Node2D) -> bool:
 	_cleanup_queue()
 	return queue_customers.size() > 0 and queue_customers[0] == cust
-
-func get_queue_length() -> int:
-	_cleanup_queue()
-	return queue_customers.size()
 
 func _cleanup_queue() -> void:
 	for i in range(queue_customers.size() - 1, -1, -1):

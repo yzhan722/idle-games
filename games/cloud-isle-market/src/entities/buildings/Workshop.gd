@@ -3,7 +3,7 @@ class_name Workshop
 ## Mortar, Cauldron & Island 3 Dual Workshop (`src/entities/buildings/Workshop.gd`)
 ## Strictly enforces PRD v2.2 & GEMINI.md Laws 2, 3, 5:
 ## - Root `position = Vector2(slot_x, GROUND_Y)` is the bottom-center grounding point (`z_index = 0`).
-## - Supports `workshop_mortar.png` (3.5x), `workshop_cauldron.png` (12x), and Island 3 linked dual workshop (`orbis_linked`, 52x).
+## - Supports `workshop_mortar.png` (3.5x), `workshop_cauldron.png` (12x), and Island 3 linked dual workshop (`coral_linked`, 52x).
 ## - Manages dual numeric Input & Output buffers (`GameManager.workshop_inputs` & `workshop_outputs`, base cap = 10, +5/lv).
 ## - Renders both a circular progress ring and a crisp horizontal progress bar above the workshop during active crafting.
 ## - Every 25 workshop levels (`Lv.25 / Lv.50 / Lv.75`), automatically evolves output recipe along `delicacies_sheet_normalized.png` and doubles value (`2x`)!
@@ -22,15 +22,15 @@ const CAULDRON_VISUAL_HEIGHT := 40.3 # 62 * 0.65
 ## CI-10: Island 3 re-slotted to 6 buildings (incl. `LighthouseHarbor_3`) -> the dual mortar + cauldron workshop keeps its
 ## original composition (cauldron 0.8x the mortar, offset to the right so the mortar bowl peeks out) scaled to 61%, and now
 ## reports its honest union footprint: mortar (68*0.522 = 35.5px @ x-3.75) + cauldron (68*0.4176 = 28.4px @ x+7.3) = 43.0px.
-const ORBIS_SPRITE_SCALE := 0.522
-const ORBIS_SECONDARY_SCALE := 0.4176
-const ORBIS_BODY_X := -3.75
-const ORBIS_SECONDARY_X := 7.3
-const ORBIS_VISUAL_WIDTH := 43.0
-const ORBIS_VISUAL_HEIGHT := 30.3 # 58 * 0.522
+const CORAL_SPRITE_SCALE := 0.522
+const CORAL_SECONDARY_SCALE := 0.4176
+const CORAL_BODY_X := -3.75
+const CORAL_SECONDARY_X := 7.3
+const CORAL_VISUAL_WIDTH := 43.0
+const CORAL_VISUAL_HEIGHT := 30.3 # 58 * 0.522
 const DEFAULT_BUFFER_CAP := 10
 
-@export var workshop_id: String = "mortar" # "mortar", "cauldron", or "orbis_linked"
+@export var workshop_id: String = "mortar" # "mortar", "cauldron", or "coral_linked"
 @export var island_idx: int = 1
 
 var tex_building: Texture2D
@@ -39,7 +39,6 @@ var tex_delicacies: Texture2D
 var body_sprite: Sprite2D
 var secondary_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
 
 var is_processing: bool = false
 var _was_processing: bool = false
@@ -66,22 +65,22 @@ func set_chef_progress(chef_key: String, prog: float, active: bool) -> void:
 func get_base_sprite_scale() -> float:
 	if workshop_id == "cauldron":
 		return CAULDRON_SPRITE_SCALE
-	if workshop_id == "orbis_linked":
-		return ORBIS_SPRITE_SCALE
+	if workshop_id == "coral_linked":
+		return CORAL_SPRITE_SCALE
 	return MORTAR_SPRITE_SCALE if workshop_id == "mortar" else BASE_SPRITE_SCALE
 
 func get_visual_width() -> float:
 	if workshop_id == "cauldron":
 		return CAULDRON_VISUAL_WIDTH
-	if workshop_id == "orbis_linked":
-		return ORBIS_VISUAL_WIDTH
+	if workshop_id == "coral_linked":
+		return CORAL_VISUAL_WIDTH
 	return MORTAR_VISUAL_WIDTH if workshop_id == "mortar" else VISUAL_WIDTH
 
 func get_visual_height() -> float:
 	if workshop_id == "cauldron":
 		return CAULDRON_VISUAL_HEIGHT
-	if workshop_id == "orbis_linked":
-		return ORBIS_VISUAL_HEIGHT
+	if workshop_id == "coral_linked":
+		return CORAL_VISUAL_HEIGHT
 	return MORTAR_VISUAL_HEIGHT if workshop_id == "mortar" else VISUAL_HEIGHT
 
 func _ready() -> void:
@@ -115,11 +114,6 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, workshop_id, cur_lv)
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-	level_label.position = Vector2(-28.0, 2.0)
-	level_label.custom_minimum_size = Vector2(56.0, 20.0)
-	add_child(level_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 
@@ -132,41 +126,15 @@ func setup_workshop(p_id: String, p_island: int, p_pos: Vector2, _p_offset: Vect
 		var base_sc := get_base_sprite_scale()
 		body_sprite.scale = Vector2(base_sc, base_sc)
 	var cur_lv := get_workshop_level()
-	if level_label != null:
-		level_label.text = "Lv." + str(cur_lv)
 	if visual_upgrader != null:
 		visual_upgrader.building_kind = workshop_id
 		visual_upgrader.apply_level_visuals(cur_lv, false)
 
 func get_building_key() -> String:
-	return "soil_3" if workshop_id == "orbis_linked" else workshop_id
+	return "soil_3" if workshop_id == "coral_linked" else workshop_id
 
 func get_workshop_level() -> int:
 	return maxi(1, int(GameManager.building_levels.get(get_building_key(), 1)))
-
-func get_buffer_capacity() -> int:
-	if GameManager != null:
-		return GameManager.get_workshop_buffer_cap(workshop_id)
-	return DEFAULT_BUFFER_CAP
-
-func get_input_buffer_count() -> int:
-	return GameManager.get_workshop_input_total(workshop_id) if GameManager != null else 0
-
-func get_output_buffer_count() -> int:
-	return GameManager.get_workshop_output_total(workshop_id) if GameManager != null else 0
-
-func is_input_buffer_full() -> bool:
-	return GameManager.is_workshop_input_full(workshop_id) if GameManager != null else false
-
-func is_output_buffer_full() -> bool:
-	return GameManager.is_workshop_output_full(workshop_id) if GameManager != null else false
-
-func get_value_multiplier() -> float:
-	if workshop_id == "orbis_linked":
-		return EconomyConfig.MULTIPLIER_ORBIS_LINKED
-	elif workshop_id == "cauldron":
-		return EconomyConfig.MULTIPLIER_CAULDRON
-	return EconomyConfig.MULTIPLIER_MORTAR
 
 func get_screen_rect() -> Rect2:
 	var w := get_visual_width() * scale.x
@@ -175,8 +143,6 @@ func get_screen_rect() -> Rect2:
 
 func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
 	if category == "building" and key == get_building_key():
-		if level_label != null:
-			level_label.text = "Lv." + str(new_level)
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
 
@@ -189,7 +155,7 @@ func _reload_texture() -> void:
 		tex_building = load("res://assets/pixel_art/buildings/workshop_cauldron.png")
 		tex_secondary = null
 		frame_h = 62
-	elif workshop_id == "orbis_linked":
+	elif workshop_id == "coral_linked":
 		tex_building = load("res://assets/pixel_art/buildings/workshop_mortar.png")
 		tex_secondary = load("res://assets/pixel_art/buildings/workshop_cauldron.png")
 		frame_h = 58
@@ -203,7 +169,7 @@ func _reload_texture() -> void:
 		body_sprite.centered = true
 		# GEMINI.md Law 2.2: sprite.offset = Vector2(0.0, -float(frame_h) * 0.5)
 		body_sprite.offset = Vector2(0.0, -float(frame_h) * 0.5)
-		body_sprite.position = Vector2(ORBIS_BODY_X if workshop_id == "orbis_linked" else 0.0, 0.0)
+		body_sprite.position = Vector2(CORAL_BODY_X if workshop_id == "coral_linked" else 0.0, 0.0)
 
 	if secondary_sprite != null:
 		secondary_sprite.visible = (tex_secondary != null)
@@ -211,9 +177,9 @@ func _reload_texture() -> void:
 			secondary_sprite.texture = tex_secondary
 			secondary_sprite.centered = true
 			secondary_sprite.offset = Vector2(0.0, -float(62) * 0.5)
-			if workshop_id == "orbis_linked":
-				secondary_sprite.position = Vector2(ORBIS_SECONDARY_X, 0.0)
-				secondary_sprite.scale = Vector2(ORBIS_SECONDARY_SCALE, ORBIS_SECONDARY_SCALE)
+			if workshop_id == "coral_linked":
+				secondary_sprite.position = Vector2(CORAL_SECONDARY_X, 0.0)
+				secondary_sprite.scale = Vector2(CORAL_SECONDARY_SCALE, CORAL_SECONDARY_SCALE)
 
 func _process(delta: float) -> void:
 	visible = bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -240,7 +206,8 @@ func _draw() -> void:
 	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
 	EconomyConfig.draw_drop_shadow(self, get_visual_width())
 
-	if is_processing:
+	# the bar only shows while the mouse is on the building
+	if is_processing and EconomyConfig.hovered_building == get_building_key():
 		var prog := clampf(process_progress, 0.0, 1.0)
 		var bar_w := 36.0
 		var bar_h := 5.0

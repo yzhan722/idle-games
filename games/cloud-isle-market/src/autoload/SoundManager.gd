@@ -3,7 +3,7 @@ extends Node
 ## Strictly implements PRD v2.2 Section 6:
 ## - Loads all 11 genuine `.wav` streams in `res://assets/sfx/`:
 ##   * 5 Ambient Weather/Time-of-Day Loops: `ambient_day`, `ambient_dusk`, `ambient_night`, `ambient_rain`, `ambient_stream`
-##   * 6 Action/UI SFX: `harvest_pop`, `meso_coin`, `water_splash`, `wood_build`, `ui_click`, `ui_hover`
+##   * 6 Action/UI SFX: `harvest_pop`, `coin`, `water_splash`, `wood_build`, `ui_click`, `ui_hover`
 ## - Dual-deck `AudioStreamPlayer` ambient crossfade pool (`_ambient_deck_a`, `_ambient_deck_b`) for seamless transitions.
 ## - 8-channel polyphonic SFX `AudioStreamPlayer` pool with per-key anti-clipping cooldown and pitch jitter.
 ## - Listens to `EventBus.toggle_desktop_mode` to auto-mute when entering Desktop Companion Mode (`摸鱼模式`).
@@ -16,17 +16,9 @@ const AMBIENT_PLAYLIST: Array[String] = [
 	"ambient_rain"
 ]
 
-const AMBIENT_LABELS: Dictionary = {
-	"ambient_day": "晨曦鸟鸣 (Day)",
-	"ambient_stream": "荷塘溪流 (Stream)",
-	"ambient_dusk": "暮色风铃 (Dusk)",
-	"ambient_night": "萤火夏夜 (Night)",
-	"ambient_rain": "星露微雨 (Rain)"
-}
-
 const SFX_FILE_MAP: Dictionary = {
 	"harvest_pop": "res://assets/sfx/harvest_pop.wav",
-	"meso_coin": "res://assets/sfx/meso_coin.wav",
+	"coin": "res://assets/sfx/coin.wav",
 	"water_splash": "res://assets/sfx/water_splash.wav",
 	"wood_build": "res://assets/sfx/wood_build.wav",
 	"ui_click": "res://assets/sfx/ui_click.wav",
@@ -40,7 +32,7 @@ const SFX_FILE_MAP: Dictionary = {
 
 const SFX_COOLDOWNS_MS: Dictionary = {
 	"harvest_pop": 45,
-	"meso_coin": 55,
+	"coin": 55,
 	"water_splash": 70,
 	"wood_build": 80,
 	"ui_click": 30,
@@ -49,7 +41,7 @@ const SFX_COOLDOWNS_MS: Dictionary = {
 
 const SFX_BASE_VOL_DB: Dictionary = {
 	"harvest_pop": -5.5,
-	"meso_coin": -4.5,
+	"coin": -4.5,
 	"water_splash": -7.0,
 	"wood_build": -5.0,
 	"ui_click": -6.5,
@@ -58,7 +50,9 @@ const SFX_BASE_VOL_DB: Dictionary = {
 
 const SFX_POOL_SIZE := 8
 const AMBIENT_BASE_DB := -14.0
-const AMBIENT_ROTATE_INTERVAL := 65.0
+const AMBIENT_ROTATE_INTERVAL := 600.0
+## Tracks of the playlist that fit each part of the day (day, dusk, night, drizzle)
+const AMBIENT_OF_PHASE: Array = [[0, 1], [2], [3], [4]]
 const CROSSFADE_DURATION := 2.4
 
 var is_muted: bool = true # Default auto-muted in Desktop Companion Mode
@@ -104,7 +98,6 @@ func _ready() -> void:
 	_apply_initial_ambient_track(0)
 
 	if EventBus != null:
-		EventBus.toggle_desktop_mode.connect(_on_toggle_desktop_mode)
 		EventBus.island_unlocked.connect(_on_island_unlocked)
 
 func _load_all_wav_streams() -> void:
@@ -146,25 +139,9 @@ func _build_audio_pools() -> void:
 	_noise_player.stream = gen
 	add_child(_noise_player)
 
-func _on_toggle_desktop_mode(enabled: bool) -> void:
-	if enabled:
-		set_muted(true)
-	else:
-		set_muted(false)
-
 func _on_island_unlocked(_island_idx: int) -> void:
 	play_water_sfx()
 	advance_ambient_weather()
-
-func get_current_ambient_key() -> String:
-	return AMBIENT_PLAYLIST[posmod(current_ambient_idx, AMBIENT_PLAYLIST.size())]
-
-func get_current_ambient_label() -> String:
-	var k := get_current_ambient_key()
-	return String(AMBIENT_LABELS.get(k, k))
-
-func get_loaded_stream_count() -> int:
-	return _streams.size()
 
 func _apply_initial_ambient_track(idx: int) -> void:
 	current_ambient_idx = posmod(idx, AMBIENT_PLAYLIST.size())
@@ -180,10 +157,19 @@ func _apply_initial_ambient_track(idx: int) -> void:
 	if _ambient_deck_b != null:
 		_ambient_deck_b.stop()
 
+## The next track that fits the hour (by day the birds and the brook take turns)
 func advance_ambient_weather() -> void:
-	crossfade_to_ambient(current_ambient_idx + 1)
+	var fit: Array = AMBIENT_OF_PHASE[clampi(_last_synced_weather, 0, 3)]
+	crossfade_to_ambient(int(fit[(fit.find(current_ambient_idx) + 1) % fit.size()]))
+
+func sync_ambient_to_phase(phase: int) -> void:
+	var fit: Array = AMBIENT_OF_PHASE[clampi(phase, 0, 3)]
+	if not fit.has(current_ambient_idx):
+		crossfade_to_ambient(int(fit[0]))
 
 func crossfade_to_ambient(next_idx: int) -> void:
+	if posmod(next_idx, AMBIENT_PLAYLIST.size()) == current_ambient_idx:
+		return
 	current_ambient_idx = posmod(next_idx, AMBIENT_PLAYLIST.size())
 	var key := AMBIENT_PLAYLIST[current_ambient_idx]
 	if not _streams.has(key):
@@ -223,6 +209,7 @@ func _process(delta: float) -> void:
 
 	if GameManager != null and GameManager.current_weather != _last_synced_weather:
 		sync_white_noise_to_weather(GameManager.current_weather)
+		sync_ambient_to_phase(GameManager.current_weather)
 
 	if not is_muted:
 		var active_deck := _ambient_deck_a if _active_deck_is_a else _ambient_deck_b
@@ -284,14 +271,14 @@ func play_sfx(sfx_name: String, pitch_variance: float = 0.05, extra_db: float = 
 		chosen.play()
 
 func play_coin_sfx() -> void:
-	play_sfx("meso_coin", 0.05, 0.0)
+	play_sfx("coin", 0.05, 0.0)
 
 func play_upgrade_sfx() -> void:
 	play_sfx("wood_build", 0.05, 0.0)
 
 func play_milestone_sfx() -> void:
 	play_sfx("wood_build", 0.02, 1.5)
-	play_sfx("meso_coin", 0.03, -1.0)
+	play_sfx("coin", 0.03, -1.0)
 
 func play_pop_sfx() -> void:
 	play_sfx("harvest_pop", 0.06, 0.0)
@@ -325,9 +312,6 @@ func toggle_white_noise() -> bool:
 func get_white_noise_profile() -> String:
 	return current_noise_profile
 
-func is_white_noise_active() -> bool:
-	return white_noise_enabled and not is_muted
-
 func get_white_noise_status_label() -> String:
 	if not white_noise_enabled or is_muted:
 		return EconomyConfig.tr_key("ui_noise_off")
@@ -342,7 +326,7 @@ func _pump_procedural_white_noise(delta: float) -> void:
 		_noise_playback = _noise_player.get_stream_playback() as AudioStreamGeneratorPlayback
 	if _noise_playback == null:
 		return
-	var frames := mini(_noise_playback.get_frames_available(), 512)
+	var frames := mini(_noise_playback.get_frames_available(), 1024)
 	if frames <= 0:
 		return
 	var alpha := 0.08

@@ -9,7 +9,6 @@ class_name OpenAirCinema
 ##   `offset = Vector2(0.0, -float(tex_h) * 0.5)` (`Vector2(0.0, -52.0)`) so the grass tile tip sits on `GROUND_Y`.
 ## - Visual `39.2 x 36.4` (`112x104 * 0.35`), >= 28px from every Island 1 main building (nearest: `MarketStall_1`, ~268px).
 ## - Screening light = soft glow circles only (no programmatic polygons as art).
-## - 100% Godot native `Label + LabelSettings` (own `LabelSettings` copy, ZERO deprecated font, ZERO Emoji, ZERO SVG).
 
 const SLOT_X := 1334.5 # == EconomyConfig.OPEN_AIR_CINEMA_SLOT_X
 const BASE_SPRITE_SCALE := 0.35 # == EconomyConfig.OPEN_AIR_CINEMA_SCALE
@@ -18,8 +17,6 @@ const TARGET_VISUAL_H := 36.4 # 104.0 * 0.35
 ## Projection canvas centre and projector lens in texture pixels of the 112x104 art (glows follow any same-size repaint)
 const SCREEN_TEX_CENTER := Vector2(43.0, 36.0)
 const PROJECTOR_TEX_POS := Vector2(78.0, 64.0)
-## Marquee badge: just above the screen frame and below the docked airship's `★商队` badge (`y <= 72.2` incl. bob)
-const BADGE_Y := -TARGET_VISUAL_H - 14.0
 const FADE_SPEED := 3.0
 
 var tex_cinema: Texture2D
@@ -30,7 +27,6 @@ var tex_pudding: Texture2D
 var body_sprite: Sprite2D
 ## Film-light layer drawn ABOVE the body sprite (a node's own `_draw` renders under its children)
 var screen_light_layer: Node2D
-var marquee_label: Label
 
 var anim_time: float = 0.0
 var show_alpha: float = 0.0
@@ -63,27 +59,17 @@ func _ready() -> void:
 	add_child(screen_light_layer)
 	screen_light_layer.draw.connect(_draw_screen_light)
 
-	marquee_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_cin_init"), 13, Color("#FFD8A8"), true)
-	marquee_label.name = "OpenAirCinemaMarqueeLabel"
-	# Own LabelSettings copy: recolouring the marquee must never leak into other shared 13px labels
-	marquee_label.label_settings = marquee_label.label_settings.duplicate() as LabelSettings
-	marquee_label.scale = Vector2(0.74, 0.74)
-	marquee_label.position = Vector2(-40.0, BADGE_Y)
-	marquee_label.z_index = EconomyConfig.Z_CARRY_EMOTE
-	marquee_label.z_as_relative = false
-	add_child(marquee_label)
-
 	if EventBus != null:
 		EventBus.open_air_cinema_unlocked_changed.connect(_on_cinema_unlocked_changed)
 		EventBus.cinema_screening_settled.connect(_on_cinema_screening_settled)
 
 	_sync_visibility(true)
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func setup_open_air_cinema(p_pos: Vector2 = Vector2(SLOT_X, EconomyConfig.GROUND_Y)) -> void:
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	reload_ci11_textures()
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func reload_ci11_textures() -> void:
 	tex_cinema = EconomyConfig.load_pixel_texture(EconomyConfig.OPEN_AIR_CINEMA_TEX)
@@ -131,11 +117,6 @@ func get_local_hit_rect() -> Rect2:
 		return Rect2()
 	return get_screen_rect().grow(4.0)
 
-func get_badge_local_rect() -> Rect2:
-	if marquee_label == null:
-		return Rect2()
-	return Rect2(position + marquee_label.position, marquee_label.size * marquee_label.scale)
-
 func _tex_to_local(tex_pt: Vector2) -> Vector2:
 	var tw := 112.0
 	var th := 104.0
@@ -148,11 +129,11 @@ func get_screen_glow_local() -> Vector2:
 	return _tex_to_local(SCREEN_TEX_CENTER)
 
 func _on_cinema_unlocked_changed(_unlocked: bool) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_cinema_screening_settled(_film_id: String, _audience: int, _ticket_gold: int, _snack_gold: int) -> void:
 	settle_flash_timer = 0.8
-	_sync_labels_and_tint()
+	_sync_tint()
 
 ## Snaps (`instant`) or fades the prop in at night / out at dawn.
 func _sync_visibility(instant: bool = false, delta: float = 0.0) -> void:
@@ -164,31 +145,9 @@ func _sync_visibility(instant: bool = false, delta: float = 0.0) -> void:
 	visible = show_alpha > 0.02
 	modulate = Color(1.0, 1.0, 1.0, show_alpha)
 
-func _sync_labels_and_tint() -> void:
-	if GameManager == null or marquee_label == null or marquee_label.label_settings == null:
-		return
-	var built := is_cinema_built()
-	if not built:
-		marquee_label.text = EconomyConfig.tr_fmt("wl_cin_cost", [EconomyConfig.OPEN_AIR_CINEMA_UNLOCK_COST_GOLD])
-		marquee_label.label_settings.font_color = Color("#CBD5E1")
-	else:
-		var sm := GameManager.get_cinema_status_summary()
-		if bool(sm["screening"]):
-			marquee_label.text = EconomyConfig.tr_key("wl_cin_on") % [int(sm["slot"]) + 1, int(sm["slot_count"]), String(sm["film_short"]), maxi(1, int(ceili(float(sm["remaining"]))))]
-			marquee_label.label_settings.font_color = Color("#FFE066")
-		elif int(sm["slot"]) >= 0:
-			marquee_label.text = EconomyConfig.tr_key("wl_cin_break") % maxi(1, int(ceili(float(sm["intermission_left"]))))
-			marquee_label.label_settings.font_color = Color("#FFD8A8")
-		elif bool(sm["open"]):
-			marquee_label.text = EconomyConfig.tr_key("wl_cin_done") % int(GameManager.cinema_screenings_tonight)
-			marquee_label.label_settings.font_color = Color("#FFF4D6")
-		else:
-			marquee_label.text = EconomyConfig.tr_key("wl_cin_init")
-			marquee_label.label_settings.font_color = Color("#FFD8A8")
-	marquee_label.size = Vector2.ZERO
-	marquee_label.position = Vector2(-marquee_label.size.x * marquee_label.scale.x * 0.5 + 4.0, BADGE_Y)
-	if body_sprite != null:
-		body_sprite.modulate = Color.WHITE if built else Color(0.70, 0.76, 0.86, 0.70)
+func _sync_tint() -> void:
+	if body_sprite != null and GameManager != null:
+		body_sprite.modulate = Color.WHITE if is_cinema_built() else Color(0.74, 0.80, 0.86, 0.72)
 
 func _process(delta: float) -> void:
 	anim_time += delta
@@ -199,7 +158,7 @@ func _process(delta: float) -> void:
 		return
 	if body_sprite != null:
 		body_sprite.scale = base_scale_vec
-	_sync_labels_and_tint()
+	_sync_tint()
 	queue_redraw()
 	if screen_light_layer != null:
 		screen_light_layer.queue_redraw()
@@ -228,8 +187,4 @@ func _draw() -> void:
 		return
 	# GEMINI.md Law 3.3: 5:1 Ultra-Flat Polygon Drop Shadow at origin `Vector2(0, 0)`
 	EconomyConfig.draw_drop_shadow(self, TARGET_VISUAL_W)
-
-	# Ticket stub icon at the left end of the marquee
-	if tex_ticket != null and marquee_label != null:
-		draw_texture_rect(tex_ticket, Rect2(marquee_label.position.x - 12.0, BADGE_Y + 0.5, 11.0, 11.0), false)
 

@@ -7,7 +7,6 @@ class_name CustomerNPC
 ## - `body_sprite`: `centered = true`, `offset = Vector2(0.0, -float(48) * 0.5) = Vector2(0.0, -24.0)`.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` (`shadow_width = 40 * 0.55`, `shadow_height = shadow_width * 0.18`, `Color(0, 0, 0, 0.20)`).
 
-const FRAME_W := 48
 const FRAME_H := 48
 const VISUAL_WIDTH := 40.0
 
@@ -30,15 +29,15 @@ enum VisitorRole {
 }
 
 const TRAVELER_KEYS: Array[String] = [
-	"travelers/traveler_slime.png",
-	"travelers/traveler_mushroom.png",
-	"travelers/traveler_pig.png"
+	"travelers/traveler_hedgehog.png",
+	"travelers/traveler_cat.png",
+	"travelers/traveler_raccoon.png"
 ]
 
 const TRAVELER_NORMALIZED_PATHS: Array[String] = [
-	"res://assets/pixel_art/travelers/traveler_slime_normalized.png",
-	"res://assets/pixel_art/travelers/traveler_mushroom_normalized.png",
-	"res://assets/pixel_art/travelers/traveler_pig_normalized.png"
+	"res://assets/pixel_art/travelers/traveler_hedgehog_normalized.png",
+	"res://assets/pixel_art/travelers/traveler_cat_normalized.png",
+	"res://assets/pixel_art/travelers/traveler_raccoon_normalized.png"
 ]
 
 const CRITIC_SHEET_KEY := "travelers/traveler_critic.png"
@@ -49,7 +48,7 @@ const MERCHANT_NORMALIZED_PATH := "res://assets/pixel_art/travelers/traveler_mer
 var state: State = State.SPAWN_AND_STROLL
 var visitor_role: int = VisitorRole.REGULAR
 var is_vip: bool = false
-var sheet_key: String = "travelers/traveler_slime.png"
+var sheet_key: String = "travelers/traveler_hedgehog.png"
 var tex_sheet: Texture2D
 var tex_parchment: Texture2D
 var tex_delicacies: Texture2D
@@ -69,6 +68,7 @@ var desired_item_id: String = "crop_0"
 var desired_qty: int = 1
 var wait_timer: float = 0.0
 var interact_timer: float = 0.0
+const DEAL_STUCK_SEC := 14.0
 var purchased_ok: bool = false
 var disappointed: bool = false
 
@@ -94,7 +94,7 @@ func _ready() -> void:
 	body_sprite.z_as_relative = false
 	add_child(body_sprite)
 
-	bubble_label = EconomyConfig.create_pixel_label("x1", 14, Color("#FFF4D6"), false)
+	bubble_label = EconomyConfig.create_pixel_label("×1", 14, Color("#FFF4D6"), false)
 	bubble_label.position = Vector2(2.0, -76.0)
 	bubble_label.z_index = EconomyConfig.Z_CARRY_EMOTE
 	bubble_label.z_as_relative = false
@@ -105,6 +105,14 @@ func _ready() -> void:
 	tex_crops = load("res://assets/pixel_art/crops/crops_sheet_normalized.png")
 	tex_heart = load("res://assets/pixel_art/ui/emote_heart.png")
 	tex_gourmet_medal = EconomyConfig.load_pixel_texture("res://assets/pixel_art/ui/badge_gourmet_medal.png")
+
+## A known guest walks in: same errand as any customer, its own picture
+func set_guest_look(tex: Texture2D) -> void:
+	tex_sheet = tex
+	body_sprite.texture = tex
+	body_sprite.hframes = 2
+	body_sprite.self_modulate = Color.WHITE
+	body_sprite.offset = Vector2(0.0, -float(tex.get_height()) * 0.5)
 
 func setup_customer(p_spawn: Vector2, p_graph: WaypointGraph, p_stall: MarketStall, p_is_vip: bool = false, p_role: int = -1) -> void:
 	waypoint_graph = p_graph
@@ -277,7 +285,12 @@ func _process(delta: float) -> void:
 				else:
 					facing_left = (position.x > stall_ref.position.x)
 
-			if visitor_role == VisitorRole.TEA_CONNOISSEUR:
+			# A deal that keeps falling through never blocks the queue
+			if interact_timer > DEAL_STUCK_SEC:
+				disappointed = true
+				EventBus.customer_left_unhappy.emit(position)
+				_begin_leave()
+			elif visitor_role == VisitorRole.TEA_CONNOISSEUR:
 				var has_tea := GameManager != null and GameManager.has_tea_for_connoisseur()
 				if has_tea:
 					var frenzy_mult := 2.0 if (GameManager != null and GameManager.frenzy_timer > 0.0) else 1.0
@@ -290,7 +303,7 @@ func _process(delta: float) -> void:
 							var tv_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(t_deal["vouchers"])]) if int(t_deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								EconomyConfig.tr_key("ft_tea_guest") % [int(t_deal["gold"]), int(t_deal["amber"]), tv_seg],
+								EconomyConfig.tr_fmt("ft_tea_guest", [int(t_deal["gold"]), int(t_deal["amber"]), tv_seg]),
 								Color("#88FFD0")
 							)
 							_begin_leave()
@@ -314,7 +327,7 @@ func _process(delta: float) -> void:
 							var pv_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(p_deal["vouchers"])]) if int(p_deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								EconomyConfig.tr_key("ft_parade_guest") % [int(p_deal["gold"]), int(p_deal["amber"]), pv_seg],
+								EconomyConfig.tr_fmt("ft_parade_guest", [int(p_deal["gold"]), int(p_deal["amber"]), pv_seg]),
 								Color("#FFE066")
 							)
 							_begin_leave()
@@ -338,7 +351,7 @@ func _process(delta: float) -> void:
 							var sv_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(spa_deal["vouchers"])]) if int(spa_deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								EconomyConfig.tr_key("ft_spa_guest") % [int(spa_deal["gold"]), int(spa_deal["amber"]), sv_seg],
+								EconomyConfig.tr_fmt("ft_spa_guest", [int(spa_deal["gold"]), int(spa_deal["amber"]), sv_seg]),
 								Color("#FFE066")
 							)
 							_begin_leave()
@@ -362,7 +375,7 @@ func _process(delta: float) -> void:
 							var v_seg := EconomyConfig.tr_fmt("bn_seg_voucher", [int(deal["vouchers"])]) if int(deal.get("vouchers", 0)) > 0 else ""
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -78),
-								EconomyConfig.tr_key("ft_collector") % [int(deal["gold"]), int(deal["amber"]), v_seg],
+								EconomyConfig.tr_fmt("ft_collector", [int(deal["gold"]), int(deal["amber"]), v_seg]),
 								Color("#FFE066")
 							)
 							_begin_leave()
@@ -385,7 +398,7 @@ func _process(delta: float) -> void:
 							purchased_ok = true
 							EventBus.spawn_floating_text.emit(
 								position + Vector2(0, -76),
-								EconomyConfig.tr_key("ft_trader") % [int(barter["taken"]), int(barter["amber"]), int(barter["gold"])],
+								EconomyConfig.tr_fmt("ft_trader", [int(barter["taken"]), int(barter["amber"]), int(barter["gold"])]),
 								Color("#FFD43B")
 							)
 							_begin_leave()
@@ -465,11 +478,11 @@ func _process(delta: float) -> void:
 	if bubble_label != null:
 		if state == State.SPAWN_AND_STROLL or state == State.QUEUE_AT_STALL or state == State.PURCHASE:
 			bubble_label.visible = true
-			bubble_label.text = "x" + str(desired_qty)
+			bubble_label.text = "×" + str(desired_qty)
 			bubble_label.position = Vector2(2.0, -78.0 + hop_y + q_stagger_y)
 		elif state == State.LEAVE and disappointed:
 			bubble_label.visible = true
-			bubble_label.text = "..."
+			bubble_label.text = "…"
 			bubble_label.position = Vector2(-8.0, -72.0 + hop_y)
 		else:
 			bubble_label.visible = false

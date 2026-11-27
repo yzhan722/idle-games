@@ -6,7 +6,6 @@ class_name CloudHotspringInn
 ## - `body_sprite`: `centered = true`, `hframes = 1`, `vframes = 1`, `region_enabled = false`,
 ##   `offset = Vector2(0.0, -float(tex_h) * 0.5)` so bottom of bathhouse aligns 100% flush with `GROUND_Y = 124.0`.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
-## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font, ZERO Emoji).
 
 ## CI-10: Island 3 re-slotted to 6 buildings (with `LighthouseHarbor_3`), every adjacent clear gap >= 28px
 const SLOT_X := 1672.3
@@ -21,8 +20,6 @@ var tex_vip_guest_icon: Texture2D
 
 var body_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
-var status_badge_label: Label
 
 var anim_time: float = 0.0
 var brew_flash_timer: float = 0.0
@@ -52,36 +49,18 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "hotspring", cur_lv)
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-	level_label.name = "HotspringLevelLabel"
-	# Own LabelSettings copy: tinting this label must never recolour other shared `Lv.` labels
-	level_label.label_settings = level_label.label_settings.duplicate() as LabelSettings
-	level_label.position = Vector2(-34.0, 2.0)
-	level_label.custom_minimum_size = Vector2(68.0, 20.0)
-	add_child(level_label)
-
-	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_hs_init"), 13, Color("#FFE066"), true)
-	status_badge_label.name = "HotspringBadgeLabel"
-	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
-	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
-	status_badge_label.scale = Vector2(0.76, 0.76)
-	status_badge_label.position = Vector2(-45.0, -TARGET_VISUAL_H - 27.0)
-	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
-	status_badge_label.z_as_relative = false
-	add_child(status_badge_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 		EventBus.hotspring_bath_brewed.connect(_on_hotspring_bath_brewed)
 		EventBus.hotspring_unlocked_changed.connect(_on_hotspring_unlocked_changed)
 
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func setup_hotspring_inn(p_island: int = 3, p_pos: Vector2 = Vector2(SLOT_X, EconomyConfig.GROUND_Y)) -> void:
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	reload_ci6_textures()
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func reload_ci6_textures() -> void:
 	tex_hotspring = EconomyConfig.load_pixel_texture(EconomyConfig.CLOUD_HOTSPRING_INN_TEX)
@@ -137,39 +116,18 @@ func _on_upgrade_purchased(category: String, key: String, new_level: int) -> voi
 	if category == "building" and key == "hotspring":
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
-		_sync_labels_and_tint()
+		_sync_tint()
 
 func _on_hotspring_bath_brewed(_bath_id: String, _qty: int) -> void:
 	brew_flash_timer = 0.50
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_hotspring_unlocked_changed(_unlocked: bool) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
-func _sync_labels_and_tint() -> void:
-	if GameManager == null:
-		return
-	var built := is_hotspring_built()
-	var cur_lv := get_hotspring_level()
-	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_hs_unbuilt")
-		if level_label.label_settings != null:
-			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
-	if status_badge_label != null:
-		if built:
-			var bid := GameManager.active_hotspring_bath_id
-			var bcfg: Dictionary = EconomyConfig.HOTSPRING_BATH_BLENDS.get(bid, {})
-			var sname := EconomyConfig.tr_name(String(bcfg.get("short_name", "艾草汤")))
-			var stock_cnt := GameManager.get_total_bath_stock_count()
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, EconomyConfig.tr_fmt("wl_seg_bath", [stock_cnt]) if stock_cnt > 0 else ""])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#FFE066") if stock_cnt > 0 else Color("#FFA8A8")
-		else:
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_hs_cost", [EconomyConfig.HOTSPRING_UNLOCK_COST_GOLD])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#CBD5E1")
-	if body_sprite != null:
-		body_sprite.modulate = Color.WHITE if built else Color(0.74, 0.80, 0.86, 0.72)
+func _sync_tint() -> void:
+	if body_sprite != null and GameManager != null:
+		body_sprite.modulate = Color.WHITE if is_hotspring_built() else Color(0.74, 0.80, 0.86, 0.72)
 
 func _process(delta: float) -> void:
 	var isl_open := GameManager != null and bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -185,7 +143,7 @@ func _process(delta: float) -> void:
 			body_sprite.scale = Vector2(base_scale_vec.x * (1.0 + breathe), base_scale_vec.y * (1.0 - breathe))
 		else:
 			body_sprite.scale = base_scale_vec
-	_sync_labels_and_tint()
+	_sync_tint()
 	queue_redraw()
 
 func _draw() -> void:
@@ -209,6 +167,9 @@ func _draw() -> void:
 		var sa := (1.0 - phase) * 0.42
 		draw_rect(Rect2(roundf(sx), roundf(sy), 3.0, 3.0), Color(0.98, 0.96, 0.94, sa), true)
 
+	# the bar and its icon only show while the mouse is on the building
+	if EconomyConfig.hovered_building != "hotspring":
+		return
 	var prog := GameManager.get_hotspring_steep_ratio()
 	var bar_w := 38.0
 	var bar_h := 4.5

@@ -6,14 +6,12 @@ class_name CloudTeaPavilion
 ## - `body_sprite`: `centered = true`, `hframes = 1`, `vframes = 1`, `region_enabled = false`,
 ##   `offset = Vector2(0.0, -float(tex_h) * 0.5)` (`Vector2(0.0, -52.0)`) so stone base aligns 100% flush with `GROUND_Y = 124.0`.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
-## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font, ZERO Emoji, ZERO SVG).
 
 ## CI-11: Island 1 re-slotted to 7 buildings (incl. `DairyWorkshop_1`), every adjacent clear gap >= 28px
 const SLOT_X := 950.7
 const BASE_SPRITE_SCALE := 0.355
 const TARGET_VISUAL_W := 39.76 # 112.0 * 0.355
 const TARGET_VISUAL_H := 36.92 # 104.0 * 0.355
-const BADGE_Y := -TARGET_VISUAL_H - 25.0
 
 var island_idx: int = 1
 var tex_pavilion: Texture2D
@@ -23,8 +21,6 @@ var tex_moon_boat_icon: Texture2D
 
 var body_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
-var status_badge_label: Label
 
 var anim_time: float = 0.0
 var brew_flash_timer: float = 0.0
@@ -54,36 +50,19 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "tea_pavilion", cur_lv)
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-	level_label.name = "TeaPavilionLevelLabel"
-	# CI-11: own LabelSettings copy -> greying the unbuilt tea pavilion label never recolours the shared `Lv.` labels
-	level_label.label_settings = level_label.label_settings.duplicate() as LabelSettings
-	level_label.position = Vector2(-34.0, 2.0)
-	level_label.custom_minimum_size = Vector2(68.0, 20.0)
-	add_child(level_label)
-
-	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_tp_init"), 13, Color("#FFE066"), true)
-	status_badge_label.name = "TeaPavilionBadgeLabel"
-	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
-	status_badge_label.scale = Vector2(0.74, 0.74)
-	status_badge_label.position = Vector2(-36.0, BADGE_Y)
-	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
-	status_badge_label.z_as_relative = false
-	add_child(status_badge_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 		EventBus.tea_brewed.connect(_on_tea_brewed)
 		EventBus.tea_leaves_roasted.connect(_on_tea_leaves_roasted)
 		EventBus.tea_pavilion_unlocked_changed.connect(_on_tea_pavilion_unlocked_changed)
 
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func setup_tea_pavilion(p_island: int = 1, p_pos: Vector2 = Vector2(SLOT_X, EconomyConfig.GROUND_Y)) -> void:
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	reload_ci8_textures()
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func reload_ci8_textures() -> void:
 	tex_pavilion = EconomyConfig.load_pixel_texture(EconomyConfig.CLOUD_TEA_PAVILION_TEX)
@@ -139,53 +118,22 @@ func _on_upgrade_purchased(category: String, key: String, new_level: int) -> voi
 	if category == "building" and key == "tea_pavilion":
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
-		_sync_labels_and_tint()
+		_sync_tint()
 
 func _on_tea_brewed(_tea_id: String, _qty: int) -> void:
 	brew_flash_timer = 0.50
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_tea_leaves_roasted(_qty: int, _stock: int) -> void:
 	brew_flash_timer = 0.38
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_tea_pavilion_unlocked_changed(_unlocked: bool) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
-func _sync_labels_and_tint() -> void:
-	if GameManager == null:
-		return
-	var built := is_tea_pavilion_built()
-	var cur_lv := get_tea_pavilion_level()
-	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_tp_unbuilt")
-		if level_label.label_settings != null:
-			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
-	if status_badge_label != null:
-		if built:
-			var tid := GameManager.active_tea_recipe_id
-			var tcfg: Dictionary = EconomyConfig.TEA_ITEMS.get(tid, {})
-			var sname := EconomyConfig.tr_name(String(tcfg.get("short_name", "龙井茗茶")))
-			var tea_cnt := GameManager.get_total_brewed_tea_stock_count()
-			var leaf_cnt := GameManager.get_tea_leaves_stock_count()
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, EconomyConfig.tr_fmt("wl_seg_tea", [tea_cnt]) if tea_cnt > 0 else EconomyConfig.tr_fmt("wl_seg_leaf", [leaf_cnt])])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#FFE066") if tea_cnt > 0 else Color("#B2F2BB")
-		else:
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_tp_cost", [EconomyConfig.TEA_PAVILION_UNLOCK_COST_GOLD])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#CBD5E1")
-	if status_badge_label != null:
-		# CI-11: keep the badge centred on its real text width so it never spills over the dairy / mortar badges
-		status_badge_label.size = Vector2.ZERO
-		status_badge_label.position = Vector2(-status_badge_label.size.x * status_badge_label.scale.x * 0.5, BADGE_Y)
-	if body_sprite != null:
-		body_sprite.modulate = Color.WHITE if built else Color(0.74, 0.80, 0.86, 0.72)
-
-func get_badge_local_rect() -> Rect2:
-	if status_badge_label == null:
-		return Rect2()
-	return Rect2(position + status_badge_label.position, status_badge_label.size * status_badge_label.scale)
+func _sync_tint() -> void:
+	if body_sprite != null and GameManager != null:
+		body_sprite.modulate = Color.WHITE if is_tea_pavilion_built() else Color(0.74, 0.80, 0.86, 0.72)
 
 func _process(delta: float) -> void:
 	var isl_open := GameManager != null and bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -201,7 +149,7 @@ func _process(delta: float) -> void:
 			body_sprite.scale = Vector2(base_scale_vec.x, base_scale_vec.y * (1.0 - breathe))
 		else:
 			body_sprite.scale = base_scale_vec
-	_sync_labels_and_tint()
+	_sync_tint()
 	queue_redraw()
 
 func _draw() -> void:
@@ -225,6 +173,9 @@ func _draw() -> void:
 		var ma := (1.0 - phase) * 0.48
 		draw_rect(Rect2(roundf(mx), roundf(my), 2.5, 2.5), Color(0.86, 1.0, 0.88, ma), true)
 
+	# the bar and its icon only show while the mouse is on the building
+	if EconomyConfig.hovered_building != "tea_pavilion":
+		return
 	var prog := GameManager.get_tea_pavilion_brew_ratio()
 	var bar_w := 34.0
 	var bar_h := 4.5

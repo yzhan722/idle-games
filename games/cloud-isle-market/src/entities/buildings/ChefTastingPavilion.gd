@@ -7,7 +7,6 @@ class_name ChefTastingPavilion
 ##   `offset = Vector2(0.0, -float(tex_h) * 0.5)` (`Vector2(0.0, -52.0)`) so the pavilion's bottom row sits 100% flush on `GROUND_Y = 124.0`.
 ## - Rightmost Island 2 slot (`x = 469.9`, visual `44.24 x 41.08`), every neighbour >= 28px clear gap & 0.0% overlap.
 ## - 5:1 Ultra-Flat Polygon Drop Shadow at `Vector2(0, 0)` via `EconomyConfig.draw_drop_shadow`.
-## - 100% Godot native `Label + LabelSettings` (`EconomyConfig.create_pixel_label`, ZERO deprecated font, ZERO Emoji, ZERO SVG).
 
 const SLOT_X := 469.9 # == EconomyConfig.CHEF_PAVILION_SLOT_X
 const BASE_SPRITE_SCALE := 0.395
@@ -22,8 +21,6 @@ var tex_chef_medal: Texture2D
 
 var body_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
-var status_badge_label: Label
 
 var anim_time: float = 0.0
 var cook_flash_timer: float = 0.0
@@ -53,37 +50,19 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "chef_pavilion", cur_lv)
 
-	level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-	level_label.name = "ChefPavilionLevelLabel"
-	# Own LabelSettings copy: tinting this label must never recolour other shared `Lv.` labels
-	level_label.label_settings = level_label.label_settings.duplicate() as LabelSettings
-	level_label.position = Vector2(-34.0, 2.0)
-	level_label.custom_minimum_size = Vector2(68.0, 20.0)
-	add_child(level_label)
-
-	status_badge_label = EconomyConfig.create_pixel_label(EconomyConfig.tr_key("wl_cp_init"), 13, Color("#FFD8A8"), true)
-	status_badge_label.name = "ChefPavilionBadgeLabel"
-	status_badge_label.label_settings = status_badge_label.label_settings.duplicate() as LabelSettings
-	status_badge_label.custom_minimum_size = Vector2(118.0, 18.0)
-	status_badge_label.scale = Vector2(0.74, 0.74)
-	status_badge_label.position = Vector2(-44.0, -TARGET_VISUAL_H - 27.0)
-	status_badge_label.z_index = EconomyConfig.Z_CARRY_EMOTE
-	status_badge_label.z_as_relative = false
-	add_child(status_badge_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 		EventBus.tasting_dish_cooked.connect(_on_tasting_dish_cooked)
 		EventBus.tasting_challenge_judged.connect(_on_tasting_challenge_judged)
 		EventBus.chef_pavilion_unlocked_changed.connect(_on_chef_pavilion_unlocked_changed)
 
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func setup_chef_pavilion(p_island: int = 2, p_pos: Vector2 = Vector2(SLOT_X, EconomyConfig.GROUND_Y)) -> void:
 	island_idx = p_island
 	position = Vector2(p_pos.x, EconomyConfig.GROUND_Y)
 	reload_ci9_textures()
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func reload_ci9_textures() -> void:
 	tex_pavilion = EconomyConfig.load_pixel_texture(EconomyConfig.CHEF_TASTING_PAVILION_TEX)
@@ -139,43 +118,22 @@ func _on_upgrade_purchased(category: String, key: String, new_level: int) -> voi
 	if category == "building" and key == "chef_pavilion":
 		if visual_upgrader != null:
 			visual_upgrader.apply_level_visuals(new_level, true)
-		_sync_labels_and_tint()
+		_sync_tint()
 
 func _on_tasting_dish_cooked(_dish_id: String, _qty: int) -> void:
 	cook_flash_timer = 0.50
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_tasting_challenge_judged(_dish_id: String, _score: int, passed: bool, _g: int, _a: int, _v: int) -> void:
 	cook_flash_timer = 0.80 if passed else 0.30
-	_sync_labels_and_tint()
+	_sync_tint()
 
 func _on_chef_pavilion_unlocked_changed(_unlocked: bool) -> void:
-	_sync_labels_and_tint()
+	_sync_tint()
 
-func _sync_labels_and_tint() -> void:
-	if GameManager == null:
-		return
-	var built := is_chef_pavilion_built()
-	var cur_lv := get_chef_pavilion_level()
-	if level_label != null:
-		level_label.text = ("Lv." + str(cur_lv)) if built else EconomyConfig.tr_key("wl_cp_unbuilt")
-		if level_label.label_settings != null:
-			level_label.label_settings.font_color = Color("#FFF4D6") if built else Color("#CBD5E1")
-	if status_badge_label != null:
-		if built:
-			var dcfg: Dictionary = EconomyConfig.TASTING_DISHES.get(GameManager.active_tasting_dish_id, {})
-			var sname := EconomyConfig.tr_name(String(dcfg.get("short_name", "灌汤小笼")))
-			var passed_cnt := GameManager.get_passed_tasting_challenge_count()
-			var medal_seg := EconomyConfig.tr_fmt("wl_seg_medal", [GameManager.chef_medals]) if GameManager.chef_medals > 0 else EconomyConfig.tr_fmt("wl_seg_tasted", [passed_cnt])
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_badge", [sname, medal_seg])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#FFE066") if GameManager.chef_medals > 0 else Color("#FFD8A8")
-		else:
-			status_badge_label.text = EconomyConfig.tr_fmt("wl_cp_cost", [EconomyConfig.CHEF_PAVILION_UNLOCK_COST_GOLD])
-			if status_badge_label.label_settings != null:
-				status_badge_label.label_settings.font_color = Color("#CBD5E1")
-	if body_sprite != null:
-		body_sprite.modulate = Color.WHITE if built else Color(0.74, 0.80, 0.86, 0.72)
+func _sync_tint() -> void:
+	if body_sprite != null and GameManager != null:
+		body_sprite.modulate = Color.WHITE if is_chef_pavilion_built() else Color(0.74, 0.80, 0.86, 0.72)
 
 func _process(delta: float) -> void:
 	var isl_open := GameManager != null and bool(GameManager.unlocked_islands.get(island_idx, false))
@@ -191,7 +149,7 @@ func _process(delta: float) -> void:
 			body_sprite.scale = Vector2(base_scale_vec.x, base_scale_vec.y * (1.0 - breathe))
 		else:
 			body_sprite.scale = base_scale_vec
-	_sync_labels_and_tint()
+	_sync_tint()
 	queue_redraw()
 
 func _draw() -> void:
@@ -214,6 +172,9 @@ func _draw() -> void:
 		var ma := (1.0 - phase) * 0.46
 		draw_rect(Rect2(roundf(mx), roundf(my), 2.5, 2.5), Color(1.0, 0.97, 0.90, ma), true)
 
+	# the bar and its icon only show while the mouse is on the building
+	if EconomyConfig.hovered_building != "chef_pavilion":
+		return
 	var prog := GameManager.get_chef_cook_ratio()
 	var bar_w := 32.0
 	var bar_h := 4.5

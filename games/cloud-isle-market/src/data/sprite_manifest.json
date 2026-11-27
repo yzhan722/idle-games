@@ -299,13 +299,13 @@
       }
     ]
   },
-  "travelers/traveler_slime.png": {
+  "travelers/traveler_hedgehog.png": {
     "cell_width": 48,
     "cell_height": 48,
     "hframes": 2,
     "vframes": 1,
     "total_frames": 2,
-    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_slime_normalized.png",
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_hedgehog_normalized.png",
     "regions": [
       {
         "x": 0,
@@ -329,13 +329,13 @@
       }
     ]
   },
-  "travelers/traveler_mushroom.png": {
+  "travelers/traveler_cat.png": {
     "cell_width": 48,
     "cell_height": 48,
     "hframes": 2,
     "vframes": 1,
     "total_frames": 2,
-    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_mushroom_normalized.png",
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_cat_normalized.png",
     "regions": [
       {
         "x": 0,
@@ -359,13 +359,13 @@
       }
     ]
   },
-  "travelers/traveler_pig.png": {
+  "travelers/traveler_raccoon.png": {
     "cell_width": 48,
     "cell_height": 48,
     "hframes": 2,
     "vframes": 1,
     "total_frames": 2,
-    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_pig_normalized.png",
+    "normalized_sheet": "res://assets/pixel_art/travelers/traveler_raccoon_normalized.png",
     "regions": [
       {
         "x": 0,

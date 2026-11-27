@@ -11,7 +11,6 @@ class_name SoilPlot
 
 const VISUAL_WIDTH := 64.0
 const VISUAL_HEIGHT := 26.0
-const DEFAULT_BASKET_CAP := 10
 
 enum GrowthStage {
 	SEED = 0,
@@ -28,7 +27,6 @@ var tex_crops: Texture2D
 var soil_sprite: Sprite2D
 var crop_sprite: Sprite2D
 var visual_upgrader: BuildingVisualUpgrader
-var level_label: Label
 
 var sown: bool = true
 var watered: bool = true
@@ -83,12 +81,6 @@ func _ready() -> void:
 	add_child(visual_upgrader)
 	visual_upgrader.setup_upgrader(self, "soil", cur_lv)
 
-	if plot_index_on_island == 0:
-		level_label = EconomyConfig.create_pixel_label("Lv." + str(cur_lv), 14, Color("#FFF4D6"), true)
-		level_label.position = Vector2(-28.0, 2.0)
-		level_label.custom_minimum_size = Vector2(56.0, 20.0)
-		add_child(level_label)
-
 	if EventBus != null:
 		EventBus.upgrade_purchased.connect(_on_upgrade_purchased)
 	_refresh_evolved_crop()
@@ -104,9 +96,6 @@ func setup_plot(p_island: int, p_idx_on_island: int, p_crop_id: String, p_pos: V
 	_refresh_evolved_crop()
 	_sync_sprites()
 	var cur_lv := get_building_level()
-	if level_label != null:
-		level_label.visible = (plot_index_on_island == 0)
-		level_label.text = "Lv." + str(cur_lv)
 	if visual_upgrader != null:
 		visual_upgrader.visible = (plot_index_on_island == 0)
 		visual_upgrader.apply_level_visuals(cur_lv, false)
@@ -123,21 +112,6 @@ func get_milestone_tier() -> int:
 func get_milestone_yield_multiplier() -> int:
 	return int(round(pow(2.0, float(get_milestone_tier()))))
 
-func get_basket_capacity() -> int:
-	if GameManager != null:
-		return GameManager.get_raw_basket_max_cap(island_idx)
-	return DEFAULT_BASKET_CAP
-
-func is_output_buffer_blocked() -> bool:
-	if GameManager == null:
-		return false
-	var otter_hired := GameManager.is_island_otter_hired(island_idx)
-	if otter_hired:
-		return GameManager.is_raw_basket_full(island_idx)
-	elif island_idx == 1:
-		return GameManager.is_stall_full()
-	return GameManager.is_raw_basket_full(island_idx)
-
 func get_screen_rect() -> Rect2:
 	var w := VISUAL_WIDTH * scale.x
 	var h := VISUAL_HEIGHT * scale.y
@@ -146,8 +120,6 @@ func get_screen_rect() -> Rect2:
 func _on_upgrade_purchased(category: String, key: String, new_level: int) -> void:
 	if category == "building" and key == get_building_key():
 		_refresh_evolved_crop()
-		if level_label != null:
-			level_label.text = "Lv." + str(new_level)
 		if visual_upgrader != null and plot_index_on_island == 0:
 			visual_upgrader.apply_level_visuals(new_level, true)
 

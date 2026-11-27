@@ -254,9 +254,9 @@ def main():
 
     # 3. Analyze traveler sheets (2 frames x 1 row = 96x48 -> 48x48 cells)
     traveler_files = [
-        "travelers/traveler_slime.png",
-        "travelers/traveler_mushroom.png",
-        "travelers/traveler_pig.png",
+        "travelers/traveler_hedgehog.png",
+        "travelers/traveler_cat.png",
+        "travelers/traveler_raccoon.png",
     ]
     for tf in traveler_files:
         if os.path.exists(os.path.join(ART_DIR, *tf.split("/"))):
