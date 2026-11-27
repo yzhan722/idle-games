@@ -105,7 +105,7 @@ export function computeEnhancementInfo(
     itemId: PROTECTION_MIRROR_ID,
     available: st.inventory[PROTECTION_MIRROR_ID] || 0,
     failWithout: "失败后重置为 +0",
-    failWith: "消耗 1 面保护镜；失败只降低 1 级",
+    failWith: "消耗 1 面定纹镜；失败只降低 1 级",
   };
 
   if (!rule) {

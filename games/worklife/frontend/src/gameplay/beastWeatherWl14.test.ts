@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -44,7 +45,7 @@ const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 const xpAt = (level: number) => BEAST_LEVEL_XP[level - 1];
 
 describe("WL-14 frontend art contract, navigation IA, zero-SVG/Emoji guard and Beast Ranch / Weather Tower helpers", () => {
-  it("registers the 6 WL-14 512x512 RGBA .webp icons in the T1 contract and keeps a dated wl cache version", () => {
+  it("registers the 6 WL-14 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract and keeps a dated wl cache version", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL14_BEAST_WEATHER_ART_IDS], [
       "beast_ranch",
@@ -67,8 +68,8 @@ describe("WL-14 frontend art contract, navigation IA, zero-SVG/Emoji guard and B
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
       assert.ok(size, `Unreadable webp ${webp}`);
-      assert.equal(size!.width, 512);
-      assert.equal(size!.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(withAssetCacheVersion("/assets/beast_ranch.webp"), `/assets/beast_ranch.webp?v=${T1_ASSET_CACHE_VERSION}`);
     // beasts render through real monster art; every tame / food item shown has raster item art
@@ -95,7 +96,7 @@ describe("WL-14 frontend art contract, navigation IA, zero-SVG/Emoji guard and B
     assert.ok(endgame.items.indexOf("ranch") > endgame.items.indexOf("arena"));
     assert.ok(endgame.items.indexOf("ranch") < endgame.items.indexOf("prestige"));
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     assert.ok(advSrc.indexOf("export function BeastWeatherPanel") > 0, "BeastWeatherPanel must be exported from AdvancementPanels.tsx");
     const slice = advSrc.slice(advSrc.lastIndexOf("契约魔兽牧场 & 天候观星占卜塔 (WL-14)"));
     assert.equal(/<svg[\s>]/i.test(slice), false, "BeastWeatherPanel must not contain inline <svg>");

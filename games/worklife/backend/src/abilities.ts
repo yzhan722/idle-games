@@ -3,7 +3,7 @@ import { abilitySlotCount, ensureCombatSkills } from "./combat_skills";
 import { appendLog, getXpForLevel } from "./storage";
 
 /**
- * MWI abilities: learned from books that monsters drop, equipped in a priority list, auto-cast by
+ * Abilities: learned from books that monsters drop, equipped in a priority list, auto-cast by
  * trigger. Definitions are code, not content-pack data, because their effects are combat rules the
  * simulator (and the frontend fight preview) must agree on exactly.
  */
@@ -115,7 +115,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "arrow_rain",
     name: "漫天箭雨",
-    blurb: "倾泻密集箭雨，对场上全体敌人造成 1.55 倍穿透伤害。雪山怪物掉落。",
+    blurb: "倾泻密集箭雨，对场上全体敌人造成 1.55 倍伤害。默认敌方 ≥2 只才放，单人请改触发条件。雪山怪物掉落。",
     cooldownMs: 9000,
     mpCost: 10,
     damageMult: 1.55,
@@ -127,7 +127,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "group_heal",
     name: "复苏群疗",
-    blurb: "恢复自身或全队全体存活成员 32% 最大生命并净化负面状态。火山与深渊怪物掉落。",
+    blurb: "恢复自身（组队时全队）32% 最大生命并净化瘴气。火山与深渊怪物掉落。",
     cooldownMs: 14000,
     mpCost: 14,
     healPct: 0.32,
@@ -152,7 +152,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "war_aura",
     name: "战神光环",
-    blurb: "造成 1.4 倍震击伤害，并令全队 10 秒内攻击力 +22%、暴击率 +15%。终局首领掉落。",
+    blurb: "造成 1.4 倍震击伤害，组队时全队 10 秒内攻击 +22%、暴击 +15%。终局首领掉落。",
     cooldownMs: 16000,
     mpCost: 15,
     damageMult: 1.4,
@@ -278,7 +278,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "phoenix_blessing",
     name: "浴火圣歌",
-    blurb: "奏响不灭浴火圣歌，恢复全队 28% 最大生命值并令全队 8 秒内攻击 +15%、暴击 +10%。烈焰怨灵与烈焰魔君掉落。",
+    blurb: "奏响不灭浴火圣歌，恢复自身（组队时全队）28% 最大生命；组队时全队 8 秒内攻击 +15%、暴击 +10%。烈焰怨灵与烈焰魔君掉落。",
     cooldownMs: 13000,
     mpCost: 14,
     healPct: 0.28,
@@ -320,7 +320,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "holy_judgment",
     name: "天罚圣裁",
-    blurb: "降下天界圣光裁决全场，造成 2.55 倍神圣群伤、击碎护盾，并治疗全队 22% 最大生命。神圣巨像、执政天神与堕落天使掉落。",
+    blurb: "降下天界圣光裁决全场，造成 2.55 倍神圣群伤、击碎护盾，并恢复自身（组队时全队）22% 最大生命。神圣巨像、执政天神与堕落天使掉落。",
     cooldownMs: 11500,
     mpCost: 18,
     damageMult: 2.55,
@@ -335,7 +335,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "seraph_aegis",
     name: "炽天圣盾",
-    blurb: "展开六翼炽天圣盾，恢复 24% 最大生命，并在 9 秒内令受伤降低 55% 且强力吸引全队仇恨。炽天哨兵与堕落天使掉落。",
+    blurb: "展开六翼炽天圣盾，恢复 24% 最大生命，并在 9 秒内令受伤降低 55% ，组队时强力吸引仇恨。炽天哨兵与堕落天使掉落。",
     cooldownMs: 12000,
     mpCost: 14,
     healPct: 0.24,
@@ -349,7 +349,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "chrono_overload",
     name: "时空超载",
-    blurb: "扭曲时空法则轰击全场造成 2.4 倍伤害，回流 +22 魔力，并令全队 10 秒内攻击 +26%、暴击 +18%。时空巨龙、现实撕裂者与时空主宰掉落。",
+    blurb: "扭曲时空法则轰击全场造成 2.4 倍伤害，回流 +22 魔力，组队时全队 10 秒内攻击 +26%、暴击 +18%。时空巨龙、现实撕裂者与时空主宰掉落。",
     cooldownMs: 9500,
     mpCost: 12,
     damageMult: 2.4,
@@ -378,7 +378,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "genesis_sanctuary",
     name: "创世神恩",
-    blurb: "降下创世神恩，对全场造成 2.75 倍圣光伤害，恢复全队 36% 生命，8 秒内受伤 -50% 且全队攻击 +30%、暴击 +20%。神圣不死鸟、创世先知与创世之神掉落。",
+    blurb: "降下创世神恩，对全场造成 2.75 倍圣光伤害，恢复自身（组队时全队）36% 生命，8 秒内受伤 -50%；组队时全队 10 秒内攻击 +30%、暴击 +20%。神圣不死鸟、创世先知与创世之神掉落。",
     cooldownMs: 13000,
     mpCost: 24,
     damageMult: 2.75,
@@ -397,7 +397,7 @@ export const ABILITIES: AbilityDef[] = [
   {
     id: "omega_annihilation",
     name: "万界终焉",
-    blurb: "引动万界终焉之力湮灭一切，对全体敌人造成 3.4 倍终极破防伤害，恢复全队 25% 生命、回流 +30 魔力，并令全队 12 秒内攻击 +35%、暴击 +25%。世界终结者、终焉传令者与万界终焉掉落。",
+    blurb: "引动万界终焉之力湮灭一切，对全体敌人造成 3.4 倍终极破防伤害，恢复自身（组队时全队）25% 生命、回流 +30 魔力；组队时全队 12 秒内攻击 +35%、暴击 +25%。世界终结者、终焉传令者与万界终焉掉落。",
     cooldownMs: 12000,
     mpCost: 25,
     damageMult: 3.4,
@@ -511,7 +511,7 @@ export function grantAbilityXp(player: EnhancedPlayerState, abilityId: string, x
   return { leveledTo };
 }
 
-/** Consume a book: first read learns the ability, later reads add XP (MWI). */
+/** Consume a book: first read learns the ability, later reads add XP. */
 export function learnFromBook(
   player: EnhancedPlayerState,
   pack: EnhancedContentPack,

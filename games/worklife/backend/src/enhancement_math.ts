@@ -4,21 +4,19 @@ import type {
   EnhancementRequest,
   EnhancementResult,
 } from "./types";
-
-/** MWI's exact stat bonus table. Index = enhancement level. */
-export const ENHANCEMENT_BONUS_PCT = [
-  0, 2, 4.2, 6.6, 9.2, 12, 15, 18.2, 21.6, 25.2, 29,
-  33.4, 38.4, 44, 50.2, 57, 64.4, 72.4, 81, 90.2, 100,
-] as const;
-
-/** MWI's exact base success table. Index = target enhancement level. */
-export const ENHANCEMENT_BASE_SUCCESS = [
-  0, 0.5, 0.45, 0.45, 0.4, 0.4, 0.4, 0.35, 0.35, 0.35, 0.35,
-  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
-] as const;
-
 import { syncAchievements } from "./progression";
-export const MAX_ENHANCEMENT_LEVEL = 20;
+import {
+  ENHANCE_MAX_LEVEL,
+  enhanceAttemptXp,
+  enhanceBaseChance,
+  enhanceBonusPct,
+  enhanceCraftFactor,
+  enhanceFinalChance,
+} from "./growth_curves";
+import { ESSENCE_RULES, essenceForItemTier } from "./zone_essence";
+
+/** Curves and their design targets live in growth_curves.ts; this file only applies them. */
+export const MAX_ENHANCEMENT_LEVEL = ENHANCE_MAX_LEVEL;
 export const PROTECTION_MIRROR_ID = "mirror_protection";
 
 type ItemLike = {
@@ -37,8 +35,7 @@ type RuleLike = EnhancedContentPack["enhancementRules"][number];
 type SkillLike = { level: number; xp: number; unlockedRecipes: string[]; enhancementLevel: number };
 
 export function enhancementBonusPct(level: number): number {
-  const safe = Math.max(0, Math.min(MAX_ENHANCEMENT_LEVEL, Math.floor(level)));
-  return ENHANCEMENT_BONUS_PCT[safe];
+  return enhanceBonusPct(level);
 }
 
 /**
@@ -51,7 +48,7 @@ export function enhancementSlotMultiplier(_item: Pick<ItemLike, "type" | "slot">
   return 1;
 }
 
-/** Multiplier for an item's base stats, e.g. +10 normal gear = 1.29. */
+/** Multiplier for an item's base stats, e.g. 1 at +0, 2 at +20. */
 export function enhancementStatMultiplier(
   level: number,
   item?: Pick<ItemLike, "type" | "slot">
@@ -60,8 +57,7 @@ export function enhancementStatMultiplier(
 }
 
 export function baseEnhancementSuccess(targetLevel: number): number {
-  const safe = Math.max(1, Math.min(MAX_ENHANCEMENT_LEVEL, Math.floor(targetLevel)));
-  return ENHANCEMENT_BASE_SUCCESS[safe];
+  return enhanceBaseChance(targetLevel);
 }
 
 /**
@@ -92,9 +88,9 @@ export type EnhancementSuccessBreakdown = {
 };
 
 /**
- * MWI:
- * final = base × (level modifier + tool/achievement bonus + 0.05% per level over item level).
- * Enhancer tools are not content yet, so callers normally pass toolBonus = 0.
+ * final = base chance × (craft factor + tool bonus), capped (growth_curves.enhanceFinalChance).
+ * The craft factor is reported in two halves for the UI: `levelModifier` is the part up to 1
+ * (a penalty while enhancing level < item level), `overLevelBonus` is whatever exceeds 1.
  */
 export function enhancementSuccessBreakdown(
   targetLevel: number,
@@ -105,13 +101,10 @@ export function enhancementSuccessBreakdown(
   const safeItem = Math.max(1, itemLevel);
   const safeSkill = Math.max(1, enhancingLevel);
   const baseRate = baseEnhancementSuccess(targetLevel);
-  const levelModifier =
-    safeSkill >= safeItem ? 1 : Math.min(1, (safeSkill / safeItem + 1) / 2);
-  const overLevelBonus = 0.0005 * Math.max(safeSkill - safeItem, 0);
-  const finalRate = Math.max(
-    0,
-    Math.min(1, baseRate * (levelModifier + Math.max(0, toolBonus) + overLevelBonus))
-  );
+  const craft = enhanceCraftFactor(safeSkill, safeItem);
+  const levelModifier = Math.min(1, craft);
+  const overLevelBonus = Math.max(0, craft - 1);
+  const finalRate = enhanceFinalChance(targetLevel, safeSkill, safeItem, toolBonus);
   return {
     targetLevel,
     enhancingLevel: safeSkill,
@@ -124,10 +117,9 @@ export function enhancementSuccessBreakdown(
   };
 }
 
-/** MWI base XP; failures award 10% of the success XP. */
+/** XP for one attempt from `currentLevel` to the next; failures get a share of the success XP. */
 export function enhancementXp(itemLevel: number, currentLevel: number, success: boolean): number {
-  const base = 1.4 * (1 + Math.max(0, currentLevel)) * (10 + Math.max(1, itemLevel));
-  return Math.round(base * (success ? 1 : 0.1) * 10) / 10;
+  return enhanceAttemptXp(itemLevel, Math.max(0, currentLevel) + 1, success);
 }
 
 export function ensureEnhancingSkill(player: EnhancedPlayerState): SkillLike {
@@ -186,8 +178,8 @@ export function enhancementMaterials(
 }
 
 /**
- * MWI enhancing tools: the equipped tool's `enhanceSuccess` (e.g. 0.006 = +0.6%), scaled by the
- * tool's own enhancement level at the normal 1× rate.
+ * Enhancing tools: the equipped tool's `enhanceSuccess` (e.g. 0.008 = +0.8%), scaled by the tool's
+ * own enhancement level at the normal 1× rate.
  */
 export function equippedEnhanceToolBonus(player: EnhancedPlayerState, pack: EnhancedContentPack): number {
   const toolId = player.equipment?.tool;
@@ -229,7 +221,7 @@ type AttemptInput = {
  * Mutates one player state atomically in memory. Persistence / DB locks stay with the storage
  * adapter. Validation failures consume nothing. A real roll failure consumes materials and:
  * - no protection → +0
- * - Mirror of Protection → current level - 1
+ * - 定纹镜 (PROTECTION_MIRROR_ID) → current level - 1
  */
 export function performEnhancementAttempt(input: AttemptInput): EnhancementResult {
   const { player, item, rule, request, pack, xpForLevel } = input;
@@ -259,6 +251,10 @@ export function performEnhancementAttempt(input: AttemptInput): EnhancementResul
   ) {
     return { success: false, ...baseResult, failureReason: "不支持的保护道具" };
   }
+  // 区域精华辅料只能用这件装备那一阶的（zone_essence.ts）。
+  if (request.essenceItemId && request.essenceItemId !== essenceForItemTier(item.tier)) {
+    return { success: false, ...baseResult, failureReason: "这种精华不适合这件装备" };
+  }
 
   const materials = enhancementMaterials(
     rule,
@@ -267,6 +263,9 @@ export function performEnhancementAttempt(input: AttemptInput): EnhancementResul
     item,
     pack
   );
+  if (request.essenceItemId) {
+    materials[request.essenceItemId] = (materials[request.essenceItemId] || 0) + ESSENCE_RULES.enhanceCost;
+  }
   for (const [itemId, required] of Object.entries(materials)) {
     if ((player.inventory[itemId] || 0) < required) {
       return {
@@ -283,7 +282,7 @@ export function performEnhancementAttempt(input: AttemptInput): EnhancementResul
     request.targetLevel,
     skill.level,
     itemLevel,
-    input.toolBonus ?? equippedEnhanceToolBonus(player, pack)
+    (input.toolBonus ?? equippedEnhanceToolBonus(player, pack)) + (request.essenceItemId ? ESSENCE_RULES.enhanceBonus : 0)
   );
   const success = (input.rng || Math.random)() < breakdown.finalRate;
 
@@ -327,7 +326,7 @@ export function performEnhancementAttempt(input: AttemptInput): EnhancementResul
     failureReason: success
       ? undefined
       : protectedFailure
-        ? `强化失败：保护镜生效，强化从 +${currentLevel} 降到 +${newLevel}`
+        ? `强化失败：定纹镜生效，强化从 +${currentLevel} 降到 +${newLevel}`
         : `强化失败：强化从 +${currentLevel} 重置为 +0`,
   };
 }

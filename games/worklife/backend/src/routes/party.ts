@@ -1,17 +1,15 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import { appendLog, getBuffEffects, getRareFindMultiplier, type Storage } from "../storage";
-import type { EnhancedContentPack } from "../types";
-import { grantCombatXp } from "../combat_skills";
-import { ABILITY_BY_ID, abilityCastXp, activeAbilitySlots, grantAbilityXp } from "../abilities";
-import { HOUSE_XP_PER_LEVEL, houseLevelForSkill } from "../houses";
-import { syncAchievements } from "../progression";
-import { getPrestigeMultiplier, getReputationBonuses } from "../progression2";
+import type { Storage } from "../storage";
+import type { EnhancedContentPack, EnhancedPlayerState, Party } from "../types";
+import { leaveDungeon } from "../dungeon";
+import { ensurePartyRun, judgeWaveClear, partyRequiredLevel, resetPartyRun, settlePartyWave, type PartyContext } from "../party_run";
 import {
   ensurePresetParties,
   ensureHumanLeaderIfBotParty,
   simulateBotPartyContributions,
   recruitBotToParty,
+  recognizePartyBots,
   enrichPartyForClient,
   friendlyPartyName,
   friendlyAdventurerName,
@@ -25,8 +23,11 @@ import {
 export async function partyRoutes(
   app: FastifyInstance,
   storage: Storage,
-  contentPack: EnhancedContentPack
+  contentPack: EnhancedContentPack,
+  /** 测试用：波次计时的时钟。 */
+  opts: { clock?: () => Date } = {}
 ) {
+  const clock = opts.clock ?? (() => new Date());
   const userIdOf = (req: FastifyRequest) => (req as any).userId as string | undefined;
   const version = contentPack.version || "1.0.0";
 
@@ -40,6 +41,39 @@ export async function partyRoutes(
       return true;
     }
     return false;
+  };
+
+  /** 这名玩家在这场组队战斗里的上下文：关卡以开战时定下的为准，队友等级用发给客户端的那一份。 */
+  const battleContext = (party: Party, userId: string): PartyContext | null => {
+    const activity = party.currentActivity;
+    if (!activity || activity.type === "group_craft") return null;
+    const members = enrichPartyForClient(party, userId)?.members ?? [];
+    return {
+      partyId: party.id,
+      startedAt: activity.startedAt,
+      stageId: normalizePartyStageId(activity.stageId),
+      joinedAt: party.members.find((m) => m.userId === userId)?.joinedAt,
+      mateLevels: members.filter((m) => m.userId !== userId).map((m) => m.combatLevel),
+    };
+  };
+
+  /** 开战、中途进队时就建好进度：人数按这一刻算，之后再拉人不会改变这一波的敌人和奖励。 */
+  const beginRun = async (userId: string) => {
+    const party = await storage.getPartyForUser({ userId });
+    if (!party?.currentActivity) return;
+    await recognizePartyBots(storage, party);
+    const ctx = battleContext(party, userId);
+    if (!ctx) return;
+    const now = clock();
+    await storage.executePlayerCommand({
+      userId,
+      contentPack,
+      now,
+      apply: (st) => {
+        ensurePartyRun(st, contentPack, ctx, now);
+        return { ok: true as const };
+      },
+    }).catch(() => undefined);
   };
 
   app.post("/party/create", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -117,6 +151,7 @@ export async function partyRoutes(
       // while all bots in the party are already auto-ready (`isReady: true`) and leadership transfers to the human!
       setMemberReady(body.partyId, userId, false);
       const fullParty = await storage.getPartyForUser({ userId });
+      await beginRun(userId);
       const promoted = await ensureHumanLeaderIfBotParty(storage, userId, fullParty ?? (result as any));
       // Keep human ready state as false on fresh join so the user sees bots Ready (✅ 已准备) and clicks "准备" to start!
       setMemberReady(body.partyId, userId, false);
@@ -221,6 +256,7 @@ export async function partyRoutes(
         run: () => storage.acceptPartyInvite({ userId, partyId: body.partyId }),
       });
       if (sendIfFailed(result, reply)) return;
+      await beginRun(userId);
       return reply.send(enrichPartyForClient(result as any, userId) ?? result);
     } catch (error) {
       return reply.status(400).send({ error: error instanceof Error ? error.message : "接受邀请失败" });
@@ -306,6 +342,22 @@ export async function partyRoutes(
       // Ensure if the player is in a bot/offline-led party, leadership is transferred first
       const current = await storage.getPartyForUser({ userId });
       if (current && current.id === body.partyId) {
+        await recognizePartyBots(storage, current);
+        if (resolvedStageId) {
+          const need = partyRequiredLevel(contentPack, resolvedStageId);
+          for (const m of current.members) {
+            // 陪练不看等级
+            if (isPartyBotUserId(m.userId)) continue;
+            const level = (await storage.getOrCreatePlayerState(m.userId, version)).combatLevel || 1;
+            if (level < need) {
+              return reply.status(403).send({
+                error: "party_level_required",
+                message: m.userId === userId ? `战斗等级到 ${need} 级才能进这个副本` : `队友「${friendlyAdventurerName(m.userId, m.displayName)}」的战斗等级不到 ${need} 级`,
+                requiredLevel: need,
+              });
+            }
+          }
+        }
         await ensureHumanLeaderIfBotParty(storage, userId, current);
         setMemberReady(body.partyId, userId, true);
         if (current.currentActivity) {
@@ -343,6 +395,8 @@ export async function partyRoutes(
               const { persistCombatHp } = require("../hp_combat") as typeof import("../hp_combat");
               persistCombatHp(st, st.hpCombat.playerHp, now.getTime());
             }
+            // 单人地下城按「离开」结束：趁战斗还在，把已过几波的累计写进结算
+            leaveDungeon(st as EnhancedPlayerState, now);
             st.hpCombat = undefined;
             if (st.combatLoadout?.autoRepeat) {
               st.combatLoadout = { ...st.combatLoadout, autoRepeat: false };
@@ -355,6 +409,7 @@ export async function partyRoutes(
             return { ok: true as const };
           },
         }).catch(() => undefined);
+        await beginRun(memberUid);
       }
 
       // Immediately seed initial bot combat/craft contributions so bot teammates are actively helping from second 1
@@ -367,6 +422,22 @@ export async function partyRoutes(
       return reply.status(400).send({ error: error instanceof Error ? error.message : "开始活动失败" });
     }
   });
+
+  /** 清波 / 重整前的检查；不在战斗里时写好回复并返回 null。 */
+  const partyBattle = async (userId: string, partyId: string, reply: FastifyReply): Promise<{ party: Party; ctx: PartyContext } | null> => {
+    const current = await storage.getPartyForUser({ userId });
+    if (!current || current.id !== partyId) {
+      reply.status(400).send({ success: false, error: "party_op_failed", message: "您不在该队伍中" });
+      return null;
+    }
+    if (current.currentActivity) await recognizePartyBots(storage, current);
+    const ctx = battleContext(current, userId);
+    if (!ctx) {
+      reply.status(400).send({ success: false, error: "party_op_failed", message: "当前没有进行中的组队战斗" });
+      return null;
+    }
+    return { party: current, ctx };
+  };
 
   app.post("/party/wave-clear", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = userIdOf(req);
@@ -381,54 +452,18 @@ export async function partyRoutes(
     }).strict().parse((req.body ?? {}) as unknown);
 
     try {
-      const current = await storage.getPartyForUser({ userId });
-      if (!current || current.id !== body.partyId) {
-        return reply.status(400).send({ success: false, error: "party_op_failed", message: "您不在该队伍中" });
-      }
-      if (!current.currentActivity) {
-        return reply.status(400).send({ success: false, error: "party_op_failed", message: "当前没有进行中的组队战斗" });
-      }
-      const stageId = normalizePartyStageId(body.stageId || current.currentActivity?.stageId);
-      const stage = (contentPack.stages as any[]).find((s) => s.id === stageId) || (contentPack.stages as any[])[0];
-      const stageMonsters = ((stage?.monsters || []) as string[])
-        .map((id) => (contentPack.monsters as any[]).find((m) => m.id === id))
-        .filter(Boolean);
-      const normalMonsters = stageMonsters.filter((m) => !m.isBoss && !String(m.id).endsWith("_boss"));
-      const bossMonster = stageMonsters.find((m) => m.isBoss || String(m.id).endsWith("_boss")) || stageMonsters.at(-1);
-
-      const isBossWave = body.wave % 10 === 0;
-      const partyMemberCount = Math.max(1, current.members?.length || 1);
-      const dynamicMinionCount = Math.max(2, Math.min(6, partyMemberCount <= 1 ? 2 : partyMemberCount + 1));
-      const bossGuardCount = partyMemberCount >= 5 ? 2 : partyMemberCount >= 3 ? 1 : 0;
-      const waveMonsters: any[] = [];
-      if (isBossWave && bossMonster) {
-        waveMonsters.push(bossMonster);
-        if (normalMonsters.length > 0 && bossGuardCount > 0) {
-          for (let g = 0; g < bossGuardCount; g++) {
-            waveMonsters.push(normalMonsters[g % normalMonsters.length]);
-          }
-        }
-      } else if (normalMonsters.length > 0) {
-        const offset = (body.wave - 1) % 10;
-        for (let i = 0; i < dynamicMinionCount; i++) {
-          waveMonsters.push(normalMonsters[(offset + i) % normalMonsters.length]);
-        }
-      } else if (bossMonster) {
-        waveMonsters.push(bossMonster);
-      }
-
-      const partySizeBonus = 1 + Math.min(5, Math.max(0, (current.members?.length || 1) - 1)) * 0.08;
-      let totalXp = 0;
-      let totalGold = 0;
-      const dropMap = new Map<string, { itemId: string; name: string; qty: number }>();
-
+      const battle = await partyBattle(userId, body.partyId, reply);
+      if (!battle) return;
+      const now = clock();
+      // 幂等靠波次本身（同一波只结算一次，重发返回上次结果），所以不另存操作回执：
+      // 回执会把「太早」这类拒绝也记住，客户端等一下再报同一波就永远被拒。
       const outcome = await storage.executePlayerCommand({
         userId,
         contentPack,
-        now: new Date(),
-        operationId: body.operationId,
-        operationPayload: { route: "party/wave-clear", ...body, stageId },
+        now,
         apply(st) {
+          const verdict = judgeWaveClear(st, contentPack, battle.ctx, body.wave, now);
+          if (verdict.kind !== "ok") return { verdict };
           // 组队战斗进行中严格禁止同时保留生活动作或单人战斗
           if (st.mode === "life_action" || st.lifeActionState) {
             st.mode = "idle";
@@ -440,118 +475,50 @@ export async function partyRoutes(
               st.combatLoadout = { ...st.combatLoadout, autoRepeat: false };
             }
           }
-          const stats = (st.stats = st.stats || ({} as any));
-          stats.killsByMonster = stats.killsByMonster || {};
-          const nowDate = new Date();
-          const buffEff = getBuffEffects(st, nowDate);
-          const repBuffs = getReputationBonuses(st, nowDate);
-          const prestigeMul = getPrestigeMultiplier(st);
-          const trainingLevel = houseLevelForSkill(st, "skill_combat");
-          const xpBonusMul = (1 + trainingLevel * HOUSE_XP_PER_LEVEL) * (buffEff.xpGain || 1) * repBuffs.xpGain * prestigeMul;
-          const goldBonusMul = (buffEff.goldGain || 1) * repBuffs.goldGain * prestigeMul;
-          const rareFind = getRareFindMultiplier(st, contentPack, nowDate);
-
-          for (const m of waveMonsters) {
-            if (!m) continue;
-            const mult = isBossWave ? 2.2 * partySizeBonus : 0.75 * partySizeBonus;
-            const xp = Math.max(2, Math.round(Number(m.xp || 10) * mult * xpBonusMul));
-            const gold = Math.max(1, Math.round(Number(m.gold || 5) * mult * goldBonusMul));
-            totalXp += xp;
-            totalGold += gold;
-
-            stats.totalKills = (stats.totalKills || 0) + 1;
-            stats.totalActions = (stats.totalActions || 0) + 1;
-            stats.killsByMonster[m.id] = (stats.killsByMonster[m.id] || 0) + 1;
-            if (isBossWave || m.isBoss || String(m.id).endsWith("_boss")) {
-              stats.totalBossKills = (stats.totalBossKills || 0) + 1;
-            }
-
-            // Roll standard drops
-            for (const d of (m.drops || []) as Array<{ itemId: string; qty?: number; chance?: number }>) {
-              const baseChance = typeof d.chance === "number" ? d.chance : 0.35;
-              const chance = Math.min(1, baseChance * rareFind);
-              if (Math.random() <= chance) {
-                const qty = Math.max(1, Number(d.qty || 1));
-                st.inventory[d.itemId] = (st.inventory[d.itemId] || 0) + qty;
-                const itemDef = (contentPack.items as any[]).find((it) => it.id === d.itemId);
-                const prev = dropMap.get(d.itemId);
-                dropMap.set(d.itemId, {
-                  itemId: d.itemId,
-                  name: itemDef?.name || d.itemId,
-                  qty: (prev?.qty || 0) + qty,
-                });
-              }
-            }
-            // Roll rare drop
-            if (m.rare && Number(m.rareChance) > 0 && Math.random() <= Math.min(1, Number(m.rareChance) * (isBossWave ? 1.5 : 1) * rareFind)) {
-              const rareItem = (contentPack.items as any[]).find((it) => it.id === m.rare || it.name === m.rare);
-              if (rareItem) {
-                st.inventory[rareItem.id] = (st.inventory[rareItem.id] || 0) + 1;
-                const prev = dropMap.get(rareItem.id);
-                dropMap.set(rareItem.id, {
-                  itemId: rareItem.id,
-                  name: rareItem.name || rareItem.id,
-                  qty: (prev?.qty || 0) + 1,
-                });
-              }
-            }
-          }
-
-          st.inventory.gold = (st.inventory.gold || 0) + totalGold;
-          stats.totalGoldEarned = (stats.totalGoldEarned || 0) + totalGold;
-          stats.totalXpEarned = (stats.totalXpEarned || 0) + totalXp;
-          const xpGrant = grantCombatXp(st, totalXp, contentPack as any);
-
-          // Grant active ability XP for skills cast during this party wave
-          const abilityXpGained: Record<string, number> = {};
-          const abilityLevelUps: Array<{ id: string; name: string; level: number }> = [];
-          const refLevel = Number(bossMonster?.level || waveMonsters[0]?.level || 1);
-          const castEntries = body.abilityCasts && Object.keys(body.abilityCasts).length > 0
-            ? Object.entries(body.abilityCasts)
-            : activeAbilitySlots(st).map((s) => [s.abilityId, isBossWave ? 2 : 1] as const);
-          for (const [abilityId, rawCount] of castEntries) {
-            const count = Math.max(0, Math.min(20, Number(rawCount || 0)));
-            const def = ABILITY_BY_ID[abilityId];
-            if (!def || count <= 0 || !st.abilities?.[abilityId]) continue;
-            const totalAbilityXp = abilityCastXp(def, refLevel) * count;
-            const abRes = grantAbilityXp(st, abilityId, totalAbilityXp);
-            abilityXpGained[abilityId] = totalAbilityXp;
-            if (abRes.leveledTo) {
-              abilityLevelUps.push({ id: abilityId, name: def.name, level: abRes.leveledTo });
-            }
-          }
-
-          syncAchievements(st);
-          appendLog(
-            st,
-            isBossWave
-              ? `组队首领战第 ${body.wave} 波大捷！击败 ${bossMonster?.name || "区域首领"}，获得 ${totalXp} 战斗经验、${totalGold} 金币`
-              : `组队副本第 ${body.wave} 波清剿完成，获得 ${totalXp} 战斗经验、${totalGold} 金币`
-          );
-          return { xpGrant, abilityXpGained, abilityLevelUps };
+          return { verdict, settled: settlePartyWave(st, contentPack, battle.ctx, body.wave, body.abilityCasts, now) };
         },
       });
 
-      const { xpGrant, abilityXpGained, abilityLevelUps } = outcome.result || {};
-      const state = outcome.state;
-      await simulateBotPartyContributions(storage, current, contentPack).catch(() => undefined);
-
-      return reply.send({
-        ok: true,
-        wave: body.wave,
-        isBossWave,
-        xpGained: totalXp,
-        xpSplit: xpGrant?.gained || {},
-        levelUps: xpGrant?.levelUps || [],
-        abilityXpGained: abilityXpGained || {},
-        abilityLevelUps: abilityLevelUps || [],
-        combatLevel: state.combatLevel || 1,
-        goldGained: totalGold,
-        drops: Array.from(dropMap.values()),
-        stateRevision: state.stateRevision,
-      });
+      const { verdict, settled } = outcome.result;
+      if (verdict.kind !== "ok" && verdict.kind !== "duplicate") {
+        req.log.warn({ userId, partyId: body.partyId, wave: body.wave, verdict, rejects: outcome.state.partyRun?.rejects }, "party wave rejected");
+        if (verdict.kind === "level") {
+          return reply.status(403).send({ error: "party_level_required", message: `战斗等级到 ${verdict.requiredLevel} 级才能领这个副本的奖励`, requiredLevel: verdict.requiredLevel });
+        }
+        if (verdict.kind === "early") {
+          return reply.status(409).send({ error: "party_wave_early", message: "这一波还没打完", expectedWave: verdict.expectedWave, retryAfterMs: verdict.retryAfterMs });
+        }
+        return reply.status(409).send({ error: "party_wave_order", message: `现在该打第 ${verdict.expectedWave} 波`, expectedWave: verdict.expectedWave });
+      }
+      if (verdict.kind === "duplicate") {
+        return reply.send({ ...verdict.reply, duplicate: true, stateRevision: outcome.state.stateRevision });
+      }
+      await simulateBotPartyContributions(storage, battle.party, contentPack).catch(() => undefined);
+      return reply.send({ ...settled, stateRevision: outcome.state.stateRevision });
     } catch (error) {
       return reply.status(400).send({ error: error instanceof Error ? error.message : "波次结算失败" });
+    }
+  });
+
+  /** 团灭：回到第 1 波重新计时。 */
+  app.post("/party/wave-reset", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = userIdOf(req);
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const body = z.object({ partyId: z.string().min(1) }).strict().parse((req.body ?? {}) as unknown);
+
+    try {
+      const battle = await partyBattle(userId, body.partyId, reply);
+      if (!battle) return;
+      const now = clock();
+      const outcome = await storage.executePlayerCommand({
+        userId,
+        contentPack,
+        now,
+        apply: (st) => ({ nextWave: resetPartyRun(st, contentPack, battle.ctx, now).nextWave }),
+      });
+      return reply.send({ ok: true, ...outcome.result, stateRevision: outcome.state.stateRevision });
+    } catch (error) {
+      return reply.status(400).send({ error: error instanceof Error ? error.message : "重整失败" });
     }
   });
 
@@ -627,6 +594,7 @@ export async function partyRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     await ensurePresetParties(storage, contentPack).catch(() => undefined);
     const rawParty = await storage.getPartyForUser({ userId });
+    await recognizePartyBots(storage, rawParty);
     const party = await ensureHumanLeaderIfBotParty(storage, userId, rawParty);
     if (party?.currentActivity) {
       await simulateBotPartyContributions(storage, party, contentPack);

@@ -13,6 +13,7 @@ import {
 
 export interface PartyLobbyViewProps {
   bossDungeons: StageBossDungeon[];
+  combatLevel: number;
   actStage: string;
   setActStage: (stageId: string) => void;
   busy: boolean;
@@ -33,6 +34,7 @@ export interface PartyLobbyViewProps {
 
 export function PartyLobbyView({
   bossDungeons,
+  combatLevel,
   actStage,
   setActStage,
   busy,
@@ -67,6 +69,7 @@ export function PartyLobbyView({
           {bossDungeons.map((dungeon) => {
             const isSelected = normalizeStageId(actStage) === dungeon.id;
             const bossSkills = getBossSignatureSkills(dungeon.boss.id);
+            const locked = combatLevel < dungeon.requiredLevel;
             return (
               <div
                 key={dungeon.id}
@@ -106,13 +109,13 @@ export function PartyLobbyView({
                     type="button"
                     className="btn btn-primary"
                     style={{ width: "100%" }}
-                    disabled={busy}
+                    disabled={busy || locked}
                     onClick={(e) => {
                       e.stopPropagation();
                       void quickStartBossDungeon(dungeon.id);
                     }}
                   >
-                    <T1Art kind="ui" id={party ? "nav-melee" : "nav-party"} fallback="" alt="" /> {party ? "开启讨伐" : "组队讨伐"}
+                    <T1Art kind="ui" id={party ? "nav-melee" : "nav-party"} fallback="" alt="" /> {locked ? `战斗 ${dungeon.requiredLevel} 级开放` : party ? "开启讨伐" : "组队讨伐"}
                   </button>
                 </div>
               </div>
@@ -185,7 +188,7 @@ export function PartyLobbyView({
                         )}
                         {p.isBotParty && (
                           <span style={{ marginLeft: 6, fontSize: 12, color: "var(--accent, #6ee7b7)" }}>
-                            <T1Art kind="ui" id="nav-character" fallback="" alt="" /> 队员已准备
+                            <T1Art kind="ui" id="nav-character" fallback="" alt="" /> 电脑队友，随时能开
                           </span>
                         )}
                       </span>
@@ -204,7 +207,7 @@ export function PartyLobbyView({
                         </button>
                         <button
                           className="btn btn-primary"
-                          disabled={busy}
+                          disabled={busy || combatLevel < (targetDungeon?.requiredLevel ?? 1)}
                           onClick={() => onQuickJoinAndStart(p)}
                         >
                           <T1Art kind="ui" id="nav-melee" fallback="" alt="" /> 加入并直接开战
@@ -278,7 +281,7 @@ export function PartyLobbyView({
                   <span>{m.displayName || "神秘冒险者"}</span>
                   {m.title && <small style={{ marginLeft: 6, opacity: 0.75 }}>[{m.title}]</small>}
                   {m.combatLevel && <small style={{ marginLeft: 6, opacity: 0.8 }}>Lv.{m.combatLevel}</small>}
-                  {m.userId === userId ? "（你）" : ""}
+                  {m.userId === userId ? "（你）" : m.isBot ? "（电脑操作）" : ""}
                 </span>
                 {isLeader && m.userId !== userId && (
                   <span style={{ marginLeft: 8 }}>

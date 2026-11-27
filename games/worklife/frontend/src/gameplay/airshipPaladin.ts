@@ -1,5 +1,5 @@
 // 浮空飞艇商路 & 圣骑士团荣誉试炼 (WL-16) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/airship-paladin-parity.test.ts 守护），
+// 与 backend/src/progression2/airship_paladin.ts 同名表与纯函数逐字对称（scripts/airship-paladin-parity.test.ts 守护），
 // 供面板展示既有城镇间的航线、东八区日行情与购入 / 卖出预览、航线等级与船体，以及按周轮换的六关试炼幻影、
 // 荣誉位阶与誓言加成；誓言的永久攻防血 / 金币通过 combatSheet.combinedBuildFromState 接入（后端 playerBuildExtras 同口径），
 // 经验 / 金币倍率由后端 getActionRates 计入。previewPaladinTrialDuel 以 fightPreview.previewFight 逐步镜像后端
@@ -425,7 +425,7 @@ export const PALADIN_VIRTUES: readonly PaladinVirtueDef[] = [
   { id: "valor", name: "勇气誓言", description: "向圣骑士团宣誓不退，每阶攻击 +3。", perRank: { bonusAtk: 3 } },
   { id: "aegis", name: "守护誓言", description: "以盾护佑同伴，每阶防御 +2。", perRank: { bonusDef: 2 } },
   { id: "vigor", name: "坚忍誓言", description: "在试炼中磨砺体魄，每阶生命 +30。", perRank: { bonusHp: 30 } },
-  { id: "glory", name: "荣光誓言", description: "荣光随行，每阶金币收益与经验各 +1%。", perRank: { goldGainPct: 1, xpGainPct: 1 } },
+  { id: "glory", name: "荣光誓言", description: "荣光随行，每阶单人战斗金币与生活技能经验各 +1%。", perRank: { goldGainPct: 1, xpGainPct: 1 } },
 ];
 
 export interface PaladinHonorRankDef {
@@ -945,8 +945,8 @@ export function formatPaladinStats(s: PaladinStats | null | undefined): string[]
   if (s.bonusAtk) out.push(`攻击 +${s.bonusAtk}`);
   if (s.bonusDef) out.push(`防御 +${s.bonusDef}`);
   if (s.bonusHp) out.push(`生命 +${s.bonusHp}`);
-  if (s.goldGainPct) out.push(`金币收益 +${s.goldGainPct}%`);
-  if (s.xpGainPct) out.push(`经验 +${s.xpGainPct}%`);
+  if (s.goldGainPct) out.push(`单人战斗金币 +${s.goldGainPct}%`);
+  if (s.xpGainPct) out.push(`生活技能经验 +${s.xpGainPct}%`);
   return out;
 }
 

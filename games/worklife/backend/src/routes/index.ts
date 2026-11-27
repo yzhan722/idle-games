@@ -10,3 +10,7 @@ export { systemsRoutes } from "./systems";
 export { combatHpRoutes } from "./combat_hp";
 export { tasksRoutes } from "./tasks";
 export { housesRoutes } from "./houses";
+export { leaderboardRoutes } from "./leaderboard";
+export { metricsRoutes } from "./metrics";
+export { chatRoutes } from "./chat";
+export { circleRoutes } from "./circle";

@@ -356,7 +356,7 @@ describe("WL-18 Abyss Ruin Dive & Adventurer Guild War backend mechanics & route
   });
 
   it("keeps the WL-18 backend logic off the wall clock (explicit now only)", () => {
-    const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "progression2.ts"), "utf8");
+    const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "progression2/abyss_guild.ts"), "utf8");
     const wl18 = src.slice(src.indexOf("深海遗迹潜航 & 冒险者行会公会战 (WL-18)"));
     assert.ok(wl18.length > 10_000);
     assert.equal(/Date\.now\(/.test(wl18), false);

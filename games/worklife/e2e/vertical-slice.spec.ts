@@ -86,7 +86,7 @@ test("VS-01 first-hour vertical slice on real UI and backend", async ({ page }) 
   await page.locator(".monster-card").filter({ hasText: "森林管家" }).first().click();
   await page.getByRole("button", { name: /挑战BOSS/ }).click();
   await expect(page.getByRole("button", { name: /重劈/ })).toBeVisible({ timeout: 15_000 });
-  // 重劈 auto-casts by trigger now (MWI); a manual click is only an override when it is off cooldown.
+  // 重劈 auto-casts by trigger now; a manual click is only an override when it is off cooldown.
   const guard = page.getByText("格挡中");
   if (await guard.isVisible({ timeout: 20_000 }).catch(() => false)) {
     const heavy = page.getByRole("button", { name: /重劈/ });
@@ -98,10 +98,10 @@ test("VS-01 first-hour vertical slice on real UI and backend", async ({ page }) 
   await stopActivity(page);
   await waitGoal(page, "complete", 20_000);
   await page.getByRole("button", { name: "冒险" }).click();
-  // Chapter done: the whole forest is listed (MWI), boss last, each card with its own forecast.
+  // Chapter done: the whole forest is listed, boss last, each card with its own forecast.
   await expect(page.locator(".monster-card")).toHaveCount(7);
   await expect(page.locator(".monster-card").last()).toContainText("森林管家");
-  // Zones open in pack order once their roster has art (MWI lists zones by level); the first zone
+  // Zones open in pack order once their roster has art (zones are listed by level); the first zone
   // without art is the locked door.
   await expect(page.locator(".map-btn.locked")).toHaveCount(0);
   await page.getByRole("button", { name: "叮当响矿山", exact: true }).click();

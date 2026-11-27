@@ -20,7 +20,7 @@ function rich() {
   return state;
 }
 
-describe("MWI enhancing as a timed action", () => {
+describe("enhancing as a timed action", () => {
   it("start validates target / materials / combat and switches the player to the enhancing mode", () => {
     const state = rich();
     assert.equal(startEnhanceRun(state, pack, { itemId: "weapon_wooden_sword", targetLevel: 0 }, T0).ok, false);

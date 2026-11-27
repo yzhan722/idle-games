@@ -26,6 +26,8 @@ export type TaskBoard = {
   tokens: number;
   points: number;
   giftPoints: number;
+  /** 谢礼内容与几率（服务端从代码算出）。 */
+  giftOdds?: string;
   giftReady: boolean;
   giftsClaimed: number;
   completed: number;
@@ -61,8 +63,8 @@ function fmtCountdown(ms: number): string {
 }
 
 /**
- * MWI 任务板. Slots fill one task per cooldown; each task names a concrete action or monster and
- * pays gold + tokens. Tokens go to the shop (cooldown, block slots, crates); 50 points open a gift.
+ * 任务板. Slots fill one task per cooldown; each task names a concrete action or monster and
+ * pays gold + tokens. Tokens go to the shop (cooldown, block slots, crates); every `giftPoints` points open a gift.
  */
 export function TasksPage(props: Props) {
   const toast = useToast();
@@ -153,8 +155,8 @@ export function TasksPage(props: Props) {
           <small className="tasks-cooldown"> · 间隔 {Math.round((board.cooldownMs / 3600_000) * 10) / 10} 小时</small>
         </span>
         <span className="inv-sum" title="累计完成"><T1Art kind="ui" id="nav-adventure" className="gold-inline" alt="" /> 已完成 <strong>{board.completed}</strong></span>
-        <span className={`inv-sum tasks-gift${board.giftReady ? " ready" : ""}`} title="每 50 任务点一份礼物">
-          <T1Art kind="ui" id="nav-husbandry" className="gold-inline" alt="" /> 小紫牛的礼物
+        <span className={`inv-sum tasks-gift${board.giftReady ? " ready" : ""}`} title={`每 ${giftStep} 任务点一份谢礼${board.giftOdds ? `：${board.giftOdds}` : ""}`}>
+          <T1Art kind="ui" id="nav-husbandry" className="gold-inline" alt="" /> 行会谢礼
           <span className="tasks-gift-bar" aria-hidden="true"><span style={{ width: `${board.giftReady ? 100 : giftPct}%` }} /></span>
           {board.giftReady ? (
             <button type="button" className="qty-chip active" disabled={!!busy} onClick={() => run("gift", () => apiClient.claimTaskGift(), (r) => `礼物：金币 +${r.gold}，代币 +${r.tokens}${r.book ? "，还有一本技能书" : ""}`)}>
@@ -190,7 +192,7 @@ export function TasksPage(props: Props) {
                   </button>
                 ) : (
                   <>
-                    <button type="button" className="qty-chip" disabled={busy === t.id || props.gold < board.rerollCost} title={props.gold < board.rerollCost ? `金币不足：重选要 ${board.rerollCost} 金` : `重选这个任务，花 ${board.rerollCost} 金币（当日每次翻倍）`} onClick={() => run(t.id, () => apiClient.rerollTask(t.id), (r) => `已重选（花了 ${r.cost} 金币）`)}>
+                    <button type="button" className="qty-chip" disabled={busy === t.id || props.gold < board.rerollCost} title={props.gold < board.rerollCost ? `金币不足：重选要 ${board.rerollCost} 金` : `重选这个任务，花 ${board.rerollCost} 金币（当日逐次涨价）`} onClick={() => run(t.id, () => apiClient.rerollTask(t.id), (r) => `已重选（花了 ${r.cost} 金币）`)}>
                       重选 {board.rerollCost} 金
                     </button>
                     <button type="button" className="qty-chip" disabled={busy === t.id} title="免费丢弃；空出的槽位按冷却补发" onClick={() => run(t.id, () => apiClient.deleteTask(t.id), () => "已丢弃")}>

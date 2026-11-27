@@ -1,3 +1,5 @@
+import type { PartyFighter, PartyMonster } from "./partyCombat";
+
 export type PartyActivity = {
   type: "combat" | "group_craft" | "raid";
   stageId?: string;
@@ -48,35 +50,53 @@ export type PartyListItem = {
 
 export type PartyInvite = { partyId: string; fromUserId: string; invitedAt: string };
 
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 报一次清波。服务端说「还早」就等它给的时间再报同一波；没收到回复（断网、超时）也重报——
+ * 同一波重复上报不会重复发奖。其余错误原样抛出。
+ */
+export async function claimPartyWave<T>(claim: () => Promise<T>, wait: (ms: number) => Promise<void> = sleep, maxTries = 6): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await claim();
+    } catch (err) {
+      const { status, code, details } = (err ?? {}) as { status?: number; code?: string; details?: { retryAfterMs?: number } };
+      const early = code === "party_wave_early";
+      if (attempt >= maxTries || (!early && status !== undefined && status < 500)) throw err;
+      await wait(early ? Math.min(60_000, Math.max(0, Number(details?.retryAfterMs || 0)) + 100) : 1000 * attempt);
+    }
+  }
+}
+
+/**
+ * 清波连着没结算成功：每 resyncAfter 次向服务器重新对一次账；连 reloadAfter 次都不行，多半是页面太旧，刷新整页。
+ * 页面打开不到 reloadMinAgeMs 就不刷新（刚刷新过还不行，再刷也没用）。
+ */
+export const PARTY_RECOVERY = { resyncAfter: 2, reloadAfter: 6, reloadMinAgeMs: 10 * 60_000 } as const;
+
+export type RecoveryStep = "retry" | "resync" | "reload";
+
+export function recoveryStep(streak: number, code: string | undefined, pageAgeMs: number): RecoveryStep {
+  // 等级不够：对账、刷新都没用
+  if (code === "party_level_required") return "retry";
+  // 服务端说不在队里、没有活动：画面一定是旧的
+  if (code === "party_op_failed") return "resync";
+  if (streak > 0 && streak % PARTY_RECOVERY.reloadAfter === 0 && pageAgeMs >= PARTY_RECOVERY.reloadMinAgeMs) return "reload";
+  return streak > 0 && streak % PARTY_RECOVERY.resyncAfter === 0 ? "resync" : "retry";
+}
+
 export type StageBossDungeon = {
   id: string;
   name: string;
   recommendedLevel: number;
-  boss: {
-    id: string;
-    name: string;
-    level: number;
-    hp: number;
-    atk: number;
-    def: number;
-    xp: number;
-    gold: number;
-    icon?: string;
-  };
-  minions: Array<{
-    id: string;
-    name: string;
-    level: number;
-    hp: number;
-    atk: number;
-    def: number;
-    xp: number;
-    gold: number;
-    icon?: string;
-  }>;
+  /** 进副本的最低战斗等级，服务端同一张表。 */
+  requiredLevel: number;
+  boss: PartyMonster & { name: string };
+  minions: PartyMonster[];
 };
 
-export type AllyCombatUnit = {
+export type AllyCombatUnit = PartyFighter & {
   userId: string;
   name: string;
   title?: string;
@@ -509,20 +529,22 @@ export function getBossSignatureSkills(bossId: string): BossSignatureSkill[] {
   return BOSS_SIGNATURE_SKILLS[bossId] || BOSS_SIGNATURE_SKILLS.forest_boss;
 }
 
-/** Dynamically scale wave monster count with party size: 1p->2, 2p->3, 3p->4, 4p->5, 5-6p->6 */
-export function getWaveMinionCount(partySize: number): number {
-  const n = Math.max(1, partySize);
-  return Math.max(2, Math.min(6, n <= 1 ? 2 : n + 1));
-}
+/** 波次里小怪与亲卫的数量规则在同源模块 partyCombat 里。 */
+export { getBossGuardCount, getWaveMinionCount } from "./partyCombat";
 
-/** Dynamically scale Boss Elite Guards on Wave 10 with party size: 1-2p->0, 3-4p->1, 5-6p->2 */
-export function getBossGuardCount(partySize: number): number {
-  const n = Math.max(1, partySize);
-  return n >= 5 ? 2 : n >= 3 ? 1 : 0;
+/** 服务端记着的波次进度（player.partyRun）；不是这一场的就从第 1 波打起。 */
+export function serverWave(
+  run: { partyId?: string; startedAt?: string; nextWave?: number } | null | undefined,
+  partyId: string,
+  startedAt: string
+): number {
+  return run && run.partyId === partyId && run.startedAt === startedAt ? Math.max(1, Number(run.nextWave || 1)) : 1;
 }
 
 export type EnemyCombatUnit = {
   slotKey: string;
+  /** 命中、闪避、抗性取自这只怪的内容包数值。 */
+  monster: PartyMonster;
   id: string;
   name: string;
   level: number;

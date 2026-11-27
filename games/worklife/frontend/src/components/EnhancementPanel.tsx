@@ -2,11 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "../services/api";
 import { chatWs } from "../services/websocket";
 import {
-  ENHANCEMENT_BASE_SUCCESS,
-  ENHANCEMENT_BONUS_PCT,
+  MAX_ENHANCEMENT_LEVEL,
+  baseEnhancementSuccess,
+  enhancementBonusPct,
   enhancementStatMultiplier,
 } from "../gameplay/enhancement";
+import { secondaryLine } from "../gameplay/combatSecondary";
 import { xpProgress } from "../gameplay/xp";
+import { enhancementSuccessRate } from "../gameplay/enhancement";
+import { ESSENCE_RULES, essenceForItemTier } from "../gameplay/zoneEssence";
 import { T1Art, T1ItemIcon } from "./T1Art";
 
 const SLOT_LABEL: Record<string, string> = {
@@ -41,6 +45,10 @@ type ItemDef = {
   toolFor?: string;
   toolSpeed?: number;
   enhanceSuccess?: number;
+  accuracy?: number;
+  evasion?: number;
+  physResist?: number;
+  elemResist?: number;
 };
 
 type EnhancementInfo = {
@@ -75,6 +83,7 @@ type EnhanceRun = {
   itemId: string;
   targetLevel: number;
   useProtection: boolean;
+  useEssence?: boolean;
   intervalMs: number;
   nextAttemptAt: number;
   startedAt: number;
@@ -90,7 +99,7 @@ const OUTCOME_COPY: Record<NonNullable<EnhanceRun["outcome"]>["reason"], string>
   materials: "材料耗尽，已停止",
   stopped: "已手动停止",
   max: "已到上限",
-  no_protection: "保护镜用完，已停止",
+  no_protection: "定纹镜用完，已停止",
 };
 
 type EnhancementProvider = {
@@ -160,16 +169,19 @@ function statPreview(item: ItemDef, currentLevel: number, nextLevel: number): st
   stat("魔法", item.mag);
   stat("防御", item.def);
   stat("生命", item.hp);
+  const secondary = secondaryLine(item, curMult);
+  const secondaryNext = secondaryLine(item, nextMult);
+  if (secondaryNext) out.push(secondary === secondaryNext ? secondary : `${secondary} → ${secondaryNext}`);
   if (item.toolSpeed) {
     out.push(`工具速度 +${Math.round(item.toolSpeed * curMult * 1000) / 10}% → +${Math.round(item.toolSpeed * nextMult * 1000) / 10}%`);
   } else if (item.enhanceSuccess) {
-    out.push(`强化成功率 +${Math.round(item.enhanceSuccess * curMult * 10000) / 100}% → +${Math.round(item.enhanceSuccess * nextMult * 10000) / 100}%`);
+    out.push(`强化成功率 ×${(1 + item.enhanceSuccess * curMult).toFixed(4)} → ×${(1 + item.enhanceSuccess * nextMult).toFixed(4)}`);
   }
   return out;
 }
 
 /**
- * MWI enhancement page:
+ * Enhancement page:
  * - independent Enhancing skill and item-level success modifier
  * - exact +1…+20 base-rate and nonlinear stat-bonus tables
  * - unprotected failure resets to +0; a Mirror of Protection makes it lose only one level
@@ -183,6 +195,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
   const [loadingInfo, setLoadingInfo] = useState(false);
   const [attempting, setAttempting] = useState(false);
   const [useProtection, setUseProtection] = useState(false);
+  const [useEssence, setUseEssence] = useState(false);
   const [targetLevel, setTargetLevel] = useState<number | null>(null);
   const [targetItemId, setTargetItemId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -319,6 +332,15 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
   const skill = playerState?.skills?.skill_enhancing || { level: info?.enhancingLevel || 1, xp: info?.enhancingXp || 0 };
   const skillProgress = xpProgress(skill.level || 1, skill.xp || 0);
   const protectionAffordable = !!info?.protection.available;
+  // 区域精华辅料（gameplay/zoneEssence.ts）：这件装备那一阶的精华，成功率与服务端同一条公式。
+  const essenceId = essenceForItemTier(item?.tier);
+  const essenceHave = Number(playerState?.inventory?.[essenceId] || 0);
+  const essenceOn = useEssence && essenceHave >= ESSENCE_RULES.enhanceCost;
+  const shownRate = info
+    ? essenceOn
+      ? enhancementSuccessRate(info.currentLevel + 1, info.enhancingLevel, info.itemLevel, info.toolBonus + ESSENCE_RULES.enhanceBonus)
+      : info.successRate
+    : 0;
   const materialsAffordable =
     !!info &&
     Object.entries(info.nextLevelCost).every(
@@ -339,7 +361,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
     setMessage("");
     try {
       apiClient.clearCache();
-      await apiClient.startEnhanceRun(selectedItem, targetLevel, useProtection);
+      await apiClient.startEnhanceRun(selectedItem, targetLevel, useProtection, essenceOn);
       await onRefresh();
     } catch (error: any) {
       setMessage(`✗ ${error?.message || "开始强化失败"}`);
@@ -406,7 +428,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
           强化 <span className="skill-page-level">Lv.{skill.level || 1}</span>
         </h2>
         <div className="page-info">
-          <p>强化装备到 +20。成功率由强化等级和物品等级决定；失败默认归零，保护镜能把损失改成降低 1 级。</p>
+          <p>强化装备到 +20。成功率由强化等级和物品等级决定；失败默认归零，定纹镜能把损失改成降低 1 级。</p>
         </div>
       </div>
 
@@ -452,7 +474,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
               </strong>
               <small>
                 当前 +{runLevel} · 目标 +{run.targetLevel}
-                {run.useProtection ? " · 使用保护镜" : ""} · 已尝试 {run.attempts} 次（成功 {run.successes} / 失败 {run.failures}）
+                {run.useProtection ? " · 使用定纹镜" : ""}{run.useEssence ? " · 加精华" : ""} · 已尝试 {run.attempts} 次（成功 {run.successes} / 失败 {run.failures}）
                 {run.xpGained ? ` · 强化经验 +${run.xpGained}` : ""}
               </small>
             </div>
@@ -552,12 +574,12 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                 <>
                   <div className="enhancement-rate-card">
                     {(() => {
-                      const ratePct = Math.max(0, Math.min(100, info.successRate * 100));
+                      const ratePct = Math.max(0, Math.min(100, shownRate * 100));
                       const rateTier = ratePct >= 70 ? "high" : ratePct >= 40 ? "mid" : "low";
                       return (
                         <div className="enhancement-rate-main">
                           <span>本次成功率</span>
-                          <strong>{formatPct(info.successRate)}</strong>
+                          <strong>{formatPct(shownRate)}</strong>
                           <span className={`enhancement-rate-meter ${rateTier}`} aria-hidden="true">
                             <span className="enhancement-rate-meter-fill" style={{ width: `${ratePct}%` }} />
                           </span>
@@ -573,12 +595,12 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                           : "（无低级惩罚）"}
                       </span>
                       {info.overLevelBonus > 0 && (
-                        <span>超等级 +{formatPct(info.overLevelBonus)}</span>
+                        <span>超等级 +{info.overLevelBonus.toFixed(3)}</span>
                       )}
                       <span>
                         {info.toolBonus > 0
-                          ? `强化工具 +${(info.toolBonus * 100).toFixed(2)}%`
-                          : "没有强化工具（锻造 6 级可做初级强化器，+0.6%）"}
+                          ? `强化工具 +${info.toolBonus.toFixed(4)}`
+                          : "没有强化工具（锻造 6 级可做初级强化器，成功率 ×1.008）"}
                       </span>
                     </div>
                   </div>
@@ -610,12 +632,26 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                     />
                     <T1ItemIcon itemId={info.protection.itemId} fallback="✦" alt="" />
                     <span>
-                      <strong>使用保护镜（拥有 {info.protection.available}）</strong>
+                      <strong>使用定纹镜（拥有 {info.protection.available}）</strong>
                       <small>
                         {protectionAffordable
                           ? info.protection.failWith
-                          : `没有保护镜：${info.protection.failWithout}`}
+                          : `没有定纹镜：${info.protection.failWithout}`}
                       </small>
+                    </span>
+                  </label>
+
+                  <label className={`enhancement-protection${essenceOn ? " active" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={essenceOn}
+                      disabled={essenceHave < ESSENCE_RULES.enhanceCost}
+                      onChange={(e) => setUseEssence(e.target.checked)}
+                    />
+                    <T1ItemIcon itemId={essenceId} fallback="✦" alt="" />
+                    <span>
+                      <strong>加入{byId.get(essenceId)?.name || "精华"}（拥有 {essenceHave}）</strong>
+                      <small>成功率约 +{Math.round(ESSENCE_RULES.enhanceBonus * 100)}%，每次 {ESSENCE_RULES.enhanceCost} 个</small>
                     </span>
                   </label>
 
@@ -656,7 +692,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                           </button>
                         ))}
                     </div>
-                    <small>每次尝试 20 秒，成功 +1，达到目标或材料耗尽自动停止；离线也会继续</small>
+                    <small>每次尝试 20 秒，成功 +1，达到目标或材料耗尽自动停止；关闭页面超过 2 分钟会暂停</small>
                   </div>
 
                   <button
@@ -672,9 +708,9 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                         : attempting
                           ? "开始中..."
                           : !info.canEnhance
-                            ? "需先在技能树解锁对应强化节点"
+                            ? "背包和装备栏里都没有这件装备"
                             : useProtection && !protectionAffordable
-                              ? "保护镜数量不足"
+                              ? "定纹镜数量不足"
                               : !materialsAffordable
                                 ? (() => {
                                     const goldShort = Number(playerState?.inventory?.gold || 0) < Number(info.nextLevelCost["gold"] || 0);
@@ -683,7 +719,7 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
                                     );
                                     return goldShort && matsShort ? "金币与材料不足" : goldShort ? "金币不足" : "材料不足";
                                   })()
-                                : `开始强化 → +${targetLevel ?? info.currentLevel + 1}（本次 ${formatPct(info.successRate)}）`}
+                                : `开始强化 → +${targetLevel ?? info.currentLevel + 1}（本次 ${formatPct(shownRate)}）`}
                   </button>
                 </>
               )}
@@ -787,13 +823,13 @@ export function EnhancementPanel({ playerState, contentItems = [], combatLocked 
       <details className="enhancement-table">
         <summary>查看 +1 ～ +20 完整表</summary>
         <div className="enhancement-table-grid">
-          {ENHANCEMENT_BONUS_PCT.slice(1).map((bonus, index) => {
+          {Array.from({ length: MAX_ENHANCEMENT_LEVEL }, (_, index) => {
             const level = index + 1;
             return (
               <span key={level}>
                 <b>+{level}</b>
-                <small>属性 +{bonus}%</small>
-                <small>基础成功 {Math.round(ENHANCEMENT_BASE_SUCCESS[level] * 100)}%</small>
+                <small>属性 +{enhancementBonusPct(level)}%</small>
+                <small>基础成功 {Math.round(baseEnhancementSuccess(level) * 100)}%</small>
               </span>
             );
           })}

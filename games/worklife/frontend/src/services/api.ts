@@ -1,10 +1,13 @@
 // API 客户端 - 增强版，带重试和错误处理
 
 import { InFlightMap, writeDedupeKey } from './requestGuard';
+import type { MarketEstimate } from '../gameplay/marketEstimate';
 
 interface ApiError extends Error {
   status?: number;
   code?: string;
+  /** 后端错误回复的全文（例如组队清波的 expectedWave、retryAfterMs）。 */
+  details?: Record<string, any>;
 }
 
 export type ActionPreview = {
@@ -165,6 +168,7 @@ class ApiClient {
           );
           error.status = response.status;
           error.code = errorData.code || errorData.error;
+          error.details = errorData;
           throw error;
         }
 
@@ -256,9 +260,9 @@ class ApiClient {
     return this.post('/enhancement/enhance', { itemId, targetLevel, serviceProviderId, protectionItemId });
   }
   async getEnhancementInfo(itemId: string) { return this.get(`/enhancement/info/${itemId}`); }
-  /** MWI: enhancing as a timed action with a target level. */
-  async startEnhanceRun(itemId: string, targetLevel: number, useProtection: boolean) {
-    return this.post('/enhancement/run/start', { itemId, targetLevel, useProtection });
+  /** Enhancing as a timed action with a target level. */
+  async startEnhanceRun(itemId: string, targetLevel: number, useProtection: boolean, useEssence = false) {
+    return this.post('/enhancement/run/start', { itemId, targetLevel, useProtection, ...(useEssence ? { useEssence } : {}) });
   }
   async stopEnhanceRun() { return this.post('/enhancement/run/stop', {}); }
   async getEnhancementProviders(itemType: string) { return this.get(`/enhancement/providers/${itemType}`); }
@@ -302,6 +306,7 @@ class ApiClient {
   async partyWaveClear(partyId: string, stageId: string, wave: number, abilityCasts?: Record<string, number>) {
     return this.post('/party/wave-clear', { partyId, stageId, wave, ...(abilityCasts ? { abilityCasts } : {}) });
   }
+  async partyWaveReset(partyId: string) { return this.post('/party/wave-reset', { partyId }); }
   async completePartyActivity(partyId: string) { return this.post('/party/complete-activity', { partyId }); }
   async cancelPartyActivity(partyId: string) { return this.post('/party/cancel-activity', { partyId }); }
 
@@ -313,6 +318,8 @@ class ApiClient {
 
   // 交易系统API
   async getTradingOrders(itemId: string) { return this.get(`/trading/orders/${itemId}`); }
+  /** 估算价与可挂区间 */
+  async getMarketEstimate(itemId: string) { return this.get<MarketEstimate>(`/trading/estimate/${itemId}`); }
   async createTradingOrder(data: { itemId: string; quantity: number; price: number; type: 'sell' | 'buy' }) {
     return this.post('/trading/orders', data);
   }
@@ -337,6 +344,10 @@ class ApiClient {
   async bindPassword(username: string, password: string) {
     return this.post('/auth/bind/password', { username, password });
   }
+  /** 注销账号：再输一次密码；没有密码的账号传确认文字 */
+  async deleteAccount(input: { password: string } | { confirmText: string }) {
+    return this.post('/auth/account/delete', input);
+  }
   async updateSettings(settings: Partial<{
     soundEnabled: boolean;
     animationsEnabled: boolean;
@@ -347,6 +358,7 @@ class ApiClient {
     gender: 'male' | 'female' | 'animal' | 'secret' | null;
     characterCreated: boolean;
     tutorialDone: boolean;
+    shareStats: boolean;
   }>) {
     return this.post('/progression/settings', settings);
   }
@@ -515,6 +527,25 @@ class ApiClient {
   async buyFestivalShopItem(payload: { itemId: string }) {
     return this.post('/progression2/festival/shop', payload);
   }
+  async getLeaderboard(board: 'total' | 'combat' | 'zone') {
+    return this.get(`/leaderboard?board=${board}`);
+  }
+  /** 同好会（真人公会）：读、搜、建、其余操作都回最新的「我的同好会」。 */
+  async getCircle() {
+    return this.get('/circle');
+  }
+  async getCircleBoard() {
+    return this.get('/circle/board');
+  }
+  async searchCircles(q: string) {
+    return this.get(`/circle/search?q=${encodeURIComponent(q)}`);
+  }
+  async createCircle(name: string) {
+    return this.post('/circle/create', { name, operationId: crypto.randomUUID() });
+  }
+  async circleAction(action: string, opts: { circleId?: string; targetUserId?: string } = {}) {
+    return this.post('/circle/action', { action, ...opts, operationId: crypto.randomUUID() });
+  }
   async getSkyArenaTown() {
     return this.get('/progression2/arena');
   }
@@ -641,6 +672,18 @@ class ApiClient {
   async startHpCombat(monsterId: string) {
     return this.post('/combat/hp/start', { monsterId, autoRepeat: true });
   }
+  async setZoneTier(zoneId: string, tier: number) {
+    return this.post('/combat/hp/zone-tier', { zoneId, tier });
+  }
+
+  /** 单人地下城：区域 + 档位，连打几波（gameplay/dungeonRules.ts）。 */
+  async startDungeon(zoneId: string, tier: number) {
+    return this.post('/combat/dungeon/start', { zoneId, tier });
+  }
+  /** 地下城结算弹窗看过了：服务端记下，刷新后不再补弹。 */
+  async markDungeonSeen(startedAt: number) {
+    return this.post('/combat/dungeon/seen', { startedAt });
+  }
   async useHeavyChop() {
     return this.post('/combat/hp/skill', { skillId: 'heavy_chop' });
   }
@@ -648,7 +691,7 @@ class ApiClient {
   async castAbility(abilityId: string) {
     return this.post('/combat/hp/skill', { skillId: abilityId });
   }
-  /** Ability priority list with triggers (MWI 技能槽). */
+  /** Ability priority list with triggers (技能槽). */
   async setAbilityLoadout(slots: Array<{ abilityId: string; trigger?: { type: string; pct?: number } }>) {
     return this.post('/combat/hp/abilities', { slots });
   }
@@ -657,10 +700,10 @@ class ApiClient {
     return this.post('/combat/hp/learn', { itemId });
   }
 
-  /** MWI market overview: best ask / bid per item. */
+  /** Market overview: best ask / bid per item. */
   async getMarketSummary() { return this.get('/trading/summary'); }
 
-  // MWI 任务板
+  // 任务板
   async getTasks() { return this.get('/tasks'); }
   async claimTask(taskId: string) { return this.post('/tasks/claim', { taskId }); }
   async rerollTask(taskId: string) { return this.post('/tasks/reroll', { taskId }); }
@@ -669,7 +712,16 @@ class ApiClient {
   async buyTaskShop(itemId: string) { return this.post('/tasks/shop/buy', { itemId }); }
   async claimTaskGift() { return this.post('/tasks/gift/claim', {}); }
 
-  // MWI 房屋
+  // 聊天屏蔽与举报：名单存服务端；举报只选原因，服务端抄该频道最近几条
+  async getChatBlocks(): Promise<{ blocked: Array<{ userId: string; name: string }> }> { return this.get('/chat/blocks'); }
+  async setChatBlock(targetUserId: string, blocked: boolean): Promise<{ ok: true; blocked: Array<{ userId: string; name: string }> }> {
+    return this.post('/chat/block', { targetUserId, blocked });
+  }
+  async reportChat(targetUserId: string, reason: string, channel: string): Promise<{ ok: true }> {
+    return this.post('/chat/report', { targetUserId, reason, channel });
+  }
+
+  // 房屋
   async getHouses() { return this.get('/houses'); }
   async upgradeRoom(roomId: string) { return this.post('/houses/upgrade', { roomId }); }
   // 动作面板：服务端真值的速度/效率/每小时收益

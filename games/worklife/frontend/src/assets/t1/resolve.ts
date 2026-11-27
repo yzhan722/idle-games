@@ -1,4 +1,4 @@
-import { T1_EXTENSION_PRIORITY, type T1Extension } from "./contract";
+import { T1_EXTENSION_PRIORITY, type T1Extension } from "./runtime";
 
 function normalizeAssetPath(raw: string): string {
   return raw.replace(/\\/g, "/").replace(/^\.\//, "");

@@ -15,7 +15,7 @@ type Props = {
   refreshKey?: string | number;
 };
 
-/** MWI tile footer: live market first, shop value as the fallback. */
+/** Tile footer: live market first, shop value as the fallback. */
 function priceLine(quote: MarketQuote | undefined, shopValue: number | undefined) {
   if (quote && (quote.ask != null || quote.bid != null)) {
     return (
@@ -30,7 +30,7 @@ function priceLine(quote: MarketQuote | undefined, shopValue: number | undefined
 }
 
 /**
- * MWI market entry: every tradeable item as a tile, grouped, with a search box and a chip per
+ * Market entry: every tradeable item as a tile, grouped, with a search box and a chip per
  * category. Owned counts are shown on the tile so "what can I sell" is answered at a glance.
  */
 export function MarketItemGrid(props: Props) {
@@ -98,7 +98,7 @@ export function MarketItemGrid(props: Props) {
           <div className="inv-grid market-grid">
             {owned.map((i) => (
               <button type="button" className="inv-tile inv-tile-sellable" key={`own-${i.id}`} data-item-id={i.id} onClick={() => props.onPick(i.id)}>
-                <span className="inv-tile-icon"><T1ItemIcon itemId={i.id} fallback={props.iconOf(i.id)} alt="" /></span>
+                <span className="inv-tile-icon"><T1ItemIcon itemId={i.id} fallback={props.iconOf(i.id)} alt="" loading="lazy" /></span>
                 <span className="inv-tile-count">×{props.inventory[i.id]}</span>
                 <span className="inv-tile-name">{i.name}</span>
                 <span className="inv-tile-meta">{priceLine(quotes[i.id], i.value)}</span>
@@ -114,7 +114,7 @@ export function MarketItemGrid(props: Props) {
           <div className="inv-grid market-grid">
             {g.items.map((i) => (
               <button type="button" className="inv-tile" key={i.id} data-item-id={i.id} onClick={() => props.onPick(i.id)}>
-                <span className="inv-tile-icon"><T1ItemIcon itemId={i.id} fallback={props.iconOf(i.id)} alt="" /></span>
+                <span className="inv-tile-icon"><T1ItemIcon itemId={i.id} fallback={props.iconOf(i.id)} alt="" loading="lazy" /></span>
                 {(props.inventory[i.id] || 0) > 0 && <span className="inv-tile-count">×{props.inventory[i.id]}</span>}
                 <span className="inv-tile-name">{i.name}</span>
                 <span className="inv-tile-meta">{priceLine(quotes[i.id], i.value)}</span>

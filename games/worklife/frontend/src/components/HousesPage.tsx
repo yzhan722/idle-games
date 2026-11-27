@@ -40,12 +40,12 @@ type Props = {
 };
 
 function bonusLine(r: RoomView): string {
-  if (r.skillId === "skill_combat") return `战斗经验 +${r.bonus.combatXpPct || 0}% · 稀有发现 +${r.bonus.rareFindPct || 0}%`;
+  if (r.skillId === "skill_combat") return `战斗经验 +${r.bonus.combatXpPct || 0}% · 战斗稀有掉落 +${r.bonus.rareFindPct || 0}%`;
   return `经验 +${r.bonus.xpPct || 0}% · 效率 +${r.bonus.efficiencyPct || 0}%`;
 }
 
 /**
- * MWI 房屋: one room per skill, eight levels, paid in gold and the skill's own materials.
+ * 房屋: one room per skill, eight levels, paid in gold and the skill's own materials.
  * Each level is a permanent +1% XP / +1% efficiency for that skill (训练场: combat XP + rare find).
  */
 export function HousesPage(props: Props) {
@@ -109,7 +109,7 @@ export function HousesPage(props: Props) {
                 <small>{r.blurb}</small>
               </div>
             </div>
-            <div className="house-room-bonus">{r.level > 0 ? bonusLine(r) : "尚未建造 · 每级 +1% 经验与 +1% 效率"}</div>
+            <div className="house-room-bonus">{r.level > 0 ? bonusLine(r) : r.skillId === "skill_combat" ? "尚未建造 · 每级 +1% 战斗经验与 +1% 战斗稀有掉落" : "尚未建造 · 每级 +1% 经验与 +1% 效率"}</div>
             <div className="house-room-levels" aria-hidden="true">
               {Array.from({ length: view.maxLevel }).map((_, i) => (
                 <span key={i} className={`house-pip${i < r.level ? " on" : ""}`} />

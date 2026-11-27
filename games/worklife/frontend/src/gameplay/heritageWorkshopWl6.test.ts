@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import { T1_ASSET_KEYS, t1KeyFor } from "../assets/t1/keys";
@@ -53,7 +54,7 @@ describe("WL-6 frontend art contract, navigation IA, zero-SVG/Emoji guard, and c
     assert.ok(endgameGroup);
     assert.equal(endgameGroup.items.includes("workshop"), true);
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     const hwIndex = advSrc.indexOf("export function HeritageWorkshopPanel");
     assert.ok(hwIndex > 0, "HeritageWorkshopPanel must be exported in AdvancementPanels.tsx");
     const hwSlice = advSrc.slice(hwIndex);

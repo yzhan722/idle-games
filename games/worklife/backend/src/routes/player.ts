@@ -5,6 +5,7 @@ import { ACTION_QUEUE_MAX, getActionQueueMax, getActionRates, getRareFindMultipl
 import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
 import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from '../player_commands';
 import { taskSummary } from "../tasks";
+import { combatGains } from "../hp_combat";
 
 const revisionSchema = {
   expectedRevision: z.number().int().nonnegative().optional(),
@@ -49,10 +50,12 @@ export async function playerRoutes(
     }
     const next = (await storage.simulateToNow({ userId, state, now: new Date(), contentPack })) as EnhancedPlayerState;
 
-    // MWI task badge: how many tasks are claimable right now (derived, not stored).
+    // Task badge: how many tasks are claimable right now (derived, not stored).
     return reply.send({
       ...next,
       taskSummary: taskSummary(next),
+      // 个人战斗倍率（推导值，不存档）：界面预览每小时收益用
+      combatGains: combatGains(next, contentPack, new Date()),
       activePartyActivity: activeParty?.currentActivity
         ? { partyId: activeParty.id, ...activeParty.currentActivity }
         : null,
@@ -84,6 +87,8 @@ export async function playerRoutes(
             state.hpCombat &&
               (!state.hpCombat.outcome || state.hpCombat.nextFightAt)
           );
+          // act_combat_* 是战斗系统改版前的挂机打怪，不掉血也不会输；战斗只走 /combat/hp
+          if (body.actionId.startsWith('act_combat_')) throw new PlayerCommandRejected('combat_not_startable');
           if (inPartyCombat || inSoloCombat) {
             throw new PlayerCommandRejected('already_in_combat');
           }
@@ -145,7 +150,7 @@ export async function playerRoutes(
     }
   });
 
-  // ---- 动作面板：服务端真值的速度/效率/每小时收益（银河奶牛的 Actions/hr、XP/hr）----
+  // ---- 动作面板：服务端真值的速度/效率/每小时收益 ----
   app.get("/actions/preview/:actionId", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });

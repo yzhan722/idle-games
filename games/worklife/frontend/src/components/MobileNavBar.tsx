@@ -93,7 +93,7 @@ export function MobileNavBar(props: Props) {
                     }}
                   >
                     <span className="tab-icon" aria-hidden="true">
-                      {item.icon ? <T1Art kind="ui" id={item.icon} fallback={item.emoji} alt="" /> : <span className="skill-emoji">{item.emoji}</span>}
+                      {item.icon ? <T1Art kind="ui" id={item.icon} fallback={item.emoji} alt="" small /> : <span className="skill-emoji">{item.emoji}</span>}
                     </span>
                     <span className="mobile-sheet-row-main">
                       <span className="mobile-sheet-row-head">
@@ -132,7 +132,7 @@ export function MobileNavBar(props: Props) {
               onClick={() => onGroup(g)}
             >
               <span className="tab-icon" aria-hidden="true">
-                {g.icon ? <T1Art kind="ui" id={g.icon} fallback={g.emoji} alt="" /> : <span className="skill-emoji">{g.emoji}</span>}
+                {g.icon ? <T1Art kind="ui" id={g.icon} fallback={g.emoji} alt="" small /> : <span className="skill-emoji">{g.emoji}</span>}
               </span>
               <span className="tab-name">{g.name}</span>
               {runningGroup === g.id && <span className="skill-running-dot" aria-label="进行中" />}

@@ -19,6 +19,8 @@ type Props = {
   expanded: boolean;
   onToggle: () => void;
   playerName: string;
+  /** 改名框里的初值：只放玩家自己起的名字，没起过就是空的。 */
+  renameDraft: string;
   /** 建角时选的头像 emoji；未建角则显示职业图标 */
   playerAvatar?: string;
   /** 角色性别外观（male / female / animal） */
@@ -126,7 +128,7 @@ export function PlayerRightPanel(props: Props) {
                   title={props.onRename ? "点击改名" : undefined}
                   onClick={() => {
                     if (!props.onRename) return;
-                    setNameDraft(props.playerName);
+                    setNameDraft(props.renameDraft);
                     setEditingName(true);
                   }}
                 >
@@ -246,7 +248,7 @@ export function PlayerRightPanel(props: Props) {
                 <div className="paperdoll-center">
                   <div className="character-avatar-display">
                     <div className="avatar-glow"></div>
-                    <T1Art kind="character" id={characterArtId(props.profession.id, props.playerGender)} alt={props.profession.name || "伐木工"} />
+                    <T1Art kind="character" id={characterArtId(props.profession.id, props.playerGender)} alt={props.profession.name || "伐木工"} small />
                     <span className="avatar-level">Lv.{props.combatLevel || 1}</span>
                   </div>
                 </div>

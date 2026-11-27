@@ -4,10 +4,10 @@
  * Do not put extensions in React. Status PLACEHOLDER means geometric SVG, not final art.
  */
 
-export const T1_EXTENSION_PRIORITY = ["webp", "png", "svg"] as const;
-export type T1Extension = (typeof T1_EXTENSION_PRIORITY)[number];
+import { T1_EXTENSION_PRIORITY, type ArtProfile, type T1Extension } from "./runtime";
 
-export type ArtProfile = "icon" | "item" | "illustration";
+export { T1_EXTENSION_PRIORITY, type ArtProfile, type T1Extension };
+
 export type ArtLane = "PLACEHOLDER" | "PRODUCTION" | "MISSING";
 export type ArtPriority = "P0" | "P1" | "P2";
 
@@ -33,6 +33,24 @@ export type T1AssetSpec = {
 const containFull = "contain, full subject in frame, no head/weapon crop";
 const iconContain = "contain, no circular crop, no baked frame";
 const itemSafe = "contain, square-safe, rarity frame is UI-only";
+
+/**
+ * 发布用图的边长（px）：按最大显示尺寸的 2～4 倍，由 scripts/art-resize.py 从原图缩出来，依据见 docs/PERF.md。
+ * masterMinPx 仍是原图要求；没列的类别（立绘）直接用原图。
+ */
+export const SHIPPED_PX: Record<string, number> = {
+  monsters: 768,
+  trees: 640,
+  equipment: 512,
+  consumables: 512,
+  materials: 512,
+  skills: 256,
+  ui: 192,
+};
+
+export function shippedMinPx(spec: Pick<T1AssetSpec, "key" | "masterMinPx">): number {
+  return Math.min(spec.masterMinPx, SHIPPED_PX[spec.key.split("/")[0]] ?? spec.masterMinPx);
+}
 
 function spec(partial: T1AssetSpec): T1AssetSpec {
   return partial;
@@ -102,7 +120,7 @@ export const T1_ASSET_CONTRACT: T1AssetSpec[] = CORE_SPECS.map(
 const P2_ITEMS: Array<[string, string]> = [
   ["materials/ore_1","铜矿石"], ["materials/ingot_1","铜锭"], ["materials/fiber_1","棉花"], ["materials/crystal_1","微光水晶"],
   ["materials/fish_river","河鱼"], ["consumables/food_simple","简单料理"], ["consumables/potion_hp_t1","初级生命药水"], ["equipment/weapon_logging_axe_t1","铜制伐木斧"],
-  ["materials/book_smash","技能书：猛击"], ["materials/book_minor_heal","技能书：小治疗"], ["materials/book_brace","技能书：坚守"], ["materials/mirror_protection","保护镜"],
+  ["materials/book_smash","技能书：猛击"], ["materials/book_minor_heal","技能书：小治疗"], ["materials/book_brace","技能书：坚守"], ["materials/mirror_protection","定纹镜"],
   ["equipment/tool_enhancer_t1","初级强化器"], ["equipment/weapon_iron_sword","铁剑"], ["equipment/weapon_forge_hammer_t1","铜制锻造锤"], ["equipment/weapon_hoe_t1","铜制锄头"],
   ["equipment/weapon_scissors_t1","铜制裁缝剪"], ["equipment/weapon_sickle_t1","铜制镰刀"], ["equipment/weapon_frying_pan_t1","铁制平底锅"], ["equipment/weapon_alchemy_bottle_t1","玻璃炼金瓶"],
   ["equipment/weapon_staff_t1","木制法杖"], ["equipment/weapon_wooden_bow","木质长弓"], ["equipment/weapon_spatula_t1","木制锅铲"], ["equipment/weapon_shield_t1","木制盾牌"],

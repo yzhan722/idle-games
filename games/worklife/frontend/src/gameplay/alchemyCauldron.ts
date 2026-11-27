@@ -167,8 +167,8 @@ export const ALCHEMICAL_POTIONS_META: readonly AlchemicalPotionMeta[] = [
   {
     id: "elven_bounty",
     name: "精灵丰饶灵液",
-    subtitle: "双倍采集暴击 · 采集极速丰收",
-    description: "凝结晨露森林生机的翠绿灵液，显著提升全采集动作速度并赋予高额双倍产出暴击率。",
+    subtitle: "双倍采集 · 采集极速丰收",
+    description: "凝结晨露森林生机的翠绿灵液，显著提升全采集动作速度并赋予高额双倍产出几率。",
     iconId: "potion_elven_bounty",
     maxRank: 5,
     materialBrewCost: {
@@ -186,7 +186,7 @@ export const ALCHEMICAL_POTIONS_META: readonly AlchemicalPotionMeta[] = [
   {
     id: "dwarven_temper",
     name: "矮人巧匠淬火油",
-    subtitle: "工坊制作加速 · 神匠连作暴击",
+    subtitle: "工坊制作加速 · 神匠连作",
     description: "矮人炉火秘传的符文淬火金油，全面加快工坊制造节奏并提高神匠免费连作效率。",
     iconId: "potion_dwarven_temper",
     maxRank: 5,
@@ -205,8 +205,8 @@ export const ALCHEMICAL_POTIONS_META: readonly AlchemicalPotionMeta[] = [
   {
     id: "astral_fortune",
     name: "星界幸运秘药",
-    subtitle: "全局金币增幅 · 商队与委托加奖",
-    description: "封存星轨流光的幸运星瓶，提升全局金币倍率并额外放大远征商队与公会委托结算收益。",
+    subtitle: "单人战斗金币 · 商队与委托加奖",
+    description: "封存星轨流光的幸运星瓶，提升单人战斗金币，并放大远征商队与公会委托的金币、星晶尘与声望。",
     iconId: "potion_astral_fortune",
     maxRank: 5,
     materialBrewCost: {
@@ -313,7 +313,7 @@ export const TWIN_ALCHEMICAL_RESONANCES: readonly TwinAlchemicalResonanceDef[] =
     pair: ["elven_bounty", "astral_fortune"],
     name: "星森丰饶共鸣",
     subtitle: "精灵丰饶 × 星界幸运 · 万物赐福",
-    description: "星辉洒落古树灵泉，大幅提高双倍采集暴击、采集速度、全局金币、稀有寻宝与商队悬赏收益。",
+    description: "星辉洒落古树灵泉，大幅提高双倍采集、采集速度、单人战斗金币、战斗稀有掉落与商队悬赏收益。",
     baseBonuses: {
       gatherDoubleChance: 0.07,
       gatherSpeedPct: 10,
@@ -328,7 +328,7 @@ export const TWIN_ALCHEMICAL_RESONANCES: readonly TwinAlchemicalResonanceDef[] =
     pair: ["dragon_fury", "elven_bounty"],
     name: "荒野猎龙共鸣",
     subtitle: "巨龙狂怒 × 精灵丰饶 · 疾风追猎",
-    description: "林间疾风助燃狂龙血脉，加快出招频率并提升暴击率、战斗攻击与野外采集效率。",
+    description: "林间疾风助燃狂龙血脉，缩短普攻间隔并提升组队暴击率、战斗攻击与野外采集效率。",
     baseBonuses: {
       combatAtkPct: 5,
       critRateBonusPct: 4,
@@ -343,7 +343,7 @@ export const TWIN_ALCHEMICAL_RESONANCES: readonly TwinAlchemicalResonanceDef[] =
     pair: ["dragon_fury", "astral_fortune"],
     name: "星陨讨魔共鸣",
     subtitle: "巨龙狂怒 × 星界幸运 · 猎首圣辉",
-    description: "星陨之力聚焦讨伐锋芒，提升攻击力、首领破防与暴击伤害，并放大讨伐金币与稀有掉落。",
+    description: "星陨之力聚焦讨伐锋芒，提升攻击力、首领破防与组队暴击伤害，并放大单人战斗金币与稀有掉落。",
     baseBonuses: {
       combatAtkPct: 6,
       bossArmorBreakPct: 0.1,
@@ -374,7 +374,7 @@ export const TWIN_ALCHEMICAL_RESONANCES: readonly TwinAlchemicalResonanceDef[] =
     pair: ["dwarven_temper", "astral_fortune"],
     name: "星辉秘锻共鸣",
     subtitle: "矮人淬火 × 星界幸运 · 点金圣炉",
-    description: "星界气运加持神匠淬火，提升制作极速与连作率，同时加成全局金币、商队悬赏与攻防基础。",
+    description: "星界气运加持神匠淬火，提升制作极速与连作率，同时加成单人战斗金币、商队悬赏与攻防基础。",
     baseBonuses: {
       craftSpeedPct: 10,
       craftEfficiencyPct: 8,

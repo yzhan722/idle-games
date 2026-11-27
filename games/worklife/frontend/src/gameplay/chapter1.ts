@@ -472,7 +472,7 @@ export function nextChapterGoal(state: State | null | undefined): ChapterGoal {
         {
           id: "ch3_build",
           title: "择定沼泽游侠流派：疾风连击 / 寻宝猎人",
-          detail: "轻装已就绪。在「疾风连击（攻击+5·攻速提升15%）」与「寻宝猎人（生命+25·防御+4·金币+25%·掉率+30%）」间择一铭刻。",
+          detail: "轻装已就绪。在「疾风连击（攻击+5·普攻间隔-15%）」与「寻宝猎人（生命+25·防御+4·金币+25%·掉率+30%）」间择一铭刻。",
           tab: "adventure",
           adventureZone: "swamp",
           buildChapter: 3,
@@ -659,7 +659,7 @@ export function nextChapterGoal(state: State | null | undefined): ChapterGoal {
         {
           id: "ch4_build",
           title: "择定冰火远征流派：秘药狂热 / 盛宴生机",
-          detail: "六艺俱备！在「秘药狂热（攻击+8·药剂增益+50%·回蓝+35%）」与「盛宴生机（生命+55·防御+8·进食回血+35%并结盾）」间择一觉醒。",
+          detail: "六艺俱备！在「秘药狂热（攻击+8·药剂攻防增益×1.5·自动回蓝+35%）」与「盛宴生机（生命+55·防御+8·进食回血×1.35并结盾）」间择一觉醒。",
           tab: "adventure",
           adventureZone: "snow",
           buildChapter: 4,

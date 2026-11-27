@@ -191,7 +191,7 @@ const LOADOUTS: Array<[string, Loadout]> = [
 
 describe("WL-15 backend <-> frontend Bard Tavern & Adventurer Chronicle 1:1 parity", () => {
   it("keeps the WL-15 core source region byte-identical on both sides", () => {
-    assert.equal(coreOf("frontend/src/gameplay/bardTavern.ts"), coreOf("backend/src/progression2.ts"));
+    assert.equal(coreOf("frontend/src/gameplay/bardTavern.ts"), coreOf("backend/src/progression2/bard_tavern.ts"));
   });
 
   it("keeps every static WL-15 table and constant 1:1 identical, backed by real cooked dishes / drinks, bosses, avatars and WL-11/12/13 ids", () => {

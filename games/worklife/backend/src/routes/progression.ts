@@ -4,6 +4,10 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import type { Storage } from "../storage";
 import type { EnhancedContentPack } from "../types";
 import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from "../player_commands";
+import { checkSaveImport, saveImportEnabled } from "../save_import";
+import { metricsAvailable, statsConsent } from "../retention_metrics";
+import { DISPLAY_NAME_MAX, isAcceptableNewName, shownName } from "../display_name";
+import { appendLog } from "../storage";
 import {
   ACHIEVEMENTS,
   syncAchievements,
@@ -65,10 +69,14 @@ function replyCommandError(error: unknown, reply: FastifyReply) {
   throw error;
 }
 
+/** 玩家关掉匿名统计时的通知。 */
+export type ProgressionHooks = { statsOff?: (userId: string) => void };
+
 export async function progressionRoutes(
   app: FastifyInstance,
   storage: Storage,
-  contentPack: EnhancedContentPack
+  contentPack: EnhancedContentPack,
+  hooks: ProgressionHooks = {}
 ) {
   // 生涯统计
   app.get("/progression/stats", async (req: FastifyRequest, reply: FastifyReply) => {
@@ -209,7 +217,12 @@ export async function progressionRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
     const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    return reply.send({ settings: state.settings });
+    return reply.send({
+      settings: state.settings,
+      saveImportEnabled: saveImportEnabled(),
+      // 匿名统计：服务器没开就不显示开关；没选过时给默认值
+      stats: { available: metricsAvailable(), on: statsConsent(state.settings) },
+    });
   });
 
   // 玩家设置：更新（部分字段）
@@ -223,13 +236,14 @@ export async function progressionRoutes(
         animationsEnabled: z.boolean().optional(),
         compactMode: z.boolean().optional(),
         notificationsEnabled: z.boolean().optional(),
-        // 展示名：1-16 字符，不允许控制字符/HTML 元字符（名字会进入聊天播报与排行榜，
+        // 展示名：1-16 字符，不收控制字符、看不见的字、HTML 元字符和系统专用名（名字会进入聊天播报与排行榜，
         // 前端虽按 JSX 转义，落库仍收紧避免任何字面 <tag> 入库）；空串表示清除回退默认名
-        playerName: z.string().trim().max(16).refine((s) => s === "" || /^[^\p{Cc}\p{Cf}<>"'`\\\/]+$/u.test(s), "invalid name").optional().nullable(),
+        playerName: z.string().trim().max(DISPLAY_NAME_MAX).refine((s) => s === "" || isAcceptableNewName(s), "invalid name").optional().nullable(),
         avatar: z.string().min(1).max(64).optional().nullable(),
         gender: z.enum(["male", "female", "animal", "secret"]).optional().nullable(),
         characterCreated: z.boolean().optional(),
-        tutorialDone: z.boolean().optional()
+        tutorialDone: z.boolean().optional(),
+        shareStats: z.boolean().optional()
       })
       .strict()      .parse((req.body ?? {}) as unknown);
 
@@ -251,7 +265,8 @@ export async function progressionRoutes(
           : (body.gender === "secret" ? "animal" : (body.gender ?? undefined))),
       // 建号标记只许 0→1：回滚会让前端重弹建角屏并重复全服欢迎播报
       characterCreated: prev?.characterCreated ? true : (body.characterCreated ?? prev?.characterCreated),
-      tutorialDone: body.tutorialDone ?? prev?.tutorialDone
+      tutorialDone: body.tutorialDone ?? prev?.tutorialDone,
+      shareStats: body.shareStats ?? prev?.shareStats
     };
     if (justCreated) {
       // 新手建角仅赠送基础恢复药水（初级生命药水、初级魔力药水），不自动塞入高额属性状态药以防秒杀新手怪
@@ -272,9 +287,10 @@ export async function progressionRoutes(
       }
     }
     const saved = await storage.savePlayerState(userId, state);
+    if (!statsConsent(saved.settings)) hooks.statsOff?.(userId);
     // 建号落库瞬间全服播报新村民
     if (justCreated) {
-      const name = saved.settings?.playerName || `玩家_${userId.slice(0, 6)}`;
+      const name = shownName(userId, saved.settings?.playerName);
       storage.announceWorld?.(`🌱 欢迎新村民「${name}」来到异世界打工！`);
     }
     return reply.send({ ok: true, settings: saved.settings, inventory: saved.inventory, combatLoadout: saved.combatLoadout, stateRevision: saved.stateRevision });
@@ -296,10 +312,11 @@ export async function progressionRoutes(
     return reply.send({ ok: true, saveCode });
   });
 
-  // 加密存档导入（校验 AES-256-GCM 认证标签并恢复玩家状态）
+  // 存档导入：默认关闭（SAVE_IMPORT_ENABLED=1 才开）；开着也只能把自己的号往回退，见 save_import.ts
   app.post("/progression/save/import", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    if (!saveImportEnabled()) return reply.status(403).send({ error: "save_import_disabled", message: "存档导入已关闭" });
 
     const body = z
       .object({
@@ -308,29 +325,35 @@ export async function progressionRoutes(
       .strict()
       .parse((req.body ?? {}) as unknown);
 
-    let envelope: { v: number; state: Record<string, any> };
+    let envelope: { v: number; userId?: string; state: Record<string, any> };
     try {
       envelope = decryptSavePayload(body.saveCode);
     } catch {
       return reply.status(400).send({ error: "invalid_save_code", message: "存档密文无效或已被篡改，仅支持导入加密存档" });
     }
-
-    const incoming = envelope.state;
-    if (!incoming || typeof incoming.inventory !== "object" || typeof incoming.skills !== "object") {
-      return reply.status(400).send({ error: "invalid_save_state", message: "存档数据结构不完整" });
+    if (envelope.userId && envelope.userId !== userId) {
+      return reply.status(400).send({ error: "save_owner_mismatch", message: "这份存档不是这个账号的" });
     }
 
-    const current = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
-    const restored = {
-      ...current,
-      ...incoming,
-      userId,
-      partyState: current.partyState,
-      partyInvites: current.partyInvites,
-      stateRevision: current.stateRevision,
-      lastSimulatedAt: new Date().toISOString(),
-    };
-    const saved = await storage.savePlayerState(userId, restored as any);
-    return reply.send({ ok: true, state: saved, stateRevision: saved.stateRevision });
+    await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(),
+        apply(state) {
+          const check = checkSaveImport(state, envelope.state, contentPack);
+          if (!check.ok) throw new PlayerCommandRejected("save_import_rejected", check.errors);
+          Object.assign(state, check.state);
+          appendLog(state, "已导入存档");
+          return { ok: true as const };
+        },
+      });
+      return reply.send({ ok: true, state: outcome.state, stateRevision: outcome.state.stateRevision });
+    } catch (error) {
+      if (error instanceof PlayerCommandRejected) {
+        const errors = (error.details as string[]) || [];
+        return reply.status(400).send({ error: error.code, message: `存档没有通过校验：${errors[0] || "数值不合法"}`, errors: errors.slice(0, 5) });
+      }
+      return replyCommandError(error, reply);
+    }
   });
 }

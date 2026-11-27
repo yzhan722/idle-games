@@ -7,7 +7,7 @@ import { enemyDamageHook, mechanicDefsFor } from "./boss_mechanics";
 import { CHAINS, PREV_ZONE, playerFor, realBossFight } from "./zone_chains_fixture";
 
 /**
- * Zone progression sanity (MWI: farm a zone, craft its gear, take the next zone). Every check runs the
+ * Zone progression sanity (farm a zone, craft its gear, take the next zone). Every check runs the
  * deterministic server fight with the real pack numbers and the game's own player-stat function —
  * item stats, skill contribution AND set bonuses (an earlier version summed raw item stats only, which
  * hid that fully geared players took exactly 1 damage from every monster, bosses included).

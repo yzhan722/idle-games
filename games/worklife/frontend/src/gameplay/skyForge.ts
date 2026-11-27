@@ -1,5 +1,5 @@
 // 天空锻炉星辰神兵谱 & 公会秘境试炼契约阵 (WL-10) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/sky-forge-parity.test.ts 守护），
+// 与 backend/src/progression2/sky_forge.ts 同名表与纯函数逐字对称（scripts/sky-forge-parity.test.ts 守护），
 // 供面板预览、combatSheet 战斗属性与 fightPreview 使用；任何数值改动必须两端同步。
 
 export type StarEmblemId =
@@ -83,8 +83,8 @@ export const STAR_EMBLEMS: readonly StarEmblemMeta[] = [
   {
     id: "star_blade",
     name: "星辉圣剑",
-    subtitle: "战斗攻势 · 基础攻击、战斗攻击倍率与暴击",
-    description: "以星辉淬火的传世圣剑纹章，永久提升基础攻击、战斗攻击百分比、暴击率与暴击伤害。",
+    subtitle: "战斗攻势 · 基础攻击、战斗攻击倍率与组队暴击",
+    description: "以星辉淬火的传世圣剑纹章，永久提升基础攻击、战斗攻击百分比与组队暴击率、组队暴击伤害。",
     iconId: "star_emblem_blade",
     domain: "combat",
     domainLabel: "战斗",
@@ -99,7 +99,7 @@ export const STAR_EMBLEMS: readonly StarEmblemMeta[] = [
   {
     id: "crescent_bow",
     name: "新月长弓",
-    subtitle: "疾猎贯星 · 攻速、破甲、首领破防与珍稀掉落",
+    subtitle: "疾猎贯星 · 普攻间隔、破甲、首领破防与珍稀掉落",
     description: "新月弦光凝成的长弓纹章，永久缩短普攻间隔、提升护甲穿透与首领破甲，并提高狩猎珍稀掉落。",
     iconId: "star_emblem_bow",
     domain: "hunt",
@@ -132,7 +132,7 @@ export const STAR_EMBLEMS: readonly StarEmblemMeta[] = [
     id: "amethyst_staff",
     name: "紫晶法杖",
     subtitle: "秘法丰收 · 采集速度、双倍采集、技能经验与生命",
-    description: "紫晶秘法凝结的法杖纹章，永久提升全采集速度与双倍采集几率、全技能经验，并以秘法护佑提高生命上限。",
+    description: "紫晶秘法凝结的法杖纹章，永久提升全采集速度与双倍采集几率、生活与单人战斗经验，并以秘法护佑提高生命上限。",
     iconId: "star_emblem_staff",
     domain: "gather",
     domainLabel: "采集",
@@ -194,7 +194,7 @@ export const GUILD_TRIAL_PACTS: readonly GuildTrialPactDef[] = [
     id: "ember_vanguard",
     name: "赤焰先锋试炼契",
     subtitle: "以工坊产能换取讨伐攻势",
-    description: "立誓先锋讨伐秘境魔物：战斗攻击与暴击伤害大幅提升，但工坊制作速度下降。",
+    description: "立誓先锋讨伐秘境魔物：战斗攻击与组队暴击伤害大幅提升，但工坊制作速度下降。",
     iconId: "guild_trial_pact",
     pactTier: 1,
     unlockTotalLevels: 2,
@@ -232,8 +232,8 @@ export const GUILD_TRIAL_PACTS: readonly GuildTrialPactDef[] = [
   {
     id: "gale_hunt",
     name: "新月疾猎试炼契",
-    subtitle: "以金币收益换取疾猎破甲",
-    description: "立誓追猎新月秘境：攻速、护甲穿透与珍稀掉落提升，但全局金币收益下降。",
+    subtitle: "以单人战斗金币换取疾猎破甲",
+    description: "立誓追猎新月秘境：普攻间隔缩短，护甲穿透与珍稀掉落提升，但单人战斗金币下降。",
     iconId: "guild_trial_pact",
     pactTier: 2,
     unlockTotalLevels: 10,
@@ -246,7 +246,7 @@ export const GUILD_TRIAL_PACTS: readonly GuildTrialPactDef[] = [
     id: "astral_covenant",
     name: "紫晶星盟终焉契",
     subtitle: "以攻势与产能换取星盟财富与经验",
-    description: "与星盟缔结终焉之约：全局金币、全技能经验、双倍采集与暴击率提升，但战斗攻击与制作速度同时下降。",
+    description: "与星盟缔结终焉之约：单人战斗金币、生活与单人战斗经验、双倍采集与组队暴击率提升，但战斗攻击与制作速度同时下降。",
     iconId: "guild_trial_pact",
     pactTier: 3,
     unlockTotalLevels: 15,

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -28,7 +29,7 @@ const t1Root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../as
 const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 describe("WL-10 frontend art contract, navigation IA, zero-SVG/Emoji guard and Sky Forge helpers", () => {
-  it("registers the 6 WL-10 512x512 RGBA .webp icons in the T1 contract and keeps a dated wl cache version", () => {
+  it("registers the 6 WL-10 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract and keeps a dated wl cache version", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL10_SKY_FORGE_ART_IDS], [
       "sky_forge",
@@ -65,7 +66,7 @@ describe("WL-10 frontend art contract, navigation IA, zero-SVG/Emoji guard and S
     assert.equal(endgame.items.includes("forge"), true);
     assert.ok(endgame.items.indexOf("forge") > endgame.items.indexOf("relics"));
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     const at = advSrc.indexOf("export function SkyForgePanel");
     assert.ok(at > 0, "SkyForgePanel must be exported from AdvancementPanels.tsx");
     const slice = advSrc.slice(advSrc.lastIndexOf("天空锻炉星辰神兵谱 & 公会秘境试炼契约阵 (WL-10)"));
@@ -176,7 +177,7 @@ describe("WL-10 frontend art contract, navigation IA, zero-SVG/Emoji guard and S
     assert.ok((s1.critRatePct || 0) > (s0.critRatePct || 0));
     assert.ok((s1.critDmgPct || 0) > (s0.critDmgPct || 0));
     assert.ok((s1.armorPenPct || 0) > (s0.armorPenPct || 0));
-    assert.ok((s1.dropMult || 1) > (s0.dropMult || 1));
+    assert.equal(s1.dropMult, s0.dropMult, "rare find is applied once, by the server (getRareFindMultiplier)");
 
     const boss: any = { id: "sky_boss", name: "星穹锻炉守卫BOSS", isBoss: true, hp: 1500, atk: 30, def: 90, level: 25 };
     assert.ok(previewFight(s1, boss).normalHit > previewFight(s0, boss).normalHit);

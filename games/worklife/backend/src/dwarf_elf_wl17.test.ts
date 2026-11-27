@@ -443,7 +443,7 @@ describe("WL-17 Dwarf Mine & Elf Waystation backend mechanics & routes", () => {
   });
 
   it("keeps the WL-17 backend logic off the wall clock (explicit now only)", () => {
-    const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "progression2.ts"), "utf8");
+    const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "progression2/dwarf_elf.ts"), "utf8");
     const wl17 = src.slice(src.indexOf("矮人地底矿脉 & 精灵林地驿站 (WL-17)"));
     assert.ok(wl17.length > 10_000);
     assert.equal(/Date\.now\(/.test(wl17), false);

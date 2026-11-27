@@ -38,7 +38,7 @@ function lcg(seed: number) {
 
 describe("WL-11 backend <-> frontend Harbor Fishing Derby & Harbor Aquarium 1:1 parity", () => {
   it("keeps the WL-11 core source region byte-identical on both sides", () => {
-    assert.equal(coreOf("frontend/src/gameplay/harborDerby.ts"), coreOf("backend/src/progression2.ts"));
+    assert.equal(coreOf("frontend/src/gameplay/harborDerby.ts"), coreOf("backend/src/progression2/harbor_derby.ts"));
   });
 
   it("keeps every static WL-11 table and constant 1:1 identical", () => {

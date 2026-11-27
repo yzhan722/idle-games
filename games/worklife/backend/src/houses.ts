@@ -4,12 +4,18 @@ import { syncAchievements } from "./progression";
 import { getAstrolabeBonuses } from "./progression2";
 
 /**
- * MWI 房屋 (Houses): one room per skill. Every level costs gold plus that skill's own materials
+ * 房屋 (Houses): one room per skill. Every level costs gold plus that skill's own materials
  * (a sink for the things you gather anyway) and pays back as a permanent bonus to the skill.
  * Profession rooms: +1% XP and +1% efficiency per level. 训练场 (combat): +1% combat XP and
- * +1% rare find per level. Eight levels each.
+ * +1% rare find per level. Eight levels each: four material bands, two levels per band.
  */
-export const HOUSE_MAX_LEVEL = 8;
+export const HOUSE_LEVELS_PER_BAND = 2;
+export const HOUSE_MATERIAL_BANDS = 4;
+export const HOUSE_MAX_LEVEL = HOUSE_LEVELS_PER_BAND * HOUSE_MATERIAL_BANDS;
+/** Gold grows with the square of the level; materials grow linearly (see docs/design/OWN_CURVES.md). */
+export const HOUSE_GOLD_PER_LEVEL_SQ = 200;
+export const HOUSE_MATERIAL_BASE = 10;
+export const HOUSE_MATERIAL_PER_LEVEL = 10;
 export const HOUSE_XP_PER_LEVEL = 0.01;
 export const HOUSE_EFFICIENCY_PER_LEVEL = 1; // percent points
 export const HOUSE_RARE_FIND_PER_LEVEL = 1; // percent points
@@ -34,7 +40,7 @@ export const HOUSE_ROOMS: HouseRoomDef[] = [
   { id: "kitchen", name: "厨房", skillId: "skill_chef", blurb: "钓鱼 / 烹饪", emoji: "🍲", materials: ["fish_river", "shrimp", "fish_sea", "fish_lake"] },
   { id: "sewing_room", name: "缝纫间", skillId: "skill_tailor", blurb: "采集 / 缝纫", emoji: "🧵", materials: ["fiber_1", "fiber_2", "fiber_3", "fiber_4"] },
   { id: "laboratory", name: "炼金室", skillId: "skill_alchemist", blurb: "水晶 / 炼金", emoji: "⚗️", materials: ["crystal_1", "crystal_2", "crystal_3", "crystal_4", "crystal_5", "crystal_6", "crystal_7", "crystal_8"] },
-  { id: "training_ground", name: "训练场", skillId: "skill_combat", blurb: "战斗经验 / 稀有发现", emoji: "🎯", materials: ["wood_1", "ore_1", "lumber_1", "ingot_1"] },
+  { id: "training_ground", name: "训练场", skillId: "skill_combat", blurb: "战斗经验 / 战斗稀有掉落", emoji: "🎯", materials: ["wood_1", "ore_1", "lumber_1", "ingot_1"] },
 ];
 
 export const HOUSE_ROOM_BY_ID: Record<string, HouseRoomDef> = Object.fromEntries(HOUSE_ROOMS.map((r) => [r.id, r]));
@@ -69,10 +75,10 @@ export type HouseCost = { gold: number; materials: Array<{ itemId: string; qty: 
 export function roomUpgradeCost(room: HouseRoomDef, level: number): HouseCost {
   // 材料按两级一带取：levels 1-2 → [0]，3-4 → [1]，5-6 → [2]，7-8 → [3]；
   // 8 项材料的房间（炼金室）则每级一种——高阶水晶由此获得用途。
-  const band = Math.min(room.materials.length - 1, room.materials.length >= 8 ? level - 1 : Math.floor((level - 1) / 2));
+  const band = Math.min(room.materials.length - 1, room.materials.length >= 8 ? level - 1 : Math.floor((level - 1) / HOUSE_LEVELS_PER_BAND));
   return {
-    gold: 200 * level * level,
-    materials: [{ itemId: room.materials[band], qty: 10 + 10 * level }],
+    gold: HOUSE_GOLD_PER_LEVEL_SQ * level * level,
+    materials: [{ itemId: room.materials[band], qty: HOUSE_MATERIAL_BASE + HOUSE_MATERIAL_PER_LEVEL * level }],
   };
 }
 

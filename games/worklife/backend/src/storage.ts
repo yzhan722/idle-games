@@ -22,6 +22,8 @@ import path from "path";
 import { createPgStorage } from "./storage_pg";
 import { createMemoryStorage } from "./storage_memory";
 import type { PlayerCommand, PlayerCommandResult } from './player_commands';
+import type { LeaderboardView, RankBoard, RankEntry, RankHidden } from './leaderboard';
+import type { MetricRow, StateObserver } from './retention_metrics';
 // 声望/转生：永久被动加成与全局倍率，接入 simulateToNow 在线结算。
 // 注：progression2 也会从本模块导入 appendLog/ensurePlayerExtensions，
 // 二者均仅在函数体内（运行时）相互引用，故此循环依赖在求值期是安全的。
@@ -73,6 +75,13 @@ import {
   getGuildWarBonuses,
 } from "./progression2";
 import { enhancementStatMultiplier } from "./enhancement_math";
+import { masteryEfficiencyPct, xpForLevel } from "./growth_curves";
+import { CURRENT_CURVE_VERSION, migratePlayerCurves } from "./curve_migration";
+import type { AccountDeletionResult } from "./account_deletion";
+import { SECONDARY_KEYS, combatSpeedPoints, sumSecondary, type SecondaryStats } from "./combat_secondary";
+import { rareFindMult, soloRareFindMult } from "./rare_find";
+import type { ChatBlockResult, ChatReport, ReportChannel, ReportOutcome, ReportReason } from "./chat_moderation";
+import type { CircleAction, CircleHome, CircleOutcome, CircleSummary } from "./circle";
 import { ensureProgression } from './progression_state';
 import { professionMasteryBonuses } from './profession_perks';
 import { isMonsterInOpenZone } from "./zones";
@@ -95,6 +104,10 @@ export interface Storage {
   bindGoogle(userId: string, googleSub: string): Promise<void>;
   /** Google 登录用：按已验证的 sub 查用户；未绑定返回 null。 */
   findUserByGoogleSub(googleSub: string): Promise<UserRecord | null>;
+  /** 注销账号（范围见 account_deletion.ts）；账号不存在返回 null。 */
+  deleteAccount(userId: string, now: Date): Promise<AccountDeletionResult | null>;
+  /** 最近注销过的账号：网络重试时据此返回成功。 */
+  wasAccountDeleted(userId: string, now: Date): Promise<boolean>;
   /** 会话版本 +1：使该用户此前签发的所有 JWT 失效（登出/绑定凭据时调用）。 */
   invalidateSessions(userId: string): Promise<void>;
   /** 账号密码注册：用户名唯一（大小写不敏感），重名抛 UsernameTaken。 */
@@ -211,7 +224,19 @@ export interface Storage {
     partyId: string;
   }): Promise<{ success: boolean; message?: string }>;
   getPartyForUser(params: { userId: string }): Promise<Party | null>;
-  
+
+  /** 同好会（circle.ts）：真人自组的长期团体，只有协作与展示，不给数值加成。 */
+  getCircleHome(params: { userId: string; now: Date }): Promise<CircleHome>;
+  searchCircles(params: { query: string; limit: number }): Promise<CircleSummary[]>;
+  /** 建会：扣 CIRCLE_CREATE_COST 金币；名字唯一（比较用写法）。 */
+  createCircle(params: { userId: string; name: string; now: Date }): Promise<CircleOutcome>;
+  /** 其余操作：circleId 是要操作的同好会（申请、接受邀请时必填；其余缺省为自己所在的）。 */
+  circleAction(params: { userId: string; action: CircleAction; circleId?: string; targetUserId?: string; now: Date }): Promise<CircleOutcome>;
+  /** 团榜（circle.ts）：会名与成员总等级之和；me 是自己所在的会。 */
+  getCircleBoard(params: { userId: string; now: Date }): Promise<LeaderboardView>;
+  /** 同好会换周：所有成员的本周起点重记成此刻的累计数（index.ts 启动时和每分钟调一次；没换周什么都不做）。 */
+  rollCircleWeeks?(now: Date): Promise<number>;
+
   // 新增：装备耐久度方法
   getDurabilityInfo(params: {
     userId: string;
@@ -258,12 +283,29 @@ export interface Storage {
   
   // WebSocket方法
   wsConnect(userId: string, connection: any): void;
-  wsDisconnect(userId: string): void;
+  /** connection 缺省 = 断开该账号的当前连接；给了连接则只断这一条，别的标签页不受影响。 */
+  wsDisconnect(userId: string, connection?: any): void;
   wsMessage(userId: string, raw: string): void;
+  /** 聊天屏蔽名单（chat_moderation.ts）：存服务端随账号走；名字是给别人看的写法。 */
+  getChatBlocks(userId: string): Promise<Array<{ userId: string; name: string }>>;
+  setChatBlock(params: { userId: string; targetUserId: string; blocked: boolean }): Promise<ChatBlockResult>;
+  /** 举报：抄内存里该频道最近几条；限流、去重见 reportGate。 */
+  reportChat(params: { reporterId: string; targetUserId: string; reason: ReportReason; channel: ReportChannel; now: Date }): Promise<ReportOutcome>;
+  /** 管理接口用：since 之后的举报，新的在前。 */
+  listChatReports(params: { since: Date; limit: number }): Promise<ChatReport[]>;
+  /** 清掉超过保存期限的举报，返回清了几条。 */
+  purgeChatReports(now: Date): Promise<number>;
   
   // 交易系统方法
   getTradingOrders(params: { itemId: string }): Promise<TradingOrder[]>;
-  /** MWI market overview: best ask / bid and depth for every item with open orders. */
+  /** 真人榜：前 100 名与自己的名次（口径与缓存见 leaderboard.ts）。entry 由调用方用自己的存档算好。 */
+  getLeaderboard(params: { board: RankBoard; userId: string; entry: RankEntry | RankHidden; now: Date }): Promise<LeaderboardView>;
+  /** 存档结算与命令提交后通知一次（匿名统计用）；观察者抛错不影响存档。 */
+  setStateObserver(observer: StateObserver | null): void;
+  /** 匿名统计：累加计数并清掉过期的天；只有日期、事件、人数。 */
+  bumpMetrics(rows: MetricRow[], now: Date): Promise<void>;
+  readMetrics(params: { since: string }): Promise<MetricRow[]>;
+  /** Market overview: best ask / bid and depth for every item with open orders. */
   getMarketSummary(): Promise<Record<string, MarketQuote>>;
   createTradingOrder(params: {
     userId: string;
@@ -282,6 +324,18 @@ export interface Storage {
   }): Promise<{ success: boolean; message?: string }>;
   cancelTradingOrder(params: { userId: string; orderId: string }): Promise<void>;
   getMyTradingOrders(params: { userId: string }): Promise<TradingOrder[]>;
+  /** 某物品最近 days 天的成交，新的在前（估价用，见 market_price.ts）。 */
+  getRecentTrades(params: { itemId: string; days: number; now: Date }): Promise<TradeRecord[]>;
+}
+
+/** 一笔成交。 */
+export interface TradeRecord {
+  itemId: string;
+  price: number;
+  quantity: number;
+  buyerId: string;
+  sellerId: string;
+  at: string;
 }
 
 // 交易订单类型
@@ -381,7 +435,7 @@ export function defaultPlayerState(contentVersion: string): PlayerState {
 }
 
 /**
- * 职业技能拆分（MWI 语义）：每个职业的「采集」与「生产」是两条独立经验/等级。
+ * 职业技能拆分：每个职业的「采集」与「生产」是两条独立经验/等级。
  * 采集技能沿用历史 id（skill_<profession>），生产技能用动作名做 id。
  * 技能树节点/强化服务资格等职业级进度仍挂在采集技能对象的 unlockedRecipes 上。
  */
@@ -440,6 +494,7 @@ export function defaultEnhancedPlayerState(contentVersion: string): EnhancedPlay
   const now = new Date().toISOString();
   return {
     contentVersion,
+    curveVersion: CURRENT_CURVE_VERSION,
     lastSimulatedAt: now,
     activeClassId: "woodcutter",
     mode: "idle",
@@ -466,7 +521,7 @@ export function defaultEnhancedPlayerState(contentVersion: string): EnhancedPlay
       skill_tailoring: newSkill(),
       skill_alchemist: newSkill(["alchemist_basic_brewing"]),
       skill_alchemy: newSkill(),
-      // MWI: Enhancing is its own non-combat skill, not a profession unlock.
+      // Enhancing is its own non-combat skill, not a profession unlock.
       skill_enhancing: newSkill()
     },
     logs: [{ ts: now, text: "欢迎来到 WorkLife！开始你的多职业冒险吧！" }],
@@ -579,11 +634,13 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   }
   if (!player.achievements) player.achievements = {};
   if (!player.settings) player.settings = defaultPlayerSettings();
+  // 升级曲线换版：等级不动，本级内经验按百分比换算（只做一次）
+  migratePlayerCurves(player);
   // 采集/生产技能拆分：老存档补出缺失的生产技能（继承采集等级），新存档补全 12 项
   ensureProfessionSkills(player);
   const { ensureEnhancingSkill } = require("./enhancement_math") as typeof import("./enhancement_math");
   ensureEnhancingSkill(player);
-  // MWI combat skills / abilities (lazy require: these modules import helpers from this file).
+  // Combat skills / abilities (lazy require: these modules import helpers from this file).
   const { ensureCombatSkills } = require("./combat_skills") as typeof import("./combat_skills");
   const { ensureAbilities } = require("./abilities") as typeof import("./abilities");
   ensureCombatSkills(player);
@@ -663,43 +720,9 @@ export function ensurePlayerExtensions(player: EnhancedPlayerState): EnhancedPla
   return player;
 }
 
-/**
- * 计算升级所需经验值
- * 使用指数成长曲线，满级200级
- * 1-30级快速升级，之后逐渐变缓
- * 
- * 公式: baseXP * (level^exponent) * multiplier
- * - 1-30级: 较低的指数，快速升级
- * - 31-100级: 中等指数，正常速度
- * - 101-200级: 高指数，极慢速度
- */
+/** 从 level 升到 level+1 所需经验（职业 / 战斗 / 强化共用）。曲线与设计目标见 growth_curves.ts。 */
 export function getXpForLevel(level: number): number {
-  if (level < 1) return 0;
-  if (level >= 200) return Infinity; // 200级为满级
-
-  // 1-15级：新手引导与开荒期（保持轻快节奏，Lv1=40，Lv15=1548）
-  const earlyBaseXP = 40;
-  const earlyExp = 1.35;
-  if (level <= 15) {
-    return Math.floor(earlyBaseXP * Math.pow(level, earlyExp));
-  }
-
-  // 16-30级：初阶过渡期（平滑拉升斜率，Lv30=7,246）
-  const level15XP = Math.floor(earlyBaseXP * Math.pow(15, earlyExp));
-  if (level <= 30) {
-    return Math.floor(level15XP + 65 * Math.pow(level - 15, 1.65));
-  }
-
-  // 31-100级：中长线挂机成长期（匹配 500-1000 小时全技能生命周期，Lv50=27,053，Lv100=239,716）
-  const level30XP = Math.floor(level15XP + 65 * Math.pow(15, 1.65));
-  if (level <= 100) {
-    return Math.floor(level30XP + 56 * Math.pow(level - 30, 1.96));
-  }
-
-  // 101-199级：终局大师期（带一阶导数连续项 9500*d，彻底消除 Lv101 斜率回跌）
-  const level100XP = Math.floor(level30XP + 56 * Math.pow(70, 1.96));
-  const d = level - 100;
-  return Math.floor(level100XP + 9500 * d + 110 * Math.pow(d, 2.15));
+  return xpForLevel(level);
 }
 
 /**
@@ -788,8 +811,13 @@ export function getBuffEffects(
   def: number;
   efficiency: number;
   rareFind: number;
+  /** 各增益上的战斗速度点数之和（combat_secondary.attackSpeedPct 折成真正的攻击速度）。 */
+  combatSpeedPoints: number;
+  secondary: SecondaryStats;
 } {
   const eff = {
+    combatSpeedPoints: 0,
+    secondary: { accuracy: 0, evasion: 0, physResist: 0, elemResist: 0 } as SecondaryStats,
     gatherSpeed: 1,
     craftSpeed: 1,
     combatSpeed: 1,
@@ -807,7 +835,10 @@ export function getBuffEffects(
     if (b.multipliers) {
       if (b.multipliers.gatherSpeed) eff.gatherSpeed *= b.multipliers.gatherSpeed;
       if (b.multipliers.craftSpeed) eff.craftSpeed *= b.multipliers.craftSpeed;
-      if (b.multipliers.combatSpeed) eff.combatSpeed *= b.multipliers.combatSpeed;
+      if (b.multipliers.combatSpeed) {
+        eff.combatSpeed *= b.multipliers.combatSpeed;
+        eff.combatSpeedPoints += combatSpeedPoints(b.multipliers.combatSpeed);
+      }
       if (b.multipliers.xpGain) eff.xpGain *= b.multipliers.xpGain;
       if (b.multipliers.goldGain) eff.goldGain *= b.multipliers.goldGain;
       if ((b.multipliers as any).efficiency) eff.efficiency += Number((b.multipliers as any).efficiency);
@@ -816,6 +847,7 @@ export function getBuffEffects(
     if (b.stats) {
       if (b.stats.atk) eff.atk += b.stats.atk;
       if (b.stats.def) eff.def += b.stats.def;
+      for (const key of SECONDARY_KEYS) eff.secondary[key] += Number(b.stats[key] || 0);
       if ((b.stats as any).efficiency) eff.efficiency += Number((b.stats as any).efficiency);
       if ((b.stats as any).rareFind) eff.rareFind += Number((b.stats as any).rareFind);
     }
@@ -850,7 +882,7 @@ export function getEquippedCombatStats(
     const enhLevel = (eq.enhancementLevels && eq.enhancementLevels[itemId]) || 0;
     const mult = enhancementStatMultiplier(enhLevel, item);
     if (item.atk) atk += item.atk * mult;
-    // 法杖类以 mag 记伤害；MWI 里魔法伤害与物理伤害同一条路径
+    // 法杖类以 mag 记伤害；魔法伤害与物理伤害走同一条路径
     if (item.mag) atk += item.mag * mult;
     if (item.def) def += item.def * mult;
   }
@@ -867,6 +899,34 @@ export function getEquippedCombatStats(
     if (top?.stats?.def) def += top.stats.def;
   }
   return { atk: Math.round(atk), def: Math.round(def) };
+}
+
+/** 内容包里带次级属性的装备（按 id）；战斗每一步都要用，不能每次扫全表。 */
+const secondaryGearCache = new WeakMap<object, Map<string, any>>();
+function secondaryGear(contentPack: EnhancedContentPack): Map<string, any> {
+  const items: any[] = (contentPack as any)?.items || [];
+  let map = secondaryGearCache.get(items);
+  if (!map) {
+    map = new Map(items.filter((i) => SECONDARY_KEYS.some((key) => i[key])).map((i) => [i.id, i]));
+    secondaryGearCache.set(items, map);
+  }
+  return map;
+}
+
+/** 已穿戴装备的命中 / 闪避 / 物抗 / 元抗（幽灵槽、损坏、强化倍率的规则与 getEquippedCombatStats 一致）。 */
+export function getEquippedSecondaryStats(player: EnhancedPlayerState, contentPack: EnhancedContentPack): SecondaryStats {
+  const eq = player.equipment as any;
+  if (!eq) return sumSecondary([]);
+  const gear = secondaryGear(contentPack);
+  const rows: Array<{ stats: Partial<SecondaryStats> | undefined; mult: number }> = [];
+  for (const [slot, itemId] of Object.entries(eq)) {
+    if (!itemId || typeof itemId !== "string") continue;
+    if (slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability" || slot === "tool") continue;
+    const item = gear.get(itemId);
+    if (!item || (player.inventory?.[itemId] || 0) <= 0 || isDurabilityBroken(player, itemId)) continue;
+    rows.push({ stats: item, mult: enhancementStatMultiplier(eq.enhancementLevels?.[itemId] || 0, item) });
+  }
+  return sumSecondary(rows);
 }
 
 /**
@@ -918,7 +978,7 @@ export type ActionRates = {
   /** Multiplier applied to base duration (1.25 = 25% faster). */
   speedMul: number;
   effectiveDurationMs: number;
-  /** MWI-style efficiency: chance/count of free instant repeats per completed cycle, in percent. */
+  /** Efficiency: chance/count of free instant repeats per completed cycle, in percent. */
   efficiencyPct: number;
   /** Where the bonuses come from, for the action panel. */
   speedSources: Array<{ label: string; pct: number }>;
@@ -983,9 +1043,10 @@ function equippedStatSum(player: EnhancedPlayerState, pack: EnhancedContentPack,
  * Everything that changes how fast / how often an action completes for this player, in one place.
  * Used by the simulator and by GET /actions/preview so the panel and the server never disagree.
  *
- * Speed follows the existing multiplicative buff/set/reputation model. Efficiency follows MWI:
- * +1% per skill level above the action's requirement, plus equipment `efficiency`, plus a buff
- * `efficiency` percentage if present; guaranteed repeats = floor(eff/100), remainder is a chance.
+ * Speed follows the existing multiplicative buff/set/reputation model. Efficiency adds up the
+ * mastery curve for levels above the action's requirement (growth_curves.masteryEfficiencyPct),
+ * equipment `efficiency` and a buff `efficiency` percentage if present; guaranteed repeats =
+ * floor(eff/100), remainder is a chance.
  * Efficiency never applies to combat actions.
  */
 export function getActionRates(
@@ -1089,7 +1150,7 @@ export function getActionRates(
       : 1 + (balladStats.gatherSpeedPct || 0) / 100;
   const isGatherAct = !isCombatAct && !hasConsumesAct;
   const elfSpeedMul = isGatherAct ? 1 + elfMods.gatherSpeedPct / 100 : 1;
-  // MWI tool speed: the equipped tool speeds up its own profession's skilling actions (not combat).
+  // Tool speed: the equipped tool speeds up its own profession's skilling actions (not combat).
   const toolId = (player.equipment as any)?.tool as string | undefined;
   // 幽灵槽防护：工具已不在背包（被卖/挂单/旧脏档）或已损坏时不提供加速
   const toolOwned = !!toolId && (player.inventory?.[toolId] || 0) > 0 && !isDurabilityBroken(player, toolId);
@@ -1148,7 +1209,7 @@ export function getActionRates(
     const reqLevel = Number(action.requirements?.skillLevel || 1);
     const skillLevel = Number(player.skills?.[action.skillId]?.level || 1);
     const levelBonus = Math.max(0, skillLevel - reqLevel);
-    if (levelBonus > 0) efficiencySources.push({ label: `等级高出 ${levelBonus} 级`, pct: levelBonus });
+    if (levelBonus > 0) efficiencySources.push({ label: `等级高出 ${levelBonus} 级`, pct: masteryEfficiencyPct(levelBonus) });
     const gearEff = equippedStatSum(player, pack, "efficiency");
     if (gearEff > 0) efficiencySources.push({ label: "装备", pct: Math.round(gearEff * 10) / 10 });
     const buffEffPct = Number((buffEff as any).efficiency || 0);
@@ -1187,7 +1248,7 @@ export function getActionRates(
     }
     // WL-11 料理品质：烹饪行动精品出锅（效率 → 额外成品）
     if (action.skillId === "skill_cooking" && harborMods.cookingQualityPct > 0) {
-      efficiencySources.push({ label: "海港水族馆 · 料理品质", pct: harborMods.cookingQualityPct });
+      efficiencySources.push({ label: "海港水族馆 · 烹饪效率", pct: harborMods.cookingQualityPct });
     }
     // WL-14 出战伙伴：采集 / 制造伙伴的产出效率（多完成一次 = 多一份产出）
     const beastEffPct = hasConsumesAct ? beastMods.craftEfficiencyPct : beastMods.gatherEfficiencyPct;
@@ -1208,7 +1269,7 @@ export function getActionRates(
     efficiencyPct = efficiencySources.reduce((s, x) => s + x.pct, 0);
   }
 
-  // MWI house: the skill's room adds +1% XP per level (combat XP goes through hp_combat instead).
+  // House: the skill's room adds +1% XP per level (combat XP goes through hp_combat instead).
   const astroForXp = getAstrolabeBonuses(player);
   const houseXpMul = !isCombatAct && houseLevel > 0 ? 1 + houseLevel * HOUSE_XP_PER_LEVEL * astroForXp.houseBonusMult : 1;
   const hwXpMul = 1 + hwMods.xpGainPct / 100;
@@ -1240,12 +1301,8 @@ export function getActionRates(
   return { isCombatAct, hasConsumesAct, speedMul, effectiveDurationMs, efficiencyPct, speedSources, efficiencySources, xpMul, goldMul, defGoldMul, setBuffs, repBuffs, prestigeMul, wornToolId: toolApplies ? toolId : undefined };
 }
 
-/**
- * MWI Rare Find: a multiplier on the base chance of any sub-100% yield / rare drop.
- * Sources add together (equipment `rareFind` percent, buff `rareFind`), then apply as ×(1 + total/100).
- * A 0.5% base drop with +10% rare find becomes 0.55%, never 10.5%.
- */
-export function getRareFindMultiplier(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date = new Date()): number {
+/** 稀有发现的各来源合计（百分点）：total 是通用层，solo 是词缀、圣物、天空锻炉三样（单人战斗另成一层）。 */
+function rareFindPoints(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date): { total: number; solo: number } {
   const gear = equippedStatSum(player, pack, "rareFind");
   const buffs = getBuffEffects(player, now) as unknown as { rareFind?: number };
   const astro = getAstrolabeBonuses(player);
@@ -1254,12 +1311,27 @@ export function getRareFindMultiplier(player: EnhancedPlayerState, pack: Enhance
   const alchemyMods = getAlchemyCauldronBonuses(player);
   const relicMods = getAstralRelicsBonuses(player);
   const forgeMods = getSkyForgeBonuses(player);
-  // MWI house: 训练场 adds +1% rare find per level (amplified by astro_house_keep).
+  // House: 训练场 adds +1% rare find per level (amplified by astro_house_keep).
   const { houseLevelForSkill, HOUSE_RARE_FIND_PER_LEVEL } = require("./houses") as typeof import("./houses");
   const house = houseLevelForSkill(player, "skill_combat") * HOUSE_RARE_FIND_PER_LEVEL * astro.houseBonusMult;
   const tailorBonus = player.activeClassId === "tailor" ? 15 : 0;
   const total = gear + Number(buffs.rareFind || 0) + house + tailorBonus + astro.rareFindPct + affixMods.rareFindPct + hwMods.rareFindPct + alchemyMods.rareFindPct + relicMods.rareFindPct + forgeMods.rareFindPct;
-  return Math.max(0, 1 + total / 100);
+  return { total, solo: affixMods.rareFindPct + relicMods.rareFindPct + forgeMods.rareFindPct };
+}
+
+/**
+ * Rare find: a multiplier on the base chance of any sub-100% yield / rare drop.
+ * Sources add together (equipment `rareFind` percent, buff `rareFind`), then apply as ×(1 + total/100).
+ * A 0.5% base drop with +10% rare find becomes 0.55%, never 10.5%.
+ */
+export function getRareFindMultiplier(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date = new Date()): number {
+  return rareFindMult(rareFindPoints(player, pack, now).total);
+}
+
+/** 单人战斗的稀有发现：通用层再乘独行层（rare_find.ts）。 */
+export function getSoloRareFindMultiplier(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date = new Date()): number {
+  const { total, solo } = rareFindPoints(player, pack, now);
+  return soloRareFindMult(total, solo);
 }
 
 /** The same probability contract is used by settlement and the action preview. */
@@ -1351,6 +1423,9 @@ export function startLifeActionNow(
   }
   // 战斗与生活动作严格互斥：开始生活动作时自动终止任何进行中或等待连战的战斗
   if (state.hpCombat) {
+    // 单人地下城按「离开」结束：趁战斗还在，把已过几波的累计写进结算
+    const { leaveDungeon } = require("./dungeon") as typeof import("./dungeon");
+    leaveDungeon(state as EnhancedPlayerState, now);
     if (!state.hpCombat.outcome) {
       const { persistCombatHp } = require("./hp_combat") as typeof import("./hp_combat");
       persistCombatHp(state, state.hpCombat.playerHp, now.getTime());
@@ -1381,7 +1456,7 @@ export function startLifeActionNow(
 
 /**
  * Pop queue items until one can start; start it at `at` (the exact moment the previous action ended).
- * Items that cannot start (materials gone, level too low) are dropped with a log line, like MWI.
+ * Items that cannot start (materials gone, level too low) are dropped with a log line.
  */
 export function startNextQueuedAction(
   state: EnhancedPlayerState,
@@ -1441,6 +1516,19 @@ export function simulateToNow(input: SimulationInput): SimulateResult {
     last = +input.now;
   }
   if (+input.now < last) return { state: input.state };
+  // 单人地下城：两次结算隔太久（离线）、或战斗已被别的入口换掉时，按已过的波数结束，不在没人看着时往下打。
+  {
+    const state = input.state as EnhancedPlayerState;
+    if (state.dungeonRun && !state.dungeonRun.outcome) {
+      const { settleDungeonPresence } = require("./dungeon") as typeof import("./dungeon");
+      if (settleDungeonPresence(state, last, +input.now) === "offline" && state.hpCombat) {
+        const { persistCombatHp } = require("./hp_combat") as typeof import("./hp_combat");
+        if (!state.hpCombat.outcome) persistCombatHp(state, state.hpCombat.playerHp, last);
+        state.hpCombat = undefined;
+        if (state.mode === "combat") state.mode = "idle";
+      }
+    }
+  }
   const delta = +input.now - last - MAX_SETTLE_WINDOW_MS;
   if (delta > 0) {
     // 窗口溢出（离线/掉线）：把整个时间轴平移 delta，使待结算窗口恰好是最近 120 秒。
@@ -1452,7 +1540,7 @@ export function simulateToNow(input: SimulationInput): SimulateResult {
     }
     const combat = state.hpCombat;
     if (combat) {
-      for (const key of ['startedAt', 'nextFightAt', 'heavyChopReadyAt', 'braceUntil'] as const) {
+      for (const key of ['startedAt', 'nextFightAt', 'heavyChopReadyAt', 'braceUntil', 'feastUntil'] as const) {
         if (typeof combat[key] === 'number') combat[key] = combat[key]! + delta;
       }
       if (combat.foodReadyAt) combat.foodReadyAt = combat.foodReadyAt.map(t => t + delta);
@@ -1518,7 +1606,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
     return { state: next };
   }
 
-  // MWI 任务板：按冷却发任务，离线期间也会填满空槽
+  // 任务板：按冷却发任务，离线期间也会填满空槽
   {
     const { ensureTasks } = require("./tasks") as typeof import("./tasks");
     ensureTasks(next, input.contentPack as EnhancedContentPack, input.now, input.rng);
@@ -1573,7 +1661,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
   // 队列推进时记录当前动作精确结束的时刻，让窗口剩余部分继续给下一个动作
   let finishedAt: Date | null = null;
 
-  // MWI 强化计时动作：结算窗口内的每一次尝试（窗口上限见 MAX_SETTLE_WINDOW_MS）
+  // 强化计时动作：结算窗口内的每一次尝试（窗口上限见 MAX_SETTLE_WINDOW_MS）
   if (next.enhanceRun && !next.enhanceRun.outcome) {
     const { tickEnhanceRun } = require("./enhancement_run") as typeof import("./enhancement_run");
     // lastSim 之前的尝试属于已作废/已结算时间：钳住 nextAttemptAt，防止遗留锚点在一个小窗口内补发数千次。
@@ -1664,7 +1752,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
           const isCombat = typeof action.id === 'string' && action.id.startsWith('act_combat_');
           const hasConsumes = Array.isArray(action.consumes) && action.consumes.length > 0;
           stats.totalActions += 1;
-          // Per-action tally: MWI-style tasks ("砍伐小白杨 ×120") read their progress from here.
+          // Per-action tally: tasks ("砍伐小白杨 ×120") read their progress from here.
           if (!stats.actionsById) stats.actionsById = {};
           stats.actionsById[action.id] = (stats.actionsById[action.id] || 0) + 1;
           if (isCombat) {
@@ -1738,7 +1826,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
             const isCombatAction = action.id.startsWith('act_combat_');
             
             if (isCombatAction) {
-              // 战斗动作：按 MWI 30/70 规则分给五条战斗技能，战斗等级由其推导
+              // 战斗动作：经验按份额分给武器主修与四项辅修，战斗等级由其推导
               const { grantCombatXp } = require("./combat_skills") as typeof import("./combat_skills");
               grantCombatXp(next, gainedXp, input.contentPack);
               next.combatXp = (next.combatXp || 0) + gainedXp;
@@ -1817,7 +1905,7 @@ function simulateWindow(input: SimulationInput): SimulateResult {
             finishedAt = new Date(Math.max(lastSimulated.getTime(), actionStartTime.getTime() + timeCyclesUsed * effectiveDuration));
           }
         } else if (action.consumes && Array.isArray(action.consumes)) {
-          // 无限制作：下一轮材料不够就停下（银河奶牛的做法），让队列能接上下一个动作，
+          // 无限制作：下一轮材料不够就停下，让队列能接上下一个动作，
           // 也避免顶栏一直转却什么都不产出
           let materialsExhausted = false;
           for (const consume of action.consumes) {

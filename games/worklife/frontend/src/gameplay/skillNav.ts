@@ -1,7 +1,7 @@
 /**
- * MWI-style skill navigation model.
+ * Skill navigation model.
  *
- * Milky Way Idle's left sidebar is one list: every skill is a row with an icon, a level and an XP
+ * The left sidebar is one list: every skill is a row with an icon, a level and an XP
  * bar, grouped into gathering / production / combat, with the running action highlighted. This file
  * describes that list for WorkLife's six professions (each has one gathering and one production
  * skill page) plus combat and character, and decides what is visible before chapter 1 is done.
@@ -17,7 +17,7 @@ export type SkillNavItem = {
   /** Profession whose skill level this row shows. */
   profession?: string;
   /** Side-specific skill key in playerState.skills (`skill_<profession>` 采集 / `skill_<动作>` 生产),
-   * "combat" (derived level), or `combat:<skill>` (MWI combat skill). */
+   * "combat" (derived level), or `combat:<skill>` (combat skill). */
   skillKey?: string;
   /** Rows that are pure progress readouts navigate to this tab instead of a page of their own. */
   opensTab?: string;
@@ -47,7 +47,7 @@ export const SKILL_NAV: SkillNavItem[] = [
   { id: "alchemy", name: "炼金", group: "production", profession: "alchemist", skillKey: "skill_alchemy", icon: "nav-alchemy", emoji: "⚗️" },
   { id: "enhance", name: "强化", group: "production", skillKey: "skill_enhancing", icon: "nav-enhance", emoji: "✨" },
   { id: "adventure", name: "冒险", group: "combat", skillKey: "combat", icon: "nav-adventure", emoji: "⚔️" },
-  // MWI combat skills: each is a row with its own level / XP bar; all of them open the combat page.
+  // Combat skills: each is a row with its own level / XP bar; all of them open the combat page.
   { id: "combat_stamina", name: "耐力", group: "combat", skillKey: "combat:stamina", icon: "stat-hp", emoji: "❤️", opensTab: "adventure" },
   { id: "combat_intelligence", name: "智力", group: "combat", skillKey: "combat:intelligence", icon: "stat-int", emoji: "🧠", opensTab: "adventure" },
   { id: "combat_attack", name: "攻击", group: "combat", skillKey: "combat:attack", icon: "stat-atk", emoji: "🎯", opensTab: "adventure" },
@@ -71,7 +71,7 @@ export const SKILL_NAV_GROUP_TITLES: Record<SkillNavGroup, string> = {
 };
 
 /**
- * The woodcutter loop chapter 1 teaches. MWI shows every skill from the first minute, so these rows
+ * The woodcutter loop chapter 1 teaches. Every skill is shown from the first minute, so these rows
  * are only *highlighted* (推荐) while the chapter is open — never the only rows.
  */
 export const CHAPTER1_NAV_IDS = ["logging", "woodworking", "adventure", "character"] as const;

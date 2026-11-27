@@ -5,6 +5,7 @@ import enhancedContentPack from "../../shared/enhanced_content_pack_chinese.json
 import type { EnhancedContentPack } from "./types";
 import { HOUSE_MAX_LEVEL, HOUSE_ROOMS, houseLevelForSkill, houseView, roomUpgradeCost, totalHouseLevel, upgradeRoom } from "./houses";
 import { getActionRates, getRareFindMultiplier } from "./storage";
+import { COMBAT_MAIN_SHARE } from "./growth_curves";
 import { startHpCombat, tickHpCombat } from "./hp_combat";
 
 const pack = enhancedContentPack as EnhancedContentPack;
@@ -17,7 +18,7 @@ async function fresh() {
   return { storage, state };
 }
 
-describe("MWI houses", () => {
+describe("houses", () => {
   it("every room's materials exist in the content pack", () => {
     const ids = new Set((pack.items as Array<{ id: string }>).map((i) => i.id));
     for (const room of HOUSE_ROOMS) for (const m of room.materials) assert.ok(ids.has(m), `${room.id}: ${m}`);
@@ -71,8 +72,11 @@ describe("MWI houses", () => {
     state.hpCombat = startHpCombat(state, pack, "slime", T0);
     tickHpCombat(state, pack, new Date(T0.getTime() + 60_000), 60_000, () => 0.99);
     assert.equal(state.hpCombat?.outcome, "win");
-    // slime 4 XP × 1.04 = 4.16 → melee 44% = 1.8304 → 1.8
-    assert.equal(state.hpCombat?.xpGained?.melee, 1.8);
+    // the room multiplies the kill's XP before it is shared out: slime XP × 1.04 × the weapon's share
+    const slimeXp = Number((pack.monsters as Array<{ id: string; xp?: number }>).find((m) => m.id === "slime")!.xp);
+    const total = Math.round(slimeXp * 1.04 * 10) / 10;
+    assert.equal(state.hpCombat?.xpGained?.melee, Math.round(total * COMBAT_MAIN_SHARE * 10) / 10);
+    assert.ok(total > slimeXp);
     await storage.close();
   });
 

@@ -42,7 +42,7 @@ const itemArt = (id: string) => existsSync(path.join(root, "frontend/src/assets/
 
 describe("WL-17 backend <-> frontend Dwarf Mine & Elf Waystation 1:1 parity", () => {
   it("keeps the WL-17 core source region byte-identical on both sides", () => {
-    assert.equal(coreOf("frontend/src/gameplay/dwarfElf.ts"), coreOf("backend/src/progression2.ts"));
+    assert.equal(coreOf("frontend/src/gameplay/dwarfElf.ts"), coreOf("backend/src/progression2/dwarf_elf.ts"));
   });
 
   it("keeps every static WL-17 table 1:1 identical, backed by real ores, forging materials, gather actions and expedition records", () => {

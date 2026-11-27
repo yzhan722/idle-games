@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { T1Art, T1ItemIcon } from "./T1Art";
 import type { CombatLoadout } from "./CombatLoadoutPanel";
 import { slotCounts } from "./CombatLoadoutPanel";
+import { buffParts } from "../gameplay/buffLines";
+import { trimLoadout } from "../gameplay/combatLoadout";
 
 type PackItem = {
   id: string;
@@ -66,27 +68,7 @@ export function describePotionEffect(d?: PackItem): string {
   const parts: string[] = [];
   if (Number(d.effect.hp) > 0) parts.push(`+${d.effect.hp} 生命`);
   if (Number(d.effect.mp) > 0) parts.push(`+${d.effect.mp} 魔力`);
-  const b = d.effect.buff;
-  if (b) {
-    for (const [k, v] of Object.entries(b.stats || {})) {
-      parts.push(`${k === "atk" ? "攻击" : k === "def" ? "防御" : k} +${v}`);
-    }
-    for (const [k, v] of Object.entries(b.multipliers || {})) {
-      const label =
-        k === "combatSpeed"
-          ? "攻速"
-          : k === "xpGain"
-          ? "经验"
-          : k === "goldGain"
-          ? "金币"
-          : k === "gatherSpeed"
-          ? "采集"
-          : k === "craftSpeed"
-          ? "制作"
-          : k;
-      parts.push(`${label} +${Math.round((Number(v) - 1) * 100)}%`);
-    }
-  }
+  parts.push(...buffParts(d.effect.buff));
   return parts.join(" · ");
 }
 
@@ -185,7 +167,8 @@ export function CombatPotionBar(props: Props) {
   const defaultHpTrigger = Math.max(1, Math.round(props.playerMaxHp * 0.5));
   const defaultMpTrigger = Math.max(1, Math.round(Math.max(20, props.playerMaxMp) * 0.4));
 
-  const commitLoadout = (next: CombatLoadout) => {
+  const commitLoadout = (changed: CombatLoadout) => {
+    const next = trimLoadout(changed, counts);
     setLo(next);
     props.onChangeLoadout(next);
   };
@@ -334,8 +317,8 @@ export function CombatPotionBar(props: Props) {
     isBuffActive: false,
   });
 
-  // 3~5. Three Status Potion slots
-  for (let idx = 0; idx < 3; idx++) {
+  // Status potion slots: three, plus one from an equipped pouch
+  for (let idx = 0; idx < counts.drink; idx++) {
     const stItem = lo.drink?.[idx]?.itemId;
     const def = stItem ? itemById(stItem) : undefined;
     const buffId = def?.effect?.buff?.id;
@@ -383,7 +366,7 @@ export function CombatPotionBar(props: Props) {
     }
   }
 
-  // Active buffs that aren't already represented by one of the 3 status slots
+  // Active buffs that aren't already represented by one of the status slots
   const slottedBuffIds = new Set(
     (lo.drink || [])
       .map((d) => itemById(d.itemId)?.effect?.buff?.id)
@@ -406,11 +389,11 @@ export function CombatPotionBar(props: Props) {
   return (
     <div
       ref={barRef}
-      className={`mwi-potion-bar icon-only${props.inCombat ? " in-combat" : ""}`}
+      className={`cpb-potion-bar icon-only${props.inCombat ? " in-combat" : ""}`}
       role="region"
       aria-label="战斗药剂栏"
     >
-      <div className="mwi-icon-belt">
+      <div className="cpb-icon-belt">
         {slotDescriptors.map((slot) => {
           const isOpen = isSameSlot(openSlot, slot.key);
           const equipped = !!slot.itemId;
@@ -421,7 +404,7 @@ export function CombatPotionBar(props: Props) {
               key={`${slot.key.kind}-${slot.key.index}`}
               type="button"
               title={equipped ? `${itemName}（数量：${slot.ownedQty}）` : "点击配置药剂"}
-              className={`mwi-icon-slot ${slot.roleClass}${equipped ? " equipped" : " empty"}${
+              className={`cpb-icon-slot ${slot.roleClass}${equipped ? " equipped" : " empty"}${
                 slot.isBuffActive ? " buff-active" : ""
               }${slot.isCooling ? " cooling" : ""}${outOfStock ? " out-of-stock" : ""}${
                 isOpen ? " active-open" : ""
@@ -436,26 +419,26 @@ export function CombatPotionBar(props: Props) {
               {slot.itemId ? (
                 <T1ItemIcon itemId={slot.itemId} fallback={props.iconOf(slot.itemId)} alt="" />
               ) : (
-                <span className="mwi-icon-placeholder" aria-hidden="true">
+                <span className="cpb-icon-placeholder" aria-hidden="true">
                   {slot.placeholderIcon}
                 </span>
               )}
               {equipped && (
                 <span
-                  className={`mwi-slot-dot${
+                  className={`cpb-slot-dot${
                     outOfStock ? " empty" : slot.isBuffActive ? " buff" : slot.isCooling ? " cooling" : " ready"
                   }`}
                   aria-hidden="true"
                 />
               )}
               {equipped && (
-                <span className={`mwi-icon-slot-qty${outOfStock ? " zero" : ""}`}>
+                <span className={`cpb-icon-slot-qty${outOfStock ? " zero" : ""}`}>
                   {slot.ownedQty}
                 </span>
               )}
-              <span className="mwi-slot-cd-bar" aria-hidden="true">
+              <span className="cpb-slot-cd-bar" aria-hidden="true">
                 <span
-                  className={`mwi-slot-cd-fill ${
+                  className={`cpb-slot-cd-fill ${
                     slot.key.kind === "hp" ? "hp" : slot.key.kind === "mp" ? "mp" : "status"
                   }`}
                   style={{ width: `${slot.barPct}%` }}
@@ -472,11 +455,11 @@ export function CombatPotionBar(props: Props) {
           const remMs = Math.max(0, Date.parse(b.expiresAt) - props.now);
           const pct = Math.max(0, Math.min(100, (remMs / totalDurMs) * 100));
           return (
-            <div key={b.id} className="mwi-icon-slot buff-only buff-active">
+            <div key={b.id} className="cpb-icon-slot buff-only buff-active">
               <T1ItemIcon itemId={b.sourceItemId} fallback={props.iconOf(b.sourceItemId)} alt="" />
-              <span className="mwi-slot-dot buff" aria-hidden="true" />
-              <span className="mwi-slot-cd-bar" aria-hidden="true">
-                <span className="mwi-slot-cd-fill status" style={{ width: `${pct}%` }} />
+              <span className="cpb-slot-dot buff" aria-hidden="true" />
+              <span className="cpb-slot-cd-bar" aria-hidden="true">
+                <span className="cpb-slot-cd-fill status" style={{ width: `${pct}%` }} />
               </span>
             </div>
           );
@@ -485,12 +468,12 @@ export function CombatPotionBar(props: Props) {
 
       {/* 点击槽位后弹出的纯图标选择器与操作栏 */}
       {openSlot && currentPickerSlot && (
-        <div className="mwi-icon-picker" role="menu">
+        <div className="cpb-icon-picker" role="menu">
           {currentPickerSlot.itemId && (
-            <div className="mwi-icon-picker-actions">
+            <div className="cpb-icon-picker-actions">
               <button
                 type="button"
-                className="mwi-icon-act-btn drink"
+                className="cpb-icon-act-btn drink"
                 title="立即饮用"
                 disabled={currentPickerSlot.ownedQty < 1 || busyItem === currentPickerSlot.itemId}
                 onClick={() => {
@@ -503,7 +486,7 @@ export function CombatPotionBar(props: Props) {
               {props.onQuickBuyPotion && (
                 <button
                   type="button"
-                  className="mwi-icon-act-btn buy"
+                  className="cpb-icon-act-btn buy"
                   title="快捷补货 +1"
                   disabled={busyItem === currentPickerSlot.itemId}
                   onClick={async () => {
@@ -521,7 +504,7 @@ export function CombatPotionBar(props: Props) {
               )}
               <button
                 type="button"
-                className="mwi-icon-act-btn clear"
+                className="cpb-icon-act-btn clear"
                 title="清空槽位"
                 onClick={() => {
                   if (openSlot.kind === "hp") setHpSlot(openSlot.index, "");
@@ -535,7 +518,7 @@ export function CombatPotionBar(props: Props) {
             </div>
           )}
 
-          <div className="mwi-icon-picker-grid">
+          <div className="cpb-icon-picker-grid">
             {pickerCandidates.map((it) => {
               const owned = props.inventory[it.id] || 0;
               const isSelected = currentPickerSlot.itemId === it.id;
@@ -544,7 +527,7 @@ export function CombatPotionBar(props: Props) {
                   key={it.id}
                   type="button"
                   title={`${it.name}（数量：${owned}）`}
-                  className={`mwi-picker-item${isSelected ? " selected" : ""}${
+                  className={`cpb-picker-item${isSelected ? " selected" : ""}${
                     owned < 1 ? " unowned" : ""
                   }`}
                   disabled={busyItem === it.id || (owned < 1 && !props.onQuickBuyPotion)}
@@ -552,10 +535,10 @@ export function CombatPotionBar(props: Props) {
                 >
                   <T1ItemIcon itemId={it.id} fallback={props.iconOf(it.id)} alt="" />
                   <span
-                    className={`mwi-slot-dot ${owned > 0 ? "ready" : "empty"}`}
+                    className={`cpb-slot-dot ${owned > 0 ? "ready" : "empty"}`}
                     aria-hidden="true"
                   />
-                  <span className={`mwi-icon-slot-qty${owned < 1 ? " zero" : ""}`}>
+                  <span className={`cpb-icon-slot-qty${owned < 1 ? " zero" : ""}`}>
                     {owned}
                   </span>
                 </button>

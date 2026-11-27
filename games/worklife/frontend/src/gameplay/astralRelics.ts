@@ -240,9 +240,9 @@ export const SACRED_RELIC_PEDESTALS: readonly SacredRelicPedestalMeta[] = [
   {
     id: "solar_spear",
     name: "曜阳破军圣枪",
-    subtitle: "战斗破甲贯日 · 暴击率与圣枪暴伤增幅",
+    subtitle: "战斗破甲贯日 · 圣枪增伤与组队暴击",
     description:
-      "神代讨伐军团遗留的赤金破城圣枪，供奉于展台后永久赋予护甲穿透、首领破甲、暴击与圣枪裁决伤害增幅。",
+      "神代讨伐军团遗留的赤金破城圣枪，供奉于展台后永久赋予护甲穿透、首领破甲、圣枪裁决增伤与组队暴击。",
     iconId: "relic_solar_spear",
     maxRank: 5,
     levels: [
@@ -256,9 +256,9 @@ export const SACRED_RELIC_PEDESTALS: readonly SacredRelicPedestalMeta[] = [
   {
     id: "verdant_chalice",
     name: "翠微丰饶圣爵",
-    subtitle: "万物双倍采集 · 采集连作丰产与珍稀垂青",
+    subtitle: "万物双倍采集 · 采集连作丰产与战斗珍稀掉落",
     description:
-      "镌刻世界树枝叶纹章的翡翠金爵，永久提升生命上限、全采集双倍暴击率、采集速度与额外丰产连作效率。",
+      "镌刻世界树枝叶纹章的翡翠金爵，永久提升生命上限、全采集双倍率、采集速度与额外丰产连作效率。",
     iconId: "relic_verdant_chalice",
     maxRank: 5,
     levels: [
@@ -288,9 +288,9 @@ export const SACRED_RELIC_PEDESTALS: readonly SacredRelicPedestalMeta[] = [
   {
     id: "chimera_censer",
     name: "星界奇美拉圣炉",
-    subtitle: "炼金批次增产 · 远征商队悬赏与全局金币洪流",
+    subtitle: "炼金批次增产 · 远征商队悬赏与单人战斗金币",
     description:
-      "吞吐星辉秘香的传世圣炉，永久增幅全局与战斗金币倍率、远征商队/特批契约/公会悬赏收益，并强化魔药药效与炼制批次产出。",
+      "吞吐星辉秘香的传世圣炉，永久提升单人战斗金币、远征商队/特批契约/公会悬赏收益，并强化战斗药剂攻防增益与炼制批次产出。",
     iconId: "relic_chimera_censer",
     maxRank: 5,
     levels: [

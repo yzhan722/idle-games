@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react'
 import { GoldIcon, T1Art, T1ItemIcon } from './T1Art'
 import { MarketItemGrid } from './MarketItemGrid'
 import { MarketMyOrders } from './MarketMyOrders'
 import { getItemIcon, getTierName, resolveItemInfo } from '../gameplay/gameConstants'
 import { getCaravanRepTier } from '../gameplay/caravanTrade'
+import { clampToRange, estimateLine, outOfRange, type MarketEstimate } from '../gameplay/marketEstimate'
+import { apiClient } from '../services/api'
 import type { PlayerState } from '../types/game'
 import './AdvancementPanels.css'
 import './T1UiIcons.css'
@@ -75,6 +78,26 @@ export function TradingMarketView({
   onOpenCaravan,
 }: TradingMarketViewProps) {
   const getItemInfo = (id: string) => resolveItemInfo(id, contentPack)
+  const [loadedEstimate, setLoadedEstimate] = useState<MarketEstimate | null>(null)
+  const estimate = loadedEstimate && loadedEstimate.itemId === selectedTradingItem ? loadedEstimate : null
+
+  // 估算价与可挂区间（服务端算，挂单时服务端还会再校验）
+  useEffect(() => {
+    if (!selectedTradingItem) return
+    let cancelled = false
+    apiClient
+      .getMarketEstimate(selectedTradingItem)
+      .then((e) => {
+        if (!cancelled) setLoadedEstimate(e)
+      })
+      .catch(() => {
+        if (!cancelled) setLoadedEstimate(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedTradingItem, marketRefreshKey])
+
   const caravanRepInfo = getCaravanRepTier(Number(playerState.caravanTrade?.caravanRep || 0))
   const caravanDust = Number(playerState.caravanTrade?.astralCrystalDust || 0)
   const caravanPermits = Number(playerState.caravanTrade?.expressPermits ?? 1)
@@ -90,7 +113,7 @@ export function TradingMarketView({
           <div className="page-header">
             <h2 className="section-title">交易行</h2>
             <div className="page-info">
-              <p>玩家间买卖物品：直接成交最优挂单，或自己挂出售 / 收购单；成交收卖方 5% 税。</p>
+              <p>玩家间买卖物品：直接成交最优挂单，或自己挂出售 / 收购单。</p>
             </div>
           </div>
           {onOpenCaravan && (
@@ -174,6 +197,7 @@ export function TradingMarketView({
                     {asks.length ? `最低卖价 ${Math.min(...asks)}` : '无卖单'} ·{' '}
                     {bids.length ? `最高收购 ${Math.max(...bids)}` : '无收购'}
                     {shop ? ` · 店价 ${shop}` : ''}
+                    {estimate ? ` · ${estimateLine(estimate)}` : ''}
                   </span>
                 )
               })()}
@@ -188,7 +212,8 @@ export function TradingMarketView({
                   setSellQuantity(1)
                   const asks = tradingOrders.filter((o) => o.type === 'sell').map((o) => o.price)
                   const shop = Number(contentPack?.items?.find((i: any) => i.id === selectedTradingItem)?.value || 0)
-                  if (asks.length) setSellPrice(Math.max(1, Math.min(...asks)))
+                  if (asks.length) setSellPrice(clampToRange(Math.min(...asks), estimate))
+                  else if (estimate) setSellPrice(estimate.estimate)
                   else if (shop > 0) setSellPrice(Math.max(1, shop * 2))
                   setShowSellModal(true)
                 }}
@@ -202,7 +227,8 @@ export function TradingMarketView({
                   setSellQuantity(1)
                   const bids = tradingOrders.filter((o) => o.type === 'buy').map((o) => o.price)
                   const shop = Number(contentPack?.items?.find((i: any) => i.id === selectedTradingItem)?.value || 0)
-                  if (bids.length) setSellPrice(Math.max(1, Math.max(...bids)))
+                  if (bids.length) setSellPrice(clampToRange(Math.max(...bids), estimate))
+                  else if (estimate) setSellPrice(estimate.estimate)
                   else if (shop > 0) setSellPrice(Math.max(1, shop))
                   setShowSellModal(true)
                 }}
@@ -416,6 +442,11 @@ export function TradingMarketView({
               <div className="form-group">
                 <label className="form-label">
                   <span>单价（金币）</span>
+                  {estimate && (
+                    <span className="form-hint">
+                      （可挂 {estimate.priceRange.min}～{estimate.priceRange.max}）
+                    </span>
+                  )}
                 </label>
                 <input
                   type="number"
@@ -433,6 +464,11 @@ export function TradingMarketView({
                     const bestBid = bids.length ? Math.max(...bids) : 0
                     return (
                       <div className="sell-preset-chips">
+                        {estimate && (
+                          <button type="button" className="qty-chip" onClick={() => setSellPrice(estimate.estimate)}>
+                            估价 {estimate.estimate}
+                          </button>
+                        )}
                         {shop > 0 && (
                           <button type="button" className="qty-chip" onClick={() => setSellPrice(Math.max(1, shop))}>
                             店价 {shop}
@@ -468,30 +504,10 @@ export function TradingMarketView({
               </div>
 
               <div className="sell-summary">
-                <div className="summary-row">
-                  <span>总{orderType === 'sell' ? '价' : '金额'}</span>
+                <div className="summary-row total">
+                  <span>{orderType === 'sell' ? '全部成交收入' : '需要支付'}</span>
                   <span className="summary-value gold">{sellQuantity * sellPrice} <GoldIcon /></span>
                 </div>
-                {orderType === 'sell' && (
-                  <>
-                    <div className="summary-row">
-                      <span>手续费(5%)</span>
-                      <span className="summary-value">{Math.floor(sellQuantity * sellPrice * 0.05)} <GoldIcon /></span>
-                    </div>
-                    <div className="summary-row total">
-                      <span>实际收入</span>
-                      <span className="summary-value gold">
-                        {sellQuantity * sellPrice - Math.floor(sellQuantity * sellPrice * 0.05)} <GoldIcon />
-                      </span>
-                    </div>
-                  </>
-                )}
-                {orderType === 'buy' && (
-                  <div className="summary-row total">
-                    <span>需要支付</span>
-                    <span className="summary-value gold">{sellQuantity * sellPrice} <GoldIcon /></span>
-                  </div>
-                )}
               </div>
 
               <div className="form-actions">
@@ -499,6 +515,7 @@ export function TradingMarketView({
                   className="btn-action"
                   disabled={
                     Boolean(
+                      outOfRange(sellPrice, estimate) ||
                       (orderType === 'sell' &&
                         selectedTradingItem &&
                         sellQuantity > (playerState.inventory[selectedTradingItem] || 0)) ||
@@ -507,7 +524,7 @@ export function TradingMarketView({
                   }
                   onClick={handleCreateOrder}
                 >
-                  确认挂单
+                  {outOfRange(sellPrice, estimate) ? '单价超出可挂区间' : '确认挂单'}
                 </button>
                 <button
                   className="btn-secondary"
@@ -574,26 +591,10 @@ export function TradingMarketView({
                   <span>单价</span>
                   <span className="summary-value">{selectedOrder.price} <GoldIcon /></span>
                 </div>
-                {selectedOrder.type === 'buy' && (
-                  <>
-                    <div className="summary-row">
-                      <span>总价</span>
-                      <span className="summary-value gold">{purchaseQuantity * selectedOrder.price} <GoldIcon /></span>
-                    </div>
-                    <div className="summary-row">
-                      <span>手续费(5%)</span>
-                      <span className="summary-value">{Math.floor(purchaseQuantity * selectedOrder.price * 0.05)} <GoldIcon /></span>
-                    </div>
-                  </>
-                )}
                 <div className="summary-row total">
-                  <span>{selectedOrder.type === 'sell' ? '总支付' : '实际收入'}</span>
+                  <span>{selectedOrder.type === 'sell' ? '总支付' : '收入'}</span>
                   <span className="summary-value gold">
-                    {selectedOrder.type === 'sell'
-                      ? purchaseQuantity * selectedOrder.price
-                      : purchaseQuantity * selectedOrder.price -
-                        Math.floor(purchaseQuantity * selectedOrder.price * 0.05)}{' '}
-                    <GoldIcon />
+                    {purchaseQuantity * selectedOrder.price} <GoldIcon />
                   </span>
                 </div>
               </div>

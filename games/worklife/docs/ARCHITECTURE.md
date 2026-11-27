@@ -42,9 +42,13 @@ All persistence goes through `StorageAdapter` (`storage.ts`). Both adapters shar
 ### 2.3 Combat & Progression Engines
 | File | Responsibility |
 |---|---|
-| `hp_combat.ts` | Authoritative tick-based solo combat engine (`stepCombat`): player/monster attack intervals, accuracy/evasion/crit rolls, MP regen, ability triggers, food/drink auto-triggers, and Boss mechanics (`shield_wall`, `enrage`, `summon_adds`, `regenerate`, `aoe_blast`, `Thorns`, `mana_burn`, `execute_strike`). |
-| `combat_skills.ts` | MWI-style 7-dimension combat skills (`stamina`, `intelligence`, `attack`, `defense`, `melee`, `ranged`, `magic`), derived combat level formula, ability slot count, and weapon main-skill routing. |
-| `mwi_enhancement.ts` | MWI `+1..+20` gear enhancement probabilities, stat multiplier table, blessed scroll protection, and speed tool bonuses. |
+| `hp_combat.ts` | Authoritative tick-based solo combat engine (`stepCombat`): player/monster attack intervals, accuracy/evasion/resistances (no random crits), MP regen, ability triggers, food/drink auto-triggers, and Boss mechanics (`shield_wall`, `enrage`, `summon_adds`, `regenerate`, `aoe_blast`, `Thorns`, `mana_burn`, `execute_strike`). |
+| `combat_skills.ts` | 7-dimension combat skills (`stamina`, `intelligence`, `attack`, `defense`, `melee`, `ranged`, `magic`), derived combat level formula, ability slot count, and weapon main-skill routing. |
+| `growth_curves.ts` | All growth curves and their parameters (XP per level, mastery efficiency, enhancement, combat XP shares, combat level, enrage). Identical copy in `frontend/src/gameplay/growthCurves.ts`; design notes in `docs/design/OWN_CURVES.md`. |
+| `progression2.ts` + `progression2/` | Long-run systems (reputation, guild bounties, prestige, WL-6 … WL-18). One module per system in `progression2/`; `progression2.ts` only re-exports, everyone imports from it. |
+| `save_import.ts` | Save-code import switch (`SAVE_IMPORT_ENABLED`, off by default) and validation: an import may only roll the account back. |
+| `curve_migration.ts` | One-time save migration when the XP curve changes: levels stay, in-level XP keeps its percentage. |
+| `enhancement_math.ts` | `+1..+20` gear enhancement: applies the curves, materials, 定纹镜 protection, tool bonus. |
 | `offline_engine.ts` | Offline gathering, crafting, and combat simulation when a player reconnects (`computeOfflineProgress`). |
 | `zone_chains_fixture.ts` | Canonical zone monster chains and Boss mechanic definitions used by progression & Boss mechanic test suites. |
 
@@ -62,23 +66,25 @@ All persistence goes through `StorageAdapter` (`storage.ts`). Both adapters shar
 | `TradingMarketView.tsx` | P2P Orderbook Market UI: item catalog grid, real-time ask/bid orderbook detail, limit order creation modal, and instant fill modal. |
 | `GameModals.tsx` | Shared modal suite: `<EquipSelectorModal />`, `<GameEntityDetailModal />` (Monster/Gather/Craft/Item detail + Full Item Codex), `<ProfessionSwitchModal />`, and `<FirstBladeBuildModal />`. |
 | `ProductionExtras.tsx` | `<ProductionTeaBar />` (gathering/crafting tea buff bar), `<AlchemyCoinifyPanel />` (item-to-gold transmutation), and `<CombatHpChip />`. |
-| `CharacterSheet.tsx` | Paper-doll 10-slot equipment panel, 7-dimension combat skill bars, secondary combat stats (Accuracy/Evasion/Crit/CritDmg), and active set bonus display. |
+| `CharacterSheet.tsx` | Paper-doll 10-slot equipment panel, 7-dimension combat skill bars, secondary combat stats (accuracy / evasion / resistances; crit only exists in the party stage show), and active set bonus display. |
+| `AdvancementPanels.tsx` + `advancement/` | Panels of the long-run systems, one file per panel; `AdvancementPanels.tsx` only re-exports them and loads the styles. |
 | `AbilityLoadoutPanel.tsx` | Combat ability & consumable slot configuration with trigger rules (`always`, `hp_below`, `mp_above`, `on_boss_guard`, etc.) and Skill Book learning. |
 | `EnhancementPanel.tsx` | `+1..+20` equipment enhancement workshop with success rate breakdown and protection item slots. |
 | `TasksPage.tsx` & `HousesPage.tsx` | NPC commission task board (`TasksPage.tsx`) and passive buff/yield room construction (`HousesPage.tsx`). |
-| `SkillSidebar.tsx` & `MobileNavBar.tsx` | Desktop collapsible MWI-style skill navigation sidebar and mobile 5-tab bottom navigation bar + drawer. |
+| `SkillSidebar.tsx` & `MobileNavBar.tsx` | Desktop collapsible skill navigation sidebar and mobile 5-tab bottom navigation bar + drawer. |
 | `NewGameInterface.css` | Consolidated, deduplicated stylesheet for all game panels, cards, animations, and responsive breakpoints. |
 
 ### 3.2 Pure Gameplay Logic & Content Mirrors (`frontend/src/gameplay/`)
 | File | Responsibility |
 |---|---|
 | `gameConstants.ts` | Gathering/Crafting page definitions, resource node tables (`trees`, `ores`, `crops`, `fishingSpots`, `fiberSpots`, `crystalSpots`), equipment slot metadata, tea buff descriptors, and item icon helpers. |
+| `partyCombat.ts` | Same file as `backend/src/party_combat.ts` (only the import line differs): wave composition, squad numbers, per-hit damage, minimum / expected wave time. `backend/src/party_run.ts` is the server-side judge that uses it. |
 | `partyRaidData.ts` | Co-op Boss Raid types, Boss signature skills (`BOSS_SIGNATURE_SKILLS`), wave/guard scaling helpers, and stage ID normalization. |
 | `combatSheet.ts` | Client-side mirror of server combat stat calculation (`combatSheetFromPack`, `activeSetBonuses`, `derivedCombatLevel`, `abilitySlotCount`). |
 | `fightPreview.ts` | Deterministic client-side combat simulator mirroring `backend/src/hp_combat.ts` to preview win rate / TTK before starting a fight. |
 | `skillRows.ts` & `skillNav.ts` | Content-pack-driven gathering/crafting row builders and sidebar skill badge state. |
 | `chapter1.ts` & `zones.ts` | Chapter 1 onboarding goal tracker and zone unlock progression helpers. |
-| `mwiEnhancement.ts` | Client-side mirror of `+1..+20` enhancement multipliers and success rates. |
+| `growthCurves.ts` / `enhancement.ts` | Client-side copy of the growth curves and the `+1..+20` enhancement helpers built on them. |
 | `soundCues.ts` | WebAudio procedural sound synthesis for hits, crits, level-ups, drops, and UI clicks. |
 
 ### 3.3 Asset Pipeline (`frontend/src/assets/t1/`)

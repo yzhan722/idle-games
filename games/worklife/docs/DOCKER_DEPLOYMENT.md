@@ -61,6 +61,7 @@ docker compose logs backend --tail=20
 | RATE_LIMIT_MAX | 否 | 每窗口最大请求数 | 100 |
 | RATE_LIMIT_WINDOW | 否 | 限流时间窗口（毫秒） | 60000 |
 | CORS_ORIGIN | 否 | 允许的前端域名（逗号分隔） | - |
+| METRICS_ADMIN_KEY | 否 | 匿名统计的查询密钥（≥24 字符，`openssl rand -hex 24`）；不填、太短或太容易猜都不采集、接口 404 | - |
 
 ## 常用命令
 

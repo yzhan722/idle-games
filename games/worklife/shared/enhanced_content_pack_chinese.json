@@ -504,9 +504,10 @@
       "name": "鲜虾",
       "type": "food",
       "tier": 1,
-      "description": "活蹦乱跳的虾",
+      "description": "活蹦乱跳的虾，恢复15点生命值",
       "value": 15,
       "effect": {
+        "hp": 15,
         "buff": {
           "id": "buff_shrimp",
           "name": "鲜虾·微益",
@@ -635,7 +636,7 @@
           "durationSec": 300
         }
       },
-      "description": "初级炼金生命药剂，瞬间恢复 40 点生命值，并在 5 分钟内提升 5% 战斗速度。",
+      "description": "初级炼金生命药剂，瞬间恢复 40 点生命值。",
       "value": 18
     },
     {
@@ -654,7 +655,7 @@
           "durationSec": 360
         }
       },
-      "description": "中级炼金生命药剂，瞬间恢复 95 点生命值，并在 6 分钟内提升 8% 战斗速度。",
+      "description": "中级炼金生命药剂，瞬间恢复 95 点生命值。",
       "value": 42
     },
     {
@@ -673,7 +674,7 @@
           "durationSec": 480
         }
       },
-      "description": "高级炼金生命药剂，瞬间恢复 220 点生命值，并在 8 分钟内提升 10% 战斗速度。",
+      "description": "高级炼金生命药剂，瞬间恢复 220 点生命值。",
       "value": 95
     },
     {
@@ -692,7 +693,7 @@
           "durationSec": 600
         }
       },
-      "description": "顶级炼金生命药剂，瞬间恢复 500 点生命值，并在 10 分钟内提升 12% 战斗速度。",
+      "description": "顶级炼金生命药剂，瞬间恢复 500 点生命值。",
       "value": 210
     },
     {
@@ -778,7 +779,7 @@
       "slot": "accessory",
       "tier": 2,
       "focusSkill": "stamina",
-      "description": "佩戴后，每次击杀 70% 的战斗经验全部给耐力（30% 仍归武器主修）。任务商店出售。",
+      "description": "佩戴后，每次击杀 60% 的战斗经验全部给耐力（40% 仍归武器主修）。任务商店出售。",
       "value": 800
     },
     {
@@ -788,7 +789,7 @@
       "slot": "accessory",
       "tier": 2,
       "focusSkill": "intelligence",
-      "description": "佩戴后，每次击杀 70% 的战斗经验全部给智力（30% 仍归武器主修）。任务商店出售。",
+      "description": "佩戴后，每次击杀 60% 的战斗经验全部给智力（40% 仍归武器主修）。任务商店出售。",
       "value": 800
     },
     {
@@ -798,7 +799,7 @@
       "slot": "accessory",
       "tier": 2,
       "focusSkill": "attack",
-      "description": "佩戴后，每次击杀 70% 的战斗经验全部给攻击（30% 仍归武器主修）。任务商店出售。",
+      "description": "佩戴后，每次击杀 60% 的战斗经验全部给攻击（40% 仍归武器主修）。任务商店出售。",
       "value": 800
     },
     {
@@ -808,7 +809,7 @@
       "slot": "accessory",
       "tier": 2,
       "focusSkill": "defense",
-      "description": "佩戴后，每次击杀 70% 的战斗经验全部给防御（30% 仍归武器主修）。任务商店出售。",
+      "description": "佩戴后，每次击杀 60% 的战斗经验全部给防御（40% 仍归武器主修）。任务商店出售。",
       "value": 800
     },
     {
@@ -816,14 +817,14 @@
       "name": "初级强化器",
       "type": "material",
       "tier": 1,
-      "description": "装在工具槽的强化工具：强化成功率 +0.6%（按强化等级放大）。",
+      "description": "装在工具槽的强化工具：强化成功率 ×1.008（按强化等级放大）。",
       "value": 180,
       "toolFor": "skill_enhancing",
-      "enhanceSuccess": 0.006
+      "enhanceSuccess": 0.008
     },
     {
       "id": "mirror_protection",
-      "name": "保护镜",
+      "name": "定纹镜",
       "type": "material",
       "tier": 3,
       "description": "强化保护道具。每次尝试消耗 1 面；如果失败，装备只降低 1 级，而不是重置为 +0。",
@@ -912,7 +913,8 @@
       "atk": 15,
       "def": 15,
       "description": "沼泽之王的王冠，蕴含强大力量",
-      "value": 1064
+      "value": 1064,
+      "elemResist": 6
     },
     {
       "id": "weapon_wooden_sword",
@@ -928,7 +930,8 @@
       "type": "weapon",
       "tier": 2,
       "atk": 8,
-      "value": 110
+      "value": 110,
+      "accuracy": 18
     },
     {
       "id": "weapon_iron_sword",
@@ -1428,7 +1431,8 @@
       "def": 32,
       "slot": "chest",
       "description": "精钢打造的护甲",
-      "value": 350
+      "value": 350,
+      "physResist": 4
     },
     {
       "id": "armor_steel_legs",
@@ -1438,7 +1442,8 @@
       "def": 26,
       "slot": "legs",
       "description": "精钢打造的护腿",
-      "value": 307
+      "value": 307,
+      "physResist": 3
     },
     {
       "id": "armor_steel_boots",
@@ -1448,7 +1453,8 @@
       "def": 20,
       "slot": "feet",
       "description": "精钢打造的靴子",
-      "value": 264
+      "value": 264,
+      "physResist": 3
     },
     {
       "id": "armor_steel_gloves",
@@ -1458,7 +1464,8 @@
       "def": 16,
       "slot": "hands",
       "description": "精钢打造的手套",
-      "value": 235
+      "value": 235,
+      "physResist": 2
     },
     {
       "id": "armor_cloth_chest",
@@ -1469,7 +1476,8 @@
       "mag": 8,
       "slot": "chest",
       "description": "轻便的布制长袍",
-      "value": 46
+      "value": 46,
+      "elemResist": 4
     },
     {
       "id": "armor_cloth_legs",
@@ -1480,7 +1488,8 @@
       "mag": 6,
       "slot": "legs",
       "description": "轻便的布制裤子",
-      "value": 43
+      "value": 43,
+      "elemResist": 3
     },
     {
       "id": "armor_cloth_boots",
@@ -1491,7 +1500,8 @@
       "mag": 4,
       "slot": "feet",
       "description": "轻便的布制鞋子",
-      "value": 41
+      "value": 41,
+      "elemResist": 2
     },
     {
       "id": "armor_cloth_gloves",
@@ -1502,7 +1512,8 @@
       "mag": 3,
       "slot": "hands",
       "description": "轻便的布制手套",
-      "value": 39
+      "value": 39,
+      "elemResist": 2
     },
     {
       "id": "armor_leather_chest",
@@ -1512,7 +1523,8 @@
       "def": 10,
       "slot": "chest",
       "description": "灵活的皮制护甲",
-      "value": 56
+      "value": 56,
+      "evasion": 5
     },
     {
       "id": "armor_leather_legs",
@@ -1522,7 +1534,8 @@
       "def": 8,
       "slot": "legs",
       "description": "灵活的皮制护腿",
-      "value": 52
+      "value": 52,
+      "evasion": 4
     },
     {
       "id": "armor_leather_boots",
@@ -1532,7 +1545,8 @@
       "def": 6,
       "slot": "feet",
       "description": "灵活的皮制靴子",
-      "value": 48
+      "value": 48,
+      "evasion": 4
     },
     {
       "id": "armor_leather_gloves",
@@ -1542,7 +1556,8 @@
       "def": 5,
       "slot": "hands",
       "description": "灵活的皮制手套",
-      "value": 46
+      "value": 46,
+      "evasion": 3
     },
     {
       "id": "armor_woodcutter_iron_chest",
@@ -2196,7 +2211,7 @@
           }
         }
       },
-      "description": "饮用后 10 分钟内战斗速度 +12%、攻击 +6。",
+      "description": "饮用后 10 分钟内攻击 +6、攻击速度 +1.2%。",
       "value": 86
     },
     {
@@ -2216,11 +2231,13 @@
           },
           "stats": {
             "atk": 4,
-            "def": 4
+            "def": 4,
+            "physResist": 4,
+            "elemResist": 4
           }
         }
       },
-      "description": "饮用后恢复 40 点生命，且 10 分钟内攻击 +4、防御 +4、战斗速度 +10%、金币收益 +20%。",
+      "description": "饮用后恢复 40 点生命，且 10 分钟内攻击 +4、防御 +4、物抗 +4、元抗 +4、攻击速度 +1%、战斗金币 +20%。",
       "value": 78
     },
     {
@@ -2239,11 +2256,12 @@
             "xpGain": 1.2
           },
           "stats": {
-            "atk": 4
+            "atk": 4,
+            "elemResist": 8
           }
         }
       },
-      "description": "饮用后恢复 60 点魔力，且 10 分钟内攻击 +4、战斗速度 +10%、战斗经验 +20%。",
+      "description": "饮用后恢复 60 点魔力，且 10 分钟内攻击 +4、元抗 +8、攻击速度 +1%、经验 +20%。",
       "value": 62
     },
     {
@@ -2260,11 +2278,12 @@
             "combatSpeed": 1.08
           },
           "stats": {
-            "def": 6
+            "def": 6,
+            "physResist": 8
           }
         }
       },
-      "description": "饮用后 10 分钟内防御 +6、战斗速度 +8%。",
+      "description": "饮用后 10 分钟内防御 +6、物抗 +8、攻击速度 +0.8%。",
       "value": 54
     },
     {
@@ -2282,7 +2301,7 @@
           }
         }
       },
-      "description": "饮用后 15 分钟内金币收益 +25%。",
+      "description": "饮用后 15 分钟内战斗金币 +25%。",
       "value": 86
     },
     {
@@ -2322,7 +2341,7 @@
           }
         }
       },
-      "description": "饮用后 30 分钟内全速度 +25%、全经验 +25%、金币 +25%。",
+      "description": "饮用后 30 分钟内采集与制作速度 +25%、经验 +25%、战斗金币 +25%。",
       "value": 542
     },
     {
@@ -2438,7 +2457,8 @@
       "atk": 110,
       "mag": 40,
       "description": "由暗影之丝张弦的长弓，箭矢无声而致命。",
-      "value": 22546
+      "value": 22546,
+      "accuracy": 76
     },
     {
       "id": "weapon_celestial_spear",
@@ -2527,7 +2547,8 @@
       "atk": 35,
       "def": 25,
       "description": "封印着虚空力量的护符，增幅持有者的全部能力。",
-      "value": 20470
+      "value": 20470,
+      "elemResist": 8
     },
     {
       "id": "celestial_ring",
@@ -2728,6 +2749,54 @@
       "tier": 12,
       "description": "整个宇宙的本质浓缩而成，是创世级造物的巅峰材料。",
       "value": 9319
+    },
+    {
+      "id": "essence_forest",
+      "name": "森林精华",
+      "type": "material",
+      "tier": 1,
+      "description": "林间怪物身上偶尔凝出的一滴绿意。强化低阶装备时可作辅料。",
+      "value": 8
+    },
+    {
+      "id": "essence_mine",
+      "name": "矿山精华",
+      "type": "material",
+      "tier": 2,
+      "description": "矿洞深处的怪物体内结成的小块晶核。强化装备时可作辅料。",
+      "value": 15
+    },
+    {
+      "id": "essence_snow",
+      "name": "冰雪精华",
+      "type": "material",
+      "tier": 5,
+      "description": "雪山怪物留下的一缕不化的寒气。强化装备时可作辅料。",
+      "value": 104
+    },
+    {
+      "id": "essence_abyss",
+      "name": "幽影精华",
+      "type": "material",
+      "tier": 7,
+      "description": "幽影深渊的怪物散去后剩下的一点暗影。强化装备时可作辅料。",
+      "value": 376
+    },
+    {
+      "id": "essence_celestial",
+      "name": "天界精华",
+      "type": "material",
+      "tier": 8,
+      "description": "天界怪物羽翼间落下的微光。强化装备时可作辅料。",
+      "value": 715
+    },
+    {
+      "id": "essence_inferno",
+      "name": "炼狱精华",
+      "type": "material",
+      "tier": 10,
+      "description": "炼狱怪物熄灭时留下的一粒余烬。强化装备时可作辅料。",
+      "value": 2582
     },
     {
       "id": "omega_heart",
@@ -3270,7 +3339,7 @@
           }
         }
       },
-      "description": "饮用后 40 分钟内全速度 +40%、全经验 +40%、金币 +40%。",
+      "description": "饮用后 40 分钟内采集与制作速度 +40%、经验 +40%、战斗金币 +40%。",
       "value": 6346
     },
     {
@@ -3292,7 +3361,7 @@
           }
         }
       },
-      "description": "饮用后 50 分钟内全速度 +60%、全经验 +60%、金币 +60%。",
+      "description": "饮用后 50 分钟内采集与制作速度 +60%、经验 +60%、战斗金币 +60%。",
       "value": 11740
     },
     {
@@ -3314,7 +3383,7 @@
           }
         }
       },
-      "description": "饮用后 60 分钟内全速度翻倍、全经验翻倍、金币翻倍（万界之力）。",
+      "description": "饮用后 60 分钟内采集与制作速度翻倍、经验翻倍、战斗金币翻倍（万界之力）。",
       "value": 21718
     },
     {
@@ -3333,7 +3402,7 @@
           }
         }
       },
-      "description": "饮用后 20 分钟内战斗速度 +80%、金币 +30%。",
+      "description": "饮用后 20 分钟内攻击速度 +3%、战斗金币 +30%。",
       "value": 3430
     },
     {
@@ -3371,7 +3440,7 @@
           }
         }
       },
-      "description": "饮用后 30 分钟内采集速度 +80%、金币 +40%。",
+      "description": "饮用后 30 分钟内采集速度 +80%、战斗金币 +40%。",
       "value": 3430
     },
     {
@@ -3885,6 +3954,9 @@
             "craftSpeed": 1.12,
             "xpGain": 1.05
           },
+          "stats": {
+            "evasion": 12
+          },
           "durationSec": 480
         }
       },
@@ -3923,6 +3995,9 @@
           "name": "灵茶·清心",
           "multipliers": {
             "xpGain": 1.12
+          },
+          "stats": {
+            "accuracy": 30
           },
           "durationSec": 600
         }
@@ -3963,10 +4038,13 @@
           "multipliers": {
             "combatSpeed": 1.05
           },
+          "stats": {
+            "elemResist": 6
+          },
           "durationSec": 600
         }
       },
-      "description": "灵草慢炖的药膳汤，恢复250点生命值，攻速+5%。"
+      "description": "灵草慢炖的药膳汤，恢复250点生命值，10 分钟内元抗 +6、攻击速度 +0.5%。"
     },
     {
       "id": "dyed_cloth",
@@ -4031,7 +4109,7 @@
           "durationSec": 900
         }
       },
-      "description": "灵猪肉炙烤至表皮酥脆，恢复500点生命值，攻速+12%。"
+      "description": "灵猪肉炙烤至表皮酥脆，恢复500点生命值，15 分钟内攻击速度 +1.2%。"
     },
     {
       "id": "food_honey_cake",
@@ -4079,7 +4157,8 @@
       "slot": "main_hand",
       "value": 800,
       "description": "硬木为身、灵筋为弦的长弓。",
-      "atk": 28
+      "atk": 28,
+      "accuracy": 38
     },
     {
       "id": "weapon_wooden_bow_t3",
@@ -4089,7 +4168,8 @@
       "slot": "main_hand",
       "value": 3600,
       "description": "灵木与灵马鬃筋复合的长弓。",
-      "atk": 55
+      "atk": 55,
+      "accuracy": 56
     },
     {
       "id": "offhand_wooden_shield",
@@ -4099,7 +4179,8 @@
       "slot": "off_hand",
       "value": 200,
       "description": "厚木削成的圆盾。",
-      "def": 10
+      "def": 10,
+      "physResist": 5
     },
     {
       "id": "weapon_resin_bow",
@@ -4109,7 +4190,8 @@
       "slot": "main_hand",
       "value": 2100,
       "description": "树脂胶合多层灵木的复合弓。",
-      "atk": 42
+      "atk": 42,
+      "accuracy": 48
     },
     {
       "id": "armor_traveler_cloak",
@@ -4119,7 +4201,8 @@
       "slot": "chest",
       "value": 900,
       "description": "染布缝制的旅者披风，挡风遮雨。",
-      "def": 18
+      "def": 18,
+      "evasion": 24
     },
     {
       "id": "accessory_pouch_large",
@@ -4148,7 +4231,8 @@
       "slot": "head",
       "value": 62000,
       "description": "缀满秘纹的法冠，护持神识。",
-      "def": 75
+      "def": 75,
+      "elemResist": 5
     },
     {
       "id": "armor_arcane_sage_robe",
@@ -4158,7 +4242,8 @@
       "slot": "chest",
       "value": 98000,
       "description": "影丝织就的法袍，奥能流转不息。",
-      "def": 120
+      "def": 120,
+      "elemResist": 8
     },
     {
       "id": "armor_arcane_sage_legs",
@@ -4168,7 +4253,8 @@
       "slot": "legs",
       "value": 74000,
       "description": "法袍下摆，步履轻盈不沾尘。",
-      "def": 95
+      "def": 95,
+      "elemResist": 6
     },
     {
       "id": "accessory_arcane_pendant",
@@ -4188,7 +4274,8 @@
       "slot": "main_hand",
       "value": 85000,
       "description": "千年灵木主干所制，箭出如风过林梢。",
-      "atk": 170
+      "atk": 170,
+      "accuracy": 86
     },
     {
       "id": "armor_warden_helm",
@@ -4198,7 +4285,8 @@
       "slot": "head",
       "value": 58000,
       "description": "活木生枝的头盔，林间隐秘难寻。",
-      "def": 70
+      "def": 70,
+      "evasion": 18
     },
     {
       "id": "armor_warden_chest",
@@ -4208,7 +4296,8 @@
       "slot": "chest",
       "value": 92000,
       "description": "活木与树脂交融的胸甲，受伤处缓缓自愈。",
-      "def": 110
+      "def": 110,
+      "evasion": 26
     },
     {
       "id": "armor_warden_legs",
@@ -4218,7 +4307,8 @@
       "slot": "legs",
       "value": 70000,
       "description": "藤木缠绕的腿甲，踏叶无声。",
-      "def": 88
+      "def": 88,
+      "evasion": 22
     },
     {
       "id": "book_cleave",
@@ -4245,7 +4335,7 @@
       "tier": 4,
       "abilityId": "arrow_rain",
       "value": 22000,
-      "description": "阅读后学会远程群攻技能「漫天箭雨」：向天空倾泻密集箭雨，对场上全体敌人造成 1.55 倍穿透伤害。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会远程群攻技能「漫天箭雨」：向天空倾泻密集箭雨，对场上全体敌人造成 1.55 倍伤害；默认敌方 ≥2 只才放，单人请改触发条件。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_group_heal",
@@ -4254,7 +4344,7 @@
       "tier": 5,
       "abilityId": "group_heal",
       "value": 48000,
-      "description": "阅读后学会团队治疗技能「复苏群疗」：凝聚生机法阵，立即恢复自身或全队全体存活成员 32% 最大生命值并净化负面状态。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会团队治疗技能「复苏群疗」：凝聚生机法阵，立即恢复自身（组队时全队）32% 最大生命值并净化瘴气。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_meteor_storm",
@@ -4272,7 +4362,7 @@
       "tier": 7,
       "abilityId": "war_aura",
       "value": 180000,
-      "description": "阅读后学会统帅技能「战神光环」：震击敌军造成 1.4 倍伤害，并在 10 秒内激励全队攻击力 +22%、暴击率 +15%。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会统帅技能「战神光环」：震击敌军造成 1.4 倍伤害，组队时全队 10 秒内攻击 +22%、暴击 +15%。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_quick_shot",
@@ -4362,7 +4452,7 @@
       "tier": 5,
       "abilityId": "phoenix_blessing",
       "value": 56000,
-      "description": "阅读后学会圣歌技能「浴火圣歌」：恢复全队 28% 最大生命值并令全队 8 秒内攻击 +15%、暴击 +10%。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会圣歌技能「浴火圣歌」：恢复自身（组队时全队）28% 最大生命；组队时全队 8 秒内攻击 +15%、暴击 +10%。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_void_rift",
@@ -4389,7 +4479,7 @@
       "tier": 7,
       "abilityId": "holy_judgment",
       "value": 150000,
-      "description": "阅读后学会神圣技能「天罚圣裁」：降下天界圣光裁决全场，造成 2.55 倍神圣群伤、击碎护盾，并治疗全队 22% 最大生命。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会神圣技能「天罚圣裁」：降下天界圣光裁决全场，造成 2.55 倍神圣群伤、击碎护盾，并恢复自身（组队时全队）22% 最大生命。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_seraph_aegis",
@@ -4398,7 +4488,7 @@
       "tier": 7,
       "abilityId": "seraph_aegis",
       "value": 165000,
-      "description": "阅读后学会守护技能「炽天圣盾」：展开六翼炽天圣盾，恢复 24% 最大生命，并在 9 秒内令受伤降低 55% 且强力吸引全队仇恨。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会守护技能「炽天圣盾」：展开六翼炽天圣盾，恢复 24% 最大生命，并在 9 秒内令受伤降低 55% ，组队时强力吸引仇恨。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_chrono_overload",
@@ -4407,7 +4497,7 @@
       "tier": 8,
       "abilityId": "chrono_overload",
       "value": 240000,
-      "description": "阅读后学会裂隙技能「时空超载」：扭曲时空法则轰击全场造成 2.4 倍伤害，回流 +22 魔力，并令全队 10 秒内攻击 +26%、暴击 +18%。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会裂隙技能「时空超载」：扭曲时空法则轰击全场造成 2.4 倍伤害，回流 +22 魔力，组队时全队 10 秒内攻击 +26%、暴击 +18%。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_hellfire_cataclysm",
@@ -4425,7 +4515,7 @@
       "tier": 10,
       "abilityId": "genesis_sanctuary",
       "value": 520000,
-      "description": "阅读后学会创世技能「创世神恩」：对全场造成 2.75 倍圣光伤害，恢复全队 36% 生命，8 秒内受伤 -50% 且全队攻击 +30%、暴击 +20%。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会创世技能「创世神恩」：对全场造成 2.75 倍圣光伤害，恢复自身（组队时全队）36% 生命，8 秒内受伤 -50%；组队时全队 10 秒内攻击 +30%、暴击 +20%。已学会后再次阅读固定获得 +150 技能经验。"
     },
     {
       "id": "book_omega_annihilation",
@@ -4434,7 +4524,7 @@
       "tier": 12,
       "abilityId": "omega_annihilation",
       "value": 880000,
-      "description": "阅读后学会终焉奥义「万界终焉」：对全体敌人造成 3.4 倍终极破防伤害，恢复全队 25% 生命、回流 +30 魔力，并令全队 12 秒内攻击 +35%、暴击 +25%。已学会后再次阅读固定获得 +150 技能经验。"
+      "description": "阅读后学会终焉奥义「万界终焉」：对全体敌人造成 3.4 倍终极破防伤害，恢复自身（组队时全队）25% 生命、回流 +30 魔力；组队时全队 12 秒内攻击 +35%、暴击 +25%。已学会后再次阅读固定获得 +150 技能经验。"
     }
   ],
   "actions": [
@@ -14554,7 +14644,8 @@
           "chance": 0.005
         }
       ],
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 110
     },
     {
       "id": "caterpillar",
@@ -14573,7 +14664,8 @@
       "desc": "总是在打瞌睡的毛毛虫，动作缓慢",
       "rare": "棉花",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 120
     },
     {
       "id": "monkey",
@@ -14598,7 +14690,8 @@
           "chance": 0.005
         }
       ],
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 140
     },
     {
       "id": "mushroom",
@@ -14623,7 +14716,8 @@
           "itemId": "book_spore_ward",
           "chance": 0.0045
         }
-      ]
+      ],
+      "accuracy": 160
     },
     {
       "id": "bee",
@@ -14648,7 +14742,8 @@
           "itemId": "book_quick_shot",
           "chance": 0.0045
         }
-      ]
+      ],
+      "accuracy": 180
     },
     {
       "id": "crab",
@@ -14673,7 +14768,8 @@
           "chance": 0.005
         }
       ],
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 190
     },
     {
       "id": "forest_boss",
@@ -14707,7 +14803,8 @@
           "chance": 0.005
         }
       ],
-      "isBoss": true
+      "isBoss": true,
+      "accuracy": 200
     },
     {
       "id": "rock_golem",
@@ -14732,7 +14829,10 @@
           "chance": 0.0035
         }
       ],
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 210,
+      "evasion": 1,
+      "elemResist": -3
     },
     {
       "id": "crystal_bat",
@@ -14757,7 +14857,11 @@
           "itemId": "book_mana_pulse",
           "chance": 0.004
         }
-      ]
+      ],
+      "accuracy": 230,
+      "evasion": 1,
+      "elemResist": -3,
+      "damageType": "elemental"
     },
     {
       "id": "ore_rat",
@@ -14776,7 +14880,10 @@
       "desc": "喜欢啃食矿石的大老鼠，牙齿特别锋利",
       "rare": "银矿石",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 250,
+      "evasion": 1,
+      "elemResist": -3
     },
     {
       "id": "magma_worm",
@@ -14795,7 +14902,11 @@
       "desc": "生活在地底深处的虫子，身体滚烫",
       "rare": "耀光水晶",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 270,
+      "evasion": 1,
+      "elemResist": -3,
+      "damageType": "elemental"
     },
     {
       "id": "iron_spider",
@@ -14820,7 +14931,10 @@
           "itemId": "book_shield_bash",
           "chance": 0.0035
         }
-      ]
+      ],
+      "accuracy": 280,
+      "evasion": 1,
+      "elemResist": -3
     },
     {
       "id": "gem_thief",
@@ -14845,7 +14959,10 @@
           "itemId": "book_mana_pulse",
           "chance": 0.004
         }
-      ]
+      ],
+      "accuracy": 290,
+      "evasion": 1,
+      "elemResist": -3
     },
     {
       "id": "mine_boss",
@@ -14877,7 +14994,10 @@
       "isBoss": true,
       "mechanics": [
         "rockfall_charge"
-      ]
+      ],
+      "accuracy": 300,
+      "evasion": 2,
+      "elemResist": -3
     },
     {
       "id": "poison_frog",
@@ -14902,7 +15022,12 @@
           "itemId": "book_venom_fang",
           "chance": 0.003
         }
-      ]
+      ],
+      "accuracy": 310,
+      "evasion": 9,
+      "physResist": -1,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "swamp_zombie",
@@ -14927,7 +15052,10 @@
           "chance": 0.003
         }
       ],
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 330,
+      "evasion": 5,
+      "physResist": 2
     },
     {
       "id": "mud_elemental",
@@ -14946,7 +15074,12 @@
       "desc": "由沼泽泥浆凝聚而成的元素生物",
       "rare": "元素核心",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 350,
+      "evasion": 5,
+      "physResist": -1,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "vine_snake",
@@ -14971,7 +15104,12 @@
           "itemId": "book_venom_fang",
           "chance": 0.0035
         }
-      ]
+      ],
+      "accuracy": 370,
+      "evasion": 11,
+      "physResist": -1,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "ghost_light",
@@ -14996,7 +15134,12 @@
           "itemId": "book_soul_drain",
           "chance": 0.003
         }
-      ]
+      ],
+      "accuracy": 380,
+      "evasion": 6,
+      "physResist": -1,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "swamp_troll",
@@ -15021,7 +15164,11 @@
           "itemId": "book_soul_drain",
           "chance": 0.0035
         }
-      ]
+      ],
+      "accuracy": 390,
+      "evasion": 6,
+      "physResist": -1,
+      "elemResist": 2
     },
     {
       "id": "swamp_boss",
@@ -15049,7 +15196,11 @@
       "isBoss": true,
       "mechanics": [
         "miasma_3s"
-      ]
+      ],
+      "accuracy": 400,
+      "evasion": 8,
+      "elemResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "snow_wolf",
@@ -15068,7 +15219,10 @@
       "desc": "在暴风雪中穿行的雪狼，毛皮厚实、爪牙锋利",
       "rare": "snow_pelt",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 410,
+      "evasion": 14,
+      "elemResist": 3
     },
     {
       "id": "frost_imp",
@@ -15087,7 +15241,11 @@
       "desc": "会施放冰冻法术的淘气小妖，行踪飘忽",
       "rare": "frost_shard",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 440,
+      "evasion": 15,
+      "elemResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "ice_golem",
@@ -15112,7 +15270,12 @@
           "itemId": "book_frost_nova",
           "chance": 0.0028
         }
-      ]
+      ],
+      "accuracy": 470,
+      "evasion": 2,
+      "physResist": 5,
+      "elemResist": -2,
+      "damageType": "elemental"
     },
     {
       "id": "snow_harpy",
@@ -15137,7 +15300,11 @@
           "itemId": "book_frost_nova",
           "chance": 0.003
         }
-      ]
+      ],
+      "accuracy": 500,
+      "evasion": 3,
+      "elemResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "frozen_knight",
@@ -15162,7 +15329,10 @@
           "itemId": "book_glacial_snipe",
           "chance": 0.0028
         }
-      ]
+      ],
+      "accuracy": 520,
+      "evasion": 3,
+      "elemResist": 3
     },
     {
       "id": "yeti",
@@ -15187,7 +15357,11 @@
           "itemId": "book_glacial_snipe",
           "chance": 0.003
         }
-      ]
+      ],
+      "accuracy": 540,
+      "evasion": 3,
+      "physResist": 5,
+      "elemResist": -2
     },
     {
       "id": "snow_boss",
@@ -15215,7 +15389,12 @@
       "isBoss": true,
       "mechanics": [
         "frost_armor_15"
-      ]
+      ],
+      "accuracy": 550,
+      "evasion": 8,
+      "physResist": 2,
+      "elemResist": 5,
+      "damageType": "elemental"
     },
     {
       "id": "lava_slug",
@@ -15234,7 +15413,12 @@
       "desc": "在岩浆中缓慢爬行的软体生物，体表滚烫",
       "rare": "magma_essence",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 560,
+      "evasion": 3,
+      "physResist": 5,
+      "elemResist": -1,
+      "damageType": "elemental"
     },
     {
       "id": "fire_bat",
@@ -15253,7 +15437,11 @@
       "desc": "翅膀燃着火焰的蝙蝠，俯冲时拖出火光",
       "rare": "magma_essence",
       "rareChance": 0.05,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 590,
+      "evasion": 21,
+      "elemResist": 4,
+      "damageType": "elemental"
     },
     {
       "id": "cinder_hound",
@@ -15272,7 +15460,10 @@
       "desc": "由余烬凝成的猎犬，奔跑时火星四溅",
       "rare": "obsidian_chunk",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 620,
+      "evasion": 22,
+      "elemResist": 4
     },
     {
       "id": "magma_titan",
@@ -15297,7 +15488,11 @@
           "itemId": "book_flame_burst",
           "chance": 0.0024
         }
-      ]
+      ],
+      "accuracy": 650,
+      "evasion": 3,
+      "elemResist": 4,
+      "damageType": "elemental"
     },
     {
       "id": "flame_wraith",
@@ -15322,7 +15517,11 @@
           "itemId": "book_phoenix_blessing",
           "chance": 0.0022
         }
-      ]
+      ],
+      "accuracy": 670,
+      "evasion": 3,
+      "elemResist": 4,
+      "damageType": "elemental"
     },
     {
       "id": "inferno_drake",
@@ -15347,7 +15546,12 @@
           "itemId": "book_flame_burst",
           "chance": 0.0025
         }
-      ]
+      ],
+      "accuracy": 690,
+      "evasion": 3,
+      "physResist": 5,
+      "elemResist": -1,
+      "damageType": "elemental"
     },
     {
       "id": "volcano_boss",
@@ -15380,7 +15584,12 @@
       "mechanics": [
         "eruption_20s",
         "magma_fury_30"
-      ]
+      ],
+      "accuracy": 700,
+      "evasion": 11,
+      "physResist": 2,
+      "elemResist": 6,
+      "damageType": "elemental"
     },
     {
       "id": "shadow_crawler",
@@ -15399,7 +15608,11 @@
       "desc": "在幽影深渊蠕动的暗影生物，潜伏于黑暗之中",
       "rare": "暗影之丝",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 710,
+      "evasion": 36,
+      "physResist": -1,
+      "elemResist": 3
     },
     {
       "id": "void_specter",
@@ -15418,7 +15631,12 @@
       "desc": "从虚空缝隙渗出的幽魂，触碰即蚀骨",
       "rare": "暗影之丝",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 740,
+      "evasion": 15,
+      "physResist": -1,
+      "elemResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "dread_knight",
@@ -15443,7 +15661,11 @@
           "itemId": "book_void_rift",
           "chance": 0.0018
         }
-      ]
+      ],
+      "accuracy": 770,
+      "evasion": 15,
+      "physResist": -1,
+      "elemResist": 3
     },
     {
       "id": "abyss_maw",
@@ -15462,7 +15684,11 @@
       "desc": "深渊本身张开的巨口，吞噬一切靠近之物",
       "rare": "虚空裂片",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 800,
+      "evasion": 16,
+      "physResist": -1,
+      "elemResist": 3
     },
     {
       "id": "nightmare_weaver",
@@ -15487,7 +15713,12 @@
           "itemId": "book_abyssal_pact",
           "chance": 0.0018
         }
-      ]
+      ],
+      "accuracy": 820,
+      "evasion": 16,
+      "physResist": -1,
+      "elemResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "void_behemoth",
@@ -15512,7 +15743,11 @@
           "itemId": "book_void_rift",
           "chance": 0.002
         }
-      ]
+      ],
+      "accuracy": 840,
+      "evasion": 17,
+      "physResist": 4,
+      "elemResist": -2
     },
     {
       "id": "abyss_boss",
@@ -15550,7 +15785,12 @@
         "void_collapse_16s",
         "abyss_miasma_3s",
         "void_frenzy_35"
-      ]
+      ],
+      "accuracy": 850,
+      "evasion": 26,
+      "physResist": 1,
+      "elemResist": 5,
+      "damageType": "elemental"
     },
     {
       "id": "light_sprite",
@@ -15569,7 +15809,11 @@
       "desc": "苍穹天界的圣洁精灵，散发柔和的光辉",
       "rare": "天界羽翼",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 860,
+      "evasion": 34,
+      "physResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "sky_guardian",
@@ -15588,7 +15832,10 @@
       "desc": "镇守天界之门的守卫，盔甲闪耀圣辉",
       "rare": "天界羽翼",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 890,
+      "evasion": 9,
+      "physResist": 3
     },
     {
       "id": "radiant_griffin",
@@ -15607,7 +15854,10 @@
       "desc": "翱翔天界的狮鹫，羽翼洒落金色光芒",
       "rare": "圣辉金",
       "rareChance": 0.035,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 920,
+      "evasion": 37,
+      "physResist": 3
     },
     {
       "id": "seraph_sentinel",
@@ -15632,7 +15882,12 @@
           "itemId": "book_seraph_aegis",
           "chance": 0.0016
         }
-      ]
+      ],
+      "accuracy": 950,
+      "evasion": 10,
+      "physResist": 8,
+      "elemResist": -5,
+      "damageType": "elemental"
     },
     {
       "id": "divine_colossus",
@@ -15657,7 +15912,10 @@
           "itemId": "book_holy_judgment",
           "chance": 0.0016
         }
-      ]
+      ],
+      "accuracy": 970,
+      "evasion": 10,
+      "physResist": 3
     },
     {
       "id": "archon",
@@ -15682,7 +15940,11 @@
           "itemId": "book_holy_judgment",
           "chance": 0.0016
         }
-      ]
+      ],
+      "accuracy": 990,
+      "evasion": 10,
+      "physResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "celestial_boss",
@@ -15720,7 +15982,12 @@
         "fallen_judgment_16s",
         "seraph_aegis_15s",
         "twilight_spear_charge"
-      ]
+      ],
+      "accuracy": 1000,
+      "evasion": 20,
+      "physResist": 5,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "chrono_phantom",
@@ -15739,7 +16006,10 @@
       "desc": "游离于时间之外的幻影，时隐时现",
       "rare": "时之尘",
       "rareChance": 0.035,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1010,
+      "evasion": 56,
+      "damageType": "elemental"
     },
     {
       "id": "paradox_beast",
@@ -15758,7 +16028,9 @@
       "desc": "由时空悖论诞生的怪物，存在本身即矛盾",
       "rare": "时之尘",
       "rareChance": 0.035,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1040,
+      "evasion": 26
     },
     {
       "id": "rift_stalker",
@@ -15777,7 +16049,9 @@
       "desc": "穿梭于时空裂隙的潜行者，难以捉摸",
       "rare": "裂境结晶",
       "rareChance": 0.03,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1070,
+      "evasion": 59
     },
     {
       "id": "temporal_wyrm",
@@ -15802,7 +16076,12 @@
           "itemId": "book_chrono_overload",
           "chance": 0.0014
         }
-      ]
+      ],
+      "accuracy": 1100,
+      "evasion": 28,
+      "physResist": 5,
+      "elemResist": -5,
+      "damageType": "elemental"
     },
     {
       "id": "void_emperor",
@@ -15821,7 +16100,9 @@
       "desc": "统御无数虚空的帝王，力量近乎神祇",
       "rare": "时空精华",
       "rareChance": 0.025,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1120,
+      "evasion": 28
     },
     {
       "id": "reality_render",
@@ -15846,7 +16127,10 @@
           "itemId": "book_chrono_overload",
           "chance": 0.0014
         }
-      ]
+      ],
+      "accuracy": 1140,
+      "evasion": 29,
+      "damageType": "elemental"
     },
     {
       "id": "rift_boss",
@@ -15884,7 +16168,12 @@
         "chrono_storm_15s",
         "paradox_strike_charge",
         "chrono_haste_40"
-      ]
+      ],
+      "accuracy": 1150,
+      "evasion": 40,
+      "physResist": 2,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "hellhound",
@@ -15903,7 +16192,12 @@
       "desc": "守卫炼狱之门的三头地狱犬，吐息焚尽一切",
       "rare": "炼狱余烬",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1160,
+      "evasion": 46,
+      "physResist": 1,
+      "elemResist": 4,
+      "damageType": "elemental"
     },
     {
       "id": "flame_imp",
@@ -15922,7 +16216,12 @@
       "desc": "成群结队的烈焰小鬼，狡诈而凶残",
       "rare": "炼狱余烬",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1180,
+      "evasion": 47,
+      "physResist": 1,
+      "elemResist": 4,
+      "damageType": "elemental"
     },
     {
       "id": "soul_reaper",
@@ -15941,7 +16240,11 @@
       "desc": "收割亡魂的死神仆从，镰刀勾魂",
       "rare": "堕魂结晶",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1210,
+      "evasion": 12,
+      "physResist": 1,
+      "elemResist": 4
     },
     {
       "id": "lava_titan",
@@ -15960,7 +16263,12 @@
       "desc": "由熔岩凝聚的巨人，每步震碎大地",
       "rare": "堕魂结晶",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1240,
+      "evasion": 12,
+      "physResist": 6,
+      "elemResist": -1,
+      "damageType": "elemental"
     },
     {
       "id": "infernal_dragon",
@@ -15985,7 +16293,12 @@
           "itemId": "book_hellfire_cataclysm",
           "chance": 0.0012
         }
-      ]
+      ],
+      "accuracy": 1260,
+      "evasion": 13,
+      "physResist": 1,
+      "elemResist": 4,
+      "damageType": "elemental"
     },
     {
       "id": "doom_bringer",
@@ -16004,7 +16317,11 @@
       "desc": "宣告末日降临的使者，所至之处生灵涂炭",
       "rare": "炼狱之核",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1280,
+      "evasion": 13,
+      "physResist": 1,
+      "elemResist": 4
     },
     {
       "id": "archfiend",
@@ -16023,7 +16340,11 @@
       "desc": "统领恶魔军团的深渊魔将，杀气滔天",
       "rare": "炼狱之核",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1290,
+      "evasion": 13,
+      "physResist": 1,
+      "elemResist": 4
     },
     {
       "id": "hell_sovereign",
@@ -16048,7 +16369,11 @@
           "itemId": "book_hellfire_cataclysm",
           "chance": 0.0012
         }
-      ]
+      ],
+      "accuracy": 1300,
+      "evasion": 13,
+      "physResist": 6,
+      "elemResist": -1
     },
     {
       "id": "inferno_boss",
@@ -16082,7 +16407,12 @@
         "apocalypse_meteor_15s",
         "hellfire_miasma_3s",
         "demon_god_wrath_35"
-      ]
+      ],
+      "accuracy": 1300,
+      "evasion": 26,
+      "physResist": 3,
+      "elemResist": 6,
+      "damageType": "elemental"
     },
     {
       "id": "star_seraph",
@@ -16101,7 +16431,12 @@
       "desc": "降临人间的星辰炽天使，圣光普照",
       "rare": "创世之光",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1310,
+      "evasion": 59,
+      "physResist": 3,
+      "elemResist": 1,
+      "damageType": "elemental"
     },
     {
       "id": "cosmic_guardian",
@@ -16120,7 +16455,11 @@
       "desc": "守护寰宇秩序的守护者，坚不可摧",
       "rare": "创世之光",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1330,
+      "evasion": 20,
+      "physResist": 8,
+      "elemResist": -4
     },
     {
       "id": "light_avatar",
@@ -16139,7 +16478,12 @@
       "desc": "圣光凝聚的化身，净化一切邪祟",
       "rare": "神性精华",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1360,
+      "evasion": 61,
+      "physResist": 3,
+      "elemResist": 1,
+      "damageType": "elemental"
     },
     {
       "id": "creation_golem",
@@ -16158,7 +16502,11 @@
       "desc": "由创世之力塑造的魔像，守护神域",
       "rare": "神性精华",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1390,
+      "evasion": 21,
+      "physResist": 3,
+      "elemResist": 1
     },
     {
       "id": "divine_phoenix",
@@ -16183,7 +16531,12 @@
           "itemId": "book_genesis_sanctuary",
           "chance": 0.0011
         }
-      ]
+      ],
+      "accuracy": 1410,
+      "evasion": 63,
+      "physResist": 3,
+      "elemResist": 1,
+      "damageType": "elemental"
     },
     {
       "id": "astral_judge",
@@ -16202,7 +16555,11 @@
       "desc": "裁决众生命运的星界审判者，公正威严",
       "rare": "创世之种",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1430,
+      "evasion": 21,
+      "physResist": 3,
+      "elemResist": 1
     },
     {
       "id": "demigod",
@@ -16221,7 +16578,11 @@
       "desc": "触及神之领域的半神祭司，神通广大",
       "rare": "创世之种",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1440,
+      "evasion": 22,
+      "physResist": 3,
+      "elemResist": 1
     },
     {
       "id": "genesis_herald",
@@ -16246,7 +16607,11 @@
           "itemId": "book_genesis_sanctuary",
           "chance": 0.0011
         }
-      ]
+      ],
+      "accuracy": 1450,
+      "evasion": 22,
+      "physResist": 3,
+      "elemResist": 1
     },
     {
       "id": "genesis_boss",
@@ -16276,7 +16641,12 @@
           "itemId": "book_genesis_sanctuary",
           "chance": 0.0012
         }
-      ]
+      ],
+      "accuracy": 1450,
+      "evasion": 36,
+      "physResist": 5,
+      "elemResist": 3,
+      "damageType": "elemental"
     },
     {
       "id": "void_devourer",
@@ -16295,7 +16665,12 @@
       "desc": "吞噬一切的虚空巨兽，连光都无法逃脱",
       "rare": "终焉碎片",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1460,
+      "evasion": 29,
+      "physResist": 2,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "entropy_beast",
@@ -16314,7 +16689,12 @@
       "desc": "携带熵增之力的怪物，所触皆腐朽",
       "rare": "终焉碎片",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1480,
+      "evasion": 30,
+      "physResist": 2,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "reality_eater",
@@ -16333,7 +16713,12 @@
       "desc": "啖食现实本身的存在，世界为之崩坏",
       "rare": "永恒结晶",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1510,
+      "evasion": 30,
+      "physResist": 2,
+      "elemResist": 2,
+      "damageType": "elemental"
     },
     {
       "id": "dimension_lord",
@@ -16352,7 +16737,11 @@
       "desc": "统御无数维度的领主，操纵空间法则",
       "rare": "永恒结晶",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1540,
+      "evasion": 31,
+      "physResist": 2,
+      "elemResist": 2
     },
     {
       "id": "cosmic_horror",
@@ -16371,7 +16760,12 @@
       "desc": "凝视即陷疯狂的寰宇恐惧，超越认知",
       "rare": "寰宇精华",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1560,
+      "evasion": 31,
+      "physResist": 7,
+      "elemResist": -3,
+      "damageType": "elemental"
     },
     {
       "id": "world_ender",
@@ -16396,7 +16790,11 @@
           "itemId": "book_omega_annihilation",
           "chance": 0.001
         }
-      ]
+      ],
+      "accuracy": 1580,
+      "evasion": 32,
+      "physResist": 2,
+      "elemResist": 2
     },
     {
       "id": "paradox_god",
@@ -16415,7 +16813,11 @@
       "desc": "由悖论诞生的神祇，存在本身即矛盾",
       "rare": "寰宇精华",
       "rareChance": 0.04,
-      "isBoss": false
+      "isBoss": false,
+      "accuracy": 1590,
+      "evasion": 32,
+      "physResist": 2,
+      "elemResist": 2
     },
     {
       "id": "omega_herald",
@@ -16440,7 +16842,11 @@
           "itemId": "book_omega_annihilation",
           "chance": 0.001
         }
-      ]
+      ],
+      "accuracy": 1600,
+      "evasion": 80,
+      "physResist": 2,
+      "elemResist": 2
     },
     {
       "id": "omega_boss",
@@ -16470,7 +16876,12 @@
           "itemId": "book_omega_annihilation",
           "chance": 0.0012
         }
-      ]
+      ],
+      "accuracy": 1600,
+      "evasion": 48,
+      "physResist": 4,
+      "elemResist": 4,
+      "damageType": "elemental"
     }
   ],
   "stages": [
@@ -18181,7 +18592,6 @@
           "quantity": 100
         }
       ],
-      "successRate": 0.5,
       "maxLevel": 20
     },
     {
@@ -18198,7 +18608,6 @@
           "quantity": 150
         }
       ],
-      "successRate": 0.5,
       "maxLevel": 20
     },
     {
@@ -18215,7 +18624,6 @@
           "quantity": 120
         }
       ],
-      "successRate": 0.5,
       "maxLevel": 20
     }
   ],
@@ -18304,7 +18712,7 @@
             "def": 20,
             "craftSpeed": 15
           },
-          "description": "4件套：攻击+25，防御+20，制作品质+15%"
+          "description": "4件套：攻击+25，防御+20，制作速度+15%"
         }
       ]
     },
@@ -18333,7 +18741,7 @@
             "atk": 12,
             "craftSpeed": 10
           },
-          "description": "2件套：魔力+12，魔法值+50"
+          "description": "2件套：攻击+12，制作速度+10%"
         },
         {
           "requiredPieces": 3,
@@ -18341,7 +18749,7 @@
             "atk": 25,
             "craftSpeed": 40
           },
-          "description": "3件套：魔力+25，魔法值+100，药水效果+20%"
+          "description": "3件套：攻击+25，制作速度+40%"
         }
       ]
     },
@@ -18399,7 +18807,7 @@
             "def": 24,
             "combatSpeed": 5
           },
-          "description": "4件套：攻击+24，防御+24，战斗速度+5%"
+          "description": "4件套：攻击+24，防御+24，攻击速度+0.5%"
         },
         {
           "requiredPieces": 6,
@@ -18409,7 +18817,7 @@
             "combatSpeed": 10,
             "goldGain": 10
           },
-          "description": "6件套：攻击+48，防御+48，战斗速度+10%，金币+10%"
+          "description": "6件套：攻击+48，防御+48，攻击速度+1%"
         }
       ]
     },
@@ -18467,7 +18875,7 @@
             "def": 36,
             "combatSpeed": 5
           },
-          "description": "4件套：攻击+36，防御+36，战斗速度+5%"
+          "description": "4件套：攻击+36，防御+36，攻击速度+0.5%"
         },
         {
           "requiredPieces": 6,
@@ -18477,7 +18885,7 @@
             "combatSpeed": 10,
             "goldGain": 10
           },
-          "description": "6件套：攻击+72，防御+72，战斗速度+10%，金币+10%"
+          "description": "6件套：攻击+72，防御+72，攻击速度+1%"
         }
       ]
     },
@@ -18535,7 +18943,7 @@
             "def": 52,
             "combatSpeed": 5
           },
-          "description": "4件套：攻击+52，防御+52，战斗速度+5%"
+          "description": "4件套：攻击+52，防御+52，攻击速度+0.5%"
         },
         {
           "requiredPieces": 6,
@@ -18545,7 +18953,7 @@
             "combatSpeed": 10,
             "goldGain": 10
           },
-          "description": "6件套：攻击+104，防御+104，战斗速度+10%，金币+10%"
+          "description": "6件套：攻击+104，防御+104，攻击速度+1%"
         }
       ]
     },
@@ -18595,7 +19003,7 @@
             "def": 90,
             "combatSpeed": 3
           },
-          "description": "4件套：攻击+120，防御+90，生命+500"
+          "description": "4件套：攻击+120，防御+90，攻击速度+0.3%"
         }
       ]
     },
@@ -18637,7 +19045,7 @@
             "def": 100,
             "combatSpeed": 4
           },
-          "description": "3件套：攻击+120，防御+100，生命+800"
+          "description": "3件套：攻击+120，防御+100，攻击速度+0.4%"
         },
         {
           "requiredPieces": 4,
@@ -18646,7 +19054,7 @@
             "def": 200,
             "combatSpeed": 10
           },
-          "description": "4件套：攻击+250，防御+200，生命+2000，法力+100（创世之力）"
+          "description": "4件套：攻击+350，防御+200，攻击速度+1%"
         }
       ]
     },
@@ -18688,7 +19096,7 @@
             "def": 140,
             "combatSpeed": 6
           },
-          "description": "3件套：攻击+160，防御+140，生命+1200"
+          "description": "3件套：攻击+160，防御+140，攻击速度+0.6%"
         },
         {
           "requiredPieces": 4,
@@ -18697,7 +19105,7 @@
             "def": 280,
             "combatSpeed": 15
           },
-          "description": "4件套：攻击+320，防御+280，生命+3000，法力+120（炼狱之怒）"
+          "description": "4件套：攻击+440，防御+280，攻击速度+1.5%"
         }
       ]
     },
@@ -18739,7 +19147,7 @@
             "def": 190,
             "combatSpeed": 9
           },
-          "description": "3件套：攻击+220，防御+190，生命+1800"
+          "description": "3件套：攻击+220，防御+190，攻击速度+0.9%"
         },
         {
           "requiredPieces": 4,
@@ -18748,7 +19156,7 @@
             "def": 380,
             "combatSpeed": 15
           },
-          "description": "4件套：攻击+440，防御+380，生命+4500，法力+200（创世神威）"
+          "description": "4件套：攻击+640，防御+380，攻击速度+1.5%"
         }
       ]
     },
@@ -18790,7 +19198,7 @@
             "def": 260,
             "combatSpeed": 13
           },
-          "description": "3件套：攻击+300，防御+260，生命+2600"
+          "description": "3件套：攻击+300，防御+260，攻击速度+1.3%"
         },
         {
           "requiredPieces": 4,
@@ -18799,7 +19207,7 @@
             "def": 520,
             "combatSpeed": 15
           },
-          "description": "4件套：攻击+600，防御+520，生命+6500，法力+300（万界终焉·世界的终结与起源）"
+          "description": "4件套：攻击+900，防御+520，攻击速度+1.5%"
         }
       ]
     },
@@ -18832,7 +19240,7 @@
             "def": 6,
             "xpGain": 4
           },
-          "description": "2件套：防御+6，经验+4%"
+          "description": "2件套：防御+6，生活技能经验+4%"
         },
         {
           "requiredPieces": 4,
@@ -18841,7 +19249,7 @@
             "xpGain": 8,
             "gatherSpeed": 5
           },
-          "description": "4件套：防御+14，经验+8%，采集速度+5%"
+          "description": "4件套：防御+14，采集速度+5%，生活技能经验+8%"
         }
       ]
     },
@@ -18884,7 +19292,7 @@
             "gatherSpeed": 14,
             "xpGain": 8
           },
-          "description": "4件套：攻击+8，防御+28，采集速度+14%，经验+8%"
+          "description": "4件套：攻击+8，防御+28，采集速度+14%，生活技能经验+8%"
         }
       ]
     },
@@ -18917,7 +19325,7 @@
             "def": 20,
             "combatSpeed": 5
           },
-          "description": "2件套：防御+20，战斗速度+5%"
+          "description": "2件套：防御+20，攻击速度+0.5%"
         },
         {
           "requiredPieces": 4,
@@ -18927,7 +19335,7 @@
             "combatSpeed": 12,
             "goldGain": 8
           },
-          "description": "4件套：攻击+20，防御+45，战斗速度+12%，金币+8%"
+          "description": "4件套：攻击+20，防御+45，攻击速度+1.2%"
         }
       ]
     },
@@ -18969,7 +19377,7 @@
             "gatherSpeed": 16,
             "xpGain": 10
           },
-          "description": "4件套：防御+14，采集速度+16%，经验+10%"
+          "description": "4件套：防御+14，采集速度+16%，生活技能经验+10%"
         }
       ]
     },
@@ -19011,7 +19419,7 @@
             "craftSpeed": 16,
             "xpGain": 10
           },
-          "description": "4件套：防御+18，制作速度+16%，经验+10%"
+          "description": "4件套：防御+18，制作速度+16%，生活技能经验+10%"
         }
       ]
     },
@@ -19053,7 +19461,7 @@
             "craftSpeed": 16,
             "gatherSpeed": 8
           },
-          "description": "4件套：防御+18，制作速度+16%，采集速度+8%"
+          "description": "4件套：防御+18，采集速度+8%，制作速度+16%"
         }
       ]
     },
@@ -19095,7 +19503,7 @@
             "craftSpeed": 18,
             "xpGain": 10
           },
-          "description": "4件套：防御+12，制作速度+18%，经验+10%"
+          "description": "4件套：防御+12，制作速度+18%，生活技能经验+10%"
         }
       ]
     },
@@ -19138,7 +19546,7 @@
             "craftSpeed": 14,
             "goldGain": 8
           },
-          "description": "4件套：攻击+6，防御+32，制作速度+14%，金币+8%"
+          "description": "4件套：攻击+6，防御+32，制作速度+14%"
         }
       ]
     },
@@ -19192,7 +19600,7 @@
             "def": 95,
             "combatSpeed": 3
           },
-          "description": "4件套：攻击+140，防御+95，生命+550"
+          "description": "4件套：攻击+140，防御+95，攻击速度+0.3%"
         },
         {
           "requiredPieces": 5,
@@ -19201,7 +19609,7 @@
             "def": 140,
             "combatSpeed": 5
           },
-          "description": "5件套：攻击+200，防御+140，生命+900，奥能涌动"
+          "description": "5件套：攻击+200，防御+140，攻击速度+0.5%"
         }
       ]
     },
@@ -19251,7 +19659,7 @@
             "def": 92,
             "combatSpeed": 3
           },
-          "description": "4件套：攻击+135，防御+92，生命+520，林间守护"
+          "description": "4件套：攻击+135，防御+92，攻击速度+0.3%"
         }
       ]
     }

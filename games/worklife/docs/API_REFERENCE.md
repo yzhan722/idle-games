@@ -39,7 +39,9 @@
 同一资源命令边界，接受可选 `expectedRevision`，冲突返回 `409 state_version_conflict`：
 
 - `POST /combat/hp/start` `{ monsterId, expectedRevision? }` —— 已在战斗中的拒绝保持原有 `409 { error: "already_in_combat" }`，未知怪物 `400 unknown_monster`。
-- `POST /combat/hp/skill` `{ skillId, expectedRevision? }`；`POST /combat/hp/abilities` `{ slots, expectedRevision? }`；`POST /combat/hp/learn` `{ itemId, expectedRevision? }`（响应增加 `learnResult`）；`POST /combat/hp/build` `{ id, expectedRevision? }`；`POST /combat/hp/loadout` `{ food?, drink?, autoRepeat?, expectedRevision? }`；`POST /combat/hp/flee` `{ expectedRevision? }` —— 返回提交后的完整玩家状态（含 `stateRevision` 字段）。
+- `POST /combat/hp/skill` `{ skillId, expectedRevision? }`；`POST /combat/hp/abilities` `{ slots, expectedRevision? }`；`POST /combat/hp/learn` `{ itemId, expectedRevision? }`（响应增加 `learnResult`）；`POST /combat/hp/build` `{ id, expectedRevision? }`；`POST /combat/hp/loadout` `{ food?, drink?, autoRepeat?, expectedRevision? }`；`POST /combat/hp/flee` `{ expectedRevision? }` —— 返回提交后的完整玩家状态（含 `stateRevision` 字段）。`drink` 最多 4 格（3 格起，腰包 +1）。
+- `POST /combat/hp/zone-tier` `{ zoneId, tier, expectedRevision? }` —— 选一个区域的难度（0 普通 / 1 困难 / 2 噩梦），下一场起算；没打够 `400 tier_locked`，区域不存在 `400 stage_locked`。规则见 `docs/design/COMBAT_SECONDARY.md`。
+- `GET /player/state` 附带推导字段 `combatGains: { xp, gold, rareSolo, rareParty }`（个人战斗倍率，不存档）。
 - `POST /enhancement/run/start` `{ itemId, targetLevel, useProtection?, expectedRevision? }`；`POST /enhancement/run/stop` `{ expectedRevision? }` —— 同上；业务拒绝保持 `400 { error, message }`。
 - `POST /enhancement/enhance`、`/enhancement/request-service`、`/enhancement/respond-service` 走独立存储方法（后者为跨玩家服务单），不属于此边界；`trading`、`party`、`skills/unlock` 同。
 
@@ -58,7 +60,7 @@ PostgreSQL 下收据存于 `player_command_receipts` 并与玩家状态写在同
 
 同一资源命令边界，全部接受可选 `expectedRevision`，返回提交后的玩家状态（含 `stateRevision`）：
 
-- `POST /actions/start` `{ actionId, quantity?, expectedRevision? }` —— **现在会先把正在进行的动作结算到当前时刻**，再切换动作；旧行为是直接覆盖导致已完成周期的产出被吞。`skill_level_required` / `unknown_action` 保持 `400`。
+- `POST /actions/start` `{ actionId, quantity?, expectedRevision? }` —— **现在会先把正在进行的动作结算到当前时刻**，再切换动作；旧行为是直接覆盖导致已完成周期的产出被吞。`act_combat_*` 一律 `400 combat_not_startable`（战斗只走 `/combat/hp/*`）。`skill_level_required` / `unknown_action` 保持 `400`。
 - `POST /actions/stop` `{ expectedRevision? }` —— 结算后停止并原子接上下一个排队动作。
 - `POST /actions/queue` `{ actionId, quantity?, expectedRevision? }`；`DELETE /actions/queue/:id`；`POST /actions/queue/clear|move` `{ expectedRevision? }` —— 队列写同样先结算再修改（保证顺序与上限判定基于最新状态）。
 - `POST /combat/start` `{ stageId, expectedRevision? }` —— 同 `actions/start` 的先结算语义。
@@ -106,6 +108,22 @@ Content-Type: application/json
   "googleSub": "google-user-id"
 }
 ```
+
+### 注销账号
+```http
+POST /auth/account/delete
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{ "password": "再输一次密码" }
+```
+
+没有密码的游客改传 `{ "confirmText": "注销账号" }`。密码不对 403 `invalid_password`；每个账号 10 分钟最多 5 次（429）。成功返回 `{ ok, ordersRemoved }`；重复请求返回 `{ ok, alreadyDeleted: true }`。删除范围见 `backend/src/account_deletion.ts`：账号、存档、回执、强化委托删除；挂单撤下，托管的物品和金币不退；队长注销解散队伍；历史成交抹去玩家编号；聊天本来就不保存。
+
+### 存档导出 / 导入
+- `GET /progression/save/export`：返回 `{ ok, saveCode }`，一直可用。
+- `POST /progression/save/import` `{ saveCode }`：默认关闭，返回 `403 save_import_disabled`；服务端设 `SAVE_IMPORT_ENABLED=1` 才接受。存档码的密钥在前端代码里，密文不能当凭据，所以打开后也只能把自己的号往回退：物品与金币不得多于服务器现值，等级经验不得高于服务器现值（一个周目内只升不降，现值就是本周目最高），其余字段（转生、任务、声望、强化等级、耐久、增益、统计……）一律用服务器现值。不通过返回 `400 save_import_rejected`（`errors` 最多 5 条）；别人的存档 `400 save_owner_mismatch`。规则见 `backend/src/save_import.ts`。
+- `GET /progression/settings` 带 `saveImportEnabled`，前端据此隐藏导入入口。
 
 ## 玩家状态 API
 
@@ -367,6 +385,16 @@ Content-Type: application/json
 }
 ```
 
+单价必须在可挂区间内，否则 400 `price_out_of_range`（返回里带 `estimate`）。已经挂着的单不受影响。
+
+### 估算价与可挂区间
+```http
+GET /trading/estimate/:itemId
+Authorization: Bearer {token}
+```
+
+返回 `{ itemId, estimate, priceRange: { min, max }, samples, source }`。算法与防刷规则见 `backend/src/market_price.ts`。
+
 ### 成交订单
 ```http
 POST /trading/buy
@@ -436,12 +464,41 @@ Content-Type: application/json
 }
 ```
 
+### 组队副本清波
+```http
+POST /party/wave-clear
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{ "partyId": "party-uuid", "wave": 3, "abilityCasts": { "heavy_chop": 2 } }
+```
+- 200：结算结果（`xpGained`、`goldGained`、`drops`、`nextWave` …）。同一波重复上报返回上次结果并带 `duplicate: true`，不再发奖。
+- 409 `party_wave_early`：比最短可能时间还早，`retryAfterMs` 后再报同一波。
+- 409 `party_wave_order`：波次不对，`expectedWave` 是该打的那一波。
+- 403 `party_level_required`：战斗等级不到 `requiredLevel`（`POST /party/start-activity` 同）。
+
+`POST /party/wave-reset { partyId }`：团灭后回到第 1 波重新计时，返回 `nextWave`。规则见 `docs/design/COMBAT_SECONDARY.md`。
+
+## 真人榜 API
+
+`GET /leaderboard?board=total|combat|zone`（要登录，每人每分钟 30 次）
+- `entries`：前 100 名，`{ rank, name, score, label, me }`，同分同名次，不含玩家编号。
+- `me`：`{ listed: true, rank, score, label }`；没起名字或名字不合适（默认名、看不见的字、系统专用名）`{ listed: false, reason: "no_name" }`，数据异常 `reason: "excluded"`。
+- 角色名与登录账号名相同的，`name` 只给第一个字加「＊＊」。
+- 榜单缓存一分钟。规则见 `backend/src/leaderboard.ts`、`backend/src/display_name.ts`。
+
+## 匿名统计 API
+
+`GET /admin/metrics?days=30`，请求头 `x-admin-key: <METRICS_ADMIN_KEY>`；没配、太短或太容易猜、没带、不对一律 404。按 IP 每分钟 10 次。
+返回每天的注册 / 首战 / 首个 10 级 / 次日与 7 日回访 / 在线时长分档，以及合计和比例。规则见 `backend/src/retention_metrics.ts`。
+
 ## WebSocket API
 
 ### 连接
 ```
-ws://localhost:3001/ws?token={jwt-token}
+ws://localhost:3001/ws
 ```
+连上后 5 秒内发 `{ "type": "auth", "token": "{jwt-token}" }`。登出、绑定账号密码、绑定 Google 后，这个账号已连上的连接全部以 `4401` 关闭，要用新凭证重连。
 
 ### 发送聊天消息
 ```json

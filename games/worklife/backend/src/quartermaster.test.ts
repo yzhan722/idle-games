@@ -28,7 +28,7 @@ function makePlayer(): EnhancedPlayerState {
 const mockPack: EnhancedContentPack = {
   version: "1.0.0",
   items: [
-    { id: "mirror_protection", name: "保护镜" },
+    { id: "mirror_protection", name: "定纹镜" },
     { id: "crystal_2", name: "辉光水晶" },
     { id: "ingot_2", name: "铁锭" },
     { id: "lumber_2", name: "加固木板" },

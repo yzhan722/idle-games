@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { apiClient } from '../services/api'
 import { T1Art, characterArtId, AVATAR_OPTIONS, PlayerAvatarIcon, type PlayerGender } from './T1Art'
 import { getProfessionPerk } from '../gameplay/professionPerks'
+import { isBlockedName } from '../gameplay/nameFilter'
 import './CharacterCreate.css'
 
 export type ClassOption = { id: string; name: string; icon: string; gatherName: string; craftName: string }
@@ -41,6 +42,11 @@ export function CharacterCreate(props: {
 
   const submit = async () => {
     if (!nameValid || busy) return
+    // 屏蔽词与服务端同一份（gameplay/nameFilter.ts），先在这里拦下省一次请求
+    if (isBlockedName(name.trim())) {
+      setError('这个名字不能用，换一个')
+      return
+    }
     setBusy(true)
     setError('')
     try {
@@ -53,7 +59,9 @@ export function CharacterCreate(props: {
       if (classId) await apiClient.setActiveClass(classId)
       props.onDone({ name: name.trim(), avatar, gender, classId })
     } catch (e) {
-      setError((e as Error)?.message || '保存失败，请重试')
+      // 服务器不收的名字（看不见的字、系统专用名等）：说清楚是名字的问题
+      const code = (e as { code?: string })?.code
+      setError(code === 'invalid_request' ? '这个名字不能用，换一个' : (e as Error)?.message || '保存失败，请重试')
       setBusy(false)
     }
   }
@@ -122,7 +130,7 @@ export function CharacterCreate(props: {
                 onClick={() => setClassId(c.id)}
               >
                 <span className="cc-class-art">
-                  <T1Art kind="character" id={characterArtId(c.id, gender)} fallback="" alt={c.name} />
+                  <T1Art kind="character" id={characterArtId(c.id, gender)} fallback="" alt={c.name} small />
                 </span>
                 <span className="cc-class-name">{c.name}</span>
                 <span className="cc-class-desc">{c.gatherName} · {c.craftName}</span>

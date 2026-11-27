@@ -1,9 +1,10 @@
-import type { KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { ChatMsg } from "../services/websocket";
+import { REPORT_REASON_LABELS, type ReportReasonId } from "../gameplay/chatReport";
 import { T1Art } from "./T1Art";
 import "./T1UiIcons.css";
 
-type ChatChannel = "world" | "profession" | "party" | "private";
+type ChatChannel = "world" | "profession" | "party" | "circle" | "private";
 
 type Props = {
   expanded: boolean;
@@ -25,10 +26,49 @@ type Props = {
   showEmojiPicker: boolean;
   onToggleEmoji: () => void;
   onInsertEmoji: (emoji: string) => void;
+  /** 屏蔽名单（服务端存）；名字上右键或长按出菜单：私聊 / 屏蔽 / 举报 */
+  blocked: Array<{ userId: string; name: string }>;
+  onBlock: (target: { id: string; name: string }, blocked: boolean) => void;
+  onReport: (target: { id: string; name: string }, reason: ReportReasonId, channel: string) => void;
 };
 
+const menuRow = { display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 } as const;
+
 export function GameChatPanel(props: Props) {
-  const visible = props.messages.filter((msg) => msg.channel === props.channel);
+  const blockedIds = new Set(props.blocked.map((b) => b.userId));
+  // 屏蔽之前收到的那几条也一起藏起来
+  const visible = props.messages.filter(
+    (msg) => msg.channel === props.channel && !(msg.type === "message" && !msg.isSelf && blockedIds.has(msg.sender))
+  );
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [reporting, setReporting] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const pressAt = useRef<{ x: number; y: number } | null>(null);
+  const longPressed = useRef(false);
+  const openMenu = (id: string) => {
+    setMenuFor(id);
+    setReporting(false);
+  };
+  const closeMenu = () => {
+    setMenuFor(null);
+    setReporting(false);
+  };
+  const endPress = () => {
+    if (pressTimer.current !== null) window.clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+    pressAt.current = null;
+  };
+  // 长按只给手指 / 笔用（鼠标有右键）；手指一挪（在滑动列表）或被浏览器接管去滚动，就不算长按。
+  const startPress = (id: string, e: ReactPointerEvent) => {
+    endPress();
+    longPressed.current = false;
+    if (e.pointerType === "mouse") return;
+    pressAt.current = { x: e.clientX, y: e.clientY };
+    pressTimer.current = window.setTimeout(() => {
+      longPressed.current = true;
+      openMenu(id);
+    }, 500);
+  };
   return (
     <aside className={`chat-panel ${props.expanded ? "expanded" : "collapsed"}`}>
       {!props.expanded && (
@@ -39,7 +79,7 @@ export function GameChatPanel(props: Props) {
           title="展开聊天"
           aria-label="展开聊天"
         >
-          <T1Art kind="ui" id="chat" fallback="聊" alt="" />
+          <T1Art kind="ui" id="chat" fallback="聊" alt="" small />
           {Object.values(props.unread || {}).reduce((s, n) => s + (n || 0), 0) > 0 && (
             <span className="unread-badge">
               {Object.values(props.unread || {}).reduce((s, n) => s + (n || 0), 0)}
@@ -85,6 +125,14 @@ export function GameChatPanel(props: Props) {
               {props.unread.party > 0 && <span className="unread-badge">{props.unread.party}</span>}
             </button>
             <button
+              className={`channel-btn ${props.channel === "circle" ? "active" : ""}`}
+              onClick={() => props.onSwitchChannel("circle")}
+              title="同好会成员才看得到"
+            >
+              同好会
+              {(props.unread.circle || 0) > 0 && <span className="unread-badge">{props.unread.circle}</span>}
+            </button>
+            <button
               className={`channel-btn ${props.channel === "private" ? "active" : ""}`}
               onClick={() => props.onSwitchChannel("private")}
             >
@@ -97,6 +145,16 @@ export function GameChatPanel(props: Props) {
               {props.privateTarget
                 ? <>私聊 → <b>{props.privateTarget.name}</b>（点消息中的玩家名可换人）</>
                 : "点任意玩家名字开始私聊"}
+            </div>
+          )}
+          {props.channel === "private" && props.blocked.length > 0 && (
+            <div className="chat-private-target" style={menuRow}>
+              已屏蔽
+              {props.blocked.map((b) => (
+                <button key={b.userId} type="button" className="qty-chip" title="解除屏蔽" onClick={() => props.onBlock({ id: b.userId, name: b.name }, false)}>
+                  {b.name} ✕
+                </button>
+              ))}
             </div>
           )}
           <div className="chat-messages">
@@ -122,13 +180,29 @@ export function GameChatPanel(props: Props) {
                       <button
                         className="message-sender sender-btn"
                         type="button"
-                        title={`私聊 ${msg.senderName || msg.sender}`}
-                        onClick={() =>
+                        title={`私聊 ${msg.senderName || msg.sender}（右键或长按：屏蔽、举报）`}
+                        onClick={() => {
+                          if (longPressed.current) {
+                            longPressed.current = false;
+                            return;
+                          }
                           props.onPrivateChat({
                             id: msg.sender,
                             name: msg.senderName || msg.sender,
-                          })
-                        }
+                          });
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          openMenu(msg.id);
+                        }}
+                        onPointerDown={(e) => startPress(msg.id, e)}
+                        onPointerMove={(e) => {
+                          const at = pressAt.current;
+                          if (at && Math.hypot(e.clientX - at.x, e.clientY - at.y) > 10) endPress();
+                        }}
+                        onPointerUp={endPress}
+                        onPointerCancel={endPress}
+                        onPointerLeave={endPress}
                       >
                         {msg.senderName || (msg.sender.length > 10 ? msg.sender.slice(0, 8) + "…" : msg.sender)}
                       </button>
@@ -140,6 +214,27 @@ export function GameChatPanel(props: Props) {
                     </span>
                   </div>
                   <span className="message-text">{msg.content}</span>
+                  {menuFor === msg.id && msg.type === "message" && !msg.isSelf && (() => {
+                    const target = { id: msg.sender, name: msg.senderName || msg.sender };
+                    return (
+                      <div className="chat-msg-menu" role="menu" style={menuRow}>
+                        {reporting ? (
+                          (Object.keys(REPORT_REASON_LABELS) as ReportReasonId[]).map((reason) => (
+                            <button key={reason} type="button" className="qty-chip" onClick={() => { props.onReport(target, reason, msg.channel); closeMenu(); }}>
+                              {REPORT_REASON_LABELS[reason]}
+                            </button>
+                          ))
+                        ) : (
+                          <>
+                            <button type="button" className="qty-chip" onClick={() => { props.onPrivateChat(target); closeMenu(); }}>私聊</button>
+                            <button type="button" className="qty-chip" onClick={() => { props.onBlock(target, true); closeMenu(); }}>屏蔽</button>
+                            <button type="button" className="qty-chip" onClick={() => setReporting(true)}>举报</button>
+                          </>
+                        )}
+                        <button type="button" className="qty-chip" aria-label="关闭" onClick={closeMenu}>✕</button>
+                      </div>
+                    );
+                  })()}
                 </div>
               ))
             )}
@@ -167,7 +262,7 @@ export function GameChatPanel(props: Props) {
               placeholder={
                 props.channel === "private"
                   ? props.privateTarget ? `私聊 ${props.privateTarget.name}...` : "先点击玩家名选择私聊对象"
-                  : `发送到${props.channel === "world" ? "世界" : props.channel === "profession" ? "职业" : "队伍"}频道...`
+                  : `发送到${props.channel === "world" ? "世界" : props.channel === "profession" ? "职业" : props.channel === "circle" ? "同好会" : "队伍"}频道...`
               }
               value={props.input}
               onChange={(e) => props.onInput(e.target.value)}

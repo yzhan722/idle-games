@@ -48,19 +48,22 @@ describe("action timing is anchored on the cycle start, not on the last poll", (
   });
 });
 
-describe("efficiency (MWI): free instant repeats per completed cycle", () => {
-  it("gives +1% per level above the requirement and repeats without consuming time", async () => {
+describe("efficiency: free instant repeats per completed cycle", () => {
+  it("grows with levels above the requirement and repeats without consuming time", async () => {
     const { storage, user } = await fresh();
     let state = (await storage.getOrCreatePlayerState(user.id, pack.version || "1.0.0")) as EnhancedPlayerState;
-    state.skills.skill_woodcutter.level = 3; // poplar requires 1 → efficiency 2%
+    state.skills.skill_woodcutter.level = 3; // poplar requires 1 → two levels over
     state = await storage.startLifeAction({ userId: user.id, actionId: "act_chop_wood_t1", now: T0, contentPack: pack }) as EnhancedPlayerState;
     const { getActionRates } = await import("./storage");
+    const { masteryEfficiencyPct } = await import("./growth_curves");
     const action = (pack.actions as any[]).find((a) => a.id === "act_chop_wood_t1");
     const rates = getActionRates(state, pack, action, T0);
-    assert.equal(rates.efficiencyPct, 2);
-    assert.deepEqual(rates.efficiencySources, [{ label: "等级高出 2 级", pct: 2 }]);
+    const eff = masteryEfficiencyPct(2);
+    assert.ok(eff > masteryEfficiencyPct(1) && masteryEfficiencyPct(1) > 0);
+    assert.equal(rates.efficiencyPct, eff);
+    assert.deepEqual(rates.efficiencySources, [{ label: "等级高出 2 级", pct: eff }]);
     const snapshot = JSON.parse(JSON.stringify(state)); // simulateToNow mutates nested inventory in place
-    // rng below 0.02 → the bonus repeat triggers every cycle: 5 time-cycles → 10 logs, still 25s of time
+    // rng below the efficiency chance → the bonus repeat triggers every cycle: 5 time-cycles → 10 logs, still 25s of time
     const lucky = sim(state, at(25_300), () => 0.01);
     assert.equal(lucky.inventory.wood_1, 10);
     assert.equal(new Date(lucky.lifeActionState!.startedAt).getTime(), at(25_000).getTime());
@@ -86,7 +89,7 @@ describe("efficiency (MWI): free instant repeats per completed cycle", () => {
   });
 });
 
-describe("tool slot (MWI tool speed)", () => {
+describe("tool slot (tool speed)", () => {
   it("speeds up only the tool's own profession and never counts in combat stats", async () => {
     const { storage, user } = await fresh();
     const state = (await storage.getOrCreatePlayerState(user.id, pack.version || "1.0.0")) as EnhancedPlayerState;

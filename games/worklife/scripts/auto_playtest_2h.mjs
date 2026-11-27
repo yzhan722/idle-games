@@ -81,6 +81,7 @@ async function main() {
     if (await loginUserField.isVisible().catch(() => false)) {
       await loginUserField.fill("auto_playtest_2h");
       await page.locator("#password").fill("WorklifePlaytest2026!");
+      await page.locator("#legal-consent").check().catch(() => {});
       const submitBtn = page.locator("button.login-btn").first();
       await submitBtn.click().catch(() => {});
       await page.locator("#username").waitFor({ state: "hidden", timeout: 4000 }).catch(() => {});

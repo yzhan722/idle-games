@@ -22,8 +22,11 @@ import type {
   PlayerEquipmentStats,
   EquipmentSetBonus,
 } from "./types";
-import type { Storage, TradingOrder } from "./storage";
+import type { Storage, TradeRecord, TradingOrder } from "./storage";
+import { DELETED_ACCOUNT_ID, tombstoneExpired } from "./account_deletion";
+import { PRICE_WINDOW_DAYS, TRADE_KEEP_PER_ITEM, TRADE_KEEP_PER_PAIR_DAY } from "./market_price";
 import { findEnhancementRuleForItem, hasEnhancementSkill } from "./enhancement_utils";
+import { CURRENT_CURVE_VERSION, migratePlayerCurves } from "./curve_migration";
 import { randomUUID } from "crypto";
 import {
   appendLog,
@@ -37,6 +40,8 @@ import {
   UsernameTaken,
 } from "./storage";
 import { worldAnnouncements } from "./world_announce";
+import { METRICS_KEEP_DAYS, utcDay, type MetricEvent, type StateChange, type StateObserver } from "./retention_metrics";
+import { RANK_BOARDS, countHigher, createRankCache, rankEntry, sortRows, type RankBoard, type RankRow } from "./leaderboard";
 import fs from "fs";
 import path from "path";
 import {
@@ -46,7 +51,11 @@ import {
   payloadChannel,
 } from "./chat_channels";
 import { buildSnapshot, parseSnapshot } from "./memory_snapshot";
-import { socketFromWsConnection } from "./ws_socket";
+import { CHAT_BLOCK_MAX, createChatRing, privateKey, reportExpired, reportGate, reportRingKey, type ChatReport } from "./chat_moderation";
+import { shownName } from "./display_name";
+import { maskChatText } from "./name_filter";
+import { WS_SESSION_REVOKED, createSocketRegistry, socketFromWsConnection } from "./ws_socket";
+import { createMemoryCircles } from "./circle_memory";
 import {
   validateItemQuantity,
   applyAwardSkillExperience,
@@ -78,15 +87,58 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
   const states = new Map<string, EnhancedPlayerState>();
   const tradingOrders = new Map<string, TradingOrder>();
   const priceHistory = new Map<string, Map<string, PriceHistory>>();
+  const tradeHistory = new Map<string, TradeRecord[]>();
+  const deletedAccounts = new Map<string, string>();
+  /** 匿名统计：「日期|事件」→ 人数。 */
+  const metricsDaily = new Map<string, number>();
   const parties = new Map<string, Party>();
   const commandReceipts = new Map<string, Map<string, PlayerCommandReceipt>>();
   const enhancementServiceRequests = new Map<string, EnhancementServiceRequest>();
   const enhancementServiceStats = new Map<string, { completed: number; totalRating: number; ratingCount: number }>();
   const enhancementProviderIndex = new Map<string, Set<string>>();
   const ws = new Map<string, WsConn>();
+  const sockets = createSocketRegistry();
+  /** 正在执行的带 operationId 的操作：同一编号的并发请求等同一个结果，不会各执行一次。 */
+  const inflightOperations = new Map<string, { requestHash: string; promise: Promise<unknown> }>();
   const channelMembers = new Map<string, Set<string>>();
+  /** 聊天屏蔽：userId → 他屏蔽的人（写进快照，随账号走）。 */
+  const chatBlocks = new Map<string, Set<string>>();
+  /** 举报记录（写进快照，REPORT_KEEP_DAYS 天后清除）。 */
+  let chatReports: ChatReport[] = [];
+  /** 每个频道最近几条，只在内存里，举报取证用。 */
+  const chatRing = createChatRing();
+  /** 同好会（circle_memory.ts）：成员变了就换聊天频道。 */
+  const circles = createMemoryCircles({
+    states,
+    hasUser: (userId) => users.has(userId),
+    blocked: (who, from) => chatBlocks.get(who)?.has(from) ?? false,
+    rankTotal: (userId) => {
+      const st = states.get(userId);
+      const entry = st ? rankEntry(st, users.get(userId) ?? null) : "excluded";
+      return typeof entry === "string" ? 0 : entry.total;
+    },
+    isOnline: (userId) => ws.has(userId),
+    persist: () => schedulePersist(),
+    events: {
+      setChannel(userId, circleId) {
+        const conn = ws.get(userId);
+        for (const key of [...(conn?.channels ?? [])]) {
+          if (!key.startsWith("circle:")) continue;
+          conn!.channels.delete(key);
+          channelMembers.get(key)?.delete(userId);
+        }
+        if (conn && circleId) addMembership(channelMembers, conn.channels, userId, `circle:${circleId}`);
+      },
+      broadcast: (channel, msg) => broadcast(channel, msg),
+      notifyUser: (userId, payload) => notifyUser(userId, payload),
+    },
+  });
 
   function applyParsedSnapshot(snap: ReturnType<typeof parseSnapshot>) {
+    // 新版写的快照带 curveWriter；没有它却有换算过的存档，说明中间被旧版本写过
+    if (!snap.curveWriter && snap.states.some(([, st]) => (st?.curveVersion ?? 1) >= CURRENT_CURVE_VERSION)) {
+      console.warn("[storage] Snapshot holds migrated XP curves but was last written by an older build: see docs/design/OWN_CURVES.md (回滚步骤).");
+    }
     for (const u of snap.users) {
       users.set(u.id, u);
       if (u.guestDeviceId) usersByDevice.set(u.guestDeviceId, u.id);
@@ -95,6 +147,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (u.username) usersByUsername.set(u.username.toLowerCase(), u.id);
     }
     for (const [id, st] of snap.states) {
+      if (st) migratePlayerCurves(st);
       states.set(id, st);
       if (st?.skills) {
         for (const [skillKey, skillObj] of Object.entries(st.skills)) {
@@ -120,6 +173,16 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
     for (const [itemId, list] of snap.priceHistory ?? []) {
       priceHistory.set(itemId, new Map(list.map((r) => [r.recordDate, r])));
     }
+    for (const [itemId, list] of snap.tradeHistory ?? []) {
+      if (Array.isArray(list)) tradeHistory.set(itemId, list);
+    }
+    for (const [userId, at] of snap.deletedAccounts ?? []) deletedAccounts.set(userId, at);
+    for (const [key, count] of snap.metricsDaily ?? []) metricsDaily.set(key, count);
+    for (const [userId, list] of snap.chatBlocks ?? []) {
+      if (Array.isArray(list) && list.length) chatBlocks.set(userId, new Set(list));
+    }
+    chatReports = (snap.chatReports ?? []).filter((r) => r && typeof r.id === "string");
+    circles.load(snap.circles ?? []);
     for (const req of snap.enhancementServiceRequests ?? []) {
       if (req && req.id) enhancementServiceRequests.set(req.id, req);
     }
@@ -171,6 +234,12 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       priceHistory: [...priceHistory.entries()].map(([itemId, m]) => [itemId, [...m.values()]]),
       enhancementServiceRequests: enhancementServiceRequests.values(),
       enhancementServiceStats: enhancementServiceStats.entries(),
+      tradeHistory: tradeHistory.entries(),
+      deletedAccounts: deletedAccounts.entries(),
+      metricsDaily: metricsDaily.entries(),
+      chatBlocks: [...chatBlocks].map(([userId, set]) => [userId, [...set]] as [string, string[]]),
+      chatReports,
+      circles: circles.dump(),
     });
     const payload = JSON.stringify(snap);
     const tmpPath = `${targetPath}.tmp.${process.pid}.${Date.now()}`;
@@ -208,6 +277,31 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
     }, 50);
   }
 
+  /**
+   * 注销后清掉还留着这个账号的旁路文件：读不出来的存档副本（.corrupt.<时间>）和写到一半的临时文件（.tmp.<进程>.<时间>）。
+   * 这些文件没法只删一个人的内容（.corrupt 本来就解析不了），所以提到这个账号的整份删掉；没提到的不动。
+   */
+  function purgeStrayCopies(userId: string) {
+    if (!opts?.persistPath) return;
+    const dir = path.dirname(opts.persistPath);
+    const base = path.basename(opts.persistPath);
+    let names: string[] = [];
+    try {
+      names = fs.readdirSync(dir);
+    } catch {
+      return;
+    }
+    for (const name of names) {
+      if (![".corrupt.", ".tmp.", ".before-curve-rollback"].some((tag) => name.startsWith(base + tag))) continue;
+      const file = path.join(dir, name);
+      try {
+        if (fs.readFileSync(file).includes(userId)) fs.unlinkSync(file);
+      } catch (err) {
+        console.error(`[storage] Could not purge ${file} after account deletion:`, err);
+      }
+    }
+  }
+
   const onProcessExit = () => {
     if (persistTimer) {
       clearTimeout(persistTimer);
@@ -231,11 +325,13 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
     return revision;
   }
 
-  function broadcast(channel: string, msg: unknown) {
+  /** from：发言人；屏蔽了他的人收不到。 */
+  function broadcast(channel: string, msg: unknown, from?: string) {
     const members = channelMembers.get(channel);
     if (!members) return;
     const text = JSON.stringify(msg);
     for (const uid of members) {
+      if (from && chatBlocks.get(uid)?.has(from)) continue;
       const c = ws.get(uid);
       if (c?.socket && typeof c.socket.send === "function") {
         try {
@@ -301,6 +397,63 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       todayRecord.maxPrice = Math.max(todayRecord.maxPrice, price);
       todayRecord.volume = totalVolume;
     }
+  }
+
+  /** 近期成交：新的在前，只留估价窗口内的，每种物品最多 TRADE_KEEP_PER_ITEM 笔，同一对玩家一天最多 TRADE_KEEP_PER_PAIR_DAY 笔。 */
+  function recordTrade(trade: TradeRecord) {
+    const since = Date.parse(trade.at) - PRICE_WINDOW_DAYS * 24 * 3600_000;
+    const list = (tradeHistory.get(trade.itemId) ?? []).filter((t) => Date.parse(t.at) >= since);
+    const day = trade.at.slice(0, 10);
+    const samePairToday = list.filter(
+      (t) => t.buyerId === trade.buyerId && t.sellerId === trade.sellerId && t.at.slice(0, 10) === day,
+    ).length;
+    if (samePairToday >= TRADE_KEEP_PER_PAIR_DAY) return;
+    tradeHistory.set(trade.itemId, [trade, ...list].slice(0, TRADE_KEEP_PER_ITEM));
+  }
+
+  /** 排行榜快照：最多每 5 秒从全部存档重排一次，请求只读快照（外面还有一分钟的榜单缓存）。 */
+  const RANK_SNAPSHOT_MS = 5_000;
+  let rankSnapshot: { at: number; boards: Record<RankBoard, RankRow[]> } | null = null;
+  function rankBoards(): Record<RankBoard, RankRow[]> {
+    const now = Date.now();
+    if (rankSnapshot && now >= rankSnapshot.at && now - rankSnapshot.at < RANK_SNAPSHOT_MS) return rankSnapshot.boards;
+    const boards = { total: [], combat: [], zone: [] } as Record<RankBoard, RankRow[]>;
+    for (const [userId, st] of states) {
+      const entry = rankEntry(st, users.get(userId) ?? null);
+      if (typeof entry === "string") continue;
+      for (const board of RANK_BOARDS) if (entry[board] > 0) boards[board].push({ userId, name: entry.name, score: entry[board] });
+    }
+    for (const board of RANK_BOARDS) sortRows(boards[board]);
+    rankSnapshot = { at: now, boards };
+    return boards;
+  }
+  const rankCache = createRankCache({
+    top: async (board, limit) => rankBoards()[board].slice(0, limit),
+    countAbove: async (board, score) => countHigher(rankBoards()[board], score),
+  });
+
+  let stateObserver: StateObserver | null = null;
+  function notifyState(change: StateChange) {
+    try {
+      stateObserver?.(change);
+    } catch (err) {
+      console.error("[metrics] observer failed:", err);
+    }
+  }
+
+  function isDeleted(userId: string): boolean {
+    return deletedAccounts.has(userId) && !users.has(userId);
+  }
+
+  /** 注销后到达的在途请求不得把存档重新建出来。 */
+  function assertNotDeleted(userId: string) {
+    if (isDeleted(userId)) throw new Error("Unauthorized");
+  }
+
+  /** 凭据变了：已连上的每一条连接都断开，旧连接不能再收发。 */
+  function dropSockets(this: Storage, userId: string) {
+    sockets.closeAll(userId, WS_SESSION_REVOKED, "session_revoked");
+    this.wsDisconnect(userId);
   }
 
   return {
@@ -369,6 +522,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       users.set(userId, updated);
       usersByGoogle.set(googleSub, userId);
       flushPersist();
+      dropSockets.call(this, userId);
     },
     async findUserByGoogleSub(googleSub: string) {
       const id = usersByGoogle.get(googleSub);
@@ -379,6 +533,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (!u) return;
       u.authVersion = (u.authVersion ?? 1) + 1;
       flushPersist();
+      dropSockets.call(this, userId);
     },
     async createPasswordUser(username: string, passwordHash: string) {
       const key = username.toLowerCase();
@@ -413,9 +568,90 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       u.passwordHash = passwordHash;
       u.authVersion = (u.authVersion ?? 1) + 1;
       usersByUsername.set(key, userId);
+      // 账号名可能正好等于角色名：榜上要马上打码（display_name.ts）
+      rankSnapshot = null;
+      rankCache.clear();
       flushPersist();
+      dropSockets.call(this, userId);
+    },
+    async deleteAccount(userId: string, now: Date) {
+      const user = users.get(userId);
+      if (!user) return null;
+      for (const party of [...parties.values()]) {
+        if (party.members.some((m) => m.userId === userId)) await this.leaveParty({ userId, partyId: party.id });
+      }
+      sockets.closeAll(userId);
+      this.wsDisconnect(userId);
+      // 当过队员的进行中活动里还留着以账号编号为键的基线
+      for (const party of parties.values()) {
+        if (party.currentActivity?.baseline) delete party.currentActivity.baseline[userId];
+      }
+      let ordersRemoved = 0;
+      for (const [id, order] of [...tradingOrders]) {
+        if (order.userId !== userId) continue;
+        tradingOrders.delete(id);
+        ordersRemoved += 1;
+      }
+      for (const [id, req] of [...enhancementServiceRequests]) {
+        if (req.requesterId === userId || req.providerId === userId) enhancementServiceRequests.delete(id);
+      }
+      enhancementServiceStats.delete(userId);
+      for (const providers of enhancementProviderIndex.values()) providers.delete(userId);
+      for (const trades of tradeHistory.values()) {
+        for (const t of trades) {
+          if (t.buyerId === userId) t.buyerId = DELETED_ACCOUNT_ID;
+          if (t.sellerId === userId) t.sellerId = DELETED_ACCOUNT_ID;
+        }
+      }
+      for (const st of states.values()) {
+        if (st.partyInvites?.some((i) => i.fromUserId === userId)) {
+          st.partyInvites = st.partyInvites.filter((i) => i.fromUserId !== userId);
+        }
+      }
+      chatBlocks.delete(userId);
+      for (const set of chatBlocks.values()) set.delete(userId);
+      chatReports = chatReports.filter((r) => r.reporterId !== userId && r.targetId !== userId);
+      chatRing.forget(userId);
+      circles.removeAccount(userId);
+      commandReceipts.delete(userId);
+      states.delete(userId);
+      users.delete(userId);
+      rankSnapshot = null;
+      rankCache.clear();
+      for (const index of [usersByDevice, usersByGoogle, usersByResumeHash, usersByUsername]) {
+        for (const [key, id] of [...index]) if (id === userId) index.delete(key);
+      }
+      for (const [id, at] of [...deletedAccounts]) if (tombstoneExpired(at, now)) deletedAccounts.delete(id);
+      deletedAccounts.set(userId, now.toISOString());
+      // 连写两次：第一次写主文件，第二次把主文件抄成 .bak，备份里也不再留着已删的存档
+      flushPersist();
+      flushPersist();
+      purgeStrayCopies(userId);
+      return { ordersRemoved };
+    },
+    async getLeaderboard(params) {
+      return rankCache.view(params);
+    },
+    setStateObserver(observer) {
+      stateObserver = observer;
+    },
+    async bumpMetrics(rows, now) {
+      for (const r of rows) metricsDaily.set(`${r.day}|${r.event}`, (metricsDaily.get(`${r.day}|${r.event}`) ?? 0) + r.count);
+      const oldest = utcDay(new Date(now.getTime() - METRICS_KEEP_DAYS * 24 * 3600_000));
+      for (const key of [...metricsDaily.keys()]) if (key < oldest) metricsDaily.delete(key);
+      schedulePersist();
+    },
+    async readMetrics({ since }) {
+      return [...metricsDaily]
+        .map(([key, count]) => ({ day: key.slice(0, 10), event: key.slice(11) as MetricEvent, count }))
+        .filter((r) => r.day >= since);
+    },
+    async wasAccountDeleted(userId: string, now: Date) {
+      const at = deletedAccounts.get(userId);
+      return at !== undefined && !tombstoneExpired(at, now);
     },
     async getOrCreatePlayerState(userId: string, contentVersion: string) {
+      assertNotDeleted(userId);
       const existing = states.get(userId);
       if (existing) return existing;
       const state = defaultEnhancedPlayerState(contentVersion);
@@ -425,18 +661,22 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       return state;
     },
     async simulateToNow({ userId, state, now, contentPack }) {
+      assertNotDeleted(userId);
       const revision = currentRevision(userId, state);
       const result = simulateToNow({ state: structuredClone(state), now, contentPack });
       const next = { ...(result.state as EnhancedPlayerState), inventory: normalizeInv(result.state.inventory) };
       next.stateRevision = revision + 1;
       states.set(userId, next);
       schedulePersist();
+      notifyState({ userId, before: state, after: next, now });
       for (const text of worldAnnouncements(state, next, contentPack, userId)) {
-        broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+        // 播报里有这个人的名字：屏蔽了他的人不看
+        broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text }, userId);
       }
       return next;
     },
     async executePlayerCommand<T>(command: PlayerCommand<T>) {
+      assertNotDeleted(command.userId);
       const current = states.get(command.userId) ?? defaultEnhancedPlayerState(command.contentPack.version);
       let requestHash: string | undefined;
       if (command.operationId) {
@@ -466,8 +706,9 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         });
       }
       schedulePersist();
+      notifyState({ userId: command.userId, before: current, after: outcome.state as EnhancedPlayerState, now: command.now });
       for (const text of worldAnnouncements(current, outcome.state as EnhancedPlayerState, command.contentPack, command.userId)) {
-        broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+        broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text }, command.userId);
       }
       return outcome;
     },
@@ -484,7 +725,21 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         if (existing.requestHash !== requestHash) throw new PlayerCommandOperationMismatch();
         return { result: existing.result as T, deduplicated: true };
       }
-      const result = await run();
+      const inflightKey = `${userId}\n${operationId}`;
+      const running = inflightOperations.get(inflightKey);
+      if (running) {
+        if (running.requestHash !== requestHash) throw new PlayerCommandOperationMismatch();
+        return { result: (await running.promise) as T, deduplicated: true };
+      }
+      const promise = run();
+      inflightOperations.set(inflightKey, { requestHash, promise });
+      let result: T;
+      try {
+        result = await promise;
+      } finally {
+        inflightOperations.delete(inflightKey);
+      }
+      assertNotDeleted(userId);
       let receipts = commandReceipts.get(userId);
       if (!receipts) commandReceipts.set(userId, (receipts = new Map()));
       receipts.set(operationId, {
@@ -498,6 +753,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       return { result, deduplicated: false };
     },
     async savePlayerState(userId: string, state: EnhancedPlayerState) {
+      assertNotDeleted(userId);
       const revision = currentRevision(userId, state);
       const next = { ...state, inventory: normalizeInv(state.inventory) };
       ensureProgression(next, new Date());
@@ -839,6 +1095,8 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const now = Date.now();
       target.partyInvites = target.partyInvites.filter((i) => Date.parse(i.invitedAt) > now - 24 * 3600_000);
       if (target.partyInvites.some((i) => i.partyId === partyId)) return { success: true, message: "邀请已发送" };
+      // 对方屏蔽了邀请人：照常回「已发送」，邀请不存也不通知
+      if (chatBlocks.get(targetUserId)?.has(userId)) return { success: true };
       if (target.partyInvites.length >= 10) target.partyInvites.shift();
       target.partyInvites.push({ partyId, fromUserId: userId, invitedAt: nowIso() });
       notifyUser(targetUserId, { kind: "party:invite", partyId, from: userId });
@@ -967,7 +1225,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
           return {
             ...m,
             isOnline: ws.has(m.userId),
-            displayName: name?.trim() || `玩家_${m.userId.slice(0, 6)}`,
+            displayName: shownName(m.userId, name),
             ...(memberSt?.activeClassId ? { classId: memberSt.activeClassId } : {}),
             ...(memberSt?.settings?.gender ? { gender: memberSt.settings.gender } : {}),
             ...(memberSt?.settings?.avatar ? { avatar: memberSt.settings.avatar } : {}),
@@ -988,9 +1246,11 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const keys = membershipKeys({
         classId: st?.activeClassId,
         partyId: st?.partyState?.partyId,
+        circleId: circles.circleIdOf(userId),
       });
       const c: WsConn = { socket: socketFromWsConnection(connection), channels: new Set<string>() };
       ws.set(userId, c);
+      sockets.add(userId, c.socket);
       for (const key of keys) addMembership(channelMembers, c.channels, userId, key);
 
       const partyId = st?.partyState?.partyId;
@@ -1007,9 +1267,16 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
         }
       } catch {}
     },
-    wsDisconnect(userId: string) {
+    wsDisconnect(userId: string, connection?: any) {
       const c = ws.get(userId);
-      if (!c) return;
+      const closing = connection ? socketFromWsConnection(connection) : c?.socket;
+      const remaining = sockets.remove(userId, closing);
+      if (!c || (connection && c.socket !== closing)) return;
+      // 当前连接断了但还有别的标签页在线：换一条继续收消息
+      if (connection && remaining) {
+        c.socket = remaining;
+        return;
+      }
       for (const ch of c.channels) {
         const set = channelMembers.get(ch);
         if (set) {
@@ -1028,6 +1295,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       }
     },
     wsMessage(userId: string, raw: string) {
+      if (isDeleted(userId)) return;
       let parsed: any;
       try {
         parsed = JSON.parse(raw);
@@ -1036,7 +1304,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       }
       if (parsed?.type !== "chat:send") return;
       const channel = typeof parsed.channel === "string" ? parsed.channel : "world";
-      const content = typeof parsed.content === "string" ? parsed.content.slice(0, 300) : "";
+      const content = maskChatText(typeof parsed.content === "string" ? parsed.content.slice(0, 300) : "");
       const senderConn = ws.get(userId);
       if (!content.trim()) {
         try {
@@ -1047,7 +1315,7 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
 
       const userState = states.get(userId);
       const senderProfession = userState?.activeClassId;
-      const senderName = userState?.settings?.playerName || `玩家_${userId.slice(0, 6)}`;
+      const senderName = shownName(userId, userState?.settings?.playerName);
 
       if (channel === "private" && parsed.recipient) {
         const recipientId = parsed.recipient;
@@ -1063,9 +1331,13 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
             ts: nowIso(),
             content,
           };
-          try {
-            recipientConn.socket.send(JSON.stringify(payload));
-          } catch {}
+          // 对方屏蔽了你：只回给自己，和送到了一样
+          if (!chatBlocks.get(recipientId)?.has(userId)) {
+            chatRing.push(privateKey(userId, recipientId), { ts: payload.ts, sender: userId, senderName, content });
+            try {
+              recipientConn.socket.send(JSON.stringify(payload));
+            } catch {}
+          }
           try {
             senderConn?.socket?.send(JSON.stringify({ ...payload, isSelf: true }));
           } catch {}
@@ -1080,13 +1352,15 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       const memberKey = membershipKeyForSend(channel, {
         classId: senderProfession,
         partyId: userState?.partyState?.partyId,
+        circleId: circles.circleIdOf(userId),
       });
       if (!memberKey) {
         try {
           senderConn?.socket?.send(
             JSON.stringify({
               type: "chat:error",
-              message: channel === "party" ? "未加入队伍" : "无法加入该频道",
+              channel,
+              message: channel === "party" ? "未加入队伍" : channel === "circle" ? "还没加入同好会" : "无法加入该频道",
               ts: nowIso(),
             }),
           );
@@ -1096,15 +1370,65 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       if (senderConn && !channelMembers.get(memberKey)?.has(userId)) {
         addMembership(channelMembers, senderConn.channels, userId, memberKey);
       }
+      const ts = nowIso();
+      chatRing.push(memberKey, { ts, sender: userId, senderName, content });
       broadcast(memberKey, {
         type: "chat:message",
         channel: payloadChannel(channel),
         sender: userId,
         senderName,
         senderProfession,
-        ts: nowIso(),
+        ts,
         content,
-      });
+      }, userId);
+    },
+    ...circles.methods,
+    async getChatBlocks(userId: string) {
+      return [...(chatBlocks.get(userId) ?? [])].map((id) => ({ userId: id, name: shownName(id, states.get(id)?.settings?.playerName) }));
+    },
+    async setChatBlock({ userId, targetUserId, blocked }) {
+      if (userId === targetUserId) return { ok: false as const, error: "self" as const };
+      const set = chatBlocks.get(userId) ?? new Set<string>();
+      if (blocked) {
+        if (!users.has(targetUserId)) return { ok: false as const, error: "user_not_found" as const };
+        if (!set.has(targetUserId) && set.size >= CHAT_BLOCK_MAX) return { ok: false as const, error: "too_many" as const };
+        set.add(targetUserId);
+        chatBlocks.set(userId, set);
+      } else {
+        set.delete(targetUserId);
+        if (!set.size) chatBlocks.delete(userId);
+      }
+      schedulePersist();
+      return { ok: true as const };
+    },
+    async reportChat({ reporterId, targetUserId, reason, channel, now }) {
+      if (reporterId === targetUserId) return { ok: false as const, error: "self" as const };
+      if (!users.has(targetUserId)) return { ok: false as const, error: "user_not_found" as const };
+      chatReports = chatReports.filter((r) => !reportExpired(r.createdAt, now));
+      const gate = reportGate(chatReports.filter((r) => r.reporterId === reporterId), targetUserId, now);
+      if (gate === "limited") return { ok: false as const, error: "report_limited" as const };
+      if (gate === "duplicate") return { ok: true as const, duplicate: true };
+      const st = states.get(reporterId);
+      const key = reportRingKey(channel, reporterId, targetUserId, { classId: st?.activeClassId, partyId: st?.partyState?.partyId, circleId: circles.circleIdOf(reporterId) });
+      chatReports.push({ id: randomUUID(), reporterId, targetId: targetUserId, reason, channel, snapshot: chatRing.snapshot(key), createdAt: now.toISOString() });
+      schedulePersist();
+      return { ok: true as const, duplicate: false };
+    },
+    async listChatReports({ since, limit }) {
+      return chatReports
+        .filter((r) => Date.parse(r.createdAt) >= since.getTime())
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, limit)
+        .map((r) => ({ ...r, snapshot: r.snapshot.map((l) => ({ ...l })) }));
+    },
+    async rollCircleWeeks(now: Date) {
+      return circles.rollWeeks(now);
+    },
+    async purgeChatReports(now: Date) {
+      const before = chatReports.length;
+      chatReports = chatReports.filter((r) => !reportExpired(r.createdAt, now));
+      if (chatReports.length !== before) schedulePersist();
+      return before - chatReports.length;
     },
     async getDurabilityInfo({ userId, itemId }) {
       const st = states.get(userId);
@@ -1204,6 +1528,14 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
       order.quantity -= quantity;
       if (order.quantity <= 0) tradingOrders.delete(orderId);
       updatePriceHistory(order.itemId, order.price, quantity);
+      recordTrade({
+        itemId: order.itemId,
+        price: order.price,
+        quantity,
+        buyerId: order.type === "sell" ? buyerId : order.userId,
+        sellerId: order.type === "sell" ? order.userId : buyerId,
+        at: nowIso(),
+      });
       schedulePersist();
       notifyUser(order.userId, {
         kind: "order:filled",
@@ -1233,6 +1565,10 @@ export function createMemoryStorage(opts?: { persistPath?: string }): Storage {
     },
     getMyTradingOrders: async ({ userId }) => {
       return Array.from(tradingOrders.values()).filter((order) => order.userId === userId);
+    },
+    getRecentTrades: async ({ itemId, days, now }) => {
+      const since = now.getTime() - days * 24 * 3600_000;
+      return (tradeHistory.get(itemId) ?? []).filter((t) => Date.parse(t.at) >= since).map((t) => ({ ...t }));
     },
   };
 }

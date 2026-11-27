@@ -83,7 +83,7 @@ export function encounterStages(pack: Pack | null | undefined): Array<{
 }
 
 /**
- * Zones a player may enter. MWI lists every zone and lets the level recommendation do the gating;
+ * Zones a player may enter. Every zone is listed and the level recommendation does the gating;
  * we keep chapter 1 on the forest for teaching, then open zones in pack order as soon as their
  * roster has art (a zone with emoji monsters is not shipped). Append the next id here when its
  * seven illustrations land — the adventure sidebar and VS-01 read this list.

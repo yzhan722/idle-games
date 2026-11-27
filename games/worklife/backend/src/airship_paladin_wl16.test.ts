@@ -492,7 +492,7 @@ describe("WL-16 Airship Trade & Paladin Trial backend mechanics & routes", () =>
   });
 
   it("keeps the WL-16 backend logic off the wall clock (explicit now only)", () => {
-    const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "progression2.ts"), "utf8");
+    const src = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "progression2/airship_paladin.ts"), "utf8");
     const wl16 = src.slice(src.indexOf("浮空飞艇商路 & 圣骑士团荣誉试炼 (WL-16)"));
     assert.ok(wl16.length > 10_000);
     assert.equal(/Date\.now\(/.test(wl16), false);

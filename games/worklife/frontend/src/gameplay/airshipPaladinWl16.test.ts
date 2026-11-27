@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -57,7 +58,7 @@ const frontendSrcRoot = path.resolve(here, "..");
 const T = Date.parse("2026-11-18T02:00:00.000Z");
 
 describe("WL-16 frontend art contract, merged entry (no new header pill), zero-SVG/Emoji guard and Airship / Paladin helpers", () => {
-  it("registers the 6 WL-16 512x512 RGBA .webp icons in the T1 contract, keeps a dated wl cache version and only uses real town / item / monster art", () => {
+  it("registers the 6 WL-16 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract, keeps a dated wl cache version and only uses real town / item / monster art", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL16_AIRSHIP_PALADIN_ART_IDS], ["airship_dock", "trade_airship", "cargo_crate", "paladin_trial", "honor_medal", "trial_banner"]);
     for (const id of WL16_AIRSHIP_PALADIN_ART_IDS) {
@@ -70,8 +71,8 @@ describe("WL-16 frontend art contract, merged entry (no new header pill), zero-S
       assert.equal(existsSync(webp), true, `Missing .webp asset on disk: ${webp}`);
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
-      assert.equal(size?.width, 512);
-      assert.equal(size?.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(withAssetCacheVersion("/assets/trade_airship.webp"), `/assets/trade_airship.webp?v=${T1_ASSET_CACHE_VERSION}`);
     for (const town of AIRSHIP_TOWNS) {
@@ -113,7 +114,7 @@ describe("WL-16 frontend art contract, merged entry (no new header pill), zero-S
     assert.equal(ngiSrc.includes("(progPanel === 'tavern' || progPanel === 'airship') && ("), true);
     assert.equal(ngiSrc.includes("initialTab={progPanel === 'airship' ? 'airship' : 'tavern'}"), true);
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     const tavern = advSrc.slice(advSrc.indexOf("export function BardTavernChroniclePanel"), advSrc.indexOf("浮空飞艇商路 & 圣骑士团荣誉试炼 (WL-16)"));
     for (const id of ["tavern-tab-tavern", "tavern-tab-chronicle", "tavern-tab-airship", "tavern-tab-trial"]) {
       assert.equal(tavern.includes(`data-testid="${id}"`), true, `${id} tab`);
@@ -239,7 +240,7 @@ describe("WL-16 frontend art contract, merged entry (no new header pill), zero-S
       { atk: PALADIN_BONUS_CAPS.bonusAtk, def: PALADIN_BONUS_CAPS.bonusDef, hp: PALADIN_BONUS_CAPS.bonusHp, gold: PALADIN_BONUS_CAPS.goldGainPct, xp: PALADIN_BONUS_CAPS.xpGainPct }
     );
     assert.deepEqual(getPaladinTrialBonuses({ paladinTrial: { virtues: { valor: 99, aegis: "x", vigor: -3 } } }).bonusAtk, 15, "dirty ranks never exceed the cap");
-    assert.deepEqual(formatPaladinStats({ bonusAtk: 6, bonusHp: 30, goldGainPct: 1, xpGainPct: 1 }), ["攻击 +6", "生命 +30", "金币收益 +1%", "经验 +1%"]);
+    assert.deepEqual(formatPaladinStats({ bonusAtk: 6, bonusHp: 30, goldGainPct: 1, xpGainPct: 1 }), ["攻击 +6", "生命 +30", "单人战斗金币 +1%", "生活技能经验 +1%"]);
   });
 
   it("feeds capped vow bonuses into combinedBuildFromState / combat sheets and previews trial duels with the real fight simulator", () => {

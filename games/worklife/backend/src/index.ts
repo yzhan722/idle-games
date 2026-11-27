@@ -22,8 +22,12 @@ import {
   combatHpRoutes,
   tasksRoutes,
   housesRoutes,
+  leaderboardRoutes,
+  chatRoutes,
+  circleRoutes,
+  metricsRoutes,
 } from "./routes";
-import { socketFromWsConnection } from "./ws_socket";
+import { socketFromWsConnection, socketIsOpen } from "./ws_socket";
 import { isPublicApiPath, isRateLimitExempt } from "./http_public_path";
 import { mapThrownError } from "./http_errors";
 import { encounterStages } from "./gameplay_encounters";
@@ -31,12 +35,14 @@ import { abilityCatalog } from "./abilities";
 import { COMBAT_SKILL_IDS, COMBAT_SKILL_NAMES, COMBAT_SKILL_BLURBS, defaultCombatSkills, ensureCombatSkills } from "./combat_skills";
 import { ensureProgression } from "./progression_state";
 import { applyE2eFastContent } from "./e2e_fast";
-import { assertRuntimePolicy } from "./runtime_policy";
+import { assertRuntimePolicy, parseTrustProxy } from "./runtime_policy";
+import { createRetentionMetrics, metricsAvailable } from "./retention_metrics";
 
 assertRuntimePolicy({
   NODE_ENV: process.env.NODE_ENV,
   E2E_SEED: process.env.E2E_SEED,
   E2E_FAST: process.env.E2E_FAST,
+  JWT_SECRET: process.env.JWT_SECRET,
 });
 
 const envSchema = z.object({
@@ -80,6 +86,7 @@ async function requireAuth(app: FastifyInstance, storage: { getUser(id: string):
 async function main() {
   const app = Fastify({ 
     logger: true,
+    trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
     bodyLimit: 1048576, // 1MB 请求体大小限制
     genReqId: () => randomUUID(), // 每个请求生成唯一 ID，便于日志追踪
     requestIdHeader: "x-request-id", // 允许客户端透传 request-id
@@ -175,8 +182,37 @@ async function main() {
     combatSkills: COMBAT_SKILL_IDS.map((id) => ({ id, name: COMBAT_SKILL_NAMES[id], blurb: COMBAT_SKILL_BLURBS[id] })),
   }));
 
+  // 匿名留存统计：没配 METRICS_ADMIN_KEY 时什么都不记（见 retention_metrics.ts）
+  if (process.env.METRICS_ADMIN_KEY && !metricsAvailable()) {
+    app.log.warn("[metrics] METRICS_ADMIN_KEY 太短或太容易猜，当作没配：不采集，/admin/metrics 返回 404。");
+  }
+  const metrics = createRetentionMetrics({ write: (rows, now) => storage.bumpMetrics(rows, now) });
+  storage.setStateObserver(metrics.observe);
+  const metricsTimer = setInterval(() => {
+    metrics.flush(new Date()).catch((err) => app.log.error(err));
+  }, 60_000);
+  metricsTimer.unref();
+  app.addHook("onClose", async () => {
+    clearInterval(metricsTimer);
+    storage.setStateObserver(null);
+    await metrics.flush(new Date(), true).catch((err) => app.log.error(err));
+  });
+  await metricsRoutes(app, storage);
+  // 聊天举报到期清除（chat_moderation.ts，REPORT_KEEP_DAYS）：启动时一次，之后每 6 小时一次
+  const purgeReports = () => storage.purgeChatReports(new Date()).catch((err) => app.log.error(err));
+  void purgeReports();
+  const reportPurgeTimer = setInterval(() => void purgeReports(), 6 * 3600_000);
+  reportPurgeTimer.unref();
+  app.addHook("onClose", async () => clearInterval(reportPurgeTimer));
+  // 同好会本周数（circle.ts）：东八区周一 0 点换周，启动时补一次，之后每分钟看一次周界
+  const rollCircleWeeks = () => storage.rollCircleWeeks?.(new Date()).catch((err) => app.log.error(err));
+  void rollCircleWeeks();
+  const circleWeekTimer = setInterval(() => void rollCircleWeeks(), 60_000);
+  circleWeekTimer.unref();
+  app.addHook("onClose", async () => clearInterval(circleWeekTimer));
+
   // 认证路由（不需要 token）
-  await authRoutes(app, storage);
+  await authRoutes(app, storage, { registered: metrics.registered, deleted: metrics.forget });
 
   // 需要认证的路由 - 添加 preHandler
   // 用精确路径匹配（剥离 query 后比对 pathname），避免 startsWith 前缀匹配
@@ -198,12 +234,15 @@ async function main() {
   await tradingRoutes(app, storage, contentPack);
   await partyRoutes(app, storage, contentPack);
   await equipmentRoutes(app, storage, contentPack);
-  await progressionRoutes(app, storage, contentPack);
+  await progressionRoutes(app, storage, contentPack, { statsOff: metrics.optedOut });
   await progression2Routes(app, storage, contentPack);
   await systemsRoutes(app, storage, contentPack);
   await combatHpRoutes(app, storage, contentPack);
   await tasksRoutes(app, storage, contentPack);
   await housesRoutes(app, storage, contentPack);
+  await leaderboardRoutes(app, storage, contentPack);
+  await chatRoutes(app, storage);
+  await circleRoutes(app, storage);
 
   // 物品列表 API
   app.get("/items/all", async () => {
@@ -1367,6 +1406,7 @@ async function main() {
     };
 
     socket.on("message", (data: any) => {
+      if (!socketIsOpen(socket)) return;
       if (!authed) {
         void (async () => {
           try {
@@ -1375,7 +1415,7 @@ async function main() {
               const payload = app.jwt.verify<{ sub: string; av?: number }>(msg.token);
               if (payload.sub) {
                 const user = await storage.getUser(payload.sub);
-                if (user && payload.av === (user.authVersion ?? 1)) {
+                if (user && payload.av === (user.authVersion ?? 1) && socketIsOpen(socket)) {
                   userId = payload.sub;
                   authed = true;
                   clearTimeout(authDeadline);
@@ -1406,7 +1446,7 @@ async function main() {
 
     socket.on("close", () => {
       clearTimeout(authDeadline);
-      if (userId) storage.wsDisconnect(userId);
+      if (userId) storage.wsDisconnect(userId, { socket });
     });
   });
 

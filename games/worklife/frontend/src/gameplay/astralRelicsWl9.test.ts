@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -63,7 +64,7 @@ describe("WL-9 frontend art contract, navigation IA, zero-SVG/Emoji/flicker guar
     assert.ok(endgameGroup);
     assert.equal(endgameGroup.items.includes("relics"), true);
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     const arIndex = advSrc.indexOf("export function AstralRelicsPanel");
     assert.ok(arIndex > 0, "AstralRelicsPanel must be exported in AdvancementPanels.tsx");
     const arSlice = advSrc.slice(arIndex);
@@ -179,7 +180,7 @@ describe("WL-9 frontend art contract, navigation IA, zero-SVG/Emoji/flicker guar
     assert.ok((boostSheet.critRatePct || 0) > (baseSheet.critRatePct || 0));
     assert.ok((boostSheet.critDmgPct || 0) > (baseSheet.critDmgPct || 0));
     assert.ok((boostSheet.goldMult || 1) > (baseSheet.goldMult || 1));
-    assert.ok((boostSheet.dropMult || 1) > (baseSheet.dropMult || 1));
+    assert.equal(boostSheet.dropMult, baseSheet.dropMult, "rare find is applied once, by the server (getRareFindMultiplier)");
 
     const bossTarget: any = {
       id: "astral_boss",

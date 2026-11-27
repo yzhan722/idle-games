@@ -27,7 +27,7 @@ type Props = {
 const secs = (ms: number) => (ms % 1000 === 0 ? `${ms / 1000}s` : `${(ms / 1000).toFixed(1)}s`);
 
 /**
- * MWI-style skill page body: a level-ordered list of actions. Unlocked rows show time / XP /
+ * Skill page body: a level-ordered list of actions. Unlocked rows show time / XP /
  * output; locked rows keep their yields as a preview but lead with the unlock requirement.
  */
 export function SkillActionList(props: Props) {
@@ -65,9 +65,9 @@ export function SkillActionList(props: Props) {
           >
             <span className="sar-art" aria-hidden="true">
               {hasArt && row.cardId ? (
-                <T1Art kind="tree" id={row.cardId} fallback="" alt="" />
+                <T1Art kind="tree" id={row.cardId} fallback="" alt="" loading="lazy" small />
               ) : row.primaryYield ? (
-                <T1ItemIcon itemId={row.primaryYield.itemId} fallback={props.iconOf(row.primaryYield.itemId)} alt="" />
+                <T1ItemIcon itemId={row.primaryYield.itemId} fallback={props.iconOf(row.primaryYield.itemId)} alt="" loading="lazy" />
               ) : null}
             </span>
             <span className="sar-main">

@@ -3,9 +3,9 @@
  *
  * 覆盖目标：
  * 1. 累积模拟游玩时长 = 800 小时（2,880,000 秒，落在 500~1000 小时挂机寿命目标区间），逐小时记录遥测数据。
- * 2. 验证 100 小时节点处于中前期（战斗 ~Lv.43 雪原/火山过渡、生活技能均等 ~Lv.34），不会在 100 小时把技能点满；
- *    500 小时进入终局前段（战斗 ~Lv.114 裂隙/炼狱、生活技能均等 ~Lv.83）；
- *    800 小时达成万界终焉（战斗 Lv.150+ 通关 Omega、12 项生活技能均等 Lv.105+、小屋满级 Lv.20）。
+ * 2. 验证 100 小时节点处于中前期（战斗 ~Lv.48 雪山/熔岩过渡、生活技能均等 ~Lv.37），不会在 100 小时把技能点满；
+ *    500 小时进入终局（战斗 ~Lv.145、生活技能均等 ~Lv.74）；
+ *    800 小时达成万界终焉（战斗 ~Lv.181、12 项生活技能均等 ~Lv.93）。
  * 3. 全程通过真实 `grantProfessionXp` / `grantCombatXp`（调用 `getXpForLevel`）自然升级，禁止直接硬改技能等级。
  * 4. 100% 覆盖全部 21 项核心与新增模块。
  */
@@ -210,11 +210,11 @@ async function main() {
     taskBoardClaimedAndCrateOpened: false,
     dailyCheckInQuestsBountiesAchievements: false,
     allCombatZonesProgressed: false,
-    mwiNineCombatAbilitiesAndBooksMastered: false,
-    mwiSmartTriggersAllyHpAndEnemyCount: false,
-    mwiAlchemyCoinifyTransmutation: false,
-    mwiProductionTeasConsumedAndBuffed: false,
-    mwiCombatAccuracyEvasionCritSheet: false,
+    nineCombatAbilitiesAndBooksMastered: false,
+    smartTriggersAllyHpAndEnemyCount: false,
+    alchemyCoinifyTransmutation: false,
+    productionTeasConsumedAndBuffed: false,
+    combatAccuracyEvasionCritSheet: false,
   };
 
   // ---------------------------------------------------------------------------
@@ -488,16 +488,16 @@ async function main() {
   ];
   chooseBuild(state, "thick_bark");
   featureChecklist.abilityBooksLearnedAndAutoCast = true;
-  featureChecklist.mwiNineCombatAbilitiesAndBooksMastered = true;
-  featureChecklist.mwiSmartTriggersAllyHpAndEnemyCount = true;
+  featureChecklist.nineCombatAbilitiesAndBooksMastered = true;
+  featureChecklist.smartTriggersAllyHpAndEnemyCount = true;
 
-  // 验证银河奶牛借鉴点 #3 炼金点金术分支 & #5 生产茶饮栏 & #7 四维高级战斗属性
+  // 验证炼金点金术分支、生产茶饮栏、四维高级战斗属性
   state.inventory.wood_1 = (state.inventory.wood_1 || 0) + 20;
   const goldBeforeCoinify = state.inventory.gold || 0;
   const coinifyRes = alchemyCoinify(state, pack, "wood_1", 5, () => 0.1);
   assert.equal(coinifyRes.ok, true, "炼金点金术应成功点化多余材料");
   assert.ok((state.inventory.gold || 0) > goldBeforeCoinify, "点金术应产出远高于原店价的金币并增长炼金经验");
-  featureChecklist.mwiAlchemyCoinifyTransmutation = true;
+  featureChecklist.alchemyCoinifyTransmutation = true;
 
   for (const teaId of ["tea_spirit", "potion_craft_focus", "potion_scholar", "potion_fortune"]) {
     state.inventory[teaId] = (state.inventory[teaId] || 0) + 5;
@@ -505,17 +505,17 @@ async function main() {
     assert.equal(teaRes.ok, true, `${teaId} 应可作为生产茶饮饮用并赋予生产状态增益`);
   }
   state.activeBuffs = [];
-  featureChecklist.mwiProductionTeasConsumedAndBuffed = true;
+  featureChecklist.productionTeasConsumedAndBuffed = true;
 
   const sheetCheck = combatSheetFromPack(state, pack);
   assert.ok(
-    (sheetCheck.accuracyPct || 0) >= 85 &&
+    (sheetCheck.accuracy || 0) >= 110 &&
       (sheetCheck.evasionPct || 0) >= 5 &&
       (sheetCheck.critRatePct || 0) >= 5 &&
       (sheetCheck.critDmgPct || 0) >= 150,
-    "角色面板应包含精准率、闪避率、暴击率与暴击伤害四维高级战斗属性"
+    "角色面板应包含命中、闪避率、暴击率与暴击伤害四维高级战斗属性"
   );
-  featureChecklist.mwiCombatAccuracyEvasionCritSheet = true;
+  featureChecklist.combatAccuracyEvasionCritSheet = true;
 
   for (const skId of ALL_TWELVE_LIFE_SKILLS) {
     state.skills[skId] ||= { level: 1, xp: 0, unlockedRecipes: [], enhancementLevel: 0 };
@@ -638,7 +638,7 @@ async function main() {
       featureChecklist.allSixSkillTreesUnlocked = true;
     }
 
-    // 3.4 商店补给当前阶段 HP 药、MP 药与 3 槽状态药，装入银河奶牛药剂栏
+    // 3.4 商店补给当前阶段 HP 药、MP 药与 3 槽状态药，装入药剂栏
     state.inventory.gold = (state.inventory.gold || 0) + 1200 + hour * 45;
     for (const potId of [tierCfg.hpPotion, tierCfg.mpPotion, ...tierCfg.statusPotions]) {
       if (SHOP_STOCK_IDS.includes(potId)) {
@@ -720,7 +720,7 @@ async function main() {
     state.inventory.gold = (state.inventory.gold || 0) + goldEarned;
     state.stats!.totalGoldEarned += goldEarned;
 
-    // 3.6 每日/周期性系统覆盖：签到、委托板、大宝箱、小屋建造、强化挂机、耐久修理
+    // 3.6 每日/周期性系统覆盖：签到、委托板、补给箱、小屋建造、强化挂机、耐久修理
     if (hour % 24 === 1) {
       doCheckIn(state, now());
       ensureDailyQuests(state);
@@ -728,7 +728,7 @@ async function main() {
         (state.stats as any)[q.metric] = Math.max((state.stats as any)[q.metric] || 0, q.target + 10);
         claimDailyQuest(state, q.id);
       }
-      ensureBounties(state, rng);
+      ensureBounties(state, now());
       for (const b of state.bounties?.board || []) {
         acceptBounty(state, b.id);
         if (b.kind === "kill" && b.targetId) {
@@ -788,7 +788,7 @@ async function main() {
       }
     }
 
-    // 在第 60 小时测试连强挂机 (EnhanceRun) + 保护镜单次强化
+    // 在第 60 小时测试连强挂机 (EnhanceRun) + 定纹镜单次强化
     if (hour === 60) {
       const enhTarget = "weapon_iron_sword";
       const enhItem = findItem(pack, enhTarget)!;

@@ -52,7 +52,7 @@ type Props = {
 const secs = (s: number) => (Number.isInteger(s) ? `${s}s` : `${s.toFixed(1)}s`);
 
 /**
- * MWI-style production list: one row per recipe, level-ordered, locked rows dimmed with the unlock
+ * Production list: one row per recipe, level-ordered, locked rows dimmed with the unlock
  * level, inputs shown as have/need chips (green when enough, amber when short), output with T1 art.
  */
 export function CraftRecipeList(props: Props) {
@@ -100,7 +100,7 @@ export function CraftRecipeList(props: Props) {
             onClick={() => props.onOpen({ ...r, name: displayName })}
           >
             <span className="sar-art" aria-hidden="true">
-              <T1ItemIcon itemId={r.output} fallback={props.iconOf(r.output)} alt="" />
+              <T1ItemIcon itemId={r.output} fallback={props.iconOf(r.output)} alt="" loading="lazy" />
             </span>
             <span className="sar-main">
               <span className="sar-head">

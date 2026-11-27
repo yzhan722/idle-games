@@ -1,4 +1,5 @@
 import { ensureProgression } from "./progression_state";
+import { createPgCircles } from "./circle_pg";
 import {
   applyPlayerCommand,
   commandOperationHash,
@@ -10,6 +11,7 @@ import {
 } from "./player_commands";
 import { Pool } from "pg";
 import { hasEnhancementSkill } from "./enhancement_utils";
+import { migratePlayerCurves } from "./curve_migration";
 import type {
   UserRecord,
   EnhancedPlayerState,
@@ -18,7 +20,9 @@ import type {
   EnhancementProvider,
   PriceHistory,
 } from "./types";
-import type { MarketQuote, Storage, TradingOrder } from "./storage";
+import type { MarketQuote, Storage, TradeRecord, TradingOrder } from "./storage";
+import { DELETED_ACCOUNT_ID, TOMBSTONE_DAYS } from "./account_deletion";
+import { TRADE_KEEP_PER_ITEM, TRADE_KEEP_PER_PAIR_DAY } from "./market_price";
 import {
   addMembership,
   membershipKeyForSend,
@@ -26,7 +30,22 @@ import {
   payloadChannel,
 } from "./chat_channels";
 import { worldAnnouncements } from "./world_announce";
-import { socketFromWsConnection } from "./ws_socket";
+import { METRICS_KEEP_DAYS, utcDay, type MetricEvent, type StateChange, type StateObserver } from "./retention_metrics";
+import { maskAccountName, shownName } from "./display_name";
+import { maskChatText } from "./name_filter";
+import {
+  CHAT_BLOCK_MAX,
+  REPORT_DEDUPE_HOURS,
+  REPORT_KEEP_DAYS,
+  createChatRing,
+  privateKey,
+  reportGate,
+  reportRingKey,
+  type ChatLine,
+  type ChatReport,
+} from "./chat_moderation";
+import { SYSTEM_DEVICES, createRankCache, rankName, rankScores, type RankBoard, type RankScores } from "./leaderboard";
+import { WS_SESSION_REVOKED, createSocketRegistry, socketFromWsConnection } from "./ws_socket";
 import {
   appendLog,
   defaultEnhancedPlayerState,
@@ -64,17 +83,59 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     idleTimeoutMillis: 30_000,
   });
 
-  type WsConn = { socket: any; channels: Set<string> };
+  /**
+   * blocked：这个人屏蔽的人，连上时从 chat_blocks 读进来，改名单时同步。
+   * blockedLoaded 之前（库还没读完）别人的发言先压在 held 里，读完再按名单放行，免得被屏蔽的人钻这几毫秒的空子。
+   */
+  type WsConn = {
+    socket: any;
+    channels: Set<string>;
+    blocked: Set<string>;
+    blockedLoaded: boolean;
+    held: Array<{ from: string; text: string; onSent?: () => void }>;
+  };
+  /** 名单没读完时最多压几条；再多的丢掉（连上的头几毫秒，正常到不了）。 */
+  const HELD_MAX = 50;
   const wsConnections = new Map<string, WsConn>();
+  /** 每个频道最近几条，只在内存里，举报取证用。 */
+  const chatRing = createChatRing();
+  const sockets = createSocketRegistry();
   const channelMembers = new Map<string, Set<string>>();
 
-  function broadcast(channel: string, msg: unknown) {
+  /** 把 from 说的话发给 c：屏蔽了 from 的收不到；名单还没读完先压着。真发出去了才调 onSent。 */
+  function deliverFrom(c: WsConn, from: string, text: string, onSent?: () => void) {
+    if (!c.blockedLoaded) {
+      if (c.held.length < HELD_MAX) c.held.push({ from, text, onSent });
+      return;
+    }
+    if (c.blocked.has(from)) return;
+    onSent?.();
+    if (c.socket && typeof c.socket.send === "function") {
+      try {
+        c.socket.send(text);
+      } catch {}
+    }
+  }
+
+  function releaseHeld(c: WsConn) {
+    c.blockedLoaded = true;
+    const held = c.held.splice(0);
+    for (const h of held) deliverFrom(c, h.from, h.text, h.onSent);
+  }
+
+  /** from：发言人；屏蔽了他的人收不到。 */
+  function broadcast(channel: string, msg: unknown, from?: string) {
     const members = channelMembers.get(channel);
     if (!members) return;
     const text = JSON.stringify(msg);
     for (const uid of members) {
       const c = wsConnections.get(uid);
-      if (c?.socket && typeof c.socket.send === "function") {
+      if (!c) continue;
+      if (from) {
+        deliverFrom(c, from, text);
+        continue;
+      }
+      if (c.socket && typeof c.socket.send === "function") {
         try {
           c.socket.send(text);
         } catch {}
@@ -125,6 +186,150 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     await txPersistState(client, userId, st, contentVersion);
 
     return { id: partyId, leaderId: party.leader_id, members, createdAt: party.created_at.toISOString() } as Party;
+  }
+
+  let stateObserver: StateObserver | null = null;
+  function notifyState(change: StateChange) {
+    try {
+      stateObserver?.(change);
+    } catch (err) {
+      console.error("[metrics] observer failed:", err);
+    }
+  }
+
+  // ---- 真人榜（leaderboard.ts）：分数变了才写 player_rankings，写在存档提交之后，失败不影响存档 ----
+  const RANK_COLUMN: Record<RankBoard, string> = { total: "total_level", combat: "combat_level", zone: "zone_score" };
+  const rankCache = createRankCache({
+    async top(board, limit) {
+      const col = RANK_COLUMN[board];
+      const { rows } = await pool.query(
+        `SELECT r.user_id, r.name, r.score, u.username
+           FROM (SELECT user_id, name, ${col} AS score FROM player_rankings WHERE ${col} > 0 ORDER BY ${col} DESC, user_id LIMIT $1) r
+           JOIN users u ON u.id = r.user_id
+          ORDER BY r.score DESC, r.user_id`,
+        [limit],
+      );
+      return rows.map((r) => ({ userId: r.user_id, name: maskAccountName(r.name, r.username), score: Number(r.score) }));
+    },
+    async countAbove(board, score) {
+      const { rows } = await pool.query(`SELECT count(*) AS n FROM player_rankings WHERE ${RANK_COLUMN[board]} > $1`, [score]);
+      return Number(rows[0]?.n ?? 0);
+    },
+  });
+  /** 上次写进表里的内容；没变就不写。只是省写，丢了也只是多写一次。 */
+  const rankWritten = new Map<string, string>();
+  const rankPending = new Map<string, RankWrite>();
+  const rankWriting = new Set<string>();
+
+  /** 一行榜单内容；null = 不上榜。 */
+  type RankWrite = (RankScores & { name: string }) | null;
+  function rankWriteOf(state: EnhancedPlayerState): RankWrite {
+    const name = rankName(state);
+    const scores = name ? rankScores(state) : null;
+    return name && scores ? { name, ...scores } : null;
+  }
+
+  /** 系统账号不进榜；账号已注销时 users 里没有这一行，什么都不会写。 */
+  async function insertRanking(userId: string, row: NonNullable<RankWrite>, onConflict: string): Promise<void> {
+    await pool.query(
+      `INSERT INTO player_rankings (user_id, name, total_level, combat_level, zone_score, updated_at)
+       SELECT u.id, $2, $3, $4, $5, now() FROM users u
+        WHERE u.id = $1
+          AND (u.guest_device_id IS NULL
+               OR (left(u.guest_device_id, length($6::text)) <> $6 AND u.guest_device_id <> $7))
+       ON CONFLICT (user_id) ${onConflict}`,
+      [userId, row.name, row.total, row.combat, row.zone, SYSTEM_DEVICES.prefix, SYSTEM_DEVICES.exact],
+    );
+  }
+
+  async function writeRanking(userId: string, row: RankWrite): Promise<void> {
+    const key = row ? `${row.name}\n${row.total}\n${row.combat}\n${row.zone}` : "";
+    if (rankWritten.get(userId) === key) return;
+    if (row) {
+      await insertRanking(
+        userId,
+        row,
+        `DO UPDATE SET
+           name = EXCLUDED.name, total_level = EXCLUDED.total_level, combat_level = EXCLUDED.combat_level,
+           zone_score = EXCLUDED.zone_score, updated_at = now()`,
+      );
+    } else {
+      await pool.query("DELETE FROM player_rankings WHERE user_id = $1", [userId]);
+    }
+    if (rankWritten.size > 20_000) rankWritten.clear();
+    rankWritten.set(userId, key);
+  }
+
+  /** 同一玩家一次只写一条，连续多次保存只写最后一次。 */
+  async function syncRanking(userId: string, state: EnhancedPlayerState): Promise<void> {
+    try {
+      // 马上算好：调用方之后还会接着改同一个对象，没存下的内容不能进榜
+      rankPending.set(userId, rankWriteOf(state));
+    } catch (err) {
+      console.error("[leaderboard] bad state:", err);
+      return;
+    }
+    if (rankWriting.has(userId)) return;
+    rankWriting.add(userId);
+    try {
+      for (let next = rankPending.get(userId); next !== undefined; next = rankPending.get(userId)) {
+        rankPending.delete(userId);
+        await writeRanking(userId, next);
+      }
+    } catch (err) {
+      rankPending.delete(userId);
+      rankWritten.delete(userId);
+      console.error("[leaderboard] write failed:", err);
+    } finally {
+      rankWriting.delete(userId);
+    }
+  }
+
+  /**
+   * 补一遍老存档，只做一次，做完记在 data_backfills 里；中途重启就从头再补（已有的行不动）。
+   * 补的同时玩家可能正在存档：只插没有的行，不盖掉刚存下的新分数；某个人刚好注销只跳过他。
+   */
+  async function backfillRankings(): Promise<void> {
+    const done = await pool.query("SELECT 1 FROM data_backfills WHERE name = $1", ["player_rankings"]);
+    if (done.rows[0]) return;
+    let after = "00000000-0000-0000-0000-000000000000";
+    let failed = false;
+    for (;;) {
+      const { rows } = await pool.query(
+        `SELECT user_id, jsonb_build_object('curveVersion', state_json->'curveVersion', 'settings', state_json->'settings',
+                  'skills', state_json->'skills', 'combatSkills', state_json->'combatSkills',
+                  'combatLevel', state_json->'combatLevel', 'stats', state_json->'stats') AS state
+           FROM player_states
+          WHERE user_id > $1 AND COALESCE(state_json->'settings'->>'playerName', '') <> ''
+          ORDER BY user_id LIMIT 200`,
+        [after],
+      );
+      for (const r of rows) {
+        let row: RankWrite = null;
+        try {
+          // 与读存档同一套换算，等级才和之后保存时一致
+          migratePlayerCurves(r.state as EnhancedPlayerState);
+          row = rankWriteOf(r.state as EnhancedPlayerState);
+        } catch (err) {
+          console.error("[leaderboard] backfill skipped a save:", err);
+        }
+        if (!row) continue;
+        try {
+          await insertRanking(r.user_id, row, "DO NOTHING");
+        } catch (err) {
+          // 23503：这一刻刚好注销
+          if ((err as { code?: string }).code !== "23503") {
+            failed = true;
+            console.error("[leaderboard] backfill failed for one player:", err);
+          }
+        }
+      }
+      if (rows.length < 200) break;
+      after = rows[rows.length - 1].user_id;
+      // 让一让正常请求
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    if (!failed) await pool.query("INSERT INTO data_backfills (name) VALUES ($1) ON CONFLICT (name) DO NOTHING", ["player_rankings"]);
   }
 
   const userLocks = new Map<string, Promise<unknown>>();
@@ -241,6 +446,83 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         PRIMARY KEY (user_id, operation_id)
       )
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS account_deletions (
+        user_id UUID PRIMARY KEY,
+        deleted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_trade_history_buyer ON trade_history(buyer_id)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_trade_history_seller ON trade_history(seller_id)");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS player_rankings (
+        user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        total_level INT NOT NULL,
+        combat_level INT NOT NULL,
+        zone_score INT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS data_backfills (
+        name TEXT PRIMARY KEY,
+        done_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_player_rankings_total ON player_rankings(total_level DESC, user_id)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_player_rankings_combat ON player_rankings(combat_level DESC, user_id)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_player_rankings_zone ON player_rankings(zone_score DESC, user_id)");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS metrics_daily (
+        day DATE NOT NULL,
+        event TEXT NOT NULL,
+        count BIGINT NOT NULL DEFAULT 0,
+        PRIMARY KEY (day, event)
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_blocks (
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        blocked_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, blocked_user_id)
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_reports (
+        id UUID PRIMARY KEY,
+        reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reason TEXT NOT NULL,
+        channel TEXT NOT NULL,
+        snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_chat_reports_created ON chat_reports(created_at)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_chat_reports_reporter ON chat_reports(reporter_id, created_at)");
+    // 同好会（circle.ts，迁移 008_circles.sql）
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS circles (
+        id UUID PRIMARY KEY,
+        name TEXT NOT NULL,
+        name_key TEXT NOT NULL,
+        doc JSONB NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS idx_circles_name_key ON circles(name_key)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_circles_doc ON circles USING GIN (doc jsonb_path_ops)");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS circle_members (
+        user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        circle_id UUID NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
+        joined_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_circle_members_circle ON circle_members(circle_id)");
+    void backfillRankings().catch((err) => console.error("[leaderboard] backfill failed:", err));
   }
 
   async function getCommandReceipt(userId: string, operationId: string): Promise<PlayerCommandReceipt | undefined> {
@@ -317,6 +599,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     if (existing.rows[0]) {
       const state = existing.rows[0].state_json as EnhancedPlayerState;
       state.stateRevision = Number(existing.rows[0].version);
+      migratePlayerCurves(state);
       return state;
     }
     const state = defaultEnhancedPlayerState(contentVersion);
@@ -339,7 +622,11 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
     );
     if (res.rowCount !== 1) throw new Error("state_version_conflict");
     state.stateRevision = nextRevision;
+    void syncRanking(userId, state);
   }
+
+  /** 事务里改过的存档：提交之后才更新排行榜，回滚就当没发生。 */
+  const txTouched = new WeakMap<object, Map<string, EnhancedPlayerState>>();
 
   async function withTransaction<T>(fn: (client: import("pg").PoolClient) => Promise<T>): Promise<T> {
     const client = await pool.connect();
@@ -347,6 +634,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       await client.query("BEGIN");
       const result = await fn(client);
       await client.query("COMMIT");
+      for (const [userId, state] of txTouched.get(client) ?? []) void syncRanking(userId, state);
       return result;
     } catch (e) {
       try {
@@ -354,6 +642,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       } catch {}
       throw e;
     } finally {
+      txTouched.delete(client);
       client.release();
     }
   }
@@ -376,10 +665,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       state.stateRevision = 0;
       return { state, contentVersion: "unknown" };
     }
-    return {
-      state: { ...res.rows[0].state_json, stateRevision: Number(res.rows[0].version) } as EnhancedPlayerState,
-      contentVersion: res.rows[0].content_version as string,
-    };
+    const state = { ...res.rows[0].state_json, stateRevision: Number(res.rows[0].version) } as EnhancedPlayerState;
+    migratePlayerCurves(state);
+    return { state, contentVersion: res.rows[0].content_version as string };
   }
 
   async function txPersistState(
@@ -393,9 +681,41 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       [userId, contentVersion, JSON.stringify({ ...state, stateRevision: state.stateRevision! + 1 })],
     );
     state.stateRevision = state.stateRevision! + 1;
+    const touched = txTouched.get(client) ?? new Map<string, EnhancedPlayerState>();
+    touched.set(userId, state);
+    txTouched.set(client, touched);
   }
 
+  /** 凭据变了：已连上的每一条连接都断开，旧连接不能再收发。只管得到本进程的连接。 */
+  function dropSockets(this: Storage, userId: string) {
+    sockets.closeAll(userId, WS_SESSION_REVOKED, "session_revoked");
+    this.wsDisconnect(userId);
+  }
+
+  /** 同好会（circle_pg.ts）：成员变了就换本进程里这个人的聊天频道。 */
+  const circles = createPgCircles({
+    pool,
+    withTransaction,
+    txLoadStateForUpdate,
+    txPersistState,
+    isOnline: (userId) => wsConnections.has(userId),
+    events: {
+      setChannel(userId, circleId) {
+        const conn = wsConnections.get(userId);
+        for (const key of [...(conn?.channels ?? [])]) {
+          if (!key.startsWith("circle:")) continue;
+          conn!.channels.delete(key);
+          channelMembers.get(key)?.delete(userId);
+        }
+        if (conn && circleId) addMembership(channelMembers, conn.channels, userId, `circle:${circleId}`);
+      },
+      broadcast: (channel, msg) => broadcast(channel, msg),
+      notifyUser: (userId, payload) => notifyUser(userId, payload),
+    },
+  });
+
   const storage: Storage = {
+    ...circles.methods,
     init,
     findOrCreateGuestUser,
     createGuestUser,
@@ -409,13 +729,130 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         "UPDATE users SET google_sub = $1, auth_version = COALESCE(auth_version, 1) + 1 WHERE id = $2",
         [googleSub, userId],
       );
+      dropSockets.call(this, userId);
     },
     async findUserByGoogleSub(googleSub: string) {
       const found = await pool.query("SELECT " + USER_COLS + " FROM users WHERE google_sub = $1", [googleSub]);
       return found.rows[0] ? mapUser(found.rows[0]) : null;
     },
+    async deleteAccount(userId: string, now: Date) {
+      return withUserLock(userId, async () => {
+        const done = await withTransaction(async (client) => {
+          const found = await client.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [userId]);
+          if (!found.rows[0]) return null;
+          const partyRows = await client.query(
+            "SELECT id, leader_id, members FROM parties WHERE members @> $1::jsonb OR leader_id = $2 FOR UPDATE",
+            [JSON.stringify([{ userId }]), userId],
+          );
+          for (const party of partyRows.rows) {
+            const members = party.members as Array<{ userId: string }>;
+            if (party.leader_id !== userId) {
+              await client.query("UPDATE parties SET members = $1 WHERE id = $2", [
+                JSON.stringify(members.filter((m) => m.userId !== userId)),
+                party.id,
+              ]);
+              continue;
+            }
+            await client.query("DELETE FROM parties WHERE id = $1", [party.id]);
+            const others = members.map((m) => m.userId).filter((id) => id !== userId).sort();
+            for (const id of others) {
+              const { state, contentVersion } = await txLoadStateForUpdate(client, id);
+              state.partyState = undefined;
+              appendLog(state, "队伍已解散");
+              await txPersistState(client, id, state, contentVersion);
+            }
+          }
+          // 当过队员的进行中活动里还留着以账号编号为键的基线
+          await client.query(
+            "UPDATE parties SET current_activity = current_activity #- ARRAY['baseline', $1::text] WHERE current_activity->'baseline' ? $1::text",
+            [userId],
+          );
+          const orders = await client.query("DELETE FROM trading_orders WHERE user_id = $1", [userId]);
+          // 锁住存档行：在途的成交 / 挂单要么已经提交（下面看得到），要么等注销完再失败
+          await client.query("SELECT 1 FROM player_states WHERE user_id = $1 FOR UPDATE", [userId]);
+          const lateOrders = await client.query("DELETE FROM trading_orders WHERE user_id = $1", [userId]);
+          await client.query("UPDATE trade_history SET buyer_id = $2 WHERE buyer_id = $1", [userId, DELETED_ACCOUNT_ID]);
+          await client.query("UPDATE trade_history SET seller_id = $2 WHERE seller_id = $1", [userId, DELETED_ACCOUNT_ID]);
+          await client.query("DELETE FROM enhancement_requests WHERE requester_id = $1 OR provider_id = $1", [userId]);
+          await client.query(
+            `UPDATE player_states
+                SET state_json = jsonb_set(state_json, '{partyInvites}', COALESCE(
+                      (SELECT jsonb_agg(i) FROM jsonb_array_elements(state_json->'partyInvites') i WHERE i->>'fromUserId' <> $1), '[]'::jsonb)),
+                    version = version + 1
+              WHERE state_json->'partyInvites' @> $2::jsonb`,
+            [userId, JSON.stringify([{ fromUserId: userId }])],
+          );
+          const circleDone = await circles.txRemoveAccount(client, userId);
+          await client.query("DELETE FROM player_command_receipts WHERE user_id = $1", [userId]);
+          await client.query("DELETE FROM player_rankings WHERE user_id = $1", [userId]);
+          await client.query("DELETE FROM player_states WHERE user_id = $1", [userId]);
+          await client.query("DELETE FROM users WHERE id = $1", [userId]);
+          await client.query("DELETE FROM account_deletions WHERE deleted_at < $1::timestamptz - make_interval(days => $2)", [
+            now.toISOString(),
+            TOMBSTONE_DAYS,
+          ]);
+          await client.query(
+            "INSERT INTO account_deletions (user_id, deleted_at) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING",
+            [userId, now.toISOString()],
+          );
+          return { circleDone, ordersRemoved: (orders.rowCount ?? 0) + (lateOrders.rowCount ?? 0), disbanded: partyRows.rows.filter((p) => p.leader_id === userId).map((p) => p.id as string), left: partyRows.rows.filter((p) => p.leader_id !== userId).map((p) => p.id as string) };
+        });
+        if (!done) return null;
+        circles.announceRemoved(done.circleDone);
+        rankWritten.delete(userId);
+        rankCache.clear();
+        for (const partyId of done.disbanded) {
+          broadcast(`party:${partyId}`, { type: "party:event", event: "party_disbanded", ts: nowIso() });
+          channelMembers.delete(`party:${partyId}`);
+        }
+        for (const partyId of done.left) {
+          broadcast(`party:${partyId}`, { type: "party:event", event: "member_left", memberId: userId, ts: nowIso() });
+        }
+        const conn = wsConnections.get(userId);
+        for (const ch of conn?.channels ?? []) channelMembers.get(ch)?.delete(userId);
+        wsConnections.delete(userId);
+        sockets.closeAll(userId);
+        // chat_blocks / chat_reports 随 users 级联删除；内存里的名单和最近消息也清掉
+        for (const c of wsConnections.values()) c.blocked.delete(userId);
+        chatRing.forget(userId);
+        return { ordersRemoved: done.ordersRemoved };
+      });
+    },
+    async getLeaderboard(params) {
+      return rankCache.view(params);
+    },
+    setStateObserver(observer) {
+      stateObserver = observer;
+    },
+    async bumpMetrics(rows, now) {
+      if (rows.length === 0) return;
+      await pool.query(
+        `INSERT INTO metrics_daily (day, event, count)
+         SELECT * FROM unnest($1::date[], $2::text[], $3::bigint[])
+         ON CONFLICT (day, event) DO UPDATE SET count = metrics_daily.count + EXCLUDED.count`,
+        [rows.map((r) => r.day), rows.map((r) => r.event), rows.map((r) => r.count)],
+      );
+      await pool.query("DELETE FROM metrics_daily WHERE day < $1::date", [
+        utcDay(new Date(now.getTime() - METRICS_KEEP_DAYS * 24 * 3600_000)),
+      ]).catch((err) => console.error("[metrics] prune failed:", err));
+    },
+    async readMetrics({ since }) {
+      const { rows } = await pool.query(
+        "SELECT to_char(day, 'YYYY-MM-DD') AS day, event, count FROM metrics_daily WHERE day >= $1::date ORDER BY day, event",
+        [since],
+      );
+      return rows.map((r) => ({ day: r.day, event: r.event as MetricEvent, count: Number(r.count) }));
+    },
+    async wasAccountDeleted(userId: string, now: Date) {
+      const { rows } = await pool.query(
+        "SELECT 1 FROM account_deletions WHERE user_id = $1 AND deleted_at >= $2::timestamptz - make_interval(days => $3)",
+        [userId, now.toISOString(), TOMBSTONE_DAYS],
+      );
+      return rows.length > 0;
+    },
     async invalidateSessions(userId: string) {
       await pool.query("UPDATE users SET auth_version = COALESCE(auth_version, 1) + 1 WHERE id = $1", [userId]);
+      dropSockets.call(this, userId);
     },
     async createPasswordUser(username: string, passwordHash: string) {
       try {
@@ -447,6 +884,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         [username, passwordHash, userId],
       );
       if (updated.rowCount !== 1) throw new Error("user_not_found");
+      // 账号名可能正好等于角色名：榜上要马上打码（display_name.ts）
+      rankCache.clear();
+      dropSockets.call(this, userId);
     },
     getOrCreatePlayerState,
     async simulateToNow({ userId, state, now, contentPack }) {
@@ -454,8 +894,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         const result = simulateToNow({ state: structuredClone(state), now, contentPack });
         const next = { ...(result.state as EnhancedPlayerState), inventory: normalizeInv(result.state.inventory) };
         await persistState(userId, next);
+        notifyState({ userId, before: state, after: next, now });
         for (const text of worldAnnouncements(state, next, contentPack, userId)) {
-          broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+          broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text }, userId);
         }
         return next;
       });
@@ -493,8 +934,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
                 if (inserted.rowCount === 0) throw new PlayerCommandConflict(currentRevision);
               }
             });
+            notifyState({ userId: command.userId, before: snapshot, after: outcome.state as EnhancedPlayerState, now: command.now });
             for (const text of worldAnnouncements(snapshot, outcome.state as EnhancedPlayerState, command.contentPack, command.userId)) {
-              broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text });
+              broadcast("world", { type: "chat:system", channel: "world", ts: nowIso(), text }, command.userId);
             }
             return outcome;
           } catch (error) {
@@ -787,6 +1229,9 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         const now = Date.now();
         target.partyInvites = target.partyInvites.filter((i) => Date.parse(i.invitedAt) > now - 24 * 3600_000);
         if (target.partyInvites.some((i) => i.partyId === partyId)) return { success: true, message: "邀请已发送" };
+        // 对方屏蔽了邀请人：照常回「已发送」，邀请不存也不通知
+        const blockedBy = await client.query("SELECT 1 FROM chat_blocks WHERE user_id = $1 AND blocked_user_id = $2", [targetUserId, userId]);
+        if (blockedBy.rows[0]) return { success: true };
         if (target.partyInvites.length >= 10) target.partyInvites.shift();
         target.partyInvites.push({ partyId, fromUserId: userId, invitedAt: nowIso() });
         await txPersistState(client, targetUserId, target, contentVersion);
@@ -1070,7 +1515,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         [members.map((m) => m.userId)],
       );
       const nameByUser = new Map<string, string>(
-        nameRows.rows.map((r: { user_id: string; name: string | null }) => [r.user_id, r.name || `玩家_${r.user_id.slice(0, 6)}`]),
+        nameRows.rows.map((r: { user_id: string; name: string | null }) => [r.user_id, shownName(r.user_id, r.name)]),
       );
       return {
         id: row.id,
@@ -1133,26 +1578,52 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       return computeActiveSetBonuses(st, contentPack);
     },
     wsConnect(userId, connection) {
-      const c: WsConn = { socket: socketFromWsConnection(connection), channels: new Set<string>() };
+      // 同一个人又开一个标签页：沿用已经读好的名单，不再有空窗
+      const prev = wsConnections.get(userId);
+      const c: WsConn = {
+        socket: socketFromWsConnection(connection),
+        channels: new Set<string>(),
+        blocked: prev?.blocked ?? new Set<string>(),
+        blockedLoaded: prev?.blockedLoaded ?? false,
+        held: [],
+      };
       wsConnections.set(userId, c);
+      sockets.add(userId, c.socket);
       addMembership(channelMembers, c.channels, userId, "world");
       try {
         if (c.socket && typeof c.socket.send === "function") {
           c.socket.send(JSON.stringify({ type: "chat:system", channel: "world", ts: nowIso(), text: "connected" }));
         }
       } catch {}
-      void getOrCreatePlayerState(userId, "unknown")
-        .then((st) => {
-          for (const key of membershipKeys({ classId: st.activeClassId, partyId: st.partyState?.partyId })) {
+      if (!c.blockedLoaded) {
+        void pool
+          .query("SELECT blocked_user_id FROM chat_blocks WHERE user_id = $1", [userId])
+          .then(({ rows }) => {
+            for (const r of rows) c.blocked.add(r.blocked_user_id);
+          })
+          // 读不出来（库抖动）也放行，不让聊天一直收不到；名单下次连上再读
+          .catch(() => {})
+          .finally(() => releaseHeld(c));
+      }
+      void Promise.all([getOrCreatePlayerState(userId, "unknown"), circles.circleIdOf(userId)])
+        .then(([st, circleId]) => {
+          for (const key of membershipKeys({ classId: st.activeClassId, partyId: st.partyState?.partyId, circleId })) {
             addMembership(channelMembers, c.channels, userId, key);
           }
           if (st.partyState?.partyId) void patchMemberOnline(userId, true);
         })
         .catch(() => {});
     },
-    wsDisconnect(userId) {
+    wsDisconnect(userId, connection) {
       const c = wsConnections.get(userId);
-      if (!c) return;
+      const closing = connection ? socketFromWsConnection(connection) : c?.socket;
+      const remaining = sockets.remove(userId, closing);
+      if (!c || (connection && c.socket !== closing)) return;
+      // 当前连接断了但还有别的标签页在线：换一条继续收消息
+      if (connection && remaining) {
+        c.socket = remaining;
+        return;
+      }
       for (const ch of c.channels) {
         const set = channelMembers.get(ch);
         if (set) {
@@ -1172,7 +1643,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
       }
       if (parsed?.type !== "chat:send") return;
       const channel = typeof parsed.channel === "string" ? parsed.channel : "world";
-      const content = typeof parsed.content === "string" ? parsed.content.slice(0, 300) : "";
+      const content = maskChatText(typeof parsed.content === "string" ? parsed.content.slice(0, 300) : "");
       const senderConn = wsConnections.get(userId);
       if (!content.trim()) {
         try {
@@ -1184,7 +1655,7 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         const recipientId = parsed.recipient;
         void (async () => {
           const st = await getOrCreatePlayerState(userId, "unknown");
-          const senderName = st.settings?.playerName || `玩家_${userId.slice(0, 6)}`;
+          const senderName = shownName(userId, st.settings?.playerName);
           const recipientConn = wsConnections.get(recipientId);
           if (recipientConn?.socket) {
             const payload = {
@@ -1197,9 +1668,10 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
               ts: nowIso(),
               content,
             };
-            try {
-              recipientConn.socket.send(JSON.stringify(payload));
-            } catch {}
+            // 对方屏蔽了你：只回给自己，和送到了一样（名单没读完时先压着，读完再定）
+            deliverFrom(recipientConn, userId, JSON.stringify(payload), () =>
+              chatRing.push(privateKey(userId, recipientId), { ts: payload.ts, sender: userId, senderName, content })
+            );
             try {
               senderConn?.socket?.send(JSON.stringify({ ...payload, isSelf: true }));
             } catch {}
@@ -1216,20 +1688,102 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         const memberKey = membershipKeyForSend(channel, {
           classId: st.activeClassId,
           partyId: st.partyState?.partyId,
+          circleId: channel === "circle" ? await circles.circleIdOf(userId) : null,
         });
-        if (!memberKey) return;
+        if (!memberKey) {
+          if (channel === "circle") {
+            try {
+              senderConn?.socket?.send(JSON.stringify({ type: "chat:error", channel, message: "还没加入同好会", ts: nowIso() }));
+            } catch {}
+          }
+          return;
+        }
         const c = wsConnections.get(userId);
         if (c) addMembership(channelMembers, c.channels, userId, memberKey);
+        const line: ChatLine = { ts: nowIso(), sender: userId, senderName: shownName(userId, st.settings?.playerName), content };
+        chatRing.push(memberKey, line);
         broadcast(memberKey, {
           type: "chat:message",
           channel: payloadChannel(channel),
           sender: userId,
-          senderName: st.settings?.playerName || `玩家_${userId.slice(0, 6)}`,
+          senderName: line.senderName,
           senderProfession: st.activeClassId,
-          ts: nowIso(),
+          ts: line.ts,
           content,
-        });
+        }, userId);
       })().catch(() => {});
+    },
+    async getChatBlocks(userId) {
+      const { rows } = await pool.query(
+        `SELECT b.blocked_user_id, s.state_json->'settings'->>'playerName' AS name
+           FROM chat_blocks b LEFT JOIN player_states s ON s.user_id = b.blocked_user_id
+          WHERE b.user_id = $1 ORDER BY b.created_at`,
+        [userId],
+      );
+      return rows.map((r: { blocked_user_id: string; name: string | null }) => ({ userId: r.blocked_user_id, name: shownName(r.blocked_user_id, r.name) }));
+    },
+    async setChatBlock({ userId, targetUserId, blocked }) {
+      if (userId === targetUserId) return { ok: false as const, error: "self" as const };
+      if (blocked) {
+        const found = await pool.query("SELECT 1 FROM users WHERE id = $1", [targetUserId]);
+        if (!found.rows[0]) return { ok: false as const, error: "user_not_found" as const };
+        const count = await pool.query("SELECT count(*) AS n FROM chat_blocks WHERE user_id = $1", [userId]);
+        const already = await pool.query("SELECT 1 FROM chat_blocks WHERE user_id = $1 AND blocked_user_id = $2", [userId, targetUserId]);
+        if (!already.rows[0] && Number(count.rows[0]?.n ?? 0) >= CHAT_BLOCK_MAX) return { ok: false as const, error: "too_many" as const };
+        await pool.query("INSERT INTO chat_blocks (user_id, blocked_user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [userId, targetUserId]);
+        wsConnections.get(userId)?.blocked.add(targetUserId);
+      } else {
+        await pool.query("DELETE FROM chat_blocks WHERE user_id = $1 AND blocked_user_id = $2", [userId, targetUserId]);
+        wsConnections.get(userId)?.blocked.delete(targetUserId);
+      }
+      return { ok: true as const };
+    },
+    async reportChat({ reporterId, targetUserId, reason, channel, now }) {
+      if (reporterId === targetUserId) return { ok: false as const, error: "self" as const };
+      const found = await pool.query("SELECT 1 FROM users WHERE id = $1", [targetUserId]);
+      if (!found.rows[0]) return { ok: false as const, error: "user_not_found" as const };
+      const recent = await pool.query(
+        "SELECT target_id, created_at FROM chat_reports WHERE reporter_id = $1 AND created_at > $2::timestamptz - make_interval(hours => $3)",
+        [reporterId, now.toISOString(), REPORT_DEDUPE_HOURS],
+      );
+      const gate = reportGate(
+        recent.rows.map((r: { target_id: string; created_at: Date }) => ({ targetId: r.target_id, createdAt: new Date(r.created_at).toISOString() })),
+        targetUserId,
+        now,
+      );
+      if (gate === "limited") return { ok: false as const, error: "report_limited" as const };
+      if (gate === "duplicate") return { ok: true as const, duplicate: true };
+      const st = await getOrCreatePlayerState(reporterId, "unknown");
+      const circleId = channel === "circle" ? await circles.circleIdOf(reporterId) : null;
+      const key = reportRingKey(channel, reporterId, targetUserId, { classId: st.activeClassId, partyId: st.partyState?.partyId, circleId });
+      await pool.query(
+        "INSERT INTO chat_reports (id, reporter_id, target_id, reason, channel, snapshot, created_at) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)",
+        [randomUUID(), reporterId, targetUserId, reason, channel, JSON.stringify(chatRing.snapshot(key)), now.toISOString()],
+      );
+      return { ok: true as const, duplicate: false };
+    },
+    async listChatReports({ since, limit }) {
+      const { rows } = await pool.query(
+        "SELECT id, reporter_id, target_id, reason, channel, snapshot, created_at FROM chat_reports WHERE created_at >= $1 ORDER BY created_at DESC LIMIT $2",
+        [since.toISOString(), limit],
+      );
+      return rows.map((r: any): ChatReport => ({
+        id: r.id,
+        reporterId: r.reporter_id,
+        targetId: r.target_id,
+        reason: r.reason,
+        channel: r.channel,
+        snapshot: Array.isArray(r.snapshot) ? r.snapshot : [],
+        createdAt: new Date(r.created_at).toISOString(),
+      }));
+    },
+    rollCircleWeeks: (now) => circles.rollWeeks(now),
+    async purgeChatReports(now) {
+      const res = await pool.query("DELETE FROM chat_reports WHERE created_at < $1::timestamptz - make_interval(days => $2)", [
+        now.toISOString(),
+        REPORT_KEEP_DAYS,
+      ]);
+      return res.rowCount ?? 0;
     },
     async getTradingOrders({ itemId }) {
       const result = await pool.query(
@@ -1327,6 +1881,27 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         } else {
           await client.query("UPDATE trading_orders SET quantity = $1 WHERE id = $2", [newQty, orderId]);
         }
+        // 成交记录与日均价（内存存储早就在记；列宽装不下的天价单不记，不影响成交）
+        const price = Number(order.price);
+        if (totalCost <= 2_147_483_647 && price <= 99_999_999) {
+          const sellerId = order.type === "sell" ? posterId : buyerId;
+          const tradeBuyerId = order.type === "sell" ? buyerId : posterId;
+          await client.query(
+            "INSERT INTO trade_history (buyer_id, seller_id, item_id, quantity, total_price) VALUES ($1, $2, $3, $4, $5)",
+            [tradeBuyerId, sellerId, order.item_id, quantity, totalCost],
+          );
+          await client.query(
+            `INSERT INTO price_history (item_id, record_date, average_price, min_price, max_price, volume)
+             VALUES ($1, CURRENT_DATE, $2, $3, $3, $4)
+             ON CONFLICT (item_id, record_date) DO UPDATE SET
+               average_price = (price_history.average_price * price_history.volume + EXCLUDED.average_price * EXCLUDED.volume)
+                               / (price_history.volume::bigint + EXCLUDED.volume),
+               min_price = LEAST(price_history.min_price, EXCLUDED.min_price),
+               max_price = GREATEST(price_history.max_price, EXCLUDED.max_price),
+               volume = LEAST(2147483647, price_history.volume::bigint + EXCLUDED.volume)::int`,
+            [order.item_id, price, price, quantity],
+          );
+        }
         notifyUser(posterId, {
           kind: "order:filled",
           orderId,
@@ -1370,6 +1945,26 @@ export async function createPgStorage(databaseUrl: string): Promise<Storage> {
         type: r.type,
         createdAt: r.created_at.toISOString(),
       })) as TradingOrder[];
+    },
+    async getRecentTrades({ itemId, days, now }) {
+      const { rows } = await pool.query(
+        `SELECT buyer_id, seller_id, quantity, total_price, completed_at FROM (
+           SELECT t.*, row_number() OVER (PARTITION BY buyer_id, seller_id, completed_at::date ORDER BY completed_at DESC) AS rn
+             FROM trade_history t
+            WHERE item_id = $1 AND completed_at >= $2::timestamptz - make_interval(days => $3)
+         ) recent
+          WHERE rn <= $5
+          ORDER BY completed_at DESC LIMIT $4`,
+        [itemId, now.toISOString(), days, TRADE_KEEP_PER_ITEM, TRADE_KEEP_PER_PAIR_DAY],
+      );
+      return rows.map((r) => ({
+        itemId,
+        price: Math.round(Number(r.total_price) / Math.max(1, Number(r.quantity))),
+        quantity: Number(r.quantity),
+        buyerId: r.buyer_id,
+        sellerId: r.seller_id,
+        at: (r.completed_at as Date).toISOString(),
+      })) as TradeRecord[];
     },
     async close() {
       await pool.end();

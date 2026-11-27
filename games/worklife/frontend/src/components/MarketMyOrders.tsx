@@ -10,7 +10,7 @@ type Props = {
   refreshKey?: string | number;
 };
 
-/** MWI 我的挂单: what you have on the market right now, with cancel (refunds gold / items). */
+/** 我的挂单: what you have on the market right now, with cancel (refunds gold / items). */
 export function MarketMyOrders(props: Props) {
   const toast = useToast();
   const [orders, setOrders] = useState<Order[] | null>(null);

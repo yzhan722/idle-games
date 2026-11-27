@@ -1,5 +1,5 @@
 // 深海遗迹潜航 & 冒险者行会公会战 (WL-18) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/abyss-guild-parity.test.ts 守护），
+// 与 backend/src/progression2/abyss_guild.ts 同名表与纯函数逐字对称（scripts/abyss-guild-parity.test.ts 守护），
 // 供面板展示东八区日确定性遗迹层（每层海流、氧气消耗与打捞品）、潜水装备升级与当日氧气预算，以及按东八区周轮换的
 // 对手行会阵容（五个席位取自既有魔物的真实战斗属性 × 本周对手行会倍率，后端以竞技沙盒 simulateSandboxDuel 结算）、
 // 行会勋章位阶与封顶的永久加成（经验 / 金币由后端 getActionRates 计入）。任何数值改动必须两端同步。
@@ -578,12 +578,11 @@ export function getGuildWarBonuses(holder?: MinimalGuildWarHolder): GuildWarBonu
 
 /* ---- 以上为 WL-18 core ---- */
 
-/** 行会位阶加成 → 面板展示用短句（只列非零项）。 */
+/** 行会位阶加成 → 面板展示用短句（只列非零项；金币项没有任何收入读取，不显示）。 */
 export function formatGuildStats(s: GuildStats | null | undefined): string[] {
   if (!s) return [];
   const out: string[] = [];
-  if (s.goldGainPct) out.push(`金币 +${s.goldGainPct}%`);
-  if (s.xpGainPct) out.push(`经验 +${s.xpGainPct}%`);
+  if (s.xpGainPct) out.push(`生活技能经验 +${s.xpGainPct}%`);
   return out;
 }
 

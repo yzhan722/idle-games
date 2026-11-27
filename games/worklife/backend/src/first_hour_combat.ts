@@ -1,6 +1,17 @@
 import type { EnhancedContentPack, EnhancedPlayerState } from "./types";
-import { getEquippedCombatStats } from "./storage";
-import { combatSkillContribution, ensureCombatSkills, mainCombatSkill } from "./combat_skills";
+import { getEquippedCombatStats, getEquippedProductionBuffs, getEquippedSecondaryStats } from "./storage";
+import { combatSkillContribution, derivedCombatLevel, ensureCombatSkills, mainCombatSkill } from "./combat_skills";
+import {
+  attackSpeedInterval,
+  combatSpeedPoints,
+  missBp,
+  playerAccuracy,
+  resistAgainst,
+  resistMult,
+  swingMeter,
+  type DamageType,
+  type SecondaryStats,
+} from "./combat_secondary";
 
 export type Combatant = {
   name: string;
@@ -10,7 +21,7 @@ export type Combatant = {
   intervalMs: number;
   incomingDamageMult: number;
   outgoingDamageMult: number;
-  /** Player only: MWI mana pool and regen per basic-attack tick. */
+  /** Player only: mana pool and regen per basic-attack tick. */
   mp?: number;
   mpRegenPerTick?: number;
   /** Chapter 2 build (heavy_sunder): fraction of defender DEF ignored on hit. */
@@ -23,6 +34,12 @@ export type Combatant = {
   isBoss?: boolean;
   /** Chapter 2 build (quenched_thorns): fraction of player DEF reflected when hit. */
   thornsDefRatio?: number;
+  /** Secondary stats (combat_secondary.ts). Absent = always hits / no resistance. */
+  accuracy?: number;
+  evasion?: number;
+  physResist?: number;
+  elemResist?: number;
+  damageType?: DamageType;
 };
 
 export type FightResult = {
@@ -49,13 +66,23 @@ export function playerCombatant(
     relicCritAmpPct?: number;
     thornsDefRatio?: number;
     intervalMult?: number;
+    /** Attack-speed points of timed buffs (food, drinks); set bonuses are read here. */
+    combatSpeedPoints?: number;
+    /** Timed buffs (food, drinks). */
+    secondary?: SecondaryStats;
   }
 ): Combatant {
   // Skill levels first, then gear, then build / buff extras — mirrored by frontend combatSheet.ts.
   // The equipped weapon decides which damage skill (melee / ranged / magic) feeds ATK.
-  const skills = combatSkillContribution(ensureCombatSkills(state), mainCombatSkill(state));
+  const combatSkills = ensureCombatSkills(state);
+  const main = mainCombatSkill(state);
+  const skills = combatSkillContribution(combatSkills, main);
   const gear = getEquippedCombatStats(state, contentPack);
+  const gear2 = getEquippedSecondaryStats(state, contentPack);
+  const buff2 = extras?.secondary;
   const intervalMult = extras?.intervalMult && extras.intervalMult > 0 ? extras.intervalMult : 1;
+  const speedPoints = combatSpeedPoints(getEquippedProductionBuffs(state, contentPack).combatSpeed) + (extras?.combatSpeedPoints || 0);
+  const baseInterval = intervalMult !== 1 ? Math.max(800, Math.round(skills.intervalMs * intervalMult)) : skills.intervalMs;
   const baseUnbuffedAtk = skills.atk + gear.atk + (extras?.atk || 0);
   const unbuffedAtk = extras?.combatAtkPct
     ? Math.round(baseUnbuffedAtk * (1 + extras.combatAtkPct / 100))
@@ -65,7 +92,7 @@ export function playerCombatant(
     hp: skills.hp + (extras?.hp || 0),
     atk: unbuffedAtk + (extras?.buffAtk || 0),
     def: skills.def + gear.def + (extras?.def || 0),
-    intervalMs: intervalMult !== 1 ? Math.max(800, Math.round(skills.intervalMs * intervalMult)) : skills.intervalMs,
+    intervalMs: attackSpeedInterval(baseInterval, speedPoints),
     incomingDamageMult: 1,
     outgoingDamageMult: 1,
     mp: skills.mp,
@@ -74,6 +101,11 @@ export function playerCombatant(
     bossArmorBreakPct: extras?.bossArmorBreakPct || 0,
     relicCritAmpPct: extras?.relicCritAmpPct || 0,
     thornsDefRatio: extras?.thornsDefRatio || 0,
+    accuracy: playerAccuracy(derivedCombatLevel(combatSkills), combatSkills.attack?.level || 1, gear2.accuracy + (buff2?.accuracy || 0)),
+    evasion: gear2.evasion + (buff2?.evasion || 0),
+    physResist: gear2.physResist + (buff2?.physResist || 0),
+    elemResist: gear2.elemResist + (buff2?.elemResist || 0),
+    damageType: main === "magic" ? "elemental" : "physical",
   };
 }
 
@@ -91,6 +123,11 @@ export function monsterCombatant(monster: Record<string, unknown>): Combatant {
     incomingDamageMult: Number(monster.incomingDamageMult || 1),
     outgoingDamageMult: Number(monster.outgoingDamageMult || 1),
     isBoss,
+    accuracy: Number(monster.accuracy || 0),
+    evasion: Number(monster.evasion || 0),
+    physResist: Number(monster.physResist || 0),
+    elemResist: Number(monster.elemResist || 0),
+    damageType: monster.damageType === "elemental" ? "elemental" : "physical",
   };
 }
 
@@ -116,7 +153,7 @@ export function hitDamage(attacker: Combatant, defender: Combatant): number {
   const effDef = totalPen > 0 ? Math.floor(defender.def * (1 - totalPen)) : defender.def;
   const critAmp = attacker.relicCritAmpPct ? 1 + attacker.relicCritAmpPct / 100 : 1;
   const raw = mitigatedDamage(attacker.atk * attacker.outgoingDamageMult, effDef) * critAmp;
-  return Math.max(1, Math.floor(raw * defender.incomingDamageMult));
+  return Math.max(1, Math.floor(raw * defender.incomingDamageMult * resistMult(resistAgainst(attacker.damageType, defender))));
 }
 
 /** Deterministic HP combat. No RNG. Used to retune first-hour numbers. */
@@ -135,6 +172,10 @@ export function simulateFight(
   let playerHits = 0;
   let enemyHits = 0;
   let playerDamageDealt = 0;
+  let playerMeter: number | undefined;
+  let enemyMeter: number | undefined;
+  const playerMiss = missBp(player.accuracy, enemy.evasion);
+  const enemyMiss = missBp(enemy.accuracy, player.evasion);
 
   while (playerHp > 0 && enemyHp > 0 && t < maxMs) {
     const toPlayer = player.intervalMs - playerCd;
@@ -145,18 +186,26 @@ export function simulateFight(
     enemyCd += step;
 
     if (playerCd >= player.intervalMs) {
-      const dmg = hitDamage(player, enemy);
-      enemyHp -= dmg;
-      playerDamageDealt += dmg;
-      playerHits += 1;
+      const swing = swingMeter(playerMeter, playerMiss);
+      playerMeter = swing.meter;
+      if (!swing.miss) {
+        const dmg = hitDamage(player, enemy);
+        enemyHp -= dmg;
+        playerDamageDealt += dmg;
+        playerHits += 1;
+      }
       playerCd = 0;
     }
     if (enemyHp <= 0) break;
     if (enemyCd >= enemy.intervalMs) {
-      let dmg = hitDamage(enemy, { ...player, incomingDamageMult: 1 });
-      if (hooks.enemyDamage) dmg = hooks.enemyDamage(enemyHits + 1, dmg, player.hp);
-      playerHp -= dmg;
-      enemyHits += 1;
+      const swing = swingMeter(enemyMeter, enemyMiss);
+      enemyMeter = swing.meter;
+      if (!swing.miss) {
+        let dmg = hitDamage(enemy, { ...player, incomingDamageMult: 1 });
+        if (hooks.enemyDamage) dmg = hooks.enemyDamage(enemyHits + 1, dmg, player.hp);
+        playerHp -= dmg;
+        enemyHits += 1;
+      }
       enemyCd = 0;
     }
   }

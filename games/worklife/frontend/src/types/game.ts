@@ -10,11 +10,12 @@ export interface PlayerState {
   lastSimulatedAt: string;
   activeClassId: string;
   mode: "idle" | "life_action" | "enhancing";
-  /** MWI: enhancing is a timed action — attempts run until the target level or the materials run out. */
+  /** Enhancing is a timed action — attempts run until the target level or the materials run out. */
   enhanceRun?: {
     itemId: string;
     targetLevel: number;
     useProtection: boolean;
+    useEssence?: boolean;
     intervalMs: number;
     nextAttemptAt: number;
     startedAt: number;
@@ -48,6 +49,8 @@ export interface PlayerState {
   logs: Array<{ ts: string; text: string }>;
   tradingState: TradingState;
   partyState?: PartyState;
+  /** 组队副本的波次进度，服务端为准。 */
+  partyRun?: { partyId: string; startedAt: string; stageId: string; nextWave: number; attempt: number };
   activePartyActivity?: {
     partyId: string;
     type: string;
@@ -58,13 +61,32 @@ export interface PlayerState {
     raidBossName?: string;
   } | null;
   activityQueue: ActivityQueueItem[];
-  /** Derived by GET /player/state: MWI task badge. */
+  /** Derived by GET /player/state: task badge. */
   taskSummary?: { total: number; ready: number; giftReady: boolean };
+  /** Derived by GET /player/state：个人战斗倍率（经验、金币、稀有掉落单人 / 组队）。 */
+  combatGains?: { xp: number; gold: number; rareSolo: number; rareParty: number };
+  /** 各区域选的难度档位（gameplay/zoneTiers.ts），没有 = 普通。 */
+  zoneTiers?: Record<string, number>;
+  /** 单人地下城：进行中或最近一次的结果（gameplay/dungeonRules.ts）。 */
+  dungeonRun?: {
+    zoneId: string;
+    tier: number;
+    waves: string[];
+    cleared: number;
+    startedAt: number;
+    outcome?: 'clear' | 'fail' | 'left' | 'offline';
+    endedAt?: number;
+    result?: { xp: number; gold: number; loot: Record<string, number>; reward?: string };
+    /** 结算弹窗看过了（服务端记），刷新后不再弹。 */
+    resultSeen?: boolean;
+  };
+  dungeonDaily?: { day: string; runs: number };
   stats?: {
     totalKills: number;
     totalBossKills?: number;
     totalDeaths?: number;
     killsByMonster?: Record<string, number>;
+    zoneTierKills?: Record<string, number[]>;
     totalGathered?: number;
     totalCrafted?: number;
     totalActions?: number;
@@ -95,8 +117,10 @@ export interface PlayerState {
     deaths?: number;
     /** Consecutive defeats; at 3 the server switches auto-repeat off by itself. */
     lossStreak?: number;
+    /** 这一场的难度档位，缺省普通。 */
+    tier?: number;
     startedAt?: number;
-    /** MWI battle statistics for the current auto-repeat run. */
+    /** Battle statistics for the current auto-repeat run. */
     runStats?: { startedAt: number; kills: number; xp: number; gold: number; loot: Record<string, number> };
     enrageStacks?: number;
     playerMp?: number;
@@ -105,6 +129,8 @@ export interface PlayerState {
     braceUntil?: number;
     braceMult?: number;
     xpGained?: Record<string, number>;
+    xpTotal?: number;
+    goldGained?: number;
     abilityXpGained?: Record<string, number>;
     abilityLevelUps?: Array<{ id: string; name: string; level: number }>;
   };
@@ -136,7 +162,7 @@ export interface PlayerState {
   combatHp?: number;
   /** Wall-clock ms when combatHp was last written (regen accrues from here). */
   combatHpAt?: number;
-  /** MWI combat skills (server-derived 战斗等级 lives in combatLevel). */
+  /** Combat skills (server-derived 战斗等级 lives in combatLevel). */
   combatSkills?: Record<CombatSkillId, { level: number; xp: number }>;
   abilities?: Record<string, { level: number; xp: number }>;
   abilityLoadout?: AbilitySlot[];

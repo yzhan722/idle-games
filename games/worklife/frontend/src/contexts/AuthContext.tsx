@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react'
 import { apiClient } from '../services/api'
 import { logger } from '../utils/logger'
+import { LOCAL_STORAGE_KEYS } from '../gameplay/legalDocs'
 
 interface User {
   id: string
@@ -21,6 +22,8 @@ interface AuthContextType {
   /** 写入一个新会话 */
   applySession: (response: { userId: string; token: string; username?: string; resumeToken?: string }) => void
   logout: () => void
+  /** 账号已注销：清掉本机的登录状态与游戏数据（不再请求服务器） */
+  forgetSession: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -137,6 +140,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('guest_resume_token')
   }, [])
 
+  const forgetSession = useCallback(() => {
+    setUser(null)
+    apiClient.setToken('')
+    apiClient.clearCache()
+    try {
+      for (const key of Object.keys(localStorage)) {
+        if (LOCAL_STORAGE_KEYS.some((known) => key.startsWith(known))) localStorage.removeItem(key)
+      }
+    } catch {
+      // 本地存储不可用时没有东西可清
+    }
+  }, [])
+
   // 注册全局 401 处理：会话失效时回到账号登录页
   useEffect(() => {
     apiClient.setUnauthorizedHandler(() => {
@@ -153,8 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginAccount,
     registerAccount,
     applySession: persistSession,
-    logout
-  }), [user, loading, login, loginAccount, registerAccount, persistSession, logout]);
+    logout,
+    forgetSession
+  }), [user, loading, login, loginAccount, registerAccount, persistSession, logout, forgetSession]);
 
   return (
     <AuthContext.Provider value={value}>

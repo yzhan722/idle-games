@@ -2,6 +2,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { getXpForLevel } from "../backend/src/storage";
 import { xpToNextLevel, xpProgress } from "../frontend/src/gameplay/xp";
+import packJson from "../shared/enhanced_content_pack_chinese.json";
+
+const pack = packJson as unknown as { actions: Array<{ id: string; xp?: number }> };
 
 // Lives under scripts/ on purpose: importing backend code from frontend/src would pull the
 // backend into the frontend tsc project.
@@ -12,9 +15,11 @@ describe("xp curve parity (frontend mirror vs backend truth)", () => {
     }
   });
 
-  it("first woodcutter level-up happens at 40 xp (4 poplar chops), not 100", () => {
-    assert.equal(xpToNextLevel(1), 40);
-    assert.deepEqual(xpProgress(1, 30), { need: 40, pct: 75, remaining: 10 });
+  it("first woodcutter level-up takes four poplar chops", () => {
+    const chop = pack.actions.find((a) => a.id === "act_chop_wood_t1")!.xp!;
+    const need = xpToNextLevel(1);
+    assert.equal(Math.ceil(need / chop), 4);
+    assert.deepEqual(xpProgress(1, need - chop), { need, pct: ((need - chop) / need) * 100, remaining: chop });
   });
 
   it("caps at max level without dividing by infinity", () => {

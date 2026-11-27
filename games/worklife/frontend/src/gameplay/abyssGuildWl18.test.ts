@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -54,7 +55,7 @@ const frontendSrcRoot = path.resolve(here, "..");
 const T = Date.parse("2026-11-20T02:00:00.000Z");
 
 describe("WL-18 frontend art contract, merged entry (no new header pill), zero-SVG/Emoji guard and Abyss Dive / Guild War helpers", () => {
-  it("registers the 6 WL-18 512x512 RGBA .webp icons in the T1 contract, bumps the cache version and only uses real item / monster art", () => {
+  it("registers the 6 WL-18 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract, bumps the cache version and only uses real item / monster art", () => {
     assert.equal(T1_ASSET_CACHE_VERSION, "20261120wl18");
     assert.deepEqual([...WL18_ABYSS_GUILD_ART_IDS], ["abyss_dive", "diving_gear", "oxygen_tank", "guild_war", "guild_medal", "rival_banner"]);
     for (const id of WL18_ABYSS_GUILD_ART_IDS) {
@@ -68,8 +69,8 @@ describe("WL-18 frontend art contract, merged entry (no new header pill), zero-S
       assert.equal(existsSync(webp), true, `Missing .webp asset on disk: ${webp}`);
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
-      assert.equal(size?.width, 512);
-      assert.equal(size?.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(withAssetCacheVersion("/assets/abyss_dive.webp"), "/assets/abyss_dive.webp?v=20261120wl18");
     const items = packJson.items as Array<{ id: string }>;
@@ -114,7 +115,7 @@ describe("WL-18 frontend art contract, merged entry (no new header pill), zero-S
     assert.equal(ngiSrc.includes("{progPanel === 'abyss' && ("), true);
     assert.equal(ngiSrc.includes('initialTab="dive"'), true);
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     const tavern = advSrc.slice(advSrc.indexOf("export function BardTavernChroniclePanel"), advSrc.indexOf("浮空飞艇商路 & 圣骑士团荣誉试炼 (WL-16)"));
     for (const id of ["tavern-tab-dive", "tavern-tab-guildwar"]) {
       assert.equal(tavern.includes(`data-testid="${id}"`), true, `${id} tab`);
@@ -272,6 +273,6 @@ describe("WL-18 frontend art contract, merged entry (no new header pill), zero-S
     assert.equal(top.goldGainPct, GUILD_BONUS_CAPS.goldGainPct);
     assert.equal(top.xpGainPct, GUILD_BONUS_CAPS.xpGainPct);
     assert.deepEqual(getGuildWarBonuses(null), { totalMedals: 0, rank: 0, rankName: "见习团员", goldGainPct: 0, xpGainPct: 0 });
-    assert.deepEqual(formatGuildStats({ goldGainPct: 2, xpGainPct: 1 }), ["金币 +2%", "经验 +1%"]);
+    assert.deepEqual(formatGuildStats({ goldGainPct: 2, xpGainPct: 1 }), ["生活技能经验 +1%"]);
   });
 });

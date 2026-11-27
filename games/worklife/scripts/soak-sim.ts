@@ -417,7 +417,7 @@ function auditContentPack() {
     const matches = (pack.items as any[]).filter((i) => itemMatchesEnhancementRule(i, r.itemType));
     if (matches.length === 0) bug("content", "major", `强化规则 ${r.itemType} 匹配不到任何物品`, "", `rule-type:${r.itemType}`);
     if (!skillIds.has(`skill_${r.requiredProfession}`)) bug("content", "major", `强化规则 ${r.itemType} 需要不存在职业 ${r.requiredProfession}`, "", `rule-prof:${r.itemType}`);
-    if (!(r.successRate > 0 && r.successRate <= 1)) bug("content", "major", `强化规则 ${r.itemType} 成功率非法：${r.successRate}`, "", `rule-rate:${r.itemType}`);
+    if (!(r.maxLevel >= 1 && r.maxLevel <= MAX_ENHANCEMENT_LEVEL)) bug("content", "major", `强化规则 ${r.itemType} 上限非法：${r.maxLevel}`, "", `rule-rate:${r.itemType}`);
     if (!(r.maxLevel >= 1)) bug("content", "major", `强化规则 ${r.itemType} maxLevel 非法：${r.maxLevel}`, "", `rule-max:${r.itemType}`);
     for (const m of r.materials || []) {
       if (!validItemRef(m.itemId)) bug("content", "major", `强化规则 ${r.itemType} 材料不存在：${m.itemId}`, "", `rule-mat:${r.itemType}:${m.itemId}`);
@@ -503,9 +503,9 @@ function auditContentPack() {
     }
   }
 
-  // --- 消耗品 buff 键合法（getBuffEffects 只读 multipliers 五键 + stats.atk/def） ---
+  // --- 消耗品 buff 键合法（getBuffEffects 只读 multipliers 五键 + stats.atk/def 与四项次级属性） ---
   const VALID_MULT_KEYS = new Set(["gatherSpeed", "craftSpeed", "combatSpeed", "xpGain", "goldGain"]);
-  const VALID_BUFF_STATS = new Set(["atk", "def"]);
+  const VALID_BUFF_STATS = new Set(["atk", "def", "accuracy", "evasion", "physResist", "elemResist"]);
   for (const it of pack.items as any[]) {
     const buff = it.effect?.buff;
     if (!buff) continue;
@@ -826,7 +826,7 @@ async function exerciseMarket(players: Ctx[]) {
   buyer.state.inventory.gold = 10000; ledger.minted += 10000;
   const sellerGold0 = seller.state.inventory.gold || 0;
 
-  // 挂单（MWI order book）
+  // 挂单（order book）
   const order = await storage.createTradingOrder({ userId: seller.userId, itemId: ITEM, quantity: 30, price: 10, type: "sell" });
   if ((seller.state.inventory[ITEM] || 0) !== 70) bug("market", "major", `卖单后库存 ${seller.state.inventory[ITEM]}≠70`, "");
   // 部分成交
@@ -1425,6 +1425,8 @@ async function exerciseReputation(ctx: Ctx) {
 
 /** B16. 技能树解锁 */
 async function exerciseSkillTree(ctx: Ctx) {
+  // 手动点树接口已从存储层移除（节点改由等级自然解锁），没有该接口时跳过本段探针
+  if (typeof (storage as { unlockSkillNode?: unknown }).unlockSkillNode !== "function") return;
   for (const tree of pack.professionTrees || []) {
     const skillId = `skill_${tree.professionId}`;
     ctx.state.skills[skillId] = { level: 200, xp: 0, unlockedRecipes: [], enhancementLevel: 0 } as any;
@@ -1649,7 +1651,8 @@ async function exerciseExploits(ctx: Ctx) {
   // --- 10. 转生后强化服务索引残留（失去 unlockedRecipes 的玩家不应再挂为提供者） ---
   const pres = await newCtx("exploit-prestige");
   pres.state.combatLevel = 60;
-  outer: for (const tree of pack.professionTrees || []) {
+  const canUnlockByHand = typeof (storage as { unlockSkillNode?: unknown }).unlockSkillNode === "function";
+  outer: for (const tree of canUnlockByHand ? pack.professionTrees || [] : []) {
     for (const node of tree.skillNodes) {
       if (node.unlocks?.enhancements?.length) {
         const sk = `skill_${tree.professionId}`;

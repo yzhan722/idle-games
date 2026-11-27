@@ -1,7 +1,7 @@
 import type { ActionPreview } from "../services/api";
 
 /**
- * MWI-style rates block for an action panel: effective time and speed/efficiency with sources.
+ * Rates block for an action panel: effective time and speed/efficiency with sources.
  * Numbers come from the server (`/actions/preview`), so they always agree with what the simulator
  * will actually grant.
  */
@@ -34,7 +34,7 @@ export function ActionRatesPanel(props: { preview: ActionPreview | null; loading
         </span>
       </div>
       {p.efficiencyPct === 0 && p.skillLevel <= p.requiredLevel && (
-        <div className="action-rates-hint">再升 1 级，这个动作就有 1% 概率白送一次（效率）。</div>
+        <div className="action-rates-hint">再升 1 级，这个动作就有机会白送一次（效率）。</div>
       )}
     </div>
   );

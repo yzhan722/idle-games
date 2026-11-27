@@ -32,7 +32,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     // 直接更新状态。之前用 requestAnimationFrame 包裹，但 rAF 在后台标签页会被
     // 浏览器挂起/节流，对放置类游戏（玩家常切到后台挂机）是致命问题——会导致
     // 玩家状态永远不更新、界面卡在“加载中...”。React 18 已自动批处理，无需 rAF。
-    setPlayerState(state)
+    // 个人战斗倍率只有 GET /player/state 会带；开始、停止动作的回复里没有，沿用上一份
+    setPlayerState((prev) => (state && !state.combatGains && prev?.combatGains ? { ...state, combatGains: prev.combatGains } : state))
     logger.debug('Player state updated')
   }, [])
 

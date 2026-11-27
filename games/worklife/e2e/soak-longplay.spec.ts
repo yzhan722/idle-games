@@ -261,7 +261,7 @@ test("SOAK-01 sustained multi-module playthrough with progression sampling", asy
     await labelled("pick-wood", () => page.locator('.inv-tile[data-item-id="wood_1"]').first().click());
     await labelled("open-sell", () => page.getByRole("button", { name: /挂出售单/ }).click());
     const priceInput = page.locator(".sell-form .form-input").nth(1);
-    await priceInput.fill("9999"); // far above market: it will rest in the book, never execute
+    await priceInput.fill("24"); // top of the tradable range (shop value 8, no trades): it rests in the book
     await labelled("confirm-order", () => page.getByRole("button", { name: "确认挂单" }).click());
     // A failed create leaves the modal open — catch that explicitly rather than timing out
     // on the next click behind the overlay.

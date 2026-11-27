@@ -17,6 +17,9 @@ describe("auth public paths", () => {
   it("does not allow prefix bypass of public routes", () => {
     assert.equal(isPublicApiPath("/auth/guest-evil"), false);
     assert.equal(isPublicApiPath("/auth/guest/resume-token"), false);
+    assert.equal(isPublicApiPath("/auth/account/delete"), true, "verifies its own credential (idempotent replay)");
+    assert.equal(isPublicApiPath("/auth/account/delete/x"), false);
+    assert.equal(isPublicApiPath("/auth/account"), false);
     assert.equal(isPublicApiPath("/health-check"), false);
     assert.equal(isPublicApiPath("/content/admin"), false);
     assert.equal(isPublicApiPath("/ws/admin"), false);

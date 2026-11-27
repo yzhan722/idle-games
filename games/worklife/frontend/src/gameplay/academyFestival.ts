@@ -1,5 +1,5 @@
 // 冒险者学院进修课程 & 四季节庆活动日历 (WL-12) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/academy-festival-parity.test.ts 守护），
+// 与 backend/src/progression2/academy_festival.ts 同名表与纯函数逐字对称（scripts/academy-festival-parity.test.ts 守护），
 // 供面板预览学系阶位、学院徽章、结业预览、东八区季节与委托进度，以及 combatSheet 攻防血 / 金币倍率使用；
 // 任何数值改动必须两端同步。
 
@@ -204,8 +204,8 @@ export const ACADEMY_DEPARTMENTS: readonly AcademyDepartmentDef[] = [
     id: "commerce",
     name: "商会经营系",
     passiveName: "经营通识",
-    subtitle: "生产金币 · 战斗金币",
-    description: "商会账房亲授的经营之道，修满学分后生产与战斗的金币收益永久提升。",
+    subtitle: "单人战斗金币",
+    description: "商会账房亲授的经营之道，修满学分后单人战斗金币永久提升。",
     festivalSeason: "summer",
     tiers: [
       { tier: 0, minCredits: 0, title: "未修读", stats: {} },
@@ -756,7 +756,7 @@ export const FESTIVAL_SHOP_ITEMS: readonly FestivalShopItemDef[] = [
     season: "summer",
     kind: "keepsake",
     name: "夏渔海贝纪念章",
-    description: "夏渔节纪念章（转生永久保留）：金币收益 +2%。",
+    description: "夏渔节纪念章（转生永久保留）：单人战斗金币 +2%。",
     iconKind: "skills",
     iconId: "festival_calendar",
     cost: 30,
@@ -1156,8 +1156,8 @@ export function formatAcademyStats(s: AcademyStats | null | undefined): string[]
   const out: string[] = [];
   if (s.gatherSpeedPct) out.push(`采集速度 +${s.gatherSpeedPct}%`);
   if (s.craftSpeedPct) out.push(`制作速度 +${s.craftSpeedPct}%`);
-  if (s.xpGainPct) out.push(`经验 +${s.xpGainPct}%`);
-  if (s.goldGainPct) out.push(`金币收益 +${s.goldGainPct}%`);
+  if (s.xpGainPct) out.push(`生活技能经验 +${s.xpGainPct}%`);
+  if (s.goldGainPct) out.push(`单人战斗金币 +${s.goldGainPct}%`);
   if (s.bonusAtk) out.push(`攻击 +${s.bonusAtk}`);
   if (s.bonusDef) out.push(`防御 +${s.bonusDef}`);
   if (s.bonusHp) out.push(`生命 +${s.bonusHp}`);

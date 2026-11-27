@@ -1,5 +1,5 @@
 import CardArt, { type CardArtKind } from "./CardArt";
-import { t1KeyFor, t1Url, profileForKey } from "../assets/t1/manifest";
+import { t1KeyFor, t1SmallUrl, t1Url, profileForKey } from "../assets/t1/manifest";
 import {
   GUILD_FRAME_META,
   T1_ASSET_CACHE_VERSION,
@@ -15,7 +15,14 @@ type Props = {
   fallback?: string;
   className?: string;
   alt?: string;
+  /** 长列表里屏幕外的图滚到附近再下载。 */
+  loading?: "lazy";
+  /** 用小图：物品、树、职业形象显示不超过 72 px，头像不超过 64 px，界面图标不超过 32 px 的地方。 */
+  small?: boolean;
 };
+
+/** 行内小图标的样式类：显示 14～32 px，自动用小图。 */
+const INLINE_ICON = /(^|\s)(gold-inline|header-gold-art|inline-t1-icon)(\s|$)/;
 
 const warned = new Set<string>();
 
@@ -97,6 +104,7 @@ export function PlayerAvatarIcon(props: { avatar?: string | null; gender?: strin
       fallback="✦"
       className={`player-avatar-art ${props.className || ""}`.trim()}
       alt={props.alt ?? label}
+      small
     />
   );
 }
@@ -134,13 +142,15 @@ export function GuildFramedAvatar(props: {
 
 export function T1Art(props: Props) {
   const key = t1KeyFor(props.kind, props.id);
-  const rawSrc = key ? t1Url(key) : undefined;
+  const small = props.small || INLINE_ICON.test(props.className || "");
+  const rawSrc = key ? (small ? t1SmallUrl(key) : t1Url(key)) : undefined;
   const src = rawSrc ? withAssetCacheVersion(rawSrc) : undefined;
   const profile = key ? profileForKey(key) : "item";
   if (src) {
     return (
       <img
         className={`t1-art t1-art-${profile} ${props.className || ""}`.trim()}
+        loading={props.loading}
         src={src}
         alt={props.alt || ""}
         data-t1-key={key}
@@ -170,8 +180,9 @@ export function T1Art(props: Props) {
   return <span className={`t1-art-missing t1-art-${profile} ${props.className || ""}`.trim()}>{props.fallback || ""}</span>;
 }
 
-export function T1ItemIcon(props: { itemId: string; fallback?: string; className?: string; alt?: string }) {
-  return <T1Art kind="item" id={props.itemId} fallback={props.fallback} className={props.className} alt={props.alt} />;
+/** 物品图标：格子、列表、弹窗里都不超过 72 px，一律用小图。 */
+export function T1ItemIcon(props: { itemId: string; fallback?: string; className?: string; alt?: string; loading?: "lazy" }) {
+  return <T1Art kind="item" id={props.itemId} fallback={props.fallback} className={props.className} alt={props.alt} loading={props.loading} small />;
 }
 
 /** Inline gold coin: the 🪙 emoji is missing from the UI font, so always use the header's coin art. */

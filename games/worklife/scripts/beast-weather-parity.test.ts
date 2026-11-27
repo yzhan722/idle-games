@@ -156,7 +156,7 @@ const LOADOUTS: Array<[string, Loadout]> = [
 
 describe("WL-14 backend <-> frontend Contract Beast Ranch & Weather Divination Tower 1:1 parity", () => {
   it("keeps the WL-14 core source region byte-identical on both sides", () => {
-    assert.equal(coreOf("frontend/src/gameplay/beastWeather.ts"), coreOf("backend/src/progression2.ts"));
+    assert.equal(coreOf("frontend/src/gameplay/beastWeather.ts"), coreOf("backend/src/progression2/beast_weather.ts"));
   });
 
   it("keeps every static WL-14 table and constant 1:1 identical, backed by real bosses, drops, cooked food, skills and art", () => {

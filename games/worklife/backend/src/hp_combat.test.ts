@@ -6,6 +6,7 @@ import type { EnhancedContentPack } from "./types";
 import { HEAVY_CHOP_COOLDOWN_MS, startHpCombat, tryHeavyChop, chooseBuild, setCombatLoadout } from "./hp_combat";
 import { tickHpCombat } from "./hp_combat";
 import { defaultCombatSkills } from "./combat_skills";
+import { ENRAGE, enrageDamageMult } from "./growth_curves";
 
 
 const contentPack = enhancedContentPack as EnhancedContentPack;
@@ -120,10 +121,11 @@ describe("woodcutter HP combat", () => {
     state.hpCombat = startHpCombat(state, packNoGate, "slime", t0);
     tickHpCombat(state, packNoGate, new Date(t0.getTime() + 45_000), 45_000, () => 0);
     assert.equal(state.hpCombat?.outcome, "win");
-    // rng 0 hits every roll: the advertised rare plus the slime's ability-book drop table
+    // rng 0 hits every roll: the advertised rare, the slime's ability-book drop table, then the zone essence (rolled last)
     assert.deepEqual(state.hpCombat?.drops, [
       { itemId: "crystal_1", name: "微光水晶", qty: 1 },
       { itemId: "book_smash", name: "技能书：猛击", qty: 1 },
+      { itemId: "essence_forest", name: "森林精华", qty: 1 },
     ]);
     assert.equal(state.inventory.crystal_1, 1);
     assert.equal(state.inventory.book_smash, 1);
@@ -213,24 +215,24 @@ describe("woodcutter HP combat", () => {
     await storage.close();
   });
 
-  it("keeps MWI battle statistics for the whole auto-repeat run: kills, xp, gold, loot", async () => {
+  it("keeps battle statistics for the whole auto-repeat run: kills, xp, gold, loot", async () => {
     const { storage, state } = await armedWoodcutter();
     setCombatLoadout(state, contentPack, { autoRepeat: true });
     const t0 = new Date("2026-09-02T00:00:00.000Z");
     state.hpCombat = startHpCombat(state, packNoGate, "slime", t0);
     assert.deepEqual(state.hpCombat!.runStats, { startedAt: t0.getTime(), kills: 0, xp: 0, gold: 0, loot: {} });
-    // rng 0 → every drop lands: each slime win adds crystal_1 + book_smash
+    // rng 0 → every drop lands: each slime win adds crystal_1 + book_smash + the forest essence
     tickHpCombat(state, packNoGate, new Date(t0.getTime() + 100_000), 100_000, () => 0);
     const run = state.hpCombat!.runStats!;
     assert.equal(run.startedAt, t0.getTime(), "the tally started with the first fight, not the current one");
     assert.equal(run.kills, 9);
     assert.equal(run.xp, 36);
     assert.equal(run.gold, 36);
-    assert.deepEqual(run.loot, { crystal_1: 9, book_smash: 9 });
+    assert.deepEqual(run.loot, { crystal_1: 9, book_smash: 9, essence_forest: 9 });
     await storage.close();
   });
 
-  it("a defeat during auto-repeat respawns after 30s and continues the run (MWI), counting deaths", async () => {
+  it("a defeat during auto-repeat respawns after 30s and continues the run, counting deaths", async () => {
     const { storage, state } = await armedWoodcutter({ withChest: false });
     state.abilityLoadout = [];
     setCombatLoadout(state, contentPack, { autoRepeat: true });
@@ -405,10 +407,10 @@ describe("woodcutter HP combat", () => {
     await storage.close();
   });
 
-  it("enrages a fight that drags on: +10% monster damage per 3 minutes, capped at 10 stacks", async () => {
+  it("enrages a fight that drags on: compounding monster damage per interval, later for bosses, capped", async () => {
     const { storage, state } = await armedWoodcutter({ withChest: false });
     const t0 = new Date("2026-09-02T00:00:00.000Z");
-    state.hpCombat = startHpCombat(state, packNoGate, "forest_boss", t0); // interval 2.2s, boss enrage every 10 min
+    state.hpCombat = startHpCombat(state, packNoGate, "forest_boss", t0); // interval 2.2s, boss interval ENRAGE.bossMs
     const bossAtk = Number((contentPack.monsters as Array<{ id: string; atk?: number }>).find((m) => m.id === "forest_boss")!.atk);
     // Freeze the fight so only the timer moves: nobody can die.
     state.hpCombat.enemyHp = 1_000_000; state.hpCombat.enemyMaxHp = 1_000_000;
@@ -417,24 +419,28 @@ describe("woodcutter HP combat", () => {
     assert.equal(state.hpCombat!.enrageStacks, 0);
     const hitBefore = state.hpCombat!.log.filter((l) => l.includes("森林管家(BOSS) 造成")).pop();
     assert.ok(hitBefore?.includes(`造成 ${bossAtk} 伤害`), hitBefore);
-    // Boss: first stack at 10 minutes. Tick to 9:59 then cross the line by 2 seconds so the log is still visible.
-    for (let i = 2; i <= 9; i++) tickHpCombat(state, packNoGate, new Date(t0.getTime() + i * 60_000), 60_000, () => 0.99);
-    tickHpCombat(state, packNoGate, new Date(t0.getTime() + 599_000), 59_000, () => 0.99);
-    tickHpCombat(state, packNoGate, new Date(t0.getTime() + 602_000), 3_000, () => 0.99);
+    // Boss: tick to one second before the first stack, then cross the line by 2 seconds so the log is still visible.
+    const bossMin = ENRAGE.bossMs / 60_000;
+    for (let i = 2; i < bossMin; i++) tickHpCombat(state, packNoGate, new Date(t0.getTime() + i * 60_000), 60_000, () => 0.99);
+    tickHpCombat(state, packNoGate, new Date(t0.getTime() + ENRAGE.bossMs - 1_000), 59_000, () => 0.99);
+    assert.equal(state.hpCombat!.enrageStacks, 0);
+    tickHpCombat(state, packNoGate, new Date(t0.getTime() + ENRAGE.bossMs + 2_000), 3_000, () => 0.99);
     assert.equal(state.hpCombat!.enrageStacks, 1);
-    assert.ok(state.hpCombat!.log.some((l) => l.includes("狂暴了！伤害 +10%")), state.hpCombat!.log.join(" | "));
-    // at 3 stacks the unarmoured player takes floor(atk × 1.3)
-    for (let i = 11; i <= 31; i++) tickHpCombat(state, packNoGate, new Date(t0.getTime() + i * 60_000), 60_000, () => 0.99);
+    const firstPct = Math.round((enrageDamageMult(1) - 1) * 100);
+    assert.ok(state.hpCombat!.log.some((l) => l.includes(`狂暴了！伤害 +${firstPct}%`)), state.hpCombat!.log.join(" | "));
+    // at 3 stacks the unarmoured player takes floor(atk × the compounded multiplier)
+    for (let i = bossMin + 1; i <= 3 * bossMin + 1; i++) tickHpCombat(state, packNoGate, new Date(t0.getTime() + i * 60_000), 60_000, () => 0.99);
     assert.equal(state.hpCombat!.enrageStacks, 3);
     const hitAfter = state.hpCombat!.log.filter((l) => l.includes("森林管家(BOSS) 造成")).pop();
-    assert.ok(hitAfter?.includes(`造成 ${Math.floor(bossAtk * 1.3)} 伤害`), hitAfter);
-    // normal monsters: 3-minute interval, capped at 10 stacks after 30+ minutes
+    assert.ok(hitAfter?.includes(`造成 ${Math.floor(bossAtk * enrageDamageMult(3))} 伤害`), hitAfter);
+    // normal monsters: shorter interval, capped at ENRAGE.maxStacks however long the fight lasts
     const { storage: s2, state: st2 } = await armedWoodcutter();
     st2.hpCombat = startHpCombat(st2, packNoGate, "slime", t0);
     st2.hpCombat.enemyHp = 1_000_000; st2.hpCombat.enemyMaxHp = 1_000_000;
     st2.hpCombat.playerHp = 1_000_000; st2.hpCombat.playerMaxHp = 1_000_000;
-    for (let i = 1; i <= 40; i++) tickHpCombat(st2, packNoGate, new Date(t0.getTime() + i * 60_000), 60_000, () => 0.99);
-    assert.equal(st2.hpCombat!.enrageStacks, 10);
+    const longMin = (ENRAGE.normalMs / 60_000) * (ENRAGE.maxStacks + 2);
+    for (let i = 1; i <= longMin; i++) tickHpCombat(st2, packNoGate, new Date(t0.getTime() + i * 60_000), 60_000, () => 0.99);
+    assert.equal(st2.hpCombat!.enrageStacks, ENRAGE.maxStacks);
     await storage.close(); await s2.close();
   });
 
@@ -465,13 +471,21 @@ describe("woodcutter HP combat", () => {
     await storage.close();
   });
 
-  it("pouch accessories add food/drink slots (1 base, capped at 3) and extra slots are actually eaten from", async () => {
+  it("pouch accessories add food/drink slots (food 1 → 3, drinks 3 → 4) and extra slots are actually eaten from", async () => {
     const { storage, state } = await armedWoodcutter({ withChest: false });
     const { combatSlotCounts } = await import("./hp_combat");
-    assert.deepEqual(combatSlotCounts(state, contentPack), { food: 1, drink: 1 });
+    assert.deepEqual(combatSlotCounts(state, contentPack), { food: 1, drink: 3 });
     state.inventory.accessory_pouch_small = 1;
     (state.equipment as any).accessory1 = "accessory_pouch_small";
-    assert.deepEqual(combatSlotCounts(state, contentPack), { food: 2, drink: 2 });
+    assert.deepEqual(combatSlotCounts(state, contentPack), { food: 2, drink: 4 });
+    const four = ["potion_battle_fury", "potion_iron_skin", "potion_arcane_surge", "potion_guardian_elixir"].map((itemId) => ({ itemId }));
+    for (const d of four) state.inventory[d.itemId] = 1;
+    assert.equal(setCombatLoadout(state, contentPack, { drink: four }).ok, true);
+    state.hpCombat = startHpCombat(state, packNoGate, "slime", new Date("2026-09-02T00:00:00.000Z"));
+    assert.equal(state.activeBuffs!.length, 4, "the fourth drink slot really drinks");
+    state.hpCombat = undefined;
+    state.activeBuffs = [];
+    assert.equal(setCombatLoadout(state, contentPack, { drink: [] }).ok, true);
     state.inventory.food_simple = 5;
     state.inventory.potion_hp_t1 = 5;
     const set = setCombatLoadout(state, contentPack, {
@@ -489,12 +503,93 @@ describe("woodcutter HP combat", () => {
     // without the pouch the oversized config is rejected — 槽位收紧后不再静默截断，
     // 需要调用方按当前槽位数重发
     (state.equipment as any).accessory1 = undefined;
+    assert.match(setCombatLoadout(state, contentPack, { drink: four }).error || "", /slot_limit_drink:3/);
     const denied = setCombatLoadout(state, contentPack, { food: [{ itemId: "food_simple" }, { itemId: "potion_hp_t1" }] });
     assert.equal(denied.ok, false);
     assert.match(denied.error || "", /slot_limit_food:1/);
     // 槽位内重配仍然可用
     assert.equal(setCombatLoadout(state, contentPack, { food: [{ itemId: "food_simple" }] }).ok, true);
     assert.equal(state.combatLoadout!.food.length, 1);
+    await storage.close();
+  });
+
+  it("战斗速度是真的：食物、药剂、套装的点数折成攻击速度，合计封顶 3%，从下一场起算", async () => {
+    const { storage, state } = await armedWoodcutter({ withChest: false });
+    const t0 = new Date("2026-09-02T00:00:00.000Z");
+    const interval = () => startHpCombat(state, packNoGate, "slime", t0).playerIntervalMs;
+    const buff = (id: string) => {
+      const b = (contentPack.items as any[]).find((i) => i.id === id).effect.buff;
+      return { id: b.id, name: b.name, sourceItemId: id, expiresAt: new Date(t0.getTime() + 600_000).toISOString(), multipliers: b.multipliers, stats: b.stats };
+    };
+    const base = interval();
+    state.activeBuffs = [buff("shrimp")];
+    assert.equal(interval(), Math.round(base / 1.004));
+    state.activeBuffs = [buff("potion_berserk")];
+    assert.equal(interval(), Math.round(base / 1.03));
+    state.activeBuffs = [buff("potion_berserk"), buff("elixir_omega"), buff("potion_battle_fury")];
+    assert.equal(interval(), Math.round(base / 1.03), "合计封顶 3%");
+    state.activeBuffs = [{ ...buff("potion_berserk"), expiresAt: new Date(t0.getTime() - 1).toISOString() }];
+    assert.equal(interval(), base, "过期的不算");
+    state.activeBuffs = [];
+    const set = (contentPack.equipmentSets as any[]).find((s) => s.id === "steel_warrior_set");
+    for (const piece of set.pieces) {
+      state.inventory[piece.itemId] = 1;
+      (state.equipment as any)[piece.slot] = piece.itemId;
+    }
+    const top = set.bonuses.at(-1);
+    assert.equal(interval(), Math.round(base / (1 + top.stats.combatSpeed / 1000)));
+    assert.ok(top.description.includes(`攻击速度+${top.stats.combatSpeed / 10}%`));
+    await storage.close();
+  });
+
+  it("鲜虾能放进食物槽并真的回血；传世工坊的料理恢复对自动进食生效", async () => {
+    const { storage, state } = await armedWoodcutter({ withChest: false });
+    const t0 = new Date("2026-09-02T00:00:00.000Z");
+    const healed = (itemId: string) => {
+      state.inventory[itemId] = 20;
+      assert.equal(setCombatLoadout(state, contentPack, { food: [{ itemId, triggerMissingHp: 30 }] }).ok, true);
+      state.abilityLoadout = [];
+      state.hpCombat = startHpCombat(state, packNoGate, "forest_boss", t0);
+      state.hpCombat.playerMaxHp = 10_000;
+      state.hpCombat.playerHp = 5_000;
+      tickHpCombat(state, packNoGate, new Date(t0.getTime() + 100), 100, () => 0.99);
+      return state.hpCombat!.playerHp - 5_000;
+    };
+    assert.equal(healed("shrimp"), 15);
+    assert.equal(healed("food_simple"), 50);
+    state.heritageWorkshop = { runeRanks: { rune_vital_aegis: 5 }, equippedRunes: { armor: "rune_vital_aegis" }, codexUnlockedItems: [] } as any;
+    const { getHeritageWorkshopBonuses } = await import("./progression2");
+    assert.equal(getHeritageWorkshopBonuses(state).foodHealMult, 1.25);
+    assert.equal(healed("food_simple"), Math.round(50 * 1.25));
+    state.chapter4Build = "feast_vitality";
+    assert.equal(healed("food_simple"), Math.round(50 * 1.688), "盛宴 1.35 × 料理恢复 1.25");
+    await storage.close();
+  });
+
+  it("稀有发现：通用层相加（组队用它），词缀、圣物、天空锻炉在单人另成一层，流派倍率另算", async () => {
+    const { storage, state } = await armedWoodcutter({ withChest: false });
+    const { playerBuildExtras } = await import("./hp_combat");
+    const { getRareFindMultiplier, getSoloRareFindMultiplier } = await import("./storage");
+    state.astralRelics = { pedestalRanks: { verdant_chalice: 5 }, expeditionXp: 900 } as any;
+    state.skyForge = { emblemLevels: { crescent_bow: 5 }, activePacts: [] } as any;
+    assert.equal(playerBuildExtras(state).dropMult, 1);
+    assert.equal(Math.round(getRareFindMultiplier(state, contentPack) * 100), 100 + 26 + 16 + 19);
+    const total = getSoloRareFindMultiplier(state, contentPack);
+    assert.ok(Math.abs(total - 1.61 * (1 + (61 * 1.2) / 100)) < 1e-9, String(total));
+    state.chapter3Build = "relic_hunter";
+    assert.equal(playerBuildExtras(state).dropMult, 1.3);
+    const packClone = JSON.parse(JSON.stringify(contentPack));
+    packClone.monsters.find((m: any) => m.id === "slime").rareChance = 0.1;
+    const t0 = new Date("2026-09-02T00:00:00.000Z");
+    const drops = (roll: number) => {
+      state.hpCombat = startHpCombat(state, packClone, "slime", t0);
+      tickHpCombat(state, packClone, new Date(t0.getTime() + 60_000), 60_000, () => roll);
+      assert.equal(state.hpCombat?.outcome, "win");
+      return state.hpCombat!.drops!.length;
+    };
+    const chance = 0.1 * total * 1.3;
+    assert.equal(drops(chance - 0.001), 1);
+    assert.equal(drops(chance + 0.001), 0);
     await storage.close();
   });
 

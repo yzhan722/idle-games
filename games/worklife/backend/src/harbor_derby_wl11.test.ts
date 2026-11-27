@@ -503,7 +503,7 @@ describe("WL-11 Harbor Fishing Derby & Harbor Aquarium Codex backend mechanics &
     const bc = getActionRates(base, pack, cookAct, T0);
     const cc = getActionRates(coll, pack, cookAct, T0);
     assert.equal(cc.efficiencyPct - bc.efficiencyPct, 12, "cooking quality → cooking efficiency +12%");
-    assert.ok(cc.efficiencySources.some((s) => s.label === "海港水族馆 · 料理品质"));
+    assert.ok(cc.efficiencySources.some((s) => s.label === "海港水族馆 · 烹饪效率"));
     assert.equal(getActionRates(coll, pack, smithAct, T0).efficiencyPct, getActionRates(base, pack, smithAct, T0).efficiencyPct);
 
     const eb = playerBuildExtras(base);

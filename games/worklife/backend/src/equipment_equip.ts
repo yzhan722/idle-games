@@ -5,11 +5,11 @@ export const EQUIP_SLOT_KEYS = [
   "chest",
   "legs",
   "feet",
-  /** Gloves: the pack ships 14 `slot: "hands"` pieces (MWI has a hands slot too). */
+  /** Gloves: the pack ships 14 `slot: "hands"` pieces. */
   "hands",
   "accessory1",
   "accessory2",
-  /** MWI-style tool slot: speeds up one profession's actions, never counts in combat. */
+  /** Tool slot: speeds up one profession's actions, never counts in combat. */
   "tool",
 ] as const;
 

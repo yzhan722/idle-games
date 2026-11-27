@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { T1_ASSET_CONTRACT, T1_EXTENSION_PRIORITY, type T1Extension } from "../frontend/src/assets/t1/contract";
-import { rasterSize } from "./art-image-meta";
+import { T1_ASSET_CONTRACT, T1_EXTENSION_PRIORITY, shippedMinPx, type T1Extension } from "../frontend/src/assets/t1/contract";
+import { rasterDamage, rasterSize } from "./art-image-meta";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const t1Root = path.join(repoRoot, "frontend", "src", "assets", "t1");
@@ -60,10 +60,13 @@ for (const band of ["P0", "P1", "P2"] as const) {
       if (f.bytes === 0) errors.push(`0-byte ${spec.key}.${f.ext}`);
       if (f.bytes > WARN_BYTES) warnings.push(`${spec.key}.${f.ext} is ${(f.bytes / 1024 / 1024).toFixed(1)} MB`);
       if (f.ext === "png" || f.ext === "webp") {
-        const size = rasterSize(readFileSync(f.abs), f.ext);
-        if (!size) errors.push(`unreadable ${spec.key}.${f.ext}`);
-        else if (Math.min(size.width, size.height) < spec.masterMinPx) {
-          errors.push(`${spec.key}.${f.ext} is ${size.width}x${size.height}, min ${spec.masterMinPx}`);
+        const buf = readFileSync(f.abs);
+        const size = rasterSize(buf, f.ext);
+        const damage = rasterDamage(buf, f.ext);
+        if (damage) errors.push(`${spec.key}.${f.ext}: ${damage}`);
+        // Every shipped picture is square, so the short side is the one to check: a sliver must not pass
+        else if (size && Math.min(size.width, size.height) < shippedMinPx(spec)) {
+          errors.push(`${spec.key}.${f.ext} is ${size.width}x${size.height}, min ${shippedMinPx(spec)}`);
         }
       }
     }
@@ -100,7 +103,7 @@ if (extras.length) {
 lines.push("## Notes", "");
 lines.push("- Alpha channel is **manual QA** (no fragile decoder).");
 lines.push("- SVG-only keys count as PLACEHOLDER even if the drawing is pretty.");
-lines.push("- Generated `PRODUCTION` means a WebP/PNG that meets master min px is **on disk** (`PRODUCTION_PRESENT`).");
+lines.push("- Generated `PRODUCTION` means a WebP/PNG that meets the shipped min px (contract.ts shippedMinPx) is **on disk** (`PRODUCTION_PRESENT`).");
 lines.push("- `PRODUCTION_ACCEPTED` is visual QA only. It is appended from `docs/art/T1_ASSET_VISUAL_ACCEPTANCE.md` and is not a contract.ts status.");
 lines.push("");
 

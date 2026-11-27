@@ -4,6 +4,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { Storage } from "../storage";
 import { UsernameTaken } from "../storage";
 import { hashGuestResumeToken, newGuestResumeToken } from "../guest_resume";
+import { DELETE_CONFIRM_TEXT } from "../account_deletion";
 import type { UserRecord } from "../types";
 
 const guestBody = z.object({
@@ -110,10 +111,31 @@ async function userIdFromBearer(app: FastifyInstance, storage: Storage, req: Fas
   }
 }
 
+/** 凭证签名有效时取出账号编号，不管账号还在不在（只给注销的幂等返回用）。 */
+function deletedSubject(app: FastifyInstance, req: FastifyRequest): string | null {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) return null;
+  try {
+    return app.jwt.verify<{ sub: string }>(auth.slice("Bearer ".length)).sub || null;
+  } catch {
+    return null;
+  }
+}
+
 /** 认证接口单独限流：注册/登录是刷号和爆破面 */
 const AUTH_ROUTE_LIMIT = { max: 20, timeWindow: "1 minute" };
+/** 注销要再输一次密码，按账号限次，防止拿着别人没退出的会话试密码 */
+const DELETE_ROUTE_LIMIT = { max: 5, timeWindow: "10 minutes" };
 
-export async function authRoutes(app: FastifyInstance, storage: Storage) {
+const deleteAccountBody = z.object({
+  password: z.string().min(1).max(72).optional(),
+  confirmText: z.string().max(32).optional(),
+}).strict();
+
+/** 账号新建 / 注销时的通知（匿名统计用）。 */
+export type AuthHooks = { registered?: (now: Date) => void; deleted?: (userId: string) => void };
+
+export async function authRoutes(app: FastifyInstance, storage: Storage, hooks: AuthHooks = {}) {
   app.post("/auth/guest", { config: { rateLimit: AUTH_ROUTE_LIMIT } }, async (req: FastifyRequest, reply: FastifyReply) => {
     const body = guestBody.parse((req.body ?? {}) as unknown);
 
@@ -133,6 +155,7 @@ export async function authRoutes(app: FastifyInstance, storage: Storage) {
     const user = await storage.createGuestUser();
     const resumeToken = newGuestResumeToken();
     await storage.setGuestResumeTokenHash(user.id, hashGuestResumeToken(resumeToken));
+    hooks.registered?.(new Date());
     return reply.send({
       userId: user.id,
       token: sessionToken(app, user),
@@ -161,6 +184,32 @@ export async function authRoutes(app: FastifyInstance, storage: Storage) {
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     await storage.invalidateSessions(userId);
     return reply.send({ ok: true });
+  });
+
+  /**
+   * 注销账号：登录态 + 再输一次密码（没有密码的游客改为输入确认文字）。
+   * 重复请求幂等：凭证有效但账号已经注销过 → 同样返回成功。删除范围见 account_deletion.ts。
+   */
+  app.post("/auth/account/delete", { config: { rateLimit: DELETE_ROUTE_LIMIT } }, async (req: FastifyRequest, reply: FastifyReply) => {
+    const body = deleteAccountBody.parse((req.body ?? {}) as unknown);
+    const now = new Date();
+    const userId = await userIdFromBearer(app, storage, req);
+    if (!userId) {
+      const gone = deletedSubject(app, req);
+      if (gone && (await storage.wasAccountDeleted(gone, now))) return reply.send({ ok: true, alreadyDeleted: true });
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    const user = await storage.getUser(userId);
+    if (user?.passwordHash) {
+      if (!body.password || !verifyPassword(body.password, user.passwordHash)) {
+        return reply.status(403).send({ error: "invalid_password", message: "密码不正确，账号没有注销" });
+      }
+    } else if (body.confirmText !== DELETE_CONFIRM_TEXT) {
+      return reply.status(400).send({ error: "confirm_required", message: `请输入「${DELETE_CONFIRM_TEXT}」确认` });
+    }
+    const result = await storage.deleteAccount(userId, now);
+    hooks.deleted?.(userId);
+    return reply.send(result ? { ok: true, ordersRemoved: result.ordersRemoved } : { ok: true, alreadyDeleted: true });
   });
 
   /** 查询当前登录账号信息 */
@@ -222,6 +271,7 @@ export async function authRoutes(app: FastifyInstance, storage: Storage) {
     if (!body) return;
     try {
       const user = await storage.createPasswordUser(body.username, hashPassword(body.password));
+      hooks.registered?.(new Date());
       return reply.send({ userId: user.id, token: sessionToken(app, user), username: user.username });
     } catch (error) {
       if (error instanceof UsernameTaken) {

@@ -10,7 +10,7 @@ import {
   visibleSkillNav,
 } from "./skillNav";
 
-describe("MWI-style skill nav model", () => {
+describe("Skill nav model", () => {
   it("shows every skill from the first minute and only highlights the chapter-1 loop", () => {
     assert.equal(visibleSkillNav(false).length, SKILL_NAV.length);
     assert.equal(visibleSkillNav(true).length, SKILL_NAV.length);

@@ -48,8 +48,9 @@ export async function enhancementRoutes(
     try {
       const state = await storage.getOrCreatePlayerState(userId, contentPack.version || "1.0.0");
       const inSoloCombat = Boolean(
-        state.hpCombat &&
-          (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))
+        (state.hpCombat &&
+          (!state.hpCombat.outcome || (state.combatLoadout?.autoRepeat && state.hpCombat.nextFightAt))) ||
+          (state.dungeonRun && !state.dungeonRun.outcome)
       );
       if (inSoloCombat) {
         return reply.status(409).send({ error: "in_combat", message: "战斗中不能强化，请先停止战斗" });
@@ -79,7 +80,7 @@ export async function enhancementRoutes(
     }
   });
 
-  // MWI: enhancing as a timed action. Start with a target level; the simulator settles attempts.
+  // Enhancing is a timed action. Start with a target level; the simulator settles attempts.
   app.post("/enhancement/run/start", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
@@ -87,6 +88,7 @@ export async function enhancementRoutes(
       itemId: z.string().min(1).max(100),
       targetLevel: z.number().int().min(1).max(20),
       useProtection: z.boolean().optional(),
+      useEssence: z.boolean().optional(),
       ...revisionSchema,
     }).strict().parse((req.body ?? {}) as unknown);
     const now = new Date();

@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 import { createMemoryStorage } from "./storage_memory";
 import enhancedContentPack from "../../shared/enhanced_content_pack_chinese.json";
 import type { EnhancedContentPack } from "./types";
+import { COMBAT_MAIN_SHARE, COMBAT_SUPPORT_POOL, COMBAT_SUPPORT_SHARE } from "./growth_curves";
 import {
   COMBAT_SKILL_IDS,
+  SUPPORT_SKILL_IDS,
   abilitySlotCount,
   combatSkillContribution,
   derivedCombatLevel,
@@ -38,7 +40,7 @@ async function fresh(mods: { sword?: boolean; chest?: boolean; legacyLevel?: num
   return { storage, state };
 }
 
-describe("MWI combat skills", () => {
+describe("combat skills", () => {
   it("seeds five skills at level 1 and derives 战斗等级 1 from them", async () => {
     const { storage, state } = await fresh();
     const cs = ensureCombatSkills(state);
@@ -52,7 +54,7 @@ describe("MWI combat skills", () => {
     const { storage, state } = await fresh({ legacyLevel: 7 });
     const cs = ensureCombatSkills(state);
     for (const id of COMBAT_SKILL_IDS) assert.equal(cs[id].level, 7);
-    assert.equal(derivedCombatLevel(cs), 7, "0.1×(4×7 + 7) + 0.5×7 = 7");
+    assert.equal(derivedCombatLevel(cs), 7, "equal skills derive exactly that level");
     assert.equal(playerCombatant(state, pack).hp, 50 + 6 * 10);
     // five-skill saves gain ranged / magic at 1 without touching the rest
     state.combatSkills = { stamina: { level: 3, xp: 0 }, intelligence: { level: 1, xp: 0 }, attack: { level: 2, xp: 0 }, defense: { level: 1, xp: 0 }, melee: { level: 4, xp: 0 } } as any;
@@ -76,11 +78,11 @@ describe("MWI combat skills", () => {
     assert.equal(mainCombatSkill(state), "ranged");
     (state.equipment as any).main_hand = "weapon_steel_axe";
     assert.equal(mainCombatSkill(state), "melee");
-    // ranged training with a bow: the 70% goes to stamina / intelligence / attack / defense / ranged; melee and magic get nothing
+    // ranged training with a bow: ranged takes the weapon share; melee and magic get nothing
     (state.equipment as any).main_hand = "weapon_wooden_bow";
     const grant = grantCombatXp(state, 100);
     assert.equal(grant.main, "ranged");
-    assert.equal(grant.gained.ranged, 44);
+    assert.equal(grant.gained.ranged, 100 * COMBAT_MAIN_SHARE);
     assert.equal(grant.gained.melee, undefined);
     assert.equal(grant.gained.magic, undefined);
     assert.equal(state.combatSkills!.melee.xp, 0);
@@ -92,14 +94,14 @@ describe("MWI combat skills", () => {
     await storage.close();
   });
 
-  it("a charm in an accessory slot focuses the 70% share on one skill (MWI 护符)", async () => {
+  it("a charm in an accessory slot focuses the support share on one skill", async () => {
     const { storage, state } = await fresh();
     state.inventory.charm_defense = 1;
     (state.equipment as any).accessory2 = "charm_defense";
     const grant = grantCombatXp(state, 100, pack as any);
     assert.equal(grant.focus, "defense");
-    assert.equal(grant.gained.defense, 70);
-    assert.equal(grant.gained.melee, 30, "the weapon share is untouched");
+    assert.equal(grant.gained.defense, 100 * COMBAT_SUPPORT_POOL);
+    assert.equal(grant.gained.melee, 100 * COMBAT_MAIN_SHARE, "the weapon share is untouched");
     assert.equal(grant.gained.stamina, undefined);
     assert.equal(grant.gained.intelligence, undefined);
     // focusing the main skill itself stacks both shares
@@ -107,37 +109,40 @@ describe("MWI combat skills", () => {
     state.inventory.charm_stamina = 1;
     (state.equipment as any).accessory1 = "charm_stamina";
     const g2 = grantCombatXp(state, 100, pack as any);
-    assert.equal(g2.gained.stamina, 70);
-    assert.equal(g2.gained.melee, 30);
+    assert.equal(g2.gained.stamina, 100 * COMBAT_SUPPORT_POOL);
+    assert.equal(g2.gained.melee, 100 * COMBAT_MAIN_SHARE);
+    // a charm for the weapon's own skill takes the whole kill
+    const meleePack = { items: [{ id: "charm_stamina", focusSkill: "melee" }] };
+    assert.deepEqual(grantCombatXp(state, 100, meleePack).gained, { melee: 100 });
     // no pack → no charm lookup → the even split
     const g3 = grantCombatXp(state, 100);
     assert.equal(g3.focus, undefined);
-    assert.equal(g3.gained.stamina, 14);
+    assert.equal(g3.gained.stamina, 100 * COMBAT_SUPPORT_SHARE);
     await storage.close();
   });
 
-  it("splits kill XP 30% to the weapon skill and 70% evenly across the four utility skills plus the main skill", async () => {
+  it("splits kill XP between the weapon skill and the four support skills without losing any", async () => {
     const { storage, state } = await fresh();
-    const grant = grantCombatXp(state, 100);
-    assert.equal(grant.gained.melee, 44);
-    assert.equal(grant.gained.stamina, 14);
-    assert.equal(grant.gained.intelligence, 14);
-    assert.equal(grant.gained.attack, 14);
-    assert.equal(grant.gained.defense, 14);
-    assert.equal(grant.gained.ranged, undefined, "unused damage skills get nothing");
-    // level 1 → 2 needs getXpForLevel(1) = 40: melee (44) levels, the others (14) do not
-    assert.equal(getXpForLevel(1), 40);
+    const xp = 100;
+    const grant = grantCombatXp(state, xp);
+    const g = grant.gained;
+    assert.ok(g.melee! > g.stamina!, "the weapon skill gets the biggest share");
+    for (const id of SUPPORT_SKILL_IDS) assert.equal(g[id], g.stamina, "support skills share evenly");
+    assert.equal(Object.values(g).reduce((sum, v) => sum + v!, 0), xp, "shares add up to the kill");
+    assert.equal(g.ranged, undefined, "unused damage skills get nothing");
+    // the weapon share covers level 1 → 2, a support share does not
+    const need = getXpForLevel(1);
+    assert.ok(g.melee! >= need && g.stamina! < need);
     assert.equal(state.combatSkills!.melee.level, 2);
-    assert.equal(Math.round(state.combatSkills!.melee.xp), 4);
+    assert.equal(state.combatSkills!.melee.xp, g.melee! - need);
     assert.equal(state.combatSkills!.stamina.level, 1);
     assert.deepEqual(grant.levelUps, [{ skill: "melee", level: 2 }]);
-    // derived: 0.1×(1+1+1+1+max(2,1,1)) + 0.5×2 = 1.6 → 1
     assert.equal(state.combatLevel, 1);
     assert.ok(state.logs.some((l) => l.text.includes("近战升级到 2 级")));
     await storage.close();
   });
 
-  it("each skill changes the sheet the way MWI describes", () => {
+  it("each skill changes the sheet as documented", () => {
     const one = { level: 1, xp: 0 };
     const base = combatSkillContribution({ stamina: one, intelligence: one, attack: one, defense: one, melee: one, ranged: one, magic: one });
     assert.deepEqual(base, { hp: 50, mp: 20, atk: 5, def: 0, intervalMs: 3000, mpRegenPerTick: 1 });
@@ -167,7 +172,7 @@ describe("MWI combat skills", () => {
   });
 });
 
-describe("MWI abilities", () => {
+describe("abilities", () => {
   it("every player knows 重劈 and has it equipped with its default trigger", async () => {
     const { storage, state } = await fresh();
     ensureAbilities(state);
@@ -245,7 +250,7 @@ describe("MWI abilities", () => {
     await storage.close();
   });
 
-  it("spends mana on 猛击, regenerates on basic-attack ticks, and reports the 30/70 XP split on win", async () => {
+  it("spends mana on 猛击, regenerates on basic-attack ticks, and reports the XP shares on win", async () => {
     const { storage, state } = await fresh({ sword: true, chest: true });
     state.inventory.book_smash = 1;
     learnFromBook(state, pack, "book_smash");
@@ -261,9 +266,10 @@ describe("MWI abilities", () => {
     tickHpCombat(state, pack, new Date(T0.getTime() + 60_000), 59_999, () => 0.99);
     assert.equal(state.hpCombat.outcome, "win");
     const g = state.hpCombat.xpGained!;
-    assert.equal(g.melee, 1.8, "slime 4 XP → 44% melee");
-    assert.equal(g.stamina, 0.6);
-    assert.equal(state.combatSkills!.melee.xp, 1.76);
+    const slimeXp = Number((pack.monsters as Array<{ id: string; xp?: number }>).find((m) => m.id === "slime")!.xp);
+    assert.equal(g.melee, Math.round(slimeXp * COMBAT_MAIN_SHARE * 10) / 10);
+    assert.equal(g.stamina, Math.round(slimeXp * COMBAT_SUPPORT_SHARE * 10) / 10);
+    assert.equal(state.combatSkills!.melee.xp, Math.round(slimeXp * COMBAT_MAIN_SHARE * 1000) / 1000);
     await storage.close();
   });
 

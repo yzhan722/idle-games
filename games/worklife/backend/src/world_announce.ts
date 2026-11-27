@@ -3,11 +3,12 @@
 // 日常动作不报,避免刷屏。
 
 import type { EnhancedContentPack, EnhancedPlayerState } from "./types";
+import { shownName } from "./display_name";
 
 const ENHANCE_MILESTONES = [5, 10, 15, 20];
 
 function displayName(state: EnhancedPlayerState, userId: string): string {
-  return state.settings?.playerName || `玩家_${userId.slice(0, 6)}`;
+  return shownName(userId, state.settings?.playerName);
 }
 
 export function worldAnnouncements(

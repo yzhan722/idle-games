@@ -1,5 +1,5 @@
 // 吟游诗人酒馆 & 冒险者编年史 (WL-15) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/bard-tavern-parity.test.ts 守护），
+// 与 backend/src/progression2/bard_tavern.ts 同名表与纯函数逐字对称（scripts/bard-tavern-parity.test.ts 守护），
 // 供面板展示来访冒险者与点单、招待名望 / 小费预览、诗篇增益、名望等级，以及编年史的真实里程碑汇编；
 // 酒馆名望等级与已编撰章节的永久攻防血 / 金币通过 combatSheet.combinedBuildFromState 接入（后端 playerBuildExtras 同口径），
 // 限时诗篇只作用于生活职业（后端 getActionRates 按 now 判定），不改变任何战斗机制。
@@ -357,7 +357,7 @@ export const TAVERN_BALLADS: readonly TavernBalladDef[] = [
   {
     id: "golden_toast",
     name: "金杯祝酒歌",
-    description: "满堂举杯的祝酒歌，财源随着酒香一起滚滚而来。",
+    description: "满堂举杯的祝酒歌。（金币加成目前不影响任何收入，只涨名望）",
     minFameTier: 2,
     costGold: 600,
     durationMin: 30,
@@ -897,8 +897,8 @@ export function formatTavernStats(s: TavernChronicleStats | null | undefined): s
   if (s.gatherEfficiencyPct) out.push(`采集产出 +${s.gatherEfficiencyPct}%`);
   if (s.craftSpeedPct) out.push(`制作速度 +${s.craftSpeedPct}%`);
   if (s.craftEfficiencyPct) out.push(`制作产出 +${s.craftEfficiencyPct}%`);
-  if (s.xpGainPct) out.push(`经验 +${s.xpGainPct}%`);
-  if (s.goldGainPct) out.push(`金币收益 +${s.goldGainPct}%`);
+  if (s.xpGainPct) out.push(`生活技能经验 +${s.xpGainPct}%`);
+  if (s.goldGainPct) out.push(`单人战斗金币 +${s.goldGainPct}%`);
   if (s.bonusAtk) out.push(`攻击 +${s.bonusAtk}`);
   if (s.bonusDef) out.push(`防御 +${s.bonusDef}`);
   if (s.bonusHp) out.push(`生命 +${s.bonusHp}`);

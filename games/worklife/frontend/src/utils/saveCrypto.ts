@@ -36,12 +36,6 @@ export interface EncryptedSaveEnvelope {
   v: 1;
   exportedAt: number;
   userId?: string;
-  session?: {
-    userId: string;
-    token: string;
-    username?: string | null;
-    resumeToken?: string | null;
-  };
   state: Record<string, any>;
 }
 
@@ -85,5 +79,7 @@ export async function decryptSaveEnvelope(saveCode: string): Promise<EncryptedSa
   if (!parsed || parsed.v !== 1 || typeof parsed.state !== "object" || !parsed.state) {
     throw new Error("存档内容结构无效");
   }
-  return parsed as EncryptedSaveEnvelope;
+  // 旧文件里带着登录凭证（session）：认得出，但不读也不用
+  const { v, exportedAt, userId, state } = parsed as EncryptedSaveEnvelope;
+  return { v, exportedAt, userId, state };
 }

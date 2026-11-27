@@ -72,7 +72,7 @@ type Props = {
 };
 
 /**
- * MWI-style passive/auto-cast ability icon row during a fight.
+ * Passive/auto-cast ability icon row during a fight.
  * All active abilities fire automatically when off cooldown & trigger is met; each slot is a pure
  * status icon showing its live cooldown (CD) overlay and countdown.
  */

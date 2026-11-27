@@ -41,7 +41,7 @@ const itemArt = (id: string) => existsSync(path.join(root, "frontend/src/assets/
 
 describe("WL-18 backend <-> frontend Abyss Ruin Dive & Guild War 1:1 parity", () => {
   it("keeps the WL-18 core source region byte-identical on both sides", () => {
-    assert.equal(coreOf("frontend/src/gameplay/abyssGuild.ts"), coreOf("backend/src/progression2.ts"));
+    assert.equal(coreOf("frontend/src/gameplay/abyssGuild.ts"), coreOf("backend/src/progression2/abyss_guild.ts"));
   });
 
   it("keeps every static WL-18 table 1:1 identical, backed by real materials, crafted goods and monster combat stats", () => {

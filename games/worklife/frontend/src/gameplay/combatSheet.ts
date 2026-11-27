@@ -1,4 +1,7 @@
 import { enhancementStatMultiplier } from "./enhancement";
+import { combatLevelOf } from "./growthCurves";
+import { SECONDARY_KEYS, attackSpeedInterval, combatSpeedPoints, playerAccuracy, sumSecondary, type DamageType, type SecondaryStats } from "./combatSecondary";
+import { squadRates } from "./partyCombat";
 import { getAlchemyCauldronBonuses } from "./alchemyCauldron";
 import { getAstralRelicsBonuses } from "./astralRelics";
 import { getSkyForgeBonuses } from "./skyForge";
@@ -19,8 +22,13 @@ export type CombatSheet = {
   intervalMs?: number;
   mp?: number;
   mpRegenPerTick?: number;
-  /** MWI Combat Advanced Stats: Accuracy %, Evasion %, Crit Rate %, Crit Damage % */
-  accuracyPct?: number;
+  /** Secondary stats (combatSecondary.ts), mirrored by the server: accuracy / evasion / resistances, damage type of the weapon. */
+  accuracy?: number;
+  evasion?: number;
+  physResist?: number;
+  elemResist?: number;
+  damageType?: DamageType;
+  /** Squad-battle view only (PartyPanel): dodge chance, crit rate, crit damage in percent. Solo fights do not use them. */
   evasionPct?: number;
   critRatePct?: number;
   critDmgPct?: number;
@@ -50,7 +58,7 @@ type PackItem = {
   mag?: number;
   def?: number;
   hp?: number;
-};
+} & Partial<SecondaryStats>;
 
 type Equipment = Record<string, unknown> & {
   enhancementLevels?: Record<string, number>;
@@ -74,7 +82,8 @@ type State = {
   inventory?: Record<string, number>;
   activeBuffs?: Array<{
     expiresAt: string;
-    stats?: { atk?: number; def?: number };
+    stats?: { atk?: number; def?: number } & Partial<SecondaryStats>;
+    multipliers?: { combatSpeed?: number };
   }>;
   bounties?: {
     date?: string;
@@ -168,8 +177,12 @@ export function weaponMainSkill(mainHandItemId: unknown): CombatSkillKey {
   return "melee";
 }
 
+/** Mirror of backend mainCombatSkill: a broken main hand counts as bare hands. */
 export function mainCombatSkill(state: State | null | undefined): CombatSkillKey {
-  return weaponMainSkill(state?.equipment?.main_hand);
+  const id = state?.equipment?.main_hand;
+  const dur = typeof id === "string" ? state?.equipment?.durability?.[id] : undefined;
+  if (typeof dur === "number" && Number.isFinite(dur) && dur <= 0) return "melee";
+  return weaponMainSkill(id);
 }
 
 /** Mirror of backend combatSkillContribution. Legacy saves without skills read every skill from combatLevel. */
@@ -196,15 +209,15 @@ export function abilitySlotCount(state: State | null | undefined): number {
   return Math.min(4, 1 + Math.floor(int / 10));
 }
 
-/** MWI: 0.1 × (stamina + intelligence + attack + defense + best damage) + 0.5 × best of attack / defense / damage. */
+/** Mirror of backend derivedCombatLevel: weighted quadratic mean (growthCurves.combatLevelOf). */
 export function derivedCombatLevel(state: State | null | undefined): number {
   const cs = state?.combatSkills;
   if (!cs) return state?.combatLevel || 1;
   const l = (id: CombatSkillKey) => cs[id]?.level || 1;
-  const bestDamage = Math.max(l("melee"), l("ranged"), l("magic"));
-  const sum = l("stamina") + l("intelligence") + l("attack") + l("defense") + bestDamage;
-  const best = Math.max(l("attack"), l("defense"), bestDamage);
-  return Math.max(1, Math.floor(0.1 * sum + 0.5 * best));
+  return combatLevelOf(
+    [l("stamina"), l("intelligence"), l("attack"), l("defense")],
+    Math.max(l("melee"), l("ranged"), l("magic"))
+  );
 }
 
 const BUILD = {
@@ -545,9 +558,6 @@ export function combinedBuildFromState(state: State | null | undefined) {
   if (affix.goldGainPct > 0) {
     goldMult = Math.round(goldMult * (1 + affix.goldGainPct / 100) * 1000) / 1000;
   }
-  if (affix.rareFindPct > 0) {
-    dropMult = Math.round(dropMult * (1 + affix.rareFindPct / 100) * 1000) / 1000;
-  }
   if (hw.armorPenPct > 0) {
     armorPenPct = Math.min(0.75, Math.round((armorPenPct + hw.armorPenPct) * 1000) / 1000);
   }
@@ -587,15 +597,9 @@ export function combinedBuildFromState(state: State | null | undefined) {
   if (relics.goldGainPct > 0) {
     goldMult = Math.round(goldMult * (1 + relics.goldGainPct / 100) * 1000) / 1000;
   }
-  if (relics.rareFindPct > 0) {
-    dropMult = Math.round(dropMult * (1 + relics.rareFindPct / 100) * 1000) / 1000;
-  }
   // WL-10：契约代价可令天空锻炉金币净值为负（如新月疾猎契），因此按 !== 0 接入（与后端一致）
   if (forge.goldGainPct !== 0) {
     goldMult = Math.round(goldMult * (1 + forge.goldGainPct / 100) * 1000) / 1000;
-  }
-  if (forge.rareFindPct > 0) {
-    dropMult = Math.round(dropMult * (1 + forge.rareFindPct / 100) * 1000) / 1000;
   }
   // WL-11 海港水族馆：金币收益同样作用于战斗金币（与后端 playerBuildExtras 一致）
   if (harbor.goldGainPct > 0) {
@@ -668,10 +672,10 @@ export type PackEquipmentSet = {
   id: string;
   name?: string;
   pieces?: Array<{ slot: string; itemId: string }>;
-  bonuses?: Array<{ requiredPieces?: number; stats?: { atk?: number; def?: number; hp?: number }; description?: string }>;
+  bonuses?: Array<{ requiredPieces?: number; stats?: { atk?: number; def?: number; hp?: number; combatSpeed?: number }; description?: string }>;
 };
 
-export type ActiveSetBonus = { setId: string; name: string; pieces: number; atk: number; def: number; hp?: number; description?: string };
+export type ActiveSetBonus = { setId: string; name: string; pieces: number; atk: number; def: number; hp?: number; combatSpeed?: number; description?: string };
 
 /** Mirror of the set-bonus half of backend getEquippedCombatStats. */
 export function activeSetBonuses(
@@ -700,8 +704,9 @@ export function activeSetBonuses(
     const atk = Number(top?.stats?.atk || 0);
     const def = Number(top?.stats?.def || 0);
     const hp = Number(top?.stats?.hp || 0);
+    const combatSpeed = Number(top?.stats?.combatSpeed || 0);
     const description = top?.description;
-    if (atk || def || hp) out.push({ setId: set.id, name: set.name || set.id, pieces, atk, def, ...(hp ? { hp } : {}), description });
+    if (atk || def || hp || combatSpeed) out.push({ setId: set.id, name: set.name || set.id, pieces, atk, def, ...(hp ? { hp } : {}), ...(combatSpeed ? { combatSpeed } : {}), description });
   }
   return out;
 }
@@ -716,6 +721,8 @@ export function combatSheetFromPack(
   let gearAtk = 0;
   let gearDef = 0;
   let gearHp = 0;
+  let speedPoints = 0;
+  const gearRows: Array<{ stats: Partial<SecondaryStats>; mult: number }> = [];
   const eq = state?.equipment;
   if (eq && items?.length) {
     for (const [slot, itemId] of Object.entries(eq)) {
@@ -733,6 +740,7 @@ export function combatSheetFromPack(
       if (item.mag) gearAtk += Number(item.mag) * mult; // staffs carry damage as mag (mirrors backend)
       if (item.def) gearDef += Number(item.def) * mult;
       if (item.hp) gearHp += Number(item.hp) * mult;
+      gearRows.push({ stats: item, mult });
     }
   }
   // Backend rounds gear+set totals together (Math.round), so do the same here.
@@ -740,6 +748,7 @@ export function combatSheetFromPack(
     gearAtk += bonus.atk;
     gearDef += bonus.def;
     if (bonus.hp) gearHp += bonus.hp;
+    speedPoints += bonus.combatSpeed || 0;
   }
   const baseUnbuffedAtk = skills.atk + Math.round(gearAtk) + extras.atk;
   const unbuffedAtk = extras.combatAtkPct
@@ -748,11 +757,14 @@ export function combatSheetFromPack(
   const unbuffedDef = skills.def + Math.round(gearDef) + extras.def;
   let buffAtk = 0;
   let buffDef = 0;
+  const secondary = sumSecondary(gearRows);
   const nowMs = Date.now();
   for (const b of state?.activeBuffs || []) {
     if (Date.parse(b.expiresAt) > nowMs) {
       buffAtk += Number(b.stats?.atk || 0);
       buffDef += Number(b.stats?.def || 0);
+      speedPoints += combatSpeedPoints(b.multipliers?.combatSpeed);
+      for (const key of SECONDARY_KEYS) secondary[key] += Number(b.stats?.[key] || 0);
     }
   }
   buffAtk = Math.round(buffAtk * extras.potionBuffMult);
@@ -765,20 +777,21 @@ export function combatSheetFromPack(
   const atkLv = state?.combatSkills?.attack?.level || state?.combatLevel || 1;
   const defLv = state?.combatSkills?.defense?.level || state?.combatLevel || 1;
   const intLv = state?.combatSkills?.intelligence?.level || state?.combatLevel || 1;
-  const accuracyPct = Math.min(99, Math.round((86 + (atkLv - 1) * 0.35 + Math.floor(finalAtk / 22)) * 10) / 10);
-  const evasionPct = Math.min(45, Math.round((6 + (defLv - 1) * 0.32 + Math.floor(finalDef / 24)) * 10) / 10);
-  const critRatePct = Math.min(
-    65,
-    Math.round((14 + (atkLv - 1) * 0.25 + (intLv - 1) * 0.15 + Math.floor(finalAtk / 28) + (extras.critRateBonusPct || 0)) * 10) / 10
-  );
-  const critDmgPct = Math.min(
-    300,
-    Math.round(160 + (atkLv - 1) * 0.75 + Math.floor(finalAtk / 14) + (extras.critDmgBonusPct || 0))
-  );
-  const finalIntervalMs =
+  const { evasionPct, critRatePct, critDmgPct } = squadRates({
+    attackLevel: atkLv,
+    intelligenceLevel: intLv,
+    defenseLevel: defLv,
+    atk: finalAtk,
+    def: finalDef,
+    critRateBonusPct: extras.critRateBonusPct,
+    critDmgBonusPct: extras.critDmgBonusPct,
+  });
+  const finalIntervalMs = attackSpeedInterval(
     extras.intervalMult !== 1
       ? Math.max(800, Math.round(skills.intervalMs * extras.intervalMult))
-      : skills.intervalMs;
+      : skills.intervalMs,
+    speedPoints
+  );
   return {
     hp: skills.hp + Math.round(gearHp) + extras.hp,
     atk: finalAtk,
@@ -786,7 +799,11 @@ export function combatSheetFromPack(
     intervalMs: finalIntervalMs,
     mp: skills.mp,
     mpRegenPerTick: skills.mpRegenPerTick,
-    accuracyPct,
+    accuracy: playerAccuracy(derivedCombatLevel(state), atkLv, secondary.accuracy),
+    evasion: secondary.evasion,
+    physResist: secondary.physResist,
+    elemResist: secondary.elemResist,
+    damageType: mainCombatSkill(state) === "magic" ? "elemental" : "physical",
     evasionPct,
     critRatePct,
     critDmgPct,

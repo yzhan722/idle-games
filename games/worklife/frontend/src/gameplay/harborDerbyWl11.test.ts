@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -34,7 +35,7 @@ const t1Root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../as
 const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 describe("WL-11 frontend art contract, navigation IA, zero-SVG/Emoji guard and Harbor Derby helpers", () => {
-  it("registers the 6 WL-11 512x512 RGBA .webp icons in the T1 contract and keeps a dated wl cache version", () => {
+  it("registers the 6 WL-11 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract and keeps a dated wl cache version", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL11_HARBOR_DERBY_ART_IDS], [
       "fishing_trophy",
@@ -57,8 +58,8 @@ describe("WL-11 frontend art contract, navigation IA, zero-SVG/Emoji guard and H
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
       assert.ok(size, `Unreadable webp ${webp}`);
-      assert.equal(size!.width, 512);
-      assert.equal(size!.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(
       withAssetCacheVersion("/assets/fishing_trophy.webp"),
@@ -84,7 +85,7 @@ describe("WL-11 frontend art contract, navigation IA, zero-SVG/Emoji guard and H
     assert.ok(endgame.items.indexOf("harbor") > endgame.items.indexOf("forge"));
     assert.ok(endgame.items.indexOf("harbor") < endgame.items.indexOf("prestige"));
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     assert.ok(advSrc.indexOf("export function HarborDerbyPanel") > 0, "HarborDerbyPanel must be exported from AdvancementPanels.tsx");
     const slice = advSrc.slice(advSrc.lastIndexOf("港湾垂钓大赛 & 海港水族馆收藏图鉴 (WL-11)"));
     assert.equal(/<svg[\s>]/i.test(slice), false, "HarborDerbyPanel must not contain inline <svg>");

@@ -54,7 +54,6 @@ export type EnhancedContentPack = ContentPack & {
       itemId: string;
       quantity: number;
     }>;
-    successRate: number;
     maxLevel: number;
   }>;
   
@@ -120,11 +119,11 @@ export type HpCombatState = {
   nextFightAt?: number;
   /** Consecutive wins in the current auto-repeat run. */
   streak?: number;
-  /** Defeats in the current auto-repeat run (MWI respawn loop). */
+  /** Defeats in the current auto-repeat run (respawn loop). */
   deaths?: number;
   /** Consecutive defeats right now (reset by any win); trips the auto-repeat death-spiral guard. */
   lossStreak?: number;
-  /** MWI battle statistics for the whole auto-repeat run (carried from fight to fight). */
+  /** Battle statistics for the whole auto-repeat run (carried from fight to fight). */
   runStats?: {
     startedAt: number;
     kills: number;
@@ -132,15 +131,23 @@ export type HpCombatState = {
     gold: number;
     loot: Record<string, number>;
   };
+  /** 这一场的难度档位（zone_tiers.ts），开打时定；缺省 = 普通。 */
+  tier?: number;
   /** Wall-clock ms when this fight started (enrage timer). */
   startedAt?: number;
-  /** MWI enrage stacks (+10% monster damage each, max 10). */
+  /** Enrage stacks (see growth_curves.ENRAGE). */
   enrageStacks?: number;
-  /** Boss attacks landed so far this fight (drives `charge` mechanics such as the mine boss's rockfall). */
+  /** Boss attacks so far this fight (drives `charge` mechanics such as the mine boss's rockfall). */
   bossHits?: number;
+  /** Miss meters (combat_secondary.swingMeter); absent in saves from before accuracy existed → start value. */
+  playerMissMeter?: number;
+  enemyMissMeter?: number;
+  /** What this win actually paid (after every bonus), for the victory panel. */
+  xpTotal?: number;
+  goldGained?: number;
   /** Per-fight counters of timed boss mechanics (event counts, miasma stacks); see boss_mechanics.ts. */
   mech?: Record<string, number>;
-  /** MWI mana: abilities spend it, basic-attack ticks regenerate it. */
+  /** Mana: abilities spend it, basic-attack ticks regenerate it. */
   playerMp?: number;
   playerMaxMp?: number;
   /** Per-ability cooldown end (ms epoch), keyed by ability id. */
@@ -149,6 +156,8 @@ export type HpCombatState = {
   braceUntil?: number;
   /** Active incoming damage multiplier while `braceUntil` is in effect. */
   braceMult?: number;
+  /** 盛宴护盾（第四章流派）的截止时刻；旧存档没有。 */
+  feastUntil?: number;
   /** Combat-skill XP granted on win (30/70 split), for the victory panel. */
   xpGained?: Record<string, number>;
   /** Active ability XP granted via skill casts during this fight. */
@@ -158,7 +167,7 @@ export type HpCombatState = {
 };
 
 /**
- * MWI combat skills: stamina (HP), intelligence (MP + ability slots), attack (speed), defense,
+ * Combat skills: stamina (HP), intelligence (MP + ability slots), attack (speed), defense,
  * and the three damage skills melee / ranged / magic — the equipped weapon decides which one trains.
  */
 export type CombatSkillId = "stamina" | "intelligence" | "attack" | "defense" | "melee" | "ranged" | "magic";
@@ -185,6 +194,8 @@ export type AllChapterBuildId = Chapter1BuildId | Chapter2BuildId | Chapter3Buil
 export type EnhancedPlayerState = PlayerState & {
   /** Database CAS revision; must survive state copies. Never accepted from client commands. */
   stateRevision?: number;
+  /** 升级经验曲线版本：缺省 = 旧曲线存档，读档时换算一次（见 curve_migration.ts）。 */
+  curveVersion?: number;
   // 战斗等级系统（独立于职业）
   combatLevel: number;
   combatXp: number;
@@ -204,6 +215,8 @@ export type EnhancedPlayerState = PlayerState & {
     isLeader: boolean;
     joinedAt: string;
   };
+  /** 组队副本的波次进度（party_run.ts）。旧存档没有，第一次清波时从第 1 波开始 */
+  partyRun?: import("./party_run").PartyRunState;
   /** 收到的未处理组队邀请（最多保留 10 条，24 小时有效） */
   partyInvites?: Array<{ partyId: string; fromUserId: string; invitedAt: string }>;
   
@@ -218,7 +231,7 @@ export type EnhancedPlayerState = PlayerState & {
     hands?: string;
     accessory1?: string;
     accessory2?: string;
-    /** MWI-style tool slot (axe / hammer / hoe …): skilling speed only, excluded from combat stats. */
+    /** Tool slot (axe / hammer / hoe …): skilling speed only, excluded from combat stats. */
     tool?: string;
     enhancementLevels: Record<string, number>;
     durability: Record<string, number>; // 装备耐久度 (当前值)
@@ -235,7 +248,7 @@ export type EnhancedPlayerState = PlayerState & {
     }>;
   };
   
-  // 行动队列（银河奶牛式）：当前动作结束后按顺序自动接上；quantity 缺省 = 无限
+  // 行动队列：当前动作结束后按顺序自动接上；quantity 缺省 = 无限
   activityQueue: Array<{
     id: string;
     actionId: string;
@@ -243,8 +256,14 @@ export type EnhancedPlayerState = PlayerState & {
   }>;
 
   hpCombat?: HpCombatState;
+  /** 各区域选的难度档位（zone_tiers.ts）：区域 id → 0 普通 / 1 困难 / 2 噩梦。旧存档没有 = 全部普通 */
+  zoneTiers?: Record<string, number>;
+  /** 单人地下城（dungeon.ts）：进行中或最近一次的结果。旧存档没有 = 没开过。 */
+  dungeonRun?: DungeonRun;
+  /** 地下城每日次数：{ 东八区日期, 已开次数 }。 */
+  dungeonDaily?: { day: string; runs: number };
   /**
-   * Persistent combat HP (MWI: survives between fights; the enemy always starts full).
+   * Persistent combat HP (survives between fights; the enemy always starts full).
    * undefined = full. Regenerates out of combat — see COMBAT_HP_FULL_REGEN_MS in hp_combat.
    */
   combatHp?: number;
@@ -256,7 +275,7 @@ export type EnhancedPlayerState = PlayerState & {
   chapter3Build?: Chapter3BuildId;
   chapter4Build?: Chapter4BuildId;
 
-  /** MWI combat skills; `combatLevel` is derived from these (see combat_skills.ts). */
+  /** Combat skills; `combatLevel` is derived from these (see combat_skills.ts). */
   combatSkills?: CombatSkills;
   /** Learned abilities (from books) with their own level / xp. */
   abilities?: Record<string, { level: number; xp: number }>;
@@ -264,7 +283,7 @@ export type EnhancedPlayerState = PlayerState & {
   abilityLoadout?: AbilitySlot[];
 
   /**
-   * MWI-style combat loadout: consumables the server auto-uses during HP combat.
+   * Combat loadout: consumables the server auto-uses during HP combat.
    * food: eaten when missing HP >= triggerMissingHp (30s cooldown per slot).
    * drink: re-applied whenever its buff is not active.
    * autoRepeat: after a win, start the same monster again after a short intermission.
@@ -367,23 +386,42 @@ export type EnhancedPlayerState = PlayerState & {
   // 异世界行会：冒险者行会公会战（东八区按周轮换的对手行会、竞技沙盒结算、行会勋章与封顶的永久加成；转生永久保留）
   guildWar?: GuildWarState;
 
-  // MWI 任务板：按冷却逐个发放的技能任务、任务代币与代币商店
+  // 任务板：按冷却逐个发放的技能任务、任务代币与代币商店
   tasksState?: TaskState;
 
-  // MWI 房屋：每个技能一间房，等级 → 该技能永久加成
+  // 房屋：每个技能一间房，等级 → 该技能永久加成
   house?: { rooms: Record<string, number> };
 
-  // MWI 强化是计时动作：设目标等级后按间隔反复尝试，直到达标 / 材料耗尽 / 手动停止
+  // 强化是计时动作：设目标等级后按间隔反复尝试，直到达标 / 材料耗尽 / 手动停止
   enhanceRun?: EnhanceRun;
 
   // 转生系统状态（重置进度换永久全局倍率）
   prestige?: PrestigeState;
 };
 
+export type DungeonRun = {
+  zoneId: string;
+  tier: number;
+  /** 各波怪物 id，最后一个是首领。 */
+  waves: string[];
+  /** 已经打过的波数（0 = 正在打第 1 波）。 */
+  cleared: number;
+  startedAt: number;
+  /** 结束：clear 全通 / fail 战败 / left 自己离开 / offline 离线超时。没有 = 进行中。 */
+  outcome?: "clear" | "fail" | "left" | "offline";
+  endedAt?: number;
+  /** 结束时的累计（各波之和 + 通关奖励）。 */
+  result?: { xp: number; gold: number; loot: Record<string, number>; reward?: string };
+  /** 结算弹窗已经看过（POST /combat/dungeon/seen）。旧存档没有 = 没看过，打开页面补弹一次。 */
+  resultSeen?: boolean;
+};
+
 export type EnhanceRun = {
   itemId: string;
   targetLevel: number;
   useProtection: boolean;
+  /** 每次尝试加 1 个对应阶的区域精华作辅料（zone_essence.ts）；用完就不再加，强化照常继续。旧存档没有 = 不用。 */
+  useEssence?: boolean;
   intervalMs: number;
   /** Epoch ms of the next attempt; attempts before `now` are settled by simulateToNow. */
   nextAttemptAt: number;
@@ -1341,7 +1379,7 @@ export type ActiveBuff = {
     xpGain?: number;
     goldGain?: number;
   };
-  stats?: { atk?: number; def?: number };
+  stats?: { atk?: number; def?: number; accuracy?: number; evasion?: number; physResist?: number; elemResist?: number };
 };
 
 // 签到状态
@@ -1357,7 +1395,7 @@ export type PlayerStats = {
   totalCrafted: number;        // 累计制作次数
   totalKills: number;          // 累计击杀怪物
   totalBossKills: number;      // 累计击杀BOSS
-  totalDeaths?: number;        // 累计阵亡（MWI 重生循环）
+  totalDeaths?: number;        // 累计阵亡（重生循环）
   totalGoldEarned: number;     // 累计获得金币
   totalGoldSpent: number;      // 累计花费金币
   totalXpEarned: number;       // 累计获得经验
@@ -1365,6 +1403,7 @@ export type PlayerStats = {
   totalEnhancements: number;   // 累计强化次数
   totalTrades: number;         // 累计交易次数
   highestCombatLevel: number;  // 历史最高战斗等级
+  bestTotalLevel?: number;     // 转生前达到过的最高总等级（排行榜用；没转生过就没有）
   playtimeSeconds: number;     // 累计在线/挂机时长（秒）
   playtimeCarryMs?: number;    // 不足 1 秒的零头，跨次轮询累加，避免高频轮询把时长吃掉
   firstPlayedAt: string;       // 首次游玩时间
@@ -1372,11 +1411,13 @@ export type PlayerStats = {
   gatheredByItem: Record<string, number>;
   // 按怪物细分击杀：monsterId -> 数量
   killsByMonster: Record<string, number>;
+  // 困难、噩梦档的击杀：区域 id -> [困难, 噩梦]（旧存档没有 = 0）
+  zoneTierKills?: Record<string, number[]>;
   // 按动作细分完成次数：actionId -> 次数（任务板进度来源）
   actionsById?: Record<string, number>;
 };
 
-/* ===== MWI 任务板 ===== */
+/* ===== 任务板 ===== */
 export type Task = {
   id: string;
   kind: "action" | "kill";
@@ -1470,6 +1511,8 @@ export type PlayerSettings = {
   characterCreated?: boolean;
   /** 开场三步引导是否已看完 */
   tutorialDone?: boolean;
+  /** 匿名统计开关；没选过时按 retention_metrics.ts 的默认（隐私政策草案期不参与） */
+  shareStats?: boolean;
 };
 
 export type UserRecord = {
@@ -1583,8 +1626,10 @@ export type EnhancementRequest = {
   targetLevel: number;
   materials: Record<string, number>;
   serviceProviderId?: string; // 跨职业强化时的服务提供者
-  /** MWI protection: consumes one mirror; a failed attempt loses one level instead of resetting. */
+  /** Protection: consumes one mirror; a failed attempt loses one level instead of resetting. */
   protectionItemId?: string;
+  /** 区域精华辅料（zone_essence.ts）：多耗 1 个，成功率乘数加一份。必须是这件装备那一阶的精华。 */
+  essenceItemId?: string;
 };
 
 export type EnhancementServiceRequest = {
@@ -1748,6 +1793,7 @@ export type TradingSearchRequest = {
   itemType?: string[];
   tier?: number[];
   profession?: string[];
+  /** 按单价筛选。估算价与可挂单区间是另一回事，见 market_price.ts 的 MarketEstimate.priceRange。 */
   priceRange?: { min: number; max: number };
   sortBy?: 'price' | 'quantity' | 'listedAt';
   sortOrder?: 'asc' | 'desc';

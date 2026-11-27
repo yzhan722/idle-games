@@ -8,13 +8,15 @@ import {
   ownsEnhanceableItem,
   performEnhancementAttempt,
 } from "./enhancement_math";
+import { ENHANCE_XP } from "./growth_curves";
 import { isE2eFast } from "./e2e_fast";
+import { ESSENCE_RULES, essenceForItemTier } from "./zone_essence";
 
 /**
- * MWI 强化是一个计时动作，不是一次点击：玩家设定目标等级，服务端每个间隔尝试一次，成功 +1，
+ * 强化是一个计时动作，不是一次点击：玩家设定目标等级，服务端每个间隔尝试一次，成功 +1，
  * 失败按保护规则回退，直到达标、材料耗尽或手动停止。只在在线结算窗口内推进。
  */
-export const ENHANCE_BASE_INTERVAL_MS = 20_000;
+export const ENHANCE_BASE_INTERVAL_MS = ENHANCE_XP.attemptSec * 1000;
 
 export function enhanceIntervalMs(): number {
   return isE2eFast() ? 400 : ENHANCE_BASE_INTERVAL_MS;
@@ -32,12 +34,14 @@ export type StartEnhanceResult =
 export function startEnhanceRun(
   player: EnhancedPlayerState,
   pack: EnhancedContentPack,
-  input: { itemId: string; targetLevel: number; useProtection?: boolean },
+  input: { itemId: string; targetLevel: number; useProtection?: boolean; useEssence?: boolean },
   now: Date
 ): StartEnhanceResult {
+  // 地下城波间歇也算在战斗里：不然强化会在两波之间开起来，下一波一开打又被收掉。
   const inSoloCombat = Boolean(
-    player.hpCombat &&
-      (!player.hpCombat.outcome || (player.combatLoadout?.autoRepeat && player.hpCombat.nextFightAt))
+    (player.hpCombat &&
+      (!player.hpCombat.outcome || (player.combatLoadout?.autoRepeat && player.hpCombat.nextFightAt))) ||
+      (player.dungeonRun && !player.dungeonRun.outcome)
   );
   if (inSoloCombat) {
     return { ok: false, error: "in_combat", message: "战斗中不能强化，先停止战斗" };
@@ -58,19 +62,24 @@ export function startEnhanceRun(
   if (target > maxLevel) return { ok: false, error: "bad_target", message: `最高只能强化到 +${maxLevel}` };
   // First attempt must be payable now, so the player never "starts" a run that does nothing.
   const cost = enhancementMaterials(ruleMatch.rule, current + 1, input.useProtection ? PROTECTION_MIRROR_ID : undefined, item, pack);
+  if (input.useEssence) {
+    const essenceId = essenceForItemTier(item.tier);
+    cost[essenceId] = (cost[essenceId] || 0) + ESSENCE_RULES.enhanceCost;
+  }
   for (const [id, qty] of Object.entries(cost)) {
     if ((player.inventory[id] || 0) < qty) {
       return { ok: false, error: "missing_materials", message: `材料不足：${id}（需要 ${qty}，拥有 ${player.inventory[id] || 0}）` };
     }
   }
 
-  // One activity at a time (MWI): the run replaces whatever skilling action was going.
+  // One activity at a time: the run replaces whatever skilling action was going.
   player.mode = "enhancing";
   player.lifeActionState = undefined;
   const run: EnhanceRun = {
     itemId: input.itemId,
     targetLevel: target,
     useProtection: !!input.useProtection,
+    ...(input.useEssence ? { useEssence: true } : {}),
     intervalMs: enhanceIntervalMs(),
     nextAttemptAt: now.getTime() + enhanceIntervalMs(),
     startedAt: now.getTime(),
@@ -80,7 +89,7 @@ export function startEnhanceRun(
     xpGained: 0,
   };
   player.enhanceRun = run;
-  appendLog(player, `开始强化 ${item.name || item.id}：+${current} → 目标 +${target}${run.useProtection ? "（使用保护镜）" : ""}`);
+  appendLog(player, `开始强化 ${item.name || item.id}：+${current} → 目标 +${target}${run.useProtection ? "（使用定纹镜）" : ""}`);
   return { ok: true, run };
 }
 
@@ -132,8 +141,14 @@ export function tickEnhanceRun(
     if (run.useProtection && (player.inventory[PROTECTION_MIRROR_ID] || 0) < 1) {
       player.mode = "idle";
       run.outcome = { reason: "no_protection", level: current, at: run.nextAttemptAt };
-      appendLog(player, `保护镜用完了，强化 ${item.name || item.id} 已停在 +${current}`);
+      appendLog(player, `定纹镜用完了，强化 ${item.name || item.id} 已停在 +${current}`);
       return new Date(run.nextAttemptAt);
+    }
+    // 精华是可选辅料：用完了就不再加，强化照常继续。
+    const essenceId = essenceForItemTier(item.tier);
+    if (run.useEssence && (player.inventory[essenceId] || 0) < ESSENCE_RULES.enhanceCost) {
+      run.useEssence = false;
+      appendLog(player, `精华用完了，强化 ${item.name || item.id} 不再加辅料`);
     }
     const result = performEnhancementAttempt({
       player,
@@ -144,6 +159,7 @@ export function tickEnhanceRun(
         targetLevel: current + 1,
         materials: {},
         protectionItemId: run.useProtection ? PROTECTION_MIRROR_ID : undefined,
+        ...(run.useEssence ? { essenceItemId: essenceId } : {}),
       },
       pack,
       rng,

@@ -16,10 +16,12 @@ export function webpSize(buf: Buffer): RasterSize | undefined {
     return { width, height };
   }
   if (chunk === "VP8 ") {
+    // Lossy bitstream: 3-byte frame tag, start code 9d 01 2a, then 14-bit width and height.
     const start = 23;
-    if (buf.length < start + 10) return undefined;
-    const width = buf.readUInt16LE(start + 6) & 0x3fff;
-    const height = buf.readUInt16LE(start + 8) & 0x3fff;
+    if (buf.length < start + 7) return undefined;
+    if (buf[start] !== 0x9d || buf[start + 1] !== 0x01 || buf[start + 2] !== 0x2a) return undefined;
+    const width = buf.readUInt16LE(start + 3) & 0x3fff;
+    const height = buf.readUInt16LE(start + 5) & 0x3fff;
     return { width, height };
   }
   if (chunk === "VP8L") {
@@ -37,5 +39,28 @@ export function webpSize(buf: Buffer): RasterSize | undefined {
 export function rasterSize(buf: Buffer, ext: string): RasterSize | undefined {
   if (ext === "png") return pngSize(buf);
   if (ext === "webp") return webpSize(buf);
+  return undefined;
+}
+
+/**
+ * Cheap damage check without a decoder: the container must be complete (a cut-off download or write
+ * still has a readable header) and must hold more than a flat picture would need.
+ */
+export function rasterDamage(buf: Buffer, ext: string): string | undefined {
+  const size = rasterSize(buf, ext);
+  if (!size) return "unreadable header";
+  if (ext === "webp") {
+    const declared = buf.readUInt32LE(4) + 8;
+    if (declared > buf.length) return `cut off: ${buf.length} of ${declared} bytes`;
+    for (let at = 12; at < declared; ) {
+      if (at + 8 > declared) return "broken chunk list";
+      const end = at + 8 + buf.readUInt32LE(at + 4);
+      if (end > declared) return `cut off inside ${buf.toString("ascii", at, at + 4).trim()}`;
+      at = end + ((end - at) & 1);
+    }
+  }
+  if (ext === "png" && buf.toString("ascii", buf.length - 8, buf.length - 4) !== "IEND") return "cut off: no IEND";
+  // 一张空白或纯色的图压完只有几百字节；现有最小的图标也在 2.7 KB 以上
+  if (buf.length < 1500) return `only ${buf.length} bytes: blank picture?`;
   return undefined;
 }

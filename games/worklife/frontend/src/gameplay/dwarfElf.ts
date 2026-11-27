@@ -1,5 +1,5 @@
 // 矮人地底矿脉 & 精灵林地驿站 (WL-17) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/dwarf-elf-parity.test.ts 守护），
+// 与 backend/src/progression2/dwarf_elf.ts 同名表与纯函数逐字对称（scripts/dwarf-elf-parity.test.ts 守护），
 // 供面板展示东八区日确定性矿脉图（每层矿种与品位）、出车计划与产量预览、矿道深度与矿车升级，以及按好感等级张贴的
 // 每日驿站委托（采集委托引用内容包真实采集行动，远征委托读取存档里已有的远征商队 / 遗迹勘探 / 飞艇航程计数）、
 // 林地好感等级与封顶的采集永久加成（采集速度 / 产出效率 / 经验由后端 getActionRates 计入）。任何数值改动必须两端同步。

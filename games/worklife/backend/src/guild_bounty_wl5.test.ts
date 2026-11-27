@@ -323,7 +323,9 @@ describe("WL-5 Daily Affix Guild Bounty Board & Chain Honor System", () => {
     assert.ok(Math.abs(extras.armorPenPct - 0.3) < 1e-6, "Scorching sunder grants 30% armor penetration");
     assert.ok(Math.abs(extras.intervalMult - 0.82) < 1e-6, "Swift assault reduces attack interval to 0.82x");
     assert.ok(extras.goldMult > 1.34, "Gilded spoils increases combat gold multiplier");
-    assert.ok(extras.dropMult > 1.19, "Gilded spoils increases rare drop multiplier");
+    // 稀有发现由 rare_find.ts 算，流派倍率里不再重复
+    assert.equal(extras.dropMult, 1);
+    assert.equal(Math.round((getRareFindMultiplier(pCombat, pack, day) - getRareFindMultiplier(pBase, pack, day)) * 100), 25);
 
     const craftAction = (pack.actions as any[]).find(
       (a) => !String(a.id).startsWith("act_combat_") && Array.isArray(a.consumes) && a.consumes.length > 0

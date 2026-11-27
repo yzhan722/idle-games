@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { buffLine } from "../gameplay/buffLines";
+import { trimLoadout } from "../gameplay/combatLoadout";
 import { T1Art, T1ItemIcon } from "./T1Art";
 
 type PackItem = {
@@ -42,22 +44,24 @@ type Props = {
 const TRIGGER_PRESETS = [0.25, 0.5, 0.75];
 const BASE_SLOTS = 1;
 const SLOT_CAP = 3;
+const BASE_DRINK_SLOTS = 3;
+const DRINK_SLOT_CAP = 4;
 
-/** Mirrors backend combatSlotCounts: 1 base + pouch accessories, capped at 3. */
+/** Mirrors backend combatSlotCounts: food 1 → 3, drinks 3 → 4, one more per pouch accessory. */
 export function slotCounts(equipment: Record<string, unknown> | undefined, items: PackItem[] | undefined): { food: number; drink: number } {
   let food = BASE_SLOTS;
-  let drink = BASE_SLOTS;
+  let drink = BASE_DRINK_SLOTS;
   for (const [slot, itemId] of Object.entries(equipment || {})) {
     if (typeof itemId !== "string" || slot === "enhancementLevels" || slot === "durability" || slot === "maxDurability") continue;
     const def = items?.find((i) => i.id === itemId);
     food += Number(def?.foodSlots || 0);
     drink += Number(def?.drinkSlots || 0);
   }
-  return { food: Math.min(SLOT_CAP, food), drink: Math.min(SLOT_CAP, drink) };
+  return { food: Math.min(SLOT_CAP, food), drink: Math.min(DRINK_SLOT_CAP, drink) };
 }
 
 /**
- * MWI-style consumable slots for combat. Food slots eat when missing HP ≥ trigger (30s cooldown each),
+ * Consumable slots for combat. Food slots eat when missing HP ≥ trigger (30s cooldown each),
  * MP slot drinks when missing MP ≥ trigger (20s cooldown), and drink slots keep their status buff up.
  */
 export function CombatLoadoutPanel(props: Props) {
@@ -77,18 +81,10 @@ export function CombatLoadoutPanel(props: Props) {
   const maxMp = Math.max(20, props.playerMaxMp || 50);
   const defaultMpTrigger = Math.max(1, Math.round(maxMp * 0.5));
   const describeBuff = (d?: PackItem) => {
-    const b = d?.effect?.buff;
-    if (!b) return "";
-    const parts: string[] = [];
-    for (const [k, v] of Object.entries(b.multipliers || {})) {
-      const label = k === "combatSpeed" ? "攻速" : k === "xpGain" ? "经验" : k === "goldGain" ? "金币" : k === "gatherSpeed" ? "采集" : k === "craftSpeed" ? "制作" : k;
-      parts.push(`${label} +${Math.round((Number(v) - 1) * 100)}%`);
-    }
-    for (const [k, v] of Object.entries(b.stats || {})) parts.push(`${k === "atk" ? "攻击" : k === "def" ? "防御" : k} +${v}`);
-    return parts.join(" · ") + (b.durationSec ? ` · ${Math.round(b.durationSec / 60)} 分钟` : "");
+    return buffLine(d?.effect?.buff);
   };
   const update = (patch: Partial<CombatLoadout>) => {
-    const next = { ...lo, ...patch };
+    const next = trimLoadout({ ...lo, ...patch }, counts);
     setLo(next);
     props.onChange(next);
   };
@@ -227,11 +223,11 @@ export function CombatLoadoutPanel(props: Props) {
 
       <div className="loadout-slot">
         <div className="loadout-slot-head">
-          <span className="loadout-slot-title"><T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 状态药剂槽 <small>3/{SLOT_CAP}</small></span>
-          <span className="loadout-slot-sub">进入战斗或增益到期时自动续杯（狂战 / 铁壁 / 奥术涌流 / 守护战意）</span>
+          <span className="loadout-slot-title"><T1Art kind="ui" id="nav-alchemy" className="gold-inline" alt="" /> 状态药剂槽 <small>{counts.drink}/{DRINK_SLOT_CAP}</small></span>
+          <span className="loadout-slot-sub">进入战斗或增益到期时自动续杯{counts.drink < DRINK_SLOT_CAP ? " · 布袋饰品可加格" : ""}</span>
         </div>
         <div className="loadout-slot-body">
-          {Array.from({ length: SLOT_CAP }).map((_, i) => {
+          {Array.from({ length: counts.drink }).map((_, i) => {
             const cur = lo.drink[i];
             const def = cur ? props.items?.find((x) => x.id === cur.itemId) : undefined;
             return (
@@ -249,7 +245,7 @@ export function CombatLoadoutPanel(props: Props) {
               </div>
             );
           })}
-          {drinks.length === 0 && lo.drink.length === 0 && <div className="loadout-hint">背包里没有状态药剂。狂战药剂(+20攻)、铁壁药剂(+18防)、奥术涌流药剂对战斗很有帮助。</div>}
+          {drinks.length === 0 && lo.drink.length === 0 && <div className="loadout-hint">背包里没有状态药剂。可以炼制狂战、铁壁、奥术涌流药剂。</div>}
         </div>
       </div>
 
@@ -257,7 +253,7 @@ export function CombatLoadoutPanel(props: Props) {
         <input type="checkbox" checked={!!lo.autoRepeat} onChange={(e) => update({ autoRepeat: e.target.checked })} />
         <span>
           <strong>连续战斗</strong>
-          <small>胜利后 3 秒自动再打同一只，离线也继续（有食物才安全）；拖得久怪物会狂暴</small>
+          <small>胜利后 3 秒自动再打同一只，连败 3 次停；关闭页面超过 2 分钟会暂停</small>
         </span>
       </label>
       {(lo.food.length > 0 || (lo.mp?.length || 0) > 0 || lo.drink.length > 0) && (

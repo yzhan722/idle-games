@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { createMemoryStorage } from './storage_memory';
 import { tasksRoutes } from './routes/tasks';
-import { defaultTaskState } from './tasks';
+import { defaultTaskState, rerollCost } from './tasks';
 import { mapThrownError } from './http_errors';
 import packJson from '../../shared/enhanced_content_pack_chinese.json';
 import type { EnhancedContentPack, EnhancedPlayerState, Task, TaskState } from './types';
@@ -78,11 +78,13 @@ test('concurrent task rerolls charge the escalating daily costs in order', async
     // Each reroll replaces its target task, so the two commands reroll different entries.
     const responses = await Promise.all([f.reroll({ taskId: 't1' }), f.reroll({ taskId: 't2' })]);
     assert.deepEqual(responses.map(r => r.statusCode), [200, 200]);
-    assert.deepEqual(responses.map(r => r.payload.cost), [200, 400]);
+    const ladder = [0, 1].map((n) => rerollCost({ rerollDay: 'd', rerollsToday: n } as any, 'd'));
+    assert.ok(ladder[1] > ladder[0]);
+    assert.deepEqual(responses.map(r => r.payload.cost), ladder);
     const state = await f.storage.getOrCreatePlayerState(f.userId, pack.version);
-    assert.equal(state.inventory.gold, 400); // 1000 - 200 - 400
+    assert.equal(state.inventory.gold, 1000 - ladder[0] - ladder[1]);
     assert.equal(state.tasksState!.rerollsToday, 2);
-    assert.equal(state.stats!.totalGoldSpent, 600);
+    assert.equal(state.stats!.totalGoldSpent, ladder[0] + ladder[1]);
     assert.ok(state.tasksState!.tasks.every((t: Task) => t.id !== 't1' && t.id !== 't2'));
   } finally { await f.storage.close(); }
 });

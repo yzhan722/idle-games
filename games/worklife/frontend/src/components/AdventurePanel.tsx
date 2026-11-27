@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { apiClient } from '../services/api'
 import { T1Art, T1ItemIcon, characterArtId } from './T1Art'
 import { GuildBountyBoard } from './GuildBountyBoard'
@@ -10,9 +11,18 @@ import { zoneDoors } from '../gameplay/encounters'
 import { abilitySlotCount, mainCombatSkill } from '../gameplay/combatSheet'
 import { encounterRewardLine } from '../gameplay/encounterLabels'
 import { mechanicLogMatcher } from '../gameplay/bossMechanics'
+import { enrageDamageMult } from '../gameplay/growthCurves'
+import { ZONE_TIER_NAMES, effectiveTier, zoneTierKillsLeft } from '../gameplay/zoneTiers'
+import { DUNGEON_RULES, dungeonDay, dungeonRunsLeft, dungeonZoneCleared } from '../gameplay/dungeonRules'
 import { COMBAT_SKILL_LABEL, getItemIcon, type ActiveTab, type ProfessionId } from '../gameplay/gameConstants'
 import { useToast } from './Toast'
 import type { AbilityDef, PlayerState } from '../types/game'
+
+const ZONE_TIER_ICONS = [
+  { kind: 'ui', id: 'nav-adventure' },
+  { kind: 'skills', id: 'heavy_chop' },
+  { kind: 'skills', id: 'affix_scorching_sunder' },
+] as const
 
 export interface AdventurePanelProps {
   playerState: PlayerState
@@ -84,9 +94,74 @@ export function AdventurePanel({
   onOpenRelics,
 }: AdventurePanelProps) {
   const toast = useToast()
+  const zone = (() => {
+    const stage = adventureStages.find((s) => s.id === selectedMap)
+    return stage ? { id: stage.id as string, monsters: (stage.encounters as Array<{ id: string }>).map((e) => e.id) } : undefined
+  })()
+  const zoneTier = zone ? effectiveTier(playerState.stats, zone, playerState.zoneTiers?.[zone.id]) : 0
+  // 单人地下城（gameplay/dungeonRules.ts）：入口在难度旁边，进行中显示第几波，结束弹一个小结算。
+  const zoneEncounters = (adventureStages.find((s) => s.id === selectedMap)?.encounters || []) as Array<{ id: string; isBoss?: boolean; level?: number }>
+  const dungeonOpen = !!zone && dungeonZoneCleared(playerState.stats, zoneEncounters)
+  const dungeonLeft = dungeonRunsLeft(playerState.dungeonDaily, dungeonDay(combatNow))
+  const dungeon = playerState.dungeonRun
+  // 结算弹窗只弹一次：看过记在服务端（dungeonRun.resultSeen）。在别的页面时结束、离线结束、刷新，回来都补弹一次。
+  const [dungeonSeen, setDungeonSeen] = useState<number>(0)
+  const closeDungeonResult = () => {
+    if (!dungeon) return
+    setDungeonSeen(dungeon.startedAt)
+    void apiClient.markDungeonSeen(dungeon.startedAt).catch(() => undefined)
+  }
+  const enterDungeon = async () => {
+    if (!zone) return
+    try {
+      apiClient.clearCache()
+      await apiClient.startDungeon(zone.id, zoneTier)
+      await refreshPlayerState()
+    } catch (e: any) {
+      toast.error(e?.message || '进不了地下城')
+    }
+  }
+  const chooseTier = async (tier: number) => {
+    if (!zone || tier === zoneTier) return
+    const left = zoneTierKillsLeft(playerState.stats, zone, tier)
+    if (left > 0) {
+      toast.info(`在这里用「${ZONE_TIER_NAMES[tier - 1]}」再击败 ${left} 只开放`)
+      return
+    }
+    try {
+      apiClient.clearCache()
+      await apiClient.setZoneTier(zone.id, tier)
+      await refreshPlayerState()
+    } catch (e: any) {
+      toast.error(e?.message || '切换难度失败')
+    }
+  }
 
   return (
     <div className={`adventure-layout${battleState ? ' combat-open' : ''}`}>
+      {dungeon?.outcome && dungeon.result && !dungeon.resultSeen && dungeon.startedAt !== dungeonSeen && (
+        <div className="modal-overlay" onClick={closeDungeonResult}>
+          <div className="modal-content dungeon-result" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close-btn" aria-label="关闭" onClick={closeDungeonResult}>
+              ✕
+            </button>
+            <h3 className="modal-title">
+              {dungeon.outcome === 'clear' ? '地下城通过' : '地下城结束'} · {dungeon.cleared}/{dungeon.waves.length}
+            </h3>
+            <div className="victory-rewards">
+              <span className="reward-item">+{Math.round(dungeon.result.xp).toLocaleString()} 经验</span>
+              <span className="reward-item">+{Math.round(dungeon.result.gold).toLocaleString()} 金币</span>
+              {Object.entries(dungeon.result.loot).map(([id, qty]) => (
+                <span className="reward-item reward-drop" key={id}>
+                  <T1ItemIcon itemId={id} fallback={getItemIcon(id)} alt="" />
+                  +{qty} {getItemNameById(id)}
+                  {id === dungeon.result!.reward ? '（通关）' : ''}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {!battleState && (
         <div className="adventure-command-bar">
           <div className="adventure-command-top">
@@ -114,6 +189,38 @@ export function AdventurePanel({
                   </button>
                 )}
               </div>
+              {chapterDone && zone && (
+                <div className="zone-tier-seg" role="radiogroup" aria-label="难度">
+                  {ZONE_TIER_NAMES.map((name, tier) => {
+                    const left = zoneTierKillsLeft(playerState.stats, zone, tier)
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        role="radio"
+                        aria-checked={zoneTier === tier}
+                        aria-disabled={left > 0}
+                        className={`qty-chip${zoneTier === tier ? ' active' : ''}${left > 0 ? ' locked' : ''}`}
+                        title={left > 0 ? `还差 ${left} 只` : name}
+                        onClick={() => void chooseTier(tier)}
+                      >
+                        <T1Art kind={ZONE_TIER_ICONS[tier].kind} id={ZONE_TIER_ICONS[tier].id} className="gold-inline" fallback="" alt="" /> {name}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {chapterDone && dungeonOpen && (
+                <button
+                  type="button"
+                  className="qty-chip dungeon-enter"
+                  disabled={dungeonLeft <= 0}
+                  title={dungeonLeft > 0 ? `${DUNGEON_RULES.waves} 波，末波首领` : '明天再来'}
+                  onClick={() => void enterDungeon()}
+                >
+                  <T1Art kind="ui" id="nav-adventure" className="gold-inline" fallback="" alt="" /> 地下城 {dungeonLeft}/{DUNGEON_RULES.runsPerDay}
+                </button>
+              )}
             </div>
             <div className="adventure-status-right">
               <CombatHpChip
@@ -175,7 +282,7 @@ export function AdventurePanel({
                 {playerState.chapter4Build && (
                   <span className="ch4-build-chip" style={{ marginLeft: 8, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.92 }}>
                     · <T1Art kind="skills" id={playerState.chapter4Build} className="gold-inline" alt="" />
-                    {playerState.chapter4Build === 'elixir_frenzy' ? '秘药狂热 (+50%药效)' : '盛宴生机 (+35%食疗护盾)'}
+                    {playerState.chapter4Build === 'elixir_frenzy' ? '秘药狂热 (药剂攻防 ×1.5)' : '盛宴生机 (进食回血 ×1.35)'}
                   </span>
                 )}
               </span>
@@ -290,7 +397,13 @@ export function AdventurePanel({
           <div className="battle-status-panel-center">
             <div className="battle-header">
               <div className="battle-title-section">
-                <h3>战斗</h3>
+                <h3>
+                  {dungeon && !dungeon.outcome
+                    ? `地下城 · 第 ${Math.min(dungeon.cleared + 1, dungeon.waves.length)}/${dungeon.waves.length} 波`
+                    : playerState.hpCombat?.tier
+                      ? `战斗 · ${ZONE_TIER_NAMES[playerState.hpCombat.tier]}`
+                      : '战斗'}
+                </h3>
                 <div className="battle-stats-compact">
                   {(playerState.hpCombat?.streak || 0) > 0 && (
                     <>
@@ -586,8 +699,8 @@ export function AdventurePanel({
                 <div className="auto-continue-info">
                   <div className="victory-text">战斗胜利</div>
                   <div className="victory-rewards">
-                    <span className="reward-item">+{battleState.monster.xp} 经验</span>
-                    <span className="reward-item">+{battleState.monster.gold} 金币</span>
+                    <span className="reward-item">+{playerState.hpCombat?.xpTotal ?? battleState.monster.xp} 经验</span>
+                    <span className="reward-item">+{playerState.hpCombat?.goldGained ?? battleState.monster.gold} 金币</span>
                     {battleState.drops.map((d: any) => (
                       <span className="reward-item reward-drop" key={d.itemId}>
                         <T1ItemIcon itemId={d.itemId} fallback={getItemIcon(d.itemId)} alt="" />
@@ -699,7 +812,7 @@ export function AdventurePanel({
                   {playerState?.hpCombat?.wrathActive && <div className="progress-text">自然之怒</div>}
                   {(playerState?.hpCombat?.enrageStacks || 0) > 0 && (
                     <div className="progress-text enrage">
-                      狂暴 ×{playerState!.hpCombat!.enrageStacks}（怪物伤害 +{(playerState!.hpCombat!.enrageStacks || 0) * 10}%）
+                      狂暴 ×{playerState!.hpCombat!.enrageStacks}（怪物伤害 +{Math.round((enrageDamageMult(playerState!.hpCombat!.enrageStacks || 0) - 1) * 100)}%）
                     </div>
                   )}
                   <AbilityBar

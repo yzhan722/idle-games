@@ -1,6 +1,7 @@
 import type { Storage } from "./storage";
 import type { EnhancedContentPack, Party } from "./types";
 import { defaultCombatSkills } from "./combat_skills";
+import { maskBlockedName } from "./name_filter";
 
 export interface PartyBotProfile {
   deviceId: string;
@@ -176,6 +177,35 @@ export function isPartyBotUserId(userId: string): boolean {
   return botUserById.has(userId) || userId.startsWith("party_bot_");
 }
 
+const EXTRA_BOT_DEVICE = /^party_bot_extra_(\d+)$/;
+
+/** 固定陪练都在别的队里时，临时加的陪练。 */
+function extraBotProfile(i: number): PartyBotProfile {
+  return {
+    deviceId: `party_bot_extra_${i}`,
+    name: FALLBACK_ADVENTURER_NAMES[i % FALLBACK_ADVENTURER_NAMES.length],
+    title: "协战游侠",
+    classId: "woodcutter",
+    gender: i % 2 === 0 ? "female" : "male",
+    combatLevel: 10 + i * 2,
+  };
+}
+
+/**
+ * 陪练名册在内存里，服务重启就没了。队里还没登记的成员按设备号认回来，
+ * 否则他们的等级会变成默认值，服务端算的小队就和玩家看到的不是同一支。
+ */
+export async function recognizePartyBots(storage: Storage, party: Party | null | undefined): Promise<void> {
+  for (const m of party?.members ?? []) {
+    if (botUserById.has(m.userId)) continue;
+    const deviceId = (await storage.getUser(m.userId).catch(() => null))?.guestDeviceId;
+    if (!deviceId?.startsWith("party_bot_")) continue;
+    const extra = EXTRA_BOT_DEVICE.exec(deviceId);
+    const profile = PARTY_BOT_PROFILES.find((p) => p.deviceId === deviceId) ?? (extra ? extraBotProfile(Number(extra[1])) : undefined);
+    if (profile) botUserById.set(m.userId, profile);
+  }
+}
+
 export function getBotProfileByUserId(userId: string): PartyBotProfile | undefined {
   return botUserById.get(userId);
 }
@@ -187,7 +217,7 @@ export function friendlyAdventurerName(userId: string, rawDisplayName?: string |
   const bot = botUserById.get(userId);
   if (bot) return bot.name;
   if (rawDisplayName && !isGarbledOrDefaultName(rawDisplayName)) {
-    return rawDisplayName.trim();
+    return maskBlockedName(rawDisplayName.trim());
   }
   const idx = hashString(userId) % FALLBACK_ADVENTURER_NAMES.length;
   return FALLBACK_ADVENTURER_NAMES[idx];
@@ -198,7 +228,8 @@ export function friendlyAdventurerName(userId: string, rawDisplayName?: string |
  */
 export function friendlyPartyName(partyId: string, rawName?: string | null, leaderDisplayName?: string | null): string {
   if (rawName && !isGarbledPartyName(rawName)) {
-    return rawName.trim();
+    // 队名是玩家自己起的、会出现在公开的队伍列表里：命中屏蔽词的字打码（与角色名同一套规则）
+    return maskBlockedName(rawName.trim());
   }
   if (leaderDisplayName && !isGarbledOrDefaultName(leaderDisplayName)) {
     return `${leaderDisplayName}的冒险小队`;
@@ -377,16 +408,8 @@ export async function recruitBotToParty(
 
   // Fallback: create a fresh extra bot adventurer if all 10 preset bots are in other parties
   for (let i = 1; i <= 20; i++) {
-    const deviceId = `party_bot_extra_${i}`;
-    const name = FALLBACK_ADVENTURER_NAMES[i % FALLBACK_ADVENTURER_NAMES.length];
-    const profile: PartyBotProfile = {
-      deviceId,
-      name,
-      title: "协战游侠",
-      classId: "woodcutter",
-      gender: i % 2 === 0 ? "female" : "male",
-      combatLevel: 10 + i * 2,
-    };
+    const profile = extraBotProfile(i);
+    const { deviceId, name } = profile;
     const botUser = await storage.findOrCreateGuestUser(deviceId);
     botUserById.set(botUser.id, profile);
     const st = await storage.getOrCreatePlayerState(botUser.id, version);

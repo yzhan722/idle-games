@@ -30,8 +30,8 @@ const TRIGGER_OPTIONS: Array<{
   { key: "always", label: "冷却好了就放", make: () => ({ type: "always" }) },
   { key: "enemy_hp_below", label: "敌人生命 ≤", make: (pct) => ({ type: "enemy_hp_below", pct }), needsPct: true },
   { key: "self_hp_below", label: "自己生命 ≤", make: (pct) => ({ type: "self_hp_below", pct }), needsPct: true },
-  { key: "ally_hp_below", label: "任意队友生命 ≤", make: (pct) => ({ type: "ally_hp_below", pct }), needsPct: true },
-  { key: "enemies_at_least", label: "敌方数量 ≥", make: (pct) => ({ type: "enemies_at_least", pct }), needsCount: true },
+  { key: "ally_hp_below", label: "任意队友生命 ≤（单人看自己）", make: (pct) => ({ type: "ally_hp_below", pct }), needsPct: true },
+  { key: "enemies_at_least", label: "敌方数量 ≥（单人恒为 1）", make: (pct) => ({ type: "enemies_at_least", pct }), needsCount: true },
   { key: "enemy_guard", label: "敌人格挡时", make: () => ({ type: "enemy_guard" }) },
 ];
 const PCT_PRESETS = [25, 50, 75];
@@ -43,7 +43,7 @@ export function slotUnlockLevel(i: number): number {
 }
 
 /**
- * MWI 技能槽: an ordered list of learned abilities, each with the trigger that auto-casts it.
+ * 技能槽: an ordered list of learned abilities, each with the trigger that auto-casts it.
  * Left-to-right is cast priority. Slot count follows intelligence; locked slots say what unlocks them.
  */
 export function AbilityLoadoutPanel(props: Props) {
@@ -210,7 +210,7 @@ export function AbilityLoadoutPanel(props: Props) {
       <div className="ability-mastery-roster">
         <div className="ability-roster-head">
           <span><T1Art kind="ui" id="nav-tasks" className="gold-inline" alt="" /> 技能等级与熟练度体系</span>
-          <small>战斗释放增长经验 · 重读技能书固定 +{BOOK_REREAD_XP} EXP · 每升 1 级威力 +5%，每 5 级突破缩短 2.5% 冷却</small>
+          <small>战斗释放增长经验 · 重读技能书固定 +{BOOK_REREAD_XP} EXP · 每升 1 级效果 +5%（单人减伤技能加的是持续时间），每 5 级突破缩短 2.5% 冷却</small>
         </div>
         <div className="ability-roster-grid">
           {catalog.map((d) => {

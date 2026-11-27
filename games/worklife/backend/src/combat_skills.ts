@@ -1,17 +1,18 @@
 import type { CombatSkillId, CombatSkills, EnhancedPlayerState } from "./types";
 import { appendLog, getXpForLevel, isDurabilityBroken } from "./storage";
+import { COMBAT_MAIN_SHARE, COMBAT_SUPPORT_POOL, COMBAT_SUPPORT_SHARE, combatLevelOf } from "./growth_curves";
 
 /**
- * MWI combat skills.
+ * Combat skills: seven lines that split combat progression.
  *
- * Milky Way Idle splits combat progression into seven skills. Every kill hands out XP with MWI's
- * 30 / 70 rule: 30% goes to the damage skill the weapon trains (melee / ranged / magic), the other
- * 70% is shared evenly by stamina, intelligence, attack, defense and that same main skill — so the
- * main skill ends at 44% and the two unused damage skills get nothing. The visible 战斗等级 is
- * derived, never trained directly.
+ * Every kill is worth 20 parts of XP (growth_curves.COMBAT_XP_PARTS): 8 go to the damage skill the
+ * weapon trains (melee / ranged / magic) and 3 each to stamina, intelligence, attack and defense;
+ * the two unused damage skills get nothing. The visible 战斗等级 is derived, never trained directly.
  */
 export const COMBAT_SKILL_IDS: CombatSkillId[] = ["stamina", "intelligence", "attack", "defense", "melee", "ranged", "magic"];
 export const DAMAGE_SKILL_IDS: CombatSkillId[] = ["melee", "ranged", "magic"];
+/** The four lines every kill trains whatever the weapon is. */
+export const SUPPORT_SKILL_IDS: CombatSkillId[] = ["stamina", "intelligence", "attack", "defense"];
 
 export const COMBAT_SKILL_NAMES: Record<CombatSkillId, string> = {
   stamina: "耐力",
@@ -26,15 +27,13 @@ export const COMBAT_SKILL_NAMES: Record<CombatSkillId, string> = {
 export const COMBAT_SKILL_BLURBS: Record<CombatSkillId, string> = {
   stamina: "每级 +10 最大生命",
   intelligence: "每级 +5 最大魔力；每 10 级多一个技能槽",
-  attack: "每级攻击间隔 -1%",
+  attack: "每级攻击速度 +1%，命中 +2",
   defense: "每 2 级 +1 防御",
   melee: "每级 +1 攻击力（剑 / 斧 / 矛主修）",
   ranged: "每级 +1 攻击力（弓主修）",
   magic: "每级 +1 攻击力（法杖 / 权杖主修）",
 };
 
-export const MAIN_SHARE = 0.3;
-export const SPREAD_SHARE = 0.7;
 export const MAX_COMBAT_SKILL_LEVEL = 200;
 
 export function defaultCombatSkills(level = 1): CombatSkills {
@@ -42,13 +41,17 @@ export function defaultCombatSkills(level = 1): CombatSkills {
   return { stamina: mk(), intelligence: mk(), attack: mk(), defense: mk(), melee: mk(), ranged: mk(), magic: mk() };
 }
 
-/** MWI: 0.1 × (stamina + intelligence + attack + defense + best damage) + 0.5 × best of attack / defense / damage. */
+/** Weighted quadratic mean of the four support skills and the best damage skill (growth_curves.combatLevelOf). */
 export function derivedCombatLevel(cs: CombatSkills): number {
   const l = (id: CombatSkillId) => cs[id]?.level || 1;
-  const bestDamage = Math.max(l("melee"), l("ranged"), l("magic"));
-  const sum = l("stamina") + l("intelligence") + l("attack") + l("defense") + bestDamage;
-  const best = Math.max(l("attack"), l("defense"), bestDamage);
-  return Math.max(1, Math.floor(0.1 * sum + 0.5 * best));
+  return combatLevelOf(SUPPORT_SKILL_IDS.map(l), Math.max(...DAMAGE_SKILL_IDS.map(l)));
+}
+
+/** 总等级：全部职业、强化与七项战斗技能的等级之和，与顶栏显示的算法一致。 */
+export function totalLevelOf(player: Pick<EnhancedPlayerState, "skills" | "combatSkills" | "combatLevel">): number {
+  const sum = (rows: Record<string, { level?: number }> | undefined) =>
+    Object.values(rows ?? {}).reduce((n, s) => n + Number(s?.level || 1), 0);
+  return sum(player.skills) + (player.combatSkills ? sum(player.combatSkills) : (player.combatLevel || 1) * COMBAT_SKILL_IDS.length);
 }
 
 /**
@@ -88,16 +91,11 @@ export function mainCombatSkill(player: EnhancedPlayerState): CombatSkillId {
   return weaponMainSkill(mainHand);
 }
 
-/** The five skills that share the 70%: the four utility skills plus the weapon's main skill. */
-export function spreadSkills(main: CombatSkillId): CombatSkillId[] {
-  return ["stamina", "intelligence", "attack", "defense", main];
-}
-
 const FOCUSABLE: CombatSkillId[] = ["stamina", "intelligence", "attack", "defense", "melee", "ranged", "magic"];
 
 /**
- * MWI charm: an equipped accessory with `focusSkill` sends the whole 70% share to that skill
- * instead of splitting it five ways. Read from the pack so content, not code, decides the charms.
+ * Training charm: an equipped accessory with `focusSkill` sends the whole support pool (12 of the
+ * 20 parts) to that skill instead of splitting it four ways. Read from the pack so content, not code, decides the charms.
  */
 /** The loose pack shape both ContentPack and EnhancedContentPack satisfy. */
 export type CharmPack = { items: Array<Record<string, unknown>> };
@@ -121,22 +119,21 @@ export type CombatXpGrant = {
   levelUps: Array<{ skill: CombatSkillId; level: number }>;
   combatLevel: number;
   main: CombatSkillId;
-  /** Set when a charm redirected the 70% share. */
+  /** Set when a charm redirected the support pool. */
   focus?: CombatSkillId;
 };
 
-/** Apply MWI's 30 / 70 split (or a charm's focus) and level up whatever crosses its threshold. */
+/** Hand out one kill's XP (or a charm's focus) and level up whatever crosses its threshold. */
 export function grantCombatXp(player: EnhancedPlayerState, xp: number, pack?: CharmPack): CombatXpGrant {
   const cs = ensureCombatSkills(player);
   const main = mainCombatSkill(player);
   const focus = focusedCombatSkill(player, pack);
-  const recipients = focus ? [...new Set([focus, main])] : spreadSkills(main);
-  const spreadTotal = xp * SPREAD_SHARE;
+  const recipients = [...new Set<CombatSkillId>([main, ...(focus ? [focus] : SUPPORT_SKILL_IDS)])];
   const gained: Partial<Record<CombatSkillId, number>> = {};
   const levelUps: CombatXpGrant["levelUps"] = [];
   for (const id of recipients) {
-    const share = focus ? (id === focus ? spreadTotal : 0) : spreadTotal / recipients.length;
-    const amount = share + (id === main ? xp * MAIN_SHARE : 0);
+    const support = focus ? (id === focus ? COMBAT_SUPPORT_POOL : 0) : id === main ? 0 : COMBAT_SUPPORT_SHARE;
+    const amount = xp * (support + (id === main ? COMBAT_MAIN_SHARE : 0));
     gained[id] = Math.round(amount * 10) / 10;
     const st = cs[id];
     st.xp = Math.round((st.xp + amount) * 1000) / 1000;
@@ -158,6 +155,7 @@ export function grantCombatXp(player: EnhancedPlayerState, xp: number, pack?: Ch
   return { gained, levelUps, combatLevel: player.combatLevel, main, focus };
 }
 
+// 每级收益的推导见 docs/design/OWN_CURVES.md：怪物攻击约每级 +2，裸装同级要挨得住 5 下，所以耐力每级 +10 生命。
 export const BASE_HP = 50;
 export const HP_PER_STAMINA = 10;
 export const BASE_MP = 20;
@@ -180,12 +178,12 @@ export function combatSkillContribution(cs: CombatSkills, main: CombatSkillId = 
     atk: BASE_ATK + (dmg - 1),
     def: Math.floor((def - 1) / 2) * DEF_PER_2_DEFENSE,
     intervalMs: Math.round(BASE_INTERVAL_MS / (1 + (atk - 1) * INTERVAL_PER_ATTACK)),
-    /** MWI-style: mana regenerated on every basic-attack tick. */
+    /** Mana regenerated on every basic-attack tick. */
     mpRegenPerTick: 1 + Math.floor(int / 10),
   };
 }
 
-/** MWI gates ability slots by intelligence; one extra slot every 10 levels, four at most. */
+/** Ability slots are gated by intelligence: one extra slot every 10 levels, four at most. */
 export function abilitySlotCount(cs: CombatSkills): number {
   return Math.min(4, 1 + Math.floor((cs.intelligence?.level || 1) / 10));
 }

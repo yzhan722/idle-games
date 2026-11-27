@@ -220,12 +220,58 @@ CREATE TABLE trading_orders (
 ```sql
 CREATE TABLE trade_history (
     id UUID PRIMARY KEY,
-    buyer_id UUID REFERENCES users(id),
-    seller_id UUID REFERENCES users(id),
-    item_id VARCHAR(100),
+    buyer_id UUID NOT NULL,   -- 注销账号后改成全 0 编号，所以不设外键
+    seller_id UUID NOT NULL,
+    item_id TEXT,
     quantity INTEGER,
     total_price INTEGER,
     completed_at TIMESTAMP WITH TIME ZONE
+);
+```
+
+#### account_deletions - 注销墓碑
+只有随机账号编号与注销时间，30 天后清除（迁移 `004_account_deletion_and_trades.sql`）。
+
+```sql
+CREATE TABLE account_deletions (
+    user_id UUID PRIMARY KEY,
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+#### player_rankings - 真人排行榜
+只有起过名字的真人有一行，分数变了才更新（迁移 `005_player_rankings.sql`，规则见 `backend/src/leaderboard.ts`）。
+
+```sql
+CREATE TABLE player_rankings (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    total_level INTEGER NOT NULL,
+    combat_level INTEGER NOT NULL,
+    zone_score INTEGER NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+#### data_backfills - 一次性补录的完成标记
+`player_rankings` 补完老存档后记一行；没记就说明中途断过，下次启动会再补（已有的行不动）。
+
+```sql
+CREATE TABLE data_backfills (
+    name TEXT PRIMARY KEY,
+    done_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+#### metrics_daily - 匿名留存统计
+只有日期、事件名、人数，没有玩家编号，400 天后清除（迁移 `006_metrics_daily.sql`，规则见 `backend/src/retention_metrics.ts`）。
+
+```sql
+CREATE TABLE metrics_daily (
+    day DATE NOT NULL,
+    event TEXT NOT NULL,
+    count BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, event)
 );
 ```
 

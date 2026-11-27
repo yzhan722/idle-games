@@ -1,5 +1,5 @@
 // 契约魔兽牧场 & 天候观星占卜塔 (WL-14) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/beast-weather-parity.test.ts 守护），
+// 与 backend/src/progression2/beast_weather.ts 同名表与纯函数逐字对称（scripts/beast-weather-parity.test.ts 守护），
 // 供面板展示魔兽驯服 / 喂养 / 出战加成、牧场羁绊、每日天候与占卜祈愿，以及 combatSheet 攻防血 / 金币倍率使用。
 // 战斗伙伴只以平铺攻防血 + 金币收益接入 combinedBuildFromState（后端 playerBuildExtras 同口径），
 // 因此 fightPreview / hp_combat / WL-13 竞技场沙盒对决不需要任何新战斗机制即可保持对称。
@@ -135,7 +135,7 @@ export const CONTRACT_BEASTS: readonly ContractBeastDef[] = [
     title: "林间采蜜向导",
     role: "gather",
     artId: "bee",
-    description: "以森林管家遗落的保护镜映出契约之影，再用简单料理安抚。它熟知每一片林地与花田，陪同采集时总能多带回一份收获。",
+    description: "以森林管家遗落的定纹镜映出契约之影，再用简单料理安抚。它熟知每一片林地与花田，陪同采集时总能多带回一份收获。",
     bossId: "forest_boss",
     tameItems: { mirror_protection: 1, food_simple: 10 },
     tameGold: 600,
@@ -682,8 +682,8 @@ export function formatBeastWeatherStats(s: BeastWeatherStats | null | undefined)
   if (s.gatherEfficiencyPct) out.push(`采集产出 +${s.gatherEfficiencyPct}%`);
   if (s.craftSpeedPct) out.push(`制作速度 +${s.craftSpeedPct}%`);
   if (s.craftEfficiencyPct) out.push(`制作产出 +${s.craftEfficiencyPct}%`);
-  if (s.xpGainPct) out.push(`经验 +${s.xpGainPct}%`);
-  if (s.goldGainPct) out.push(`金币收益 +${s.goldGainPct}%`);
+  if (s.xpGainPct) out.push(`生活技能经验 +${s.xpGainPct}%`);
+  if (s.goldGainPct) out.push(`单人战斗金币 +${s.goldGainPct}%`);
   if (s.bonusAtk) out.push(`攻击 +${s.bonusAtk}`);
   if (s.bonusDef) out.push(`防御 +${s.bonusDef}`);
   if (s.bonusHp) out.push(`生命 +${s.bonusHp}`);

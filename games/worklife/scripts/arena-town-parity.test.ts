@@ -161,7 +161,7 @@ const LOADOUTS: Array<[string, Loadout]> = [
 
 describe("WL-13 backend <-> frontend Sky Arena Season Ladder & Guild Town 1:1 parity", () => {
   it("keeps the WL-13 core source region byte-identical on both sides", () => {
-    assert.equal(coreOf("frontend/src/gameplay/arenaTown.ts"), coreOf("backend/src/progression2.ts"));
+    assert.equal(coreOf("frontend/src/gameplay/arenaTown.ts"), coreOf("backend/src/progression2/arena_town.ts"));
   });
 
   it("keeps every static WL-13 table and constant 1:1 identical, backed by real pack items, products and mechanics", () => {

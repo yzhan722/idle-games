@@ -60,7 +60,7 @@ type Props = {
   battleActive: boolean;
   battleMonsterName?: string;
   battleSubtitle?: string;
-  /** MWI timed enhancing: shown in the activity slot like any other action. */
+  /** Timed enhancing: shown in the activity slot like any other action. */
   enhanceRun?: { itemName: string; level: number; target: number; nextAttemptAt: number; intervalMs: number } | null;
   onStopEnhance?: () => void;
   cycleCompleteFlash: boolean;
@@ -73,7 +73,7 @@ type Props = {
   claimableCount: number;
   checkInAvailable: boolean;
   gold?: number;
-  /** MWI-style total level (sum of skill levels incl. combat); hidden in chapter 1. */
+  /** Total level (sum of skill levels incl. combat); hidden in chapter 1. */
   totalLevel?: number;
   chapterComplete?: boolean;
   equippedTitle?: { titleLabel: string; iconId: string } | null;

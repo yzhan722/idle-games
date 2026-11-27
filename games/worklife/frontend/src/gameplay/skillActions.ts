@@ -1,5 +1,5 @@
 /**
- * Pack-driven action rows for MWI-style skill pages.
+ * Pack-driven action rows for skill pages.
  *
  * The content pack is the only source of level requirements, durations, XP and yields. The old
  * per-page tables in NewGameInterface (trees / ores / crops …) disagreed with it (e.g. 铁杉 was

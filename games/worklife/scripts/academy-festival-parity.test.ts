@@ -41,7 +41,7 @@ const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
 
 describe("WL-12 backend <-> frontend Adventurer Academy & Four-Season Festival Calendar 1:1 parity", () => {
   it("keeps the WL-12 core source region byte-identical on both sides", () => {
-    assert.equal(coreOf("frontend/src/gameplay/academyFestival.ts"), coreOf("backend/src/progression2.ts"));
+    assert.equal(coreOf("frontend/src/gameplay/academyFestival.ts"), coreOf("backend/src/progression2/academy_festival.ts"));
   });
 
   it("keeps every static WL-12 table and constant 1:1 identical, backed by real pack items and actions", () => {

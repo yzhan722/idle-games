@@ -1,5 +1,5 @@
 // 天空竞技场赛季排位 & 公会领地城镇建设 (WL-13) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/arena-town-parity.test.ts 守护），
+// 与 backend/src/progression2/arena_town.ts 同名表与纯函数逐字对称（scripts/arena-town-parity.test.ts 守护），
 // 供面板展示擂主梯队、段位 / 称号 / 勋章结算、设施等级与繁荣度，以及 combatSheet 攻防血 / 金币倍率使用；
 // previewArenaDuel 以 fightPreview.previewFight 逐步镜像后端 simulateArenaDuel（hp_combat 真实战斗引擎）。
 // 任何数值改动必须两端同步。
@@ -354,7 +354,7 @@ export const TOWN_FACILITIES: readonly TownFacilityDef[] = [
         items: { ingot_3: 8, potion_hp_t3: 3 },
         medals: 4,
         stats: { bonusAtk: 13, bonusDef: 6, bonusHp: 50, goldGainPct: 1 },
-        perk: "跨职业被动「演武护商」：金币收益 +1%",
+        perk: "跨职业被动「演武护商」：单人战斗金币 +1%",
       },
       {
         level: 4,
@@ -370,15 +370,15 @@ export const TOWN_FACILITIES: readonly TownFacilityDef[] = [
         items: { ingot_5: 8, elixir_legend: 1 },
         medals: 20,
         stats: { bonusAtk: 26, bonusDef: 12, bonusHp: 100, goldGainPct: 2 },
-        perk: "「演武护商」强化：金币收益 +2%",
+        perk: "「演武护商」强化：单人战斗金币 +2%",
       },
     ],
   },
   {
     id: "guild_bank",
     name: "公会钱庄",
-    subtitle: "金币收益 · 账房讲习",
-    description: "公会钱庄替冒险者打理账目，生产与战斗金币收益永久提升；三级起账房开设讲习，全职业经验提升。",
+    subtitle: "单人战斗金币 · 账房讲习",
+    description: "公会钱庄替冒险者打理账目，单人战斗金币永久提升；三级起账房开设讲习，生活技能经验提升。",
     iconKind: "ui",
     iconId: "gold",
     prosperityPerLevel: 3,
@@ -391,7 +391,7 @@ export const TOWN_FACILITIES: readonly TownFacilityDef[] = [
         items: { ingot_3: 10, drink_fine: 4 },
         medals: 0,
         stats: { goldGainPct: 4, xpGainPct: 1 },
-        perk: "跨职业被动「账房讲习」：经验 +1%",
+        perk: "跨职业被动「账房讲习」：生活技能经验 +1%",
       },
       { level: 4, gold: 14000, items: { ingot_4: 10, tea_spirit: 4 }, medals: 0, stats: { goldGainPct: 6, xpGainPct: 1 }, perk: null },
       {
@@ -400,15 +400,15 @@ export const TOWN_FACILITIES: readonly TownFacilityDef[] = [
         items: { ingot_5: 10, drink_rich: 4 },
         medals: 0,
         stats: { goldGainPct: 8, xpGainPct: 2 },
-        perk: "「账房讲习」强化：经验 +2%",
+        perk: "「账房讲习」强化：生活技能经验 +2%",
       },
     ],
   },
   {
     id: "sage_library",
     name: "贤者书馆",
-    subtitle: "经验加成 · 百科通识",
-    description: "收藏各职业典籍的书馆，全部行动经验永久提升；三级起百科通识让采集与制作同时提速。",
+    subtitle: "生活技能经验 · 百科通识",
+    description: "收藏各职业典籍的书馆，生活技能经验永久提升；三级起百科通识让采集与制作同时提速。",
     iconKind: "skills",
     iconId: "codex_set_arcane",
     prosperityPerLevel: 3,
@@ -811,8 +811,8 @@ export function formatArenaTownStats(s: ArenaTownStats | null | undefined): stri
   const out: string[] = [];
   if (s.gatherSpeedPct) out.push(`采集速度 +${s.gatherSpeedPct}%`);
   if (s.craftSpeedPct) out.push(`制作速度 +${s.craftSpeedPct}%`);
-  if (s.xpGainPct) out.push(`经验 +${s.xpGainPct}%`);
-  if (s.goldGainPct) out.push(`金币收益 +${s.goldGainPct}%`);
+  if (s.xpGainPct) out.push(`生活技能经验 +${s.xpGainPct}%`);
+  if (s.goldGainPct) out.push(`单人战斗金币 +${s.goldGainPct}%`);
   if (s.bonusAtk) out.push(`攻击 +${s.bonusAtk}`);
   if (s.bonusDef) out.push(`防御 +${s.bonusDef}`);
   if (s.bonusHp) out.push(`生命 +${s.bonusHp}`);

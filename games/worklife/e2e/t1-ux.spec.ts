@@ -15,7 +15,7 @@ async function openCraftModal(page: Page) {
 test.describe("desktop 1280", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test("UX-01 desktop MWI-style skill rail: every skill visible, chapter-1 rows recommended", async ({ page }) => {
+  test("UX-01 desktop skill rail: every skill visible, chapter-1 rows recommended", async ({ page }) => {
     const errors: string[] = [];
     const consoleErrors: string[] = [];
     page.on("pageerror", (err) => errors.push(String(err)));
@@ -30,14 +30,14 @@ test.describe("desktop 1280", () => {
     await expect(page.getByRole("button", { name: "冒险" })).toBeVisible();
     await expect(page.getByRole("button", { name: "角色", exact: true })).toBeVisible();
 
-    // MWI: one row per skill, grouped, with level + XP bar; the whole game is visible from minute one.
+    // One row per skill, grouped, with level + XP bar; the whole game is visible from minute one.
     const rail = page.locator("nav.skill-sidebar");
     await expect(rail.locator(".tab-btn.skill-row")).toHaveCount(27);
     await expect(rail.locator(".skill-group")).toHaveCount(4);
     await expect(rail.locator(".skill-group-title")).toHaveText(["采集", "生产", "战斗", "其他"]);
     await expect(rail.locator('[data-nav-id="mining"] .skill-level')).toHaveText("1");
     await expect(rail.locator('[data-nav-id="logging"] .skill-xp-bar')).toBeVisible();
-    // MWI combat skills are rows of their own; they read out level + XP and open the combat page.
+    // Combat skills are rows of their own; they read out level + XP and open the combat page.
     await expect(rail.locator('.skill-group[data-group="combat"] .tab-btn.skill-row')).toHaveCount(8);
     await expect(rail.locator('[data-nav-id="combat_melee"] .skill-level')).toHaveText("1");
     await expect(rail.locator('[data-nav-id="combat_intelligence"] .skill-xp-bar')).toBeVisible();
@@ -46,7 +46,7 @@ test.describe("desktop 1280", () => {
     await expect(rail.locator('[data-nav-id="party"]')).toBeVisible();
     await expect(rail.locator('[data-nav-id="party"]')).not.toHaveClass(/recommended/);
     await expect(rail.locator('[data-nav-id="mining"] .skill-recommended')).toHaveCount(0);
-    // MWI puts an icon on every skill row: all 27 rail rows render real art, none fall back to glyphs
+    // Every skill row has an icon: all 27 rail rows render real art, none fall back to glyphs
     await expect(page.locator(".game-tabs .tab-btn .tab-icon img.t1-art")).toHaveCount(27);
     await expect(page.locator("nav.mobile-nav")).toBeHidden();
     await expect(page.locator(".skill-action-row img.t1-art").first()).toBeVisible();
@@ -58,7 +58,7 @@ test.describe("desktop 1280", () => {
     await openNav(page, "mining");
     await expect(page.getByRole("heading", { name: /挖矿/ })).toBeVisible();
     await expect(page.locator(".skill-action-row").first()).toBeVisible();
-    // MWI gives every gather action its own scene: the locked tier-2 row shows the iron vein, not the ore icon.
+    // Every gather action has its own scene: the locked tier-2 row shows the iron vein, not the ore icon.
     await expect(
       page.locator(".skill-action-row").filter({ hasText: "铁矿脉" }).locator('img.t1-art[data-t1-key="trees/iron"]')
     ).toBeVisible();
@@ -67,7 +67,7 @@ test.describe("desktop 1280", () => {
     await openNav(page, "smithing");
     const enhancerRow = page.locator(".craft-row").filter({ hasText: "初级强化器" }).first();
     await expect(enhancerRow).toBeVisible({ timeout: 15_000 });
-    await expect(enhancerRow).toContainText("强化成功率 +0.6%");
+    await expect(enhancerRow).toContainText("强化成功率 +5%");
     await expect(page.locator(".craft-row").filter({ hasText: "NaN" })).toHaveCount(0);
     // Locked level 21–35 recipes already carry their art (the frost set is the deepest of that sweep).
     await page.locator(".craft-categories .category-btn", { hasText: "武器" }).click();
@@ -80,12 +80,12 @@ test.describe("desktop 1280", () => {
     await expect(page.locator(".monster-card").filter({ hasText: "果冻史莱姆" })).toBeVisible();
     await page.locator(".monster-card").filter({ hasText: "果冻史莱姆" }).first().click();
     await expect(page.getByRole("button", { name: /开始战斗|挑战BOSS/ })).toBeVisible();
-    // MWI monster panel: every drop line (rare + ability book) carries the item's art, not text alone.
+    // Monster panel: every drop line (rare + ability book) carries the item's art, not text alone.
     await expect(page.locator(".modal-overlay .stat-drop img.t1-art")).toHaveCount(2);
     await page.getByRole("button", { name: /开始战斗/ }).click();
     await expect(page.getByRole("button", { name: /重劈/ })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/格挡中|自然之怒/)).toHaveCount(0);
-    // MWI mana + auto-cast: the fight screen shows an MP bar and the equipped ability row.
+    // Mana + auto-cast: the fight screen shows an MP bar and the equipped ability row.
     await expect(page.locator(".mp-bar")).toBeVisible();
     await expect(page.locator(".ability-bar .ability-btn")).toHaveCount(1);
     const combatControls = await page.locator(".battle-controls-center").boundingBox();
@@ -112,7 +112,7 @@ test.describe("desktop 1280", () => {
     await expect(page.locator(".sheet-secondary-stats")).toContainText("魔力 20");
     await expect(page.getByRole("button", { name: "上衣" })).toBeVisible();
 
-    // MWI bag page: grouped tiles with counts; the seeded sword is equipped, wood/boards are materials.
+    // Bag page: grouped tiles with counts; the seeded sword is equipped, wood/boards are materials.
     await page.getByRole("button", { name: "打开背包" }).click();
     await expect(page.getByRole("heading", { name: "背包" })).toBeVisible();
     await expect(page.locator('.inv-group[aria-label="装备"] .inv-tile[data-item-id="weapon_wooden_sword"]')).toHaveClass(/equipped/);
@@ -126,7 +126,7 @@ test.describe("desktop 1280", () => {
     await expect(page.getByRole("heading", { name: "标准木板" })).toBeVisible();
     await page.keyboard.press("Escape");
 
-    // MWI task board: the first task is handed out on first sight, the rest of the slots wait on the cooldown.
+    // Task board: the first task is handed out on first sight, the rest of the slots wait on the cooldown.
     await openNav(page, "tasks");
     await expect(page.locator(".tasks-page .section-title")).toContainText("任务");
     await expect(page.locator(".task-card:not(.empty)")).toHaveCount(1, { timeout: 15_000 });
@@ -136,7 +136,7 @@ test.describe("desktop 1280", () => {
     await expect(page.locator(".tasks-shop .task-shop-item")).toHaveCount(7); // 3 upgrades + 4 training charms
     await expect(page.locator(".tasks-shop .task-shop-icon img.t1-art")).toHaveCount(4);
 
-    // MWI houses: one room per skill; the seeded 20 wood + 100 gold afford the first 木料场 level.
+    // Houses: one room per skill; the seeded 20 wood + 100 gold afford the first 木料场 level.
     await openNav(page, "houses");
     await expect(page.locator(".houses-page .section-title")).toContainText("房屋");
     await expect(page.locator(".house-room")).toHaveCount(7);
@@ -145,7 +145,7 @@ test.describe("desktop 1280", () => {
     await expect(lumberYard.locator(".house-upgrade")).toHaveText("金币不足"); // 100 gold < 200 (wood is enough, so only gold is short)
     await expect(page.locator('.house-room[data-room-id="forge"] .house-cost-lines .short')).toHaveCount(2);
 
-    // MWI market: searchable grid, the owned shelf, an order-book detail, and cancelling own orders.
+    // Market: searchable grid, the owned shelf, an order-book detail, and cancelling own orders.
     await openNav(page, "trading");
     await expect(page.locator(".market-grid-page")).toBeVisible();
     await expect(page.locator('.inv-group[aria-label="我能卖的"] .inv-tile[data-item-id="lumber_1"]')).toBeVisible();
@@ -155,15 +155,15 @@ test.describe("desktop 1280", () => {
     await expect(page.locator(".trading-detail-title")).toContainText("拥有 1");
     await page.getByRole("button", { name: /挂出售单/ }).click();
     await page.locator(".sell-form input.form-input").first().fill("1");
-    await page.locator(".sell-form input.form-input").nth(1).fill("300");
+    await page.locator(".sell-form input.form-input").nth(1).fill("150"); // inside the tradable range (shop value 52, no trades: 18～156)
     await page.locator(".sell-form").getByRole("button", { name: "确认挂单" }).click();
     await expect(page.locator(".order-item-compact.sell")).toHaveCount(1, { timeout: 10_000 });
     await page.locator(".btn-back-trading").click();
     await expect(page.locator(".market-order-row")).toHaveCount(1);
     await expect(page.locator(".market-order-row")).toContainText("木头短剑 ×1");
-    // MWI: the grid tile shows the live market (best ask) instead of the shop value while an order is open.
+    // The grid tile shows the live market (best ask) instead of the shop value while an order is open.
     await page.getByRole("searchbox", { name: "搜索市场物品" }).fill("短剑");
-    await expect(page.locator('.market-grid .inv-tile[data-item-id="weapon_wooden_sword"] .market-quote')).toContainText("卖 300");
+    await expect(page.locator('.market-grid .inv-tile[data-item-id="weapon_wooden_sword"] .market-quote')).toContainText("卖 150");
     await page.getByRole("searchbox", { name: "搜索市场物品" }).fill("");
     await page.locator(".market-order-row button").click();
     await expect(page.locator(".market-order-row")).toHaveCount(0);
@@ -171,17 +171,17 @@ test.describe("desktop 1280", () => {
     await expect(page.locator('.market-grid .inv-tile[data-item-id="weapon_wooden_sword"] .inv-tile-value')).toContainText("店价", { timeout: 10_000 });
     await page.getByRole("searchbox", { name: "搜索市场物品" }).fill("");
 
-    // MWI enhancing: own skill row, +1…+20 table, exact base rate, materials shown, risk stated.
+    // Enhancing: own skill row, +1…+20 table, exact base rate, materials shown, risk stated.
     await openNav(page, "enhance");
     await expect(page.locator(".enhancement-panel .section-title")).toContainText("强化");
     await expect(rail.locator('[data-nav-id="enhance"] .skill-level')).toHaveText("1");
     await expect(page.locator('.enhancement-item[data-item-id="weapon_wooden_sword"]')).toHaveClass(/selected/);
-    await expect(page.locator(".enhancement-rate-main strong")).toHaveText("50%");
-    await expect(page.locator(".enhancement-stat-preview strong")).toHaveText("+0% → +2%");
+    await expect(page.locator(".enhancement-rate-main strong")).toHaveText("72%");
+    await expect(page.locator(".enhancement-stat-preview strong")).toHaveText("+0% → +3%");
     await expect(page.locator(".enhancement-risk")).toHaveText("失败：+0 → +0");
-    // MWI: enhancing is a timed action — pick a target, the server attempts every interval (400ms in E2E).
+    // Enhancing is a timed action — pick a target, the server attempts every interval (400ms in E2E).
     const attempt = page.locator(".enhancement-attempt");
-    await expect(attempt).toHaveText(/开始强化 → \+1（本次 50%）/); // 10 lumber + 100 gold seeded → one attempt affordable
+    await expect(attempt).toHaveText(/开始强化 → \+1（本次 72%）/); // 10 lumber + 100 gold seeded → one attempt affordable
     await attempt.click();
     // The single affordable attempt ends the run either way: reached (+1) or parked for materials (+0).
     await expect(page.locator(".enhance-run")).toHaveAttribute("data-run-state", /reached|materials/, { timeout: 15_000 });

@@ -7,7 +7,7 @@ import type { EnhancedContentPack } from "./types";
 
 const pack = enhancedContentPack as EnhancedContentPack;
 
-describe("MWI market summary (best ask / bid per item)", () => {
+describe("market summary (best ask / bid per item)", () => {
   it("folds orders into lowest ask, highest bid and depth per side", () => {
     const q = summarizeOrders([
       { itemId: "wood_1", type: "sell", price: 12, quantity: 5 },

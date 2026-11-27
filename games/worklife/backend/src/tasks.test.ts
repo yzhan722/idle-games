@@ -5,7 +5,12 @@ import enhancedContentPack from "../../shared/enhanced_content_pack_chinese.json
 import type { EnhancedContentPack } from "./types";
 import {
   BASE_COOLDOWN_MS,
+  FULL_UPGRADE_COOLDOWN_RATIO,
   GIFT_POINTS,
+  MAX_COOLDOWN_LEVEL,
+  REROLL_BASE_GOLD,
+  REROLL_MAX_GOLD,
+  TASK_BUFFER_MS,
   TASK_SLOTS,
   buyTaskShop,
   claimGift,
@@ -36,7 +41,7 @@ async function fresh() {
   return { storage, state };
 }
 
-describe("MWI task board", () => {
+describe("task board", () => {
   it("hands out the first task immediately and the next one after the cooldown", async () => {
     const { storage, state } = await fresh();
     const s = ensureTasks(state, pack, T0, () => 0.5);
@@ -114,6 +119,18 @@ describe("MWI task board", () => {
     await storage.close();
   });
 
+  it("cooldown upgrades always shorten the wait, by the same proportion, down to half of the base", () => {
+    const at = (level: number) => cooldownMs({ cooldownLevel: level } as any);
+    assert.equal(at(0), BASE_COOLDOWN_MS);
+    for (let l = 1; l <= MAX_COOLDOWN_LEVEL; l++) {
+      assert.ok(at(l) < at(l - 1), `level ${l}`);
+      assert.ok(Math.abs(at(l) / at(l - 1) - at(1) / at(0)) < 0.005, `same proportion at level ${l}`);
+    }
+    assert.equal(at(MAX_COOLDOWN_LEVEL), BASE_COOLDOWN_MS * FULL_UPGRADE_COOLDOWN_RATIO);
+    assert.equal(at(99), at(MAX_COOLDOWN_LEVEL), "dirty saves are clamped");
+    assert.equal(TASK_SLOTS * BASE_COOLDOWN_MS, TASK_BUFFER_MS, "a full board is exactly the buffer");
+  });
+
   it("the simulator assigns tasks as time passes", async () => {
     const { storage, state } = await fresh();
     state.lastSimulatedAt = T0.toISOString();
@@ -122,25 +139,30 @@ describe("MWI task board", () => {
     assert.equal(out.tasksState!.tasks.length, 1);
     // Two cooldowns later (offline) the board caught up.
     out = simulateToNow({ state: out, now: new Date(T0.getTime() + 2 * BASE_COOLDOWN_MS + 2000), contentPack: pack, rng: () => 0.5 }).state as typeof state;
-    assert.equal(out.tasksState!.tasks.length, 3, "t0, +8h, +16h");
+    assert.equal(out.tasksState!.tasks.length, 3, "t0 and one per cooldown since");
     await storage.close();
   });
 
-  it("reroll costs gold and doubles within the day; blocked skills are skipped", async () => {
+  it("reroll costs gold and climbs within the day up to the cap; blocked skills are skipped", async () => {
     const { storage, state } = await fresh();
     ensureTasks(state, pack, T0, () => 0.5);
     const id = state.tasksState!.tasks[0].id;
     assert.equal(rerollTask(state, pack, id, T0).error, "no_gold");
     state.inventory.gold = 10_000;
-    assert.equal(rerollCost(state.tasksState!, "2026-09-03"), 200);
+    assert.equal(rerollCost(state.tasksState!, "2026-09-03"), REROLL_BASE_GOLD);
     const r1 = rerollTask(state, pack, id, T0, () => 0.5);
     assert.equal(r1.ok, true);
-    assert.equal(r1.cost, 200);
-    assert.equal(r1.nextCost, 400);
-    assert.equal(state.inventory.gold, 9_800);
+    assert.equal(r1.cost, REROLL_BASE_GOLD);
+    assert.ok(r1.nextCost! > r1.cost!);
+    assert.equal(state.inventory.gold, 10_000 - REROLL_BASE_GOLD);
     assert.notEqual(state.tasksState!.tasks[0].id, id);
     // next day the cost resets
-    assert.equal(rerollCost(state.tasksState!, "2026-09-04"), 200);
+    assert.equal(rerollCost(state.tasksState!, "2026-09-04"), REROLL_BASE_GOLD);
+    // every reroll of the day costs more than the last until the cap, and each step grows by one more base
+    const costs = Array.from({ length: 30 }, (_, n) => rerollCost({ ...state.tasksState!, rerollDay: "d", rerollsToday: n }, "d"));
+    for (let n = 1; n < costs.length; n++) assert.ok(costs[n] >= costs[n - 1] && costs[n] <= REROLL_MAX_GOLD);
+    assert.equal(costs[costs.length - 1], REROLL_MAX_GOLD);
+    assert.equal(costs[2] - costs[1] - (costs[1] - costs[0]), REROLL_BASE_GOLD);
     // blocking needs a purchased slot
     assert.equal(setTaskBlock(state, pack, "skill_woodcutter", true, T0).error, "no_block_slot");
     state.tasksState!.blockSlots = 1;
@@ -154,7 +176,7 @@ describe("MWI task board", () => {
     await storage.close();
   });
 
-  it("token shop: cooldown upgrade shortens the pending timer, crates pay out, gifts unlock at 50 points", async () => {
+  it("token shop: cooldown upgrade shortens the pending timer, crates pay out, gifts unlock at the point threshold", async () => {
     const { storage, state } = await fresh();
     ensureTasks(state, pack, T0, () => 0.5);
     const s = state.tasksState!;
@@ -164,8 +186,9 @@ describe("MWI task board", () => {
     const buy = buyTaskShop(state, pack, "cooldown", T0);
     assert.equal(buy.ok, true);
     assert.equal(s.cooldownLevel, 1);
-    assert.equal(cooldownMs(s), BASE_COOLDOWN_MS - 30 * 60_000);
-    assert.equal(Date.parse(s.nextTaskAt), before - 30 * 60_000);
+    const saved = BASE_COOLDOWN_MS - cooldownMs(s);
+    assert.ok(saved > 0);
+    assert.equal(Date.parse(s.nextTaskAt), before - saved);
     assert.equal(s.tokens, 80);
     const crate = buyTaskShop(state, pack, "crate", T0, () => 0.5);
     assert.equal(crate.ok, true);

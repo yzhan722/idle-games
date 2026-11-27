@@ -1,9 +1,15 @@
+import { useMemo } from 'react'
 import { apiClient, type ActionPreview } from '../services/api'
 import { T1Art, T1ItemIcon, characterArtId } from './T1Art'
 import { MonsterSceneBackdrop } from './MonsterSceneBackdrop'
 import { ActionRatesPanel } from './ActionRatesPanel'
 import { enhancementStatMultiplier, toolEffectLine } from '../gameplay/enhancement'
-import { BOOK_REREAD_XP, getAbilityXpForLevel } from '../gameplay/fightPreview'
+import { slotCounts } from './CombatLoadoutPanel'
+import { BOOK_REREAD_XP, getAbilityXpForLevel, previewAbilities } from '../gameplay/fightPreview'
+import { farmLine, farmSetup, previewFarm } from '../gameplay/farmPreview'
+import { abilitySlotCount } from '../gameplay/combatSheet'
+import { matchupLine, secondaryLine } from '../gameplay/combatSecondary'
+import { buffLine } from '../gameplay/buffLines'
 import { craftWhy, missingMaterials } from '../gameplay/craftPreview'
 import { archetypeLabel, mechanicEntries } from '../gameplay/encounterLabels'
 import { getProfessionPerk } from '../gameplay/professionPerks'
@@ -112,6 +118,7 @@ export function EquipSelectorModal({
                             {item.mag && <span>魔法 +{eff(item.mag, itemMult)}</span>}
                             {item.def && <span>防御 +{eff(item.def, itemMult)}</span>}
                             {item.hp && <span>生命 +{eff(item.hp, itemMult)}</span>}
+                            {secondaryLine(item, itemMult) && <span>{secondaryLine(item, itemMult)}</span>}
                           </>
                         )}
                       </div>
@@ -168,6 +175,28 @@ export function EquipSelectorModal({
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** 按现在的装备、技能、吃喝连打一小时：胜率与收益（与服务端结算同一套规则，难度档位已算在怪物数值里）。 */
+function MonsterForecast({ monster, playerState, contentPack, abilityCatalog }: { monster: any; playerState: PlayerState; contentPack: any; abilityCatalog?: AbilityDef[] }) {
+  const line = useMemo(() => {
+    if (!contentPack?.items) return null
+    const setup = farmSetup(playerState as any, contentPack.items, contentPack.equipmentSets, slotCounts(playerState.equipment as any, contentPack.items))
+    const abilities = previewAbilities(playerState.abilityLoadout, playerState.abilities, abilityCatalog, abilitySlotCount(playerState))
+    const gains = playerState.combatGains ?? { xp: 1, gold: 1 }
+    return farmLine(previewFarm(setup.sheet, monster, abilities, {
+      ...setup,
+      gains: { xp: gains.xp * setup.drinkGains.xp, gold: gains.gold * setup.drinkGains.gold },
+      tier: monster.tier,
+    }))
+  }, [monster, playerState, contentPack, abilityCatalog])
+  if (!line) return null
+  return (
+    <div className="stat-line">
+      <span>连打</span>
+      <span>{line}</span>
     </div>
   )
 }
@@ -286,6 +315,7 @@ export function GameEntityDetailModal({
                 <span>身份</span>
                 <span>
                   Lv.{selectedItem.level} · {archetypeLabel(selectedItem.archetype)}
+                  {selectedItem.damageType === 'elemental' ? ' · 元素' : ''}
                 </span>
               </div>
               <div className="stat-line">
@@ -300,6 +330,11 @@ export function GameEntityDetailModal({
                 <span>防御</span>
                 <span>{selectedItem.def}</span>
               </div>
+              <div className="stat-line">
+                <span>对阵</span>
+                <span>{matchupLine(combatSheet, selectedItem)}</span>
+              </div>
+              <MonsterForecast monster={selectedItem} playerState={playerState} contentPack={contentPack} abilityCatalog={abilityCatalog} />
               <div className="stat-line">
                 <span>经验奖励</span>
                 <span>{selectedItem.xp} XP</span>
@@ -682,6 +717,7 @@ export function GameEntityDetailModal({
                       {(selectedItem.hp ?? selectedItem.stats?.hp)
                         ? `生命+${selectedItem.hp ?? selectedItem.stats?.hp} `
                         : ''}
+                      {secondaryLine(selectedItem)}
                       {selectedItem.stats?.spd ? `速度+${selectedItem.stats.spd}%` : ''}
                     </span>
                   </div>
@@ -690,7 +726,8 @@ export function GameEntityDetailModal({
                   <div className="stat-line">
                     <span>稀有奖励</span>
                     <span>
-                      随机 <span className="tag">{getItemNameById(selectedItem.rare)}</span>
+                      <span className="tag">{getItemNameById(selectedItem.rare)}</span>
+                      {Number(selectedItem.rareChance) > 0 ? ` ${Math.round(Number(selectedItem.rareChance) * 1000) / 10}%` : ' 几率未知'}
                     </span>
                   </div>
                 )}
@@ -905,12 +942,13 @@ export function GameEntityDetailModal({
             const hpDiff =
               eqKey && !equippedHere ? Math.round((eff(packItem.hp, itemMult) - eff(curEqDef?.hp, curMult)) * 10) / 10 : 0
             const effect = packItem.effect || {}
+            const secondary = secondaryLine(packItem, itemMult)
             const effectParts: string[] = []
             if (effect.hp) effectParts.push(`恢复 ${effect.hp} 生命`)
             if (effect.mp) effectParts.push(`恢复 ${effect.mp} 魔力`)
-            if (effect.buff?.name)
+            if (buffLine(effect.buff))
               effectParts.push(
-                `增益「${effect.buff.name}」${effect.buff.durationSec ? ` ${Math.round(effect.buff.durationSec / 60)} 分钟` : ''}`
+                buffLine(effect.buff)
               )
 
             const equipFromDetail = async () => {
@@ -1023,6 +1061,12 @@ export function GameEntityDetailModal({
                       </span>
                     </div>
                   )}
+                  {secondary && (
+                    <div className="stat-line">
+                      <span>副属性</span>
+                      <span>{secondary}</span>
+                    </div>
+                  )}
                   {effectParts.length > 0 && (
                     <div className="stat-line">
                       <span>效果</span>
@@ -1032,7 +1076,7 @@ export function GameEntityDetailModal({
                   {typeof packItem.value === 'number' && (
                     <div className="stat-line">
                       <span>商店售价</span>
-                      <span>{packItem.value} 金币</span>
+                      <span>{packItem.value} 金币 · 卖出 {Math.max(1, Math.floor(packItem.value * 0.35))}</span>
                     </div>
                   )}
                   {equippedHere && (
@@ -1056,7 +1100,7 @@ export function GameEntityDetailModal({
                   )}
                 </div>
 
-                {/* 银河奶牛式物品图鉴反查（Item Codex）：获取来源 & 制作用途 + 一键跳转 */}
+                {/* 物品图鉴反查：获取来源 & 制作用途 + 一键跳转 */}
                 {(() => {
                   const targetId = selectedItem.id
                   const targetName = packItem.name || selectedItem.name
@@ -1517,12 +1561,12 @@ export function FirstBladeBuildModal({
         {
           id: 'gale_flurry',
           title: '疾风连击 — 攻击 +5 · 普攻间隔缩短 15%',
-          desc: '极速型：身轻如燕高频出刀，加快回蓝与技能循环节奏',
+          desc: '极速型：身轻如燕高频出刀，加快普攻与回蓝节奏',
         },
         {
           id: 'relic_hunter',
           title: '寻宝猎人 — 生命 +25 · 防御 +4 · 金币+25% / 掉率+30%',
-          desc: '收获型：稳固生存的同时大幅提升战斗金币与稀有秘宝掉落率',
+          desc: '收获型：稳固生存的同时大幅提升单人战斗金币与稀有掉落率',
         },
       ],
     },
@@ -1532,13 +1576,13 @@ export function FirstBladeBuildModal({
       options: [
         {
           id: 'elixir_frenzy',
-          title: '秘药狂热 — 攻击 +8 · 药剂增益 +50% · 回蓝 +35%',
-          desc: '爆发型：大幅放大炼金药剂攻击/防御增益上限并提升魔力药水恢复效率',
+          title: '秘药狂热 — 攻击 +8 · 战斗药剂攻防增益 ×1.5 · 魔力槽自动回蓝 +35%',
+          desc: '爆发型：放大药剂攻防增益（上限由基础值 40% 提到 55%），并提升魔力药剂槽的自动回蓝',
         },
         {
           id: 'feast_vitality',
-          title: '盛宴生机 — 生命 +55 · 防御 +8 · 进食回血+35% & 活力盾',
-          desc: '续航型：战斗中每次自动进食额外恢复 35% 生命并展开 4.5 秒减伤护盾',
+          title: '盛宴生机 — 生命 +55 · 防御 +8 · 进食回血 ×1.35 · 活力盾',
+          desc: '续航型：战斗中食物槽自动进食回血量 ×1.35，并获得 4.5 秒受伤 -28%',
         },
       ],
     },

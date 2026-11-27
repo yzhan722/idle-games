@@ -34,9 +34,11 @@ services:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-worklife}:${POSTGRES_PASSWORD:-worklife_secret}@db:5432/${POSTGRES_DB:-worklife}
-      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_at_least_32_chars!}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET to a random value of 32 or more characters}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
       RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-60000}
+      # 匿名统计：不填就不采集
+      METRICS_ADMIN_KEY: ${METRICS_ADMIN_KEY:-}
       CORS_ORIGIN: ${CORS_ORIGIN:-}
     ports:
       - "3001:3001"

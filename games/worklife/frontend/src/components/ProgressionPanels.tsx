@@ -6,6 +6,7 @@ import { useGame } from '../contexts/GameContext';
 import { encryptSaveEnvelope, decryptSaveEnvelope } from '../utils/saveCrypto';
 import { useToast, setToastNotificationsEnabled } from './Toast';
 import { GoldIcon, T1Art } from './T1Art';
+import { DeleteAccountSection } from './DeleteAccountSection';
 import './ProgressionPanels.css';
 import './T1UiIcons.css';
 
@@ -406,8 +407,12 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [saveBusy, setSaveBusy] = useState(false);
   const [importCode, setImportCode] = useState('');
   const [exportedCode, setExportedCode] = useState('');
+  /** 服务端开关：默认关闭导入，只留导出。 */
+  const [importEnabled, setImportEnabled] = useState(false);
+  /** 匿名统计开关；服务器没开统计时是 null，不显示这一行。 */
+  const [shareStats, setShareStats] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const { user, applySession } = useAuth();
+  const { user } = useAuth();
   const { refreshPlayerState } = useGame();
   const toast = useToast();
 
@@ -422,6 +427,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           notificationsEnabled: true
         };
         setSettings(loaded);
+        setImportEnabled(res.saveImportEnabled === true);
+        setShareStats(res.stats?.available ? res.stats.on === true : null);
         setToastNotificationsEnabled(loaded.notificationsEnabled ?? true);
       } catch (e) {
         toast.error('设置加载失败');
@@ -447,30 +454,29 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const toggleStats = async () => {
+    if (shareStats === null) return;
+    const next = !shareStats;
+    setShareStats(next);
+    try {
+      await apiClient.updateSettings({ shareStats: next });
+    } catch {
+      toast.error('保存失败');
+      setShareStats(!next);
+    }
+  };
+
   const exportData = async () => {
     if (saveBusy) return;
     setSaveBusy(true);
     try {
       apiClient.clearCache();
       const state: any = await apiClient.get('/player/state');
-      const token = apiClient.getToken() || '';
-      const resumeToken =
-        user?.resumeToken ||
-        localStorage.getItem('worklife_guest_resume_token') ||
-        localStorage.getItem('guest_resume_token');
-      // 始终使用 AES-256-GCM 认证加密生成 WLS1 密文（绝不导出明文 JSON）
+      // 始终使用 AES-256-GCM 认证加密生成 WLS1 密文（绝不导出明文 JSON）；只装存档，不装登录凭证
       const saveCode = await encryptSaveEnvelope({
         v: 1,
         exportedAt: Date.now(),
         userId: user?.id || state?.userId,
-        session: token
-          ? {
-              userId: user?.id || state?.userId || '',
-              token,
-              username: user?.username || null,
-              resumeToken: resumeToken || null,
-            }
-          : undefined,
         state,
       });
       setExportedCode(saveCode);
@@ -504,41 +510,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
       // 1. 前端先行校验 AES-256-GCM 密文与防篡改认证标签（拒绝任何明文 JSON 或篡改数据）
       const envelope = await decryptSaveEnvelope(code);
 
-      // 2. 调用服务端导入接口覆盖恢复状态；若携带原会话凭证且跨设备导入也可同步恢复
-      let serverImported = false;
-      try {
-        await apiClient.importEncryptedSave(code);
-        serverImported = true;
-      } catch {
-        // 若服务端接口尚未就绪或跨浏览器恢复原账号会话，应用加密包内的会话与设置
-        if (envelope.session?.token && envelope.session?.userId) {
-          applySession({
-            userId: envelope.session.userId,
-            token: envelope.session.token,
-            username: envelope.session.username ?? undefined,
-            resumeToken: envelope.session.resumeToken ?? undefined,
-          });
-          try {
-            await apiClient.importEncryptedSave(code);
-            serverImported = true;
-          } catch {
-            // 继续同步基础设置与刷新状态
-          }
-        }
-        if (!serverImported && envelope.state?.settings) {
-          await apiClient.updateSettings({
-            soundEnabled: envelope.state.settings.soundEnabled,
-            animationsEnabled: envelope.state.settings.animationsEnabled,
-            compactMode: envelope.state.settings.compactMode,
-            notificationsEnabled: envelope.state.settings.notificationsEnabled,
-            playerName: envelope.state.settings.playerName,
-            avatar: envelope.state.settings.avatar,
-            gender: envelope.state.settings.gender,
-            characterCreated: envelope.state.settings.characterCreated,
-            tutorialDone: envelope.state.settings.tutorialDone,
-          }).catch(() => undefined);
-        }
-      }
+      // 2. 交给服务端校验并恢复；被拒绝（已关闭 / 校验不过 / 不是本账号的存档）就如实告诉玩家
+      await apiClient.importEncryptedSave(code);
 
       if (envelope.state?.settings) {
         if (typeof envelope.state.settings.soundEnabled === 'boolean') {
@@ -596,25 +569,38 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
             ))}
+            {shareStats !== null && (
+              <div className="settings-row" data-testid="settings-share-stats">
+                <div className="settings-text">
+                  <div className="settings-label">匿名统计</div>
+                  <div className="settings-desc">只加总人数，不记是谁</div>
+                </div>
+                <button className={`settings-toggle ${shareStats ? 'on' : 'off'}`} onClick={() => void toggleStats()} aria-pressed={shareStats}>
+                  <span className="settings-toggle-knob" />
+                </button>
+              </div>
+            )}
           </div>
           <BindAccountSection />
           <div className="settings-save-section">
             <div className="settings-text" style={{ marginBottom: 8 }}>
-              <div className="settings-label"><T1Art kind="ui" id="stat-def" fallback="" alt="" /> 加密存档备份与恢复</div>
-              <div className="settings-desc">存档采用 AES-256-GCM 认证加密（.wlsave），防篡改且不支持明文 JSON 导入</div>
+              <div className="settings-label"><T1Art kind="ui" id="stat-def" fallback="" alt="" /> 存档备份</div>
+              <div className="settings-desc">{importEnabled ? '导入只能退回自己账号的旧进度，不能增加等级和物品。' : '存档导入已关闭，换设备请绑定账号密码后登录。'}</div>
             </div>
             <div className="settings-save-buttons">
               <button className="settings-export-btn" disabled={saveBusy} onClick={() => void exportData()}>
                 {saveBusy ? '处理中…' : <><T1Art kind="ui" id="nav-trading" fallback="" alt="" /> 导出加密存档 (.wlsave)</>}
               </button>
-              <button
-                type="button"
-                className="settings-export-btn"
-                disabled={saveBusy}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> 选择加密存档文件导入
-              </button>
+              {importEnabled && (
+                <button
+                  type="button"
+                  className="settings-export-btn"
+                  disabled={saveBusy}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> 选择加密存档文件导入
+                </button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -634,23 +620,26 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
                 />
               </div>
             )}
-            <div className="settings-import-row">
-              <input
-                className="input"
-                placeholder="粘贴 WLS1. 开头的加密存档密文…"
-                value={importCode}
-                onChange={(e) => setImportCode(e.target.value)}
-              />
-              <button
-                type="button"
-                className="settings-export-btn settings-import-submit"
-                disabled={saveBusy || !importCode.trim()}
-                onClick={() => void handleImportSaveCode(importCode)}
-              >
-                导入存档
-              </button>
-            </div>
+            {importEnabled && (
+              <div className="settings-import-row">
+                <input
+                  className="input"
+                  placeholder="粘贴 WLS1. 开头的加密存档密文…"
+                  value={importCode}
+                  onChange={(e) => setImportCode(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="settings-export-btn settings-import-submit"
+                  disabled={saveBusy || !importCode.trim()}
+                  onClick={() => void handleImportSaveCode(importCode)}
+                >
+                  导入存档
+                </button>
+              </div>
+            )}
           </div>
+          <DeleteAccountSection />
         </>
       )}
     </PanelModal>

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { combatLevelOf } from "./growthCurves";
+import { playerAccuracy } from "./combatSecondary";
 import { abilitySlotCount, activeSetBonuses, combatSheetFromPack, derivedCombatLevel, mainCombatSkill } from "./combatSheet";
 
 const items = [
@@ -9,14 +11,14 @@ const items = [
   { id: "weapon_staff_t1", mag: 10 },
 ];
 
-const BASE = { hp: 50, atk: 5, def: 0, intervalMs: 3000, mp: 20, mpRegenPerTick: 1, accuracyPct: 86, evasionPct: 6, critRatePct: 14, critDmgPct: 160 };
+const BASE = { hp: 50, atk: 5, def: 0, intervalMs: 3000, mp: 20, mpRegenPerTick: 1, accuracy: 110, evasion: 0, physResist: 0, elemResist: 0, damageType: "physical" as const, evasionPct: 6, critRatePct: 14, critDmgPct: 160 };
 
 describe("combat sheet from content pack", () => {
   it("matches unarmed level-1 woodcutter used by HP combat", () => {
     assert.deepEqual(combatSheetFromPack({ combatLevel: 1 }, items), BASE);
   });
 
-  it("reads MWI combat skills like the server: stamina → HP, melee → ATK, attack → interval, defense → DEF, intelligence → MP", () => {
+  it("reads combat skills like the server: stamina → HP, melee → ATK, attack → interval, defense → DEF, intelligence → MP", () => {
     const state = {
       combatLevel: 1,
       combatSkills: {
@@ -34,14 +36,20 @@ describe("combat sheet from content pack", () => {
       intervalMs: Math.round(3000 / 1.25),
       mp: 115,
       mpRegenPerTick: 3,
-      accuracyPct: 94.8,
+      accuracy: playerAccuracy(combatLevelOf([11, 20, 26, 9], 16), 26),
+      evasion: 0,
+      physResist: 0,
+      elemResist: 0,
+      damageType: "physical",
       evasionPct: 8.6,
       critRatePct: 23.1,
       critDmgPct: 180,
     });
     assert.equal(abilitySlotCount(state), 3);
-    // 0.1 × (11+20+26+9+max(16,1,1)) + 0.5 × 26 = 8.2 + 13 = 21.2 → 21
-    assert.equal(derivedCombatLevel(state), 21);
+    // derived from the four support skills and the best damage skill (growthCurves.combatLevelOf; parity with the server is
+    // checked in scripts/growth-curves-parity.test.ts): above the average, never above the best skill
+    assert.equal(derivedCombatLevel(state), combatLevelOf([11, 20, 26, 9], 16));
+    assert.ok(derivedCombatLevel(state) > (11 + 20 + 26 + 9 + 16) / 5 && derivedCombatLevel(state) <= 26);
     // legacy saves: every skill defaults to combatLevel
     assert.equal(combatSheetFromPack({ combatLevel: 4 }, items).hp, 80);
     assert.equal(abilitySlotCount({ combatLevel: 4 }), 1);
@@ -59,8 +67,12 @@ describe("combat sheet from content pack", () => {
     assert.equal(combatSheetFromPack({ combatSkills: skills, equipment: { main_hand: "weapon_wooden_sword" } }, items).atk, 5 + 2 + 5);
     assert.equal(combatSheetFromPack({ combatSkills: skills, equipment: { main_hand: "weapon_wooden_bow" } }, items).atk, 5 + 5 + 8);
     assert.equal(combatSheetFromPack({ combatSkills: skills, equipment: { main_hand: "weapon_staff_t1" } }, items).atk, 5 + 10 + 10);
-    // best damage skill drives the derived level: 0.1 × (1+1+1+1+11) + 0.5 × 11 = 1.5 + 5.5 = 7
-    assert.equal(derivedCombatLevel({ combatSkills: skills }), 7);
+    // only the best damage skill counts towards the derived level
+    assert.equal(derivedCombatLevel({ combatSkills: skills }), combatLevelOf([1, 1, 1, 1], 11));
+    assert.equal(
+      derivedCombatLevel({ combatSkills: { ...skills, melee: { level: 10 }, ranged: { level: 10 } } }),
+      derivedCombatLevel({ combatSkills: skills })
+    );
   });
 
   it("applies wooden sword and chest from the pack, not a React table", () => {

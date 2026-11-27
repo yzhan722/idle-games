@@ -8,7 +8,7 @@ import { MonsterSceneBackdrop } from "./MonsterSceneBackdrop";
 import { CombatPotionBar } from "./CombatPotionBar";
 import { AbilityBar } from "./AbilityBar";
 import { abilitySlotCount, combatSheetFromPack } from "../gameplay/combatSheet";
-import { abilityCastXp, abilityEffectiveCooldownMs, previewAbilities } from "../gameplay/fightPreview";
+import { abilityEffectiveCooldownMs, previewAbilities } from "../gameplay/fightPreview";
 import { playGameSound } from "../gameplay/sound";
 import { useToast } from "./Toast";
 import type { AbilityDef, PartyState } from "../types/game";
@@ -18,7 +18,10 @@ import {
   getBossSignatureSkills,
   getItemIconFallback,
   getWaveMinionCount,
+  claimPartyWave,
   normalizeStageId,
+  recoveryStep,
+  serverWave,
   type AllyCombatUnit,
   type DamageFloatItem,
   type EnemyCombatUnit,
@@ -27,6 +30,19 @@ import {
   type PartyPayload,
   type StageBossDungeon,
 } from "../gameplay/partyRaidData";
+import {
+  PARTY_RULES,
+  allySkillHit,
+  allySwing,
+  buildSquad,
+  enemySwing,
+  partyDungeonOf,
+  partyStageLevel,
+  partyWave,
+  skillMult,
+  squadSelf,
+  swingMult,
+} from "../gameplay/partyCombat";
 import { PartyLobbyView } from "./PartyLobbyView";
 
 export interface PartyCombatHeaderInfo {
@@ -128,6 +144,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
   }, [playerMp]);
 
   const abilityCastsRef = useRef<Record<string, number>>({});
+  const rejectStreakRef = useRef(0);
 
   const userId = user?.id as string | undefined;
   const partyState = playerState?.partyState as PartyState | undefined;
@@ -158,35 +175,19 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         .map((id) => monstersById.get(id))
         .filter(Boolean);
       if (mList.length === 0) continue;
-      const boss = mList.find((m) => m.isBoss || String(m.id).endsWith("_boss")) || mList[mList.length - 1];
-      const minions = mList.filter((m) => m.id !== boss.id);
-      if (!boss) continue;
+      const dungeon = partyDungeonOf(mList);
+      if (!dungeon) continue;
+      const { boss, minions } = dungeon;
       list.push({
         id: stg.id,
         name: stg.name || stg.id,
         recommendedLevel: Number(stg.recommendedPower || boss.level || 1),
-        boss: {
-          id: boss.id,
-          name: String(boss.name || boss.id).replace(/\s*[(（]BOSS[)）]\s*$/i, ""),
-          level: Number(boss.level || 10),
-          hp: Number(boss.hp || 300),
-          atk: Number(boss.atk || 20),
-          def: Number(boss.def || 8),
-          xp: Number(boss.xp || 80),
-          gold: Number(boss.gold || 50),
-          icon: boss.icon,
-        },
-        minions: minions.map((m) => ({
-          id: m.id,
-          name: m.name || m.id,
-          level: Number(m.level || 1),
-          hp: Number(m.hp || 60),
-          atk: Number(m.atk || 8),
-          def: Number(m.def || 2),
-          xp: Number(m.xp || 14),
-          gold: Number(m.gold || 8),
-          icon: m.icon,
-        })),
+        requiredLevel: partyStageLevel(
+          mList.map((m) => m.id),
+          (id) => Number(contentPack.actions?.find((x: any) => x.id === `act_combat_${id}`)?.requirements?.skillLevel || 1)
+        ),
+        boss: { ...boss, name: String(boss.name || boss.id).replace(/\s*[(（]BOSS[)）]\s*$/i, "") },
+        minions,
       });
     }
     return list;
@@ -274,113 +275,44 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     }
   }, [partyLoaded, party?.id, party?.currentActivity, activeDungeon, currentWave, onCombatStatusChange]);
 
-  // Build wave enemies: Waves 1-9 scale monster count dynamically with partySize (2-6 monsters);
-  // Every 10th Wave spawns the strengthened Zone Boss + dynamic Elite Guards when partySize >= 3!
+  // 一波的敌人由同源模块决定（服务端按同一份算时间下界与奖励），这里只补上画面要用的字段
   const buildWaveEnemies = useCallback((dungeon: StageBossDungeon, wave: number, partySize: number): EnemyCombatUnit[] => {
-    const isBossWave = wave % 10 === 0;
     const cycleIndex = Math.floor((wave - 1) / 10);
-    const waveScale = 1 + cycleIndex * 0.38 + ((wave - 1) % 10) * 0.045;
-    const teamScale = 1 + Math.max(0, partySize - 1) * 0.42;
-    const pool = dungeon.minions.length > 0 ? dungeon.minions : [dungeon.boss];
-
-    if (isBossWave) {
-      const b = dungeon.boss;
-      const bossHp = Math.max(420, Math.round(b.hp * waveScale * teamScale * 2.15));
-      const bossAtk = Math.max(18, Math.round(b.atk * (1.35 + cycleIndex * 0.28 + Math.max(0, partySize - 1) * 0.12)));
-      const bossDef = Math.max(5, Math.round(b.def * (1.2 + cycleIndex * 0.18)));
-      const units: EnemyCombatUnit[] = [
-        {
-          slotKey: `enemy-boss-${wave}`,
-          id: b.id,
-          name: `${b.name}${cycleIndex > 0 ? ` · 觉醒${cycleIndex + 1}阶` : ""}`,
-          level: b.level + cycleIndex * 3,
-          isBoss: true,
-          hp: bossHp,
-          maxHp: bossHp,
-          atk: bossAtk,
-          def: bossDef,
-          xp: Math.max(25, Math.round((b.xp || 80) * (1 + cycleIndex * 0.3))),
-          gold: Math.max(15, Math.round((b.gold || 50) * (1 + cycleIndex * 0.3))),
-          castMs: 900,
-          intervalMs: 2300,
-          hitShakeUntil: 0,
-          attackAnimUntil: 0,
-          attackCount: 0,
-          nextSkillIdx: 0,
-          shieldUntil: 0,
-          enraged: false,
-        },
-      ];
-      const guardCount = getBossGuardCount(partySize);
-      for (let g = 0; g < guardCount; g++) {
-        const gm = pool[(pool.length - 1 - g + pool.length) % pool.length];
-        const guardHp = Math.max(120, Math.round(gm.hp * waveScale * (1.1 + partySize * 0.18)));
-        units.push({
-          slotKey: `enemy-guard-${wave}-${g}`,
-          id: gm.id,
-          name: `首领亲卫·${gm.name}`,
-          level: gm.level + cycleIndex * 2 + 1,
-          isBoss: false,
-          isEliteGuard: true,
-          hp: guardHp,
-          maxHp: guardHp,
-          atk: Math.max(8, Math.round(gm.atk * (1.1 + cycleIndex * 0.2))),
-          def: Math.max(3, Math.round(gm.def * (1.1 + cycleIndex * 0.15))),
-          xp: Math.max(10, Math.round((gm.xp || 16) * (1.2 + cycleIndex * 0.2))),
-          gold: Math.max(5, Math.round((gm.gold || 10) * (1.2 + cycleIndex * 0.2))),
-          castMs: 500 + g * 550,
-          intervalMs: 2400 + g * 220,
-          hitShakeUntil: 0,
-          attackAnimUntil: 0,
-          attackCount: 0,
-          nextSkillIdx: 0,
-          shieldUntil: 0,
-          enraged: false,
-        });
-      }
-      return units;
-    }
-
-    const waveOffset = (wave - 1) % 10;
-    // Waves 1-9: dynamically scale monster count with partySize (2 to 6 monsters)!
-    const count = getWaveMinionCount(partySize);
-    const units: EnemyCombatUnit[] = [];
-    for (let i = 0; i < count; i++) {
-      const m = pool[(waveOffset + i) % pool.length];
-      const hp = Math.max(40, Math.round(m.hp * waveScale * (0.85 + partySize * 0.16)));
-      units.push({
-        slotKey: `enemy-${wave}-${i}`,
-        id: m.id,
-        name: `${m.name} #${i + 1}`,
-        level: m.level + cycleIndex * 2,
-        isBoss: false,
-        hp,
-        maxHp: hp,
-        atk: Math.max(5, Math.round(m.atk * (0.95 + cycleIndex * 0.18 + Math.max(0, partySize - 2) * 0.05))),
-        def: Math.max(1, Math.round(m.def * (1 + cycleIndex * 0.12))),
-        xp: Math.max(5, Math.round((m.xp || 12) * (1 + cycleIndex * 0.2))),
-        gold: Math.max(2, Math.round((m.gold || 6) * (1 + cycleIndex * 0.2))),
-        castMs: (i * 480) % 2200,
-        intervalMs: 2400 + (i % 3) * 240,
+    let minionNo = 0;
+    let guardNo = 0;
+    return partyWave(dungeon, wave, partySize).map((e) => {
+      const base = e.monster.name || e.monster.id;
+      const isBoss = e.role === "boss";
+      const isEliteGuard = e.role === "guard";
+      return {
+        slotKey: isBoss ? `enemy-boss-${wave}` : isEliteGuard ? `enemy-guard-${wave}-${guardNo++}` : `enemy-${wave}-${minionNo++}`,
+        monster: e.monster,
+        id: e.monster.id,
+        name: isBoss ? `${base}${cycleIndex > 0 ? ` · 觉醒${cycleIndex + 1}阶` : ""}` : isEliteGuard ? `首领亲卫·${base}` : `${base} #${minionNo}`,
+        level: e.level,
+        isBoss,
+        ...(isEliteGuard ? { isEliteGuard } : {}),
+        hp: e.hp,
+        maxHp: e.hp,
+        atk: e.atk,
+        def: e.def,
+        xp: e.xp,
+        gold: e.gold,
+        castMs: e.castMs,
+        intervalMs: e.intervalMs,
         hitShakeUntil: 0,
         attackAnimUntil: 0,
         attackCount: 0,
         nextSkillIdx: 0,
         shieldUntil: 0,
         enraged: false,
-      });
-    }
-    return units;
+      };
+    });
   }, []);
 
   // Build allied party formation (player + up to 5 bot/human teammates)
   const buildAlliesFormation = useCallback(
     (pty: PartyPayload): AllyCombatUnit[] => {
-      const playerLv = playerState?.combatLevel || 1;
-      const playerMaxHp = Math.max(60, combatSheet.hp || 100);
-      const playerAtk = Math.max(10, combatSheet.atk || 14);
-      const playerDef = Math.max(2, combatSheet.def || 4);
-      const playerInterval = Math.max(1200, Math.min(2600, combatSheet.intervalMs || 2000));
       const selfGender = ((playerState?.settings?.gender === "female" || playerState?.settings?.gender === "animal")
         ? playerState.settings.gender
         : "male") as "male" | "female" | "animal";
@@ -393,17 +325,18 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         return 0;
       });
 
+      // 数值由同源模块推出，与服务端算时间下界用的是同一支小队
+      const squad = buildSquad(
+        squadSelf(combatSheet, playerState?.combatLevel || 1),
+        sortedMembers.filter((m) => m.userId !== userId).map((m) => m.combatLevel)
+      );
+      const selfOffset = sortedMembers.some((m) => m.userId === userId) ? 0 : 1;
+
       return sortedMembers.map((m, idx) => {
         const isSelf = m.userId === userId;
-        const lv = isSelf ? playerLv : Math.max(playerLv, Number(m.combatLevel || 12));
-        const baseLvHp = 70 + lv * 14;
-        const baseLvAtk = 8 + Math.round(lv * 2.4);
-        const baseLvDef = 2 + Math.round(lv * 0.85);
-        const maxHp = isSelf ? playerMaxHp : Math.max(90, baseLvHp, Math.round(playerMaxHp * (0.88 + (idx % 3) * 0.12)));
-        const atk = isSelf ? playerAtk : Math.max(9, baseLvAtk, Math.round(playerAtk * (0.78 + (idx % 3) * 0.1)));
-        const def = isSelf ? playerDef : Math.max(3, baseLvDef, Math.round(playerDef * 0.85));
-        const intervalMs = isSelf ? playerInterval : 1950 + (idx % 3) * 260;
+        const fighter = squad[idx + selfOffset];
         return {
+          ...fighter,
           userId: m.userId,
           name: isSelf ? selfName : m.displayName || "冒险队友",
           title: isSelf ? "小队指挥" : m.title || (m.isBot ? "协战游侠" : "小队成员"),
@@ -412,13 +345,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
           role: m.role,
           classId: isSelf ? selfClassId : m.classId || "woodcutter",
           gender: isSelf ? selfGender : m.gender || (idx % 2 === 0 ? "female" : "male"),
-          level: lv,
-          hp: maxHp,
-          maxHp,
-          atk,
-          def,
-          castMs: (idx * 480) % intervalMs,
-          intervalMs,
+          maxHp: fighter.hp,
+          castMs: (idx * 480) % fighter.intervalMs,
           reviveRemainingMs: 0,
           reviveTotalMs: ALLY_REVIVE_MS,
           hitShakeUntil: 0,
@@ -446,30 +374,23 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     const parsedStart = Date.parse(party.currentActivity.startedAt);
     const trueStartedAt = Number.isFinite(parsedStart) && parsedStart > 0 ? parsedStart : Date.now();
     const storageKey = `worklife_party_run_${key}`;
-    let restoredWave = 1;
+    // 该打第几波以服务端为准：没打完的那一波从头打
+    const restoredWave = serverWave(playerState?.partyRun, party.id, party.currentActivity.startedAt);
     let restoredStats: typeof runStats | null = null;
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === "object") {
-          const startWave = Math.max(1, Number(parsed.currentWave || 1));
-          const savedLastAt = Number(parsed.lastUpdatedAt || trueStartedAt);
-          const gapSec = Math.max(0, Math.floor((Date.now() - savedLastAt) / 1000));
-          const extraKills = Math.floor(gapSec / 6);
-          const extraWaves = Math.floor(extraKills / 3);
-          const rawWave = startWave + extraWaves;
-          restoredWave = ((rawWave - 1) % 10) + 1;
-          const extraBossKills = Math.max(0, Math.floor((rawWave - 1) / 10) - Math.floor((startWave - 1) / 10));
-          const avgMinion = activeDungeon.minions[0] || activeDungeon.boss;
+          // 离开期间没有人在打，服务端也没有结算：统计不补
           restoredStats = {
             startedAt: trueStartedAt,
-            wavesCleared: Number(parsed.wavesCleared || 0) + extraWaves,
-            bossKills: Number(parsed.bossKills || 0) + extraBossKills,
-            totalKills: Number(parsed.totalKills || 0) + extraKills,
+            wavesCleared: Number(parsed.wavesCleared || 0),
+            bossKills: Number(parsed.bossKills || 0),
+            totalKills: Number(parsed.totalKills || 0),
             deaths: Number(parsed.deaths || 0),
-            xp: Number(parsed.xp || 0) + extraKills * Math.max(5, Number(avgMinion.xp || 12)),
-            gold: Number(parsed.gold || 0) + extraKills * Math.max(2, Number(avgMinion.gold || 6)),
+            xp: Number(parsed.xp || 0),
+            gold: Number(parsed.gold || 0),
             loot: parsed.loot && typeof parsed.loot === "object" ? parsed.loot : {},
           };
         }
@@ -479,31 +400,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     }
 
     if (!restoredStats) {
-      const elapsedSecFromStart = Math.max(0, Math.floor((Date.now() - trueStartedAt) / 1000));
-      const initialKills = Math.floor(elapsedSecFromStart / 6);
-      const initialWaves = Math.floor(initialKills / 3);
-      restoredWave = (initialWaves % 10) + 1;
-      const avgMinion = activeDungeon.minions[0] || activeDungeon.boss;
-      restoredStats = {
-        startedAt: trueStartedAt,
-        wavesCleared: initialWaves,
-        bossKills: Math.floor(initialWaves / 10),
-        totalKills: initialKills,
-        deaths: 0,
-        xp: initialKills * Math.max(5, Number(avgMinion.xp || 12)),
-        gold: initialKills * Math.max(2, Number(avgMinion.gold || 6)),
-        loot: {},
-      };
-    }
-
-    if (
-      restoredStats.bossKills > 0 &&
-      (playerState?.stats?.killsByMonster?.[activeDungeon.boss.id] || 0) === 0
-    ) {
-      void apiClient
-        .partyWaveClear(party.id, activeDungeon.id, 10, {})
-        .then(() => refreshPlayerState())
-        .catch(() => undefined);
+      restoredStats = { startedAt: trueStartedAt, wavesCleared: 0, bossKills: 0, totalKills: 0, deaths: 0, xp: 0, gold: 0, loot: {} };
     }
 
     const initialAllies = buildAlliesFormation(party);
@@ -596,20 +493,41 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     });
   }, [party, buildAlliesFormation, buildWaveEnemies, activeDungeon, currentWave, appendBattleLog, playerState, stopAction, onCombatStatusChange]);
 
+  // 连着没结算成功：队伍、活动、该打第几波都以服务端为准重来，旧画面作废
+  const resyncRun = useCallback(async (): Promise<boolean> => {
+    try {
+      apiClient.clearCache();
+      const [res] = await Promise.all([apiClient.getMyParty(), refreshPlayerState()]);
+      // 清掉编号，下面换上的队伍会让战场按服务端进度重建（换波标记由重建时放开）
+      activeStageKeyRef.current = "";
+      setParty((res as any)?.party ?? null);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [refreshPlayerState]);
+
   // Advance to next wave when all enemies in current wave are defeated
   const handleWaveCleared = useCallback(
     async (clearedWave: number) => {
       if (!party || !activeDungeon || waveTransitionRef.current) return;
       waveTransitionRef.current = true;
+      const runKey = activeStageKeyRef.current;
       const isBossWave = clearedWave % 10 === 0;
       playGameSound("victory");
 
+      // 这一波结算成功就打下一波；服务端说该打别的波次就跟着走；没结算成功就重打这一波
+      let nextWave = clearedWave;
       try {
         const waveCasts = { ...abilityCastsRef.current };
         abilityCastsRef.current = {};
-        const res: any = await apiClient.partyWaveClear(party.id, activeDungeon.id, clearedWave, waveCasts);
-        const xpGained = Number(res?.xpGained || (isBossWave ? activeDungeon.boss.xp * 2 : 36));
-        const goldGained = Number(res?.goldGained || (isBossWave ? activeDungeon.boss.gold * 2 : 20));
+        const res: any = await claimPartyWave(() => apiClient.partyWaveClear(party.id, activeDungeon.id, clearedWave, waveCasts));
+        nextWave = clearedWave + 1;
+        rejectStreakRef.current = 0;
+        // 经验、金币、掉落、技能经验都以服务端这一波的结算为准
+        const xpGained = Number(res?.xpGained || 0);
+        const goldGained = Number(res?.goldGained || 0);
+        const abilityXp = Object.values((res?.abilityXpGained || {}) as Record<string, number>).reduce((sum, v) => sum + Number(v || 0), 0);
         const drops: Array<{ itemId: string; name: string; qty: number }> = Array.isArray(res?.drops) ? res.drops : [];
         const abilityLevelUps: Array<{ id: string; name: string; level: number }> = Array.isArray(res?.abilityLevelUps) ? res.abilityLevelUps : [];
 
@@ -622,11 +540,13 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
           return {
             ...prev,
             wavesCleared: prev.wavesCleared + 1,
+            xp: prev.xp + xpGained,
+            gold: prev.gold + goldGained,
             loot: nextLoot,
           };
         });
 
-        const dropText = drops.length > 0 ? ` · 掉落：${drops.map((d) => `${d.name}×${d.qty}`).join("、")}` : "";
+        const dropText = (abilityXp > 0 ? `、+${Math.round(abilityXp * 10) / 10} 技能经验` : "") + (drops.length > 0 ? ` · 掉落：${drops.map((d) => `${d.name}×${d.qty}`).join("、")}` : "");
         appendBattleLog(
           isBossWave
             ? `【第 ${clearedWave} 波 · 首领击破】全队合力斩杀 ${activeDungeon.boss.name}！获得 +${xpGained} 经验、+${goldGained} 金币${dropText}！`
@@ -636,12 +556,29 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
           appendBattleLog(`【技能升级】「${lu.name}」熟练度突破，升至 Lv.${lu.level}！`);
         }
         void refreshPlayerState();
-      } catch {
-        // Fallback local log if network hiccups
-        appendBattleLog(`第 ${clearedWave} 波清剿完成！准备迎接下一波敌人！`);
+      } catch (err) {
+        const { code, details } = (err ?? {}) as { code?: string; details?: { expectedWave?: number; requiredLevel?: number } };
+        if (code === "party_wave_order" && details?.expectedWave) nextWave = details.expectedWave;
+        appendBattleLog(
+          code === "party_level_required"
+            ? `【第 ${clearedWave} 波】战斗等级到 ${details?.requiredLevel ?? "?"} 级才能领这个副本的奖励。`
+            : nextWave !== clearedWave
+              ? `【第 ${clearedWave} 波】与服务器进度对不上，从第 ${nextWave} 波继续。`
+              : `【第 ${clearedWave} 波】没有结算成功，重打这一波。`
+        );
+        rejectStreakRef.current += 1;
+        const step = recoveryStep(rejectStreakRef.current, code, performance.now());
+        if (step !== "retry" && activeStageKeyRef.current === runKey) {
+          if (step === "reload") {
+            window.location.reload();
+            return;
+          }
+          if (await resyncRun()) return;
+        }
       }
 
-      const nextWave = clearedWave + 1;
+      // 等结算的时候副本已经结束或换了一场
+      if (activeStageKeyRef.current !== runKey) return;
       const nextIsBoss = nextWave % 10 === 0;
       setWaveBanner(
         nextIsBoss
@@ -674,7 +611,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
         scheduleTransitionTimeout(() => setWaveBanner(null), 1400);
       }, 650);
     },
-    [party, activeDungeon, appendBattleLog, buildWaveEnemies, refreshPlayerState, combatSheet.mp, scheduleTransitionTimeout]
+    [party, activeDungeon, appendBattleLog, buildWaveEnemies, refreshPlayerState, resyncRun, combatSheet.mp, scheduleTransitionTimeout]
   );
 
   // Full Party Wipe Handler: when all allies drop to 0 HP, fail the current wave and reset back to Wave 1 after respawn delay
@@ -682,6 +619,8 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
     (failedWave: number) => {
       if (!party || !activeDungeon || waveTransitionRef.current) return;
       waveTransitionRef.current = true;
+      abilityCastsRef.current = {};
+      void claimPartyWave(() => apiClient.partyWaveReset(party.id)).catch(() => undefined);
       setWaveBanner(`第 ${failedWave} 波团灭！重整旗鼓退回第 1 波...`);
       appendBattleLog(`【全队覆没】第 ${failedWave} 波小队全员力竭阵亡，讨伐失败！正在休整并退回第 1 波重新挑战...`);
 
@@ -706,7 +645,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
   useEffect(() => {
     if (!party?.currentActivity || !activeDungeon) return;
 
-    const TICK_MS = 60;
+    const TICK_MS = PARTY_RULES.tickMs;
     const timer = window.setInterval(() => {
       const now = Date.now();
       setNowTs(now);
@@ -798,7 +737,6 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   }
                   const levelMult = 1 + Math.max(0, (slot.level || 1) - 1) * (def.levelStep ?? 0.05);
                   const cdMs = Math.max(1500, abilityEffectiveCooldownMs(def, slot.level || 1));
-                  const castXp = abilityCastXp(def, activeDungeon?.boss.level || 1);
                   if (def.healPct && def.healPct > 0 && !def.damageMult) {
                     const wounded = nextAllies.some((a) => a.hp > 0 && a.hp <= a.maxHp * 0.85);
                     if (!wounded && !def.guardMult && !def.auraAtkPct) continue;
@@ -833,7 +771,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       a.hp = Math.min(a.maxHp, a.hp + healAmt);
                       pushFloat(`ally-${a.userId}`, healAmt, { isHeal: true, tag: def.name });
                     }
-                    appendBattleLog(`【治疗】自动释放【${def.name} Lv.${slot.level || 1}】，为全体存活队友恢复生命值（+${castXp} 技能经验）！`);
+                    appendBattleLog(`【治疗】自动释放【${def.name} Lv.${slot.level || 1}】，为全体存活队友恢复生命值！`);
                     break;
                   } else if (def.damageMult && def.damageMult > 0) {
                     playerMpRef.current = Math.max(0, playerMpRef.current - mpCost);
@@ -875,15 +813,20 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     let totalSkillDmg = 0;
                     const killedNames: string[] = [];
                     for (const target of hitTargets) {
-                      const shieldMult = now < target.shieldUntil && !def.breaksGuard ? 0.55 : 1;
+                      const shieldMult = now < target.shieldUntil && !def.breaksGuard ? PARTY_RULES.shieldMult : 1;
                       if (now < target.shieldUntil && def.breaksGuard) {
                         target.shieldUntil = 0;
                         appendBattleLog(`【破盾】【${ally.name}】施展【${def.name} Lv.${slot.level || 1}】直接震碎了 ${target.name} 的护盾壁障！`);
                       }
-                      const skillDmg = Math.max(
-                        6,
-                        Math.round((ally.atk * auraAtkMult * def.damageMult * levelMult - target.def * 0.2) * shieldMult)
-                      );
+                      const skillDmg = allySkillHit({
+                        atk: ally.atk,
+                        auraMult: auraAtkMult,
+                        damageMult: def.damageMult,
+                        levelMult,
+                        targetDef: target.def,
+                        shieldMult,
+                        mult: skillMult(ally, target.monster),
+                      });
                       target.hp = Math.max(0, target.hp - skillDmg);
                       target.hitShakeUntil = now + 300;
                       totalSkillDmg += skillDmg;
@@ -894,23 +837,21 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                           ...prev,
                           totalKills: prev.totalKills + 1,
                           bossKills: prev.bossKills + (target.isBoss ? 1 : 0),
-                          xp: prev.xp + target.xp,
-                          gold: prev.gold + target.gold,
                         }));
                       }
                     }
                     const auraNote =
                       def.auraAtkPct || def.auraCritPct
-                        ? `，并激活全队光环（攻击+${teamAuraRef.current.atkPct}%·暴击+${teamAuraRef.current.critPct}%）`
+                        ? `，并激活全队光环（攻击+${teamAuraRef.current.atkPct}%）`
                         : "";
                     if (hitTargets.length > 1) {
                       appendBattleLog(
-                        `【群攻】自动释放群攻【${def.name} Lv.${slot.level || 1}】横扫 ${hitTargets.length} 名敌人，合计造成 ${totalSkillDmg} 点伤害${auraNote}${killedNames.length ? `（击倒 ${killedNames.join("、")}）` : ""}（+${castXp} 技能经验）！`
+                        `【群攻】自动释放群攻【${def.name} Lv.${slot.level || 1}】横扫 ${hitTargets.length} 名敌人，合计造成 ${totalSkillDmg} 点伤害${auraNote}${killedNames.length ? `（击倒 ${killedNames.join("、")}）` : ""}！`
                       );
                     } else if (killedNames.length > 0) {
-                      appendBattleLog(`【战技】自动释放【${def.name} Lv.${slot.level || 1}】击倒了 ${killedNames[0]}（-${totalSkillDmg}${auraNote} · +${castXp} 技能经验）！`);
+                      appendBattleLog(`【战技】自动释放【${def.name} Lv.${slot.level || 1}】击倒了 ${killedNames[0]}（-${totalSkillDmg}${auraNote}）！`);
                     } else {
-                      appendBattleLog(`【战技】自动释放【${def.name} Lv.${slot.level || 1}】命中 ${hitTargets[0].name}，造成 ${totalSkillDmg} 点伤害${auraNote}（+${castXp} 技能经验）！`);
+                      appendBattleLog(`【战技】自动释放【${def.name} Lv.${slot.level || 1}】命中 ${hitTargets[0].name}，造成 ${totalSkillDmg} 点伤害${auraNote}！`);
                     }
                     break;
                   } else if (def.guardMult) {
@@ -927,10 +868,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     if (def.tauntDurationMs) {
                       selfTauntUntilRef.current = now + Number(def.tauntDurationMs);
                       appendBattleLog(
-                        `【嘲讽】自动释放【${def.name} Lv.${slot.level || 1}】，减伤 ${Math.round(reduce * 100)}% 并强制吸引敌方绝大部分仇恨保护队友（+${castXp} 技能经验）！`
+                        `【嘲讽】自动释放【${def.name} Lv.${slot.level || 1}】，减伤 ${Math.round(reduce * 100)}% 并强制吸引敌方绝大部分仇恨保护队友！`
                       );
                     } else {
-                      appendBattleLog(`【防护】自动释放【${def.name} Lv.${slot.level || 1}】，提升自身防护与前排仇恨（+${castXp} 技能经验）！`);
+                      appendBattleLog(`【防护】自动释放【${def.name} Lv.${slot.level || 1}】，提升自身防护与前排仇恨！`);
                     }
                     break;
                   }
@@ -949,14 +890,16 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                 const auraActive = now < teamAuraRef.current.until;
                 const auraAtkMult = auraActive ? 1 + teamAuraRef.current.atkPct / 100 : 1;
                 const auraCritBonus = auraActive ? teamAuraRef.current.critPct / 100 : 0;
-                const baseCritChance = ally.isSelf ? (combatSheet.critRatePct ?? 18) / 100 : 0.16;
-                const critMult = ally.isSelf ? (combatSheet.critDmgPct ?? 165) / 100 : 1.65;
-                const isCrit = Math.random() < Math.min(0.85, baseCritChance + auraCritBonus);
-                const shieldMult = now < preferred.shieldUntil ? 0.55 : 1;
-                const rawDmg = Math.max(
-                  4,
-                  Math.round((ally.atk * auraAtkMult * (0.92 + Math.random() * 0.22) - preferred.def * 0.25) * (isCrit ? critMult : 1) * shieldMult)
-                );
+                const isCrit = Math.random() < Math.min(PARTY_RULES.critCap, ally.critRatePct / 100 + auraCritBonus);
+                const rawDmg = allySwing({
+                  atk: ally.atk,
+                  auraMult: auraAtkMult,
+                  roll: PARTY_RULES.rollMin + Math.random() * PARTY_RULES.rollSpan,
+                  targetDef: preferred.def,
+                  critMult: isCrit ? ally.critDmgPct / 100 : 1,
+                  shieldMult: now < preferred.shieldUntil ? PARTY_RULES.shieldMult : 1,
+                  mult: swingMult(ally, preferred.monster),
+                });
                 preferred.hp = Math.max(0, preferred.hp - rawDmg);
                 preferred.hitShakeUntil = now + 260;
 
@@ -978,12 +921,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     ...prev,
                     totalKills: prev.totalKills + 1,
                     bossKills: prev.bossKills + (preferred.isBoss ? 1 : 0),
-                    xp: prev.xp + preferred.xp,
-                    gold: prev.gold + preferred.gold,
                   }));
-                  appendBattleLog(`【击倒】【${ally.name}】击倒了 ${preferred.name}（-${rawDmg}${isCrit ? " 暴击" : ""}）！`);
+                  appendBattleLog(`【击倒】【${ally.name}】击倒了 ${preferred.name}（-${rawDmg}）！`);
                 } else if (ally.isSelf || Math.random() < 0.35) {
-                  appendBattleLog(`【普攻】【${ally.name}】攻击 ${preferred.name}，造成 ${rawDmg} 点伤害${isCrit ? "（暴击！）" : ""}`);
+                  appendBattleLog(`【普攻】【${ally.name}】攻击 ${preferred.name}，造成 ${rawDmg} 点伤害`);
                 }
               }
             }
@@ -1010,7 +951,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
 
               const livingAllies = nextAllies.filter((a) => a.hp > 0);
               if (livingAllies.length > 0) {
-                // MWI Threat / Aggro weighting: Tanks & players with active Taunt/Brace draw the majority of enemy attacks!
+                // Threat / Aggro weighting: Tanks & players with active Taunt/Brace draw the majority of enemy attacks!
                 const getAllyThreatWeight = (a: AllyCombatUnit): number => {
                   let w = 100;
                   if (a.classId === "blacksmith" || a.role === "tank" || String(a.title || "").includes("铁卫") || String(a.title || "").includes("盾")) {
@@ -1039,15 +980,11 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   opts?: { skillName?: string; isCrit?: boolean; castPushbackPct?: number; canDodge?: boolean }
                 ): number => {
                   if (opts?.canDodge) {
-                    const evaPct = targetAlly.isSelf ? (combatSheet.evasionPct ?? 8) : 9;
-                    if (Math.random() * 100 < evaPct) {
+                    if (Math.random() * 100 < targetAlly.evasionPct) {
                       pushFloat(`ally-${targetAlly.userId}`, 0, {
                         isHeal: true,
                         tag: "闪避",
                       });
-                      if (targetAlly.isSelf || enemy.isBoss) {
-                        appendBattleLog(`【闪避】【${targetAlly.name}】灵巧闪避了 ${enemy.name} 的攻击！`);
-                      }
                       return 0;
                     }
                   }
@@ -1091,9 +1028,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     let totalAoeDmg = 0;
                     for (const allyUnit of livingAllies) {
                       const rawSkillDmg =
-                        enemy.atk * skill.dmgMult * (enemy.enraged ? 1.18 : 1) +
-                        allyUnit.maxHp * skill.maxHpPct -
-                        allyUnit.def * 0.25;
+                        (enemy.atk * skill.dmgMult * (enemy.enraged ? 1.18 : 1) +
+                          allyUnit.maxHp * skill.maxHpPct -
+                          allyUnit.def * 0.25) *
+                        skillMult(enemy.monster, allyUnit);
                       totalAoeDmg += applyHitToAlly(allyUnit, rawSkillDmg, {
                         skillName: skill.name,
                         isCrit: true,
@@ -1119,9 +1057,10 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     let totalCleaveDmg = 0;
                     for (const allyUnit of targets) {
                       const rawSkillDmg =
-                        enemy.atk * skill.dmgMult * (enemy.enraged ? 1.15 : 1) +
-                        allyUnit.maxHp * skill.maxHpPct -
-                        allyUnit.def * 0.3;
+                        (enemy.atk * skill.dmgMult * (enemy.enraged ? 1.15 : 1) +
+                          allyUnit.maxHp * skill.maxHpPct -
+                          allyUnit.def * 0.3) *
+                        skillMult(enemy.monster, allyUnit);
                       totalCleaveDmg += applyHitToAlly(allyUnit, rawSkillDmg, {
                         skillName: skill.name,
                         isCrit: true,
@@ -1141,7 +1080,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     // Tactical Shockwave AOE + Boss Shield + Enrage + Elite Guard Summon
                     for (const allyUnit of livingAllies) {
                       const rawSkillDmg =
-                        enemy.atk * skill.dmgMult + allyUnit.maxHp * skill.maxHpPct - allyUnit.def * 0.3;
+                        (enemy.atk * skill.dmgMult + allyUnit.maxHp * skill.maxHpPct - allyUnit.def * 0.3) * skillMult(enemy.monster, allyUnit);
                       applyHitToAlly(allyUnit, rawSkillDmg, {
                         skillName: skill.name,
                         isCrit: false,
@@ -1164,6 +1103,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                       summonedName = `首领亲卫·${gm.name}`;
                       nextEnemies.push({
                         slotKey: `enemy-summon-${currentWave}-${now}-${enemy.attackCount}`,
+                        monster: gm,
                         id: gm.id,
                         name: summonedName,
                         level: Math.max(1, enemy.level - 1),
@@ -1194,7 +1134,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   const shuffled = [...livingAllies].sort(() => Math.random() - 0.5);
                   const cleaveTargets = shuffled.slice(0, 2);
                   for (const allyUnit of cleaveTargets) {
-                    const dmg = Math.max(2, Math.round(enemy.atk * 1.15 - allyUnit.def * 0.4));
+                    const dmg = Math.max(2, Math.round((enemy.atk * 1.15 - allyUnit.def * 0.4) * skillMult(enemy.monster, allyUnit)));
                     applyHitToAlly(allyUnit, dmg, { skillName: "狂暴顺劈", isCrit: true });
                   }
                   appendBattleLog(
@@ -1202,7 +1142,12 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                   );
                 } else {
                   const targetAlly = pickThreatWeightedAlly(livingAllies);
-                  const baseEnemyDmg = Math.max(2, Math.round(enemy.atk * (0.9 + Math.random() * 0.25) - targetAlly.def * 0.42));
+                  const baseEnemyDmg = enemySwing({
+                    atk: enemy.atk,
+                    roll: 0.9 + Math.random() * 0.25,
+                    targetDef: targetAlly.def,
+                    mult: swingMult(enemy.monster, targetAlly),
+                  });
                   const dealt = applyHitToAlly(targetAlly, baseEnemyDmg, {
                     isCrit: enemy.isBoss && Math.random() < 0.3,
                     canDodge: true,
@@ -1369,7 +1314,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
                     onChange={(e) => void quickStartBossDungeon(e.target.value)}
                   >
                     {bossDungeons.map((d) => (
-                      <option key={d.id} value={d.id}>
+                      <option key={d.id} value={d.id} disabled={(playerState?.combatLevel || 1) < d.requiredLevel}>
                         切换副本：{d.name} · {d.boss.name} (Lv.{d.boss.level})
                       </option>
                     ))}
@@ -1640,7 +1585,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
             </div>
           </div>
 
-          {/* Live Run Statistics Bar (MWI style) */}
+          {/* Live Run Statistics Bar */}
           {(() => {
             const parsedActivityStart = party?.currentActivity?.startedAt ? Date.parse(party.currentActivity.startedAt) : NaN;
             const trueStartMs = Number.isFinite(parsedActivityStart) && parsedActivityStart > 0 ? parsedActivityStart : runStats.startedAt;
@@ -1780,7 +1725,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
 
           {/* Live Multi-vs-Multi Battle Log */}
           <div className="battle-log-center">
-            <h4>战斗记录</h4>
+            <h4>战斗记录 <small>过程为演出，奖励以每波结算为准</small></h4>
             <div className="log-content">
               {battleLog.map((log, index) => {
                 const isWaveClear = log.includes("清剿完成") || log.includes("首领击破");
@@ -1801,6 +1746,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
       ) : (
         <PartyLobbyView
           bossDungeons={bossDungeons}
+          combatLevel={playerState?.combatLevel || 1}
           actStage={actStage}
           setActStage={setActStage}
           busy={busy}
@@ -1829,7 +1775,7 @@ export function PartyPanel({ initialStageId, onConsumeInitialStage, onCombatStat
               }
               await apiClient.joinParty(p.id);
               await apiClient.setPartyReady(p.id, true).catch(() => undefined);
-              await apiClient.startPartyActivity(p.id, "raid", stg, 30).catch(() => undefined);
+              await apiClient.startPartyActivity(p.id, "raid", stg, 30);
             })
           }
           onCopyPartyId={(partyId) => {

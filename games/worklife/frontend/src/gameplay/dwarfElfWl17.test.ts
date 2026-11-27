@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -49,7 +50,7 @@ const frontendSrcRoot = path.resolve(here, "..");
 const T = Date.parse("2026-11-18T02:00:00.000Z");
 
 describe("WL-17 frontend art contract, merged entry (no new header pill), zero-SVG/Emoji guard and Dwarf Mine / Elf Waystation helpers", () => {
-  it("registers the 6 WL-17 512x512 RGBA .webp icons in the T1 contract, keeps a dated wl cache version and only uses real ore / item / expedition art", () => {
+  it("registers the 6 WL-17 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract, keeps a dated wl cache version and only uses real ore / item / expedition art", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL17_DWARF_ELF_ART_IDS], ["dwarf_mine", "mine_cart", "ore_vein", "elf_waystation", "elf_favor", "forest_commission"]);
     for (const id of WL17_DWARF_ELF_ART_IDS) {
@@ -62,8 +63,8 @@ describe("WL-17 frontend art contract, merged entry (no new header pill), zero-S
       assert.equal(existsSync(webp), true, `Missing .webp asset on disk: ${webp}`);
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
-      assert.equal(size?.width, 512);
-      assert.equal(size?.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(withAssetCacheVersion("/assets/dwarf_mine.webp"), `/assets/dwarf_mine.webp?v=${T1_ASSET_CACHE_VERSION}`);
     const items = packJson.items as Array<{ id: string }>;
@@ -103,7 +104,7 @@ describe("WL-17 frontend art contract, merged entry (no new header pill), zero-S
     assert.equal(ngiSrc.includes("{progPanel === 'mine' && ("), true);
     assert.equal(ngiSrc.includes('initialTab="mine"'), true);
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     const tavern = advSrc.slice(advSrc.indexOf("export function BardTavernChroniclePanel"), advSrc.indexOf("浮空飞艇商路 & 圣骑士团荣誉试炼 (WL-16)"));
     for (const id of ["tavern-tab-tavern", "tavern-tab-chronicle", "tavern-tab-airship", "tavern-tab-trial", "tavern-tab-mine", "tavern-tab-waystation"]) {
       assert.equal(tavern.includes(`data-testid="${id}"`), true, `${id} tab`);

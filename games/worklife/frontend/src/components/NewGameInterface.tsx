@@ -7,6 +7,7 @@ import { GameChatPanel } from './GameChatPanel'
 import { SkillSidebar } from './SkillSidebar'
 import { MobileNavBar } from './MobileNavBar'
 import { navIdForAction, visibleSkillNav, recommendedSkillNavIds, tabForNavId, SKILL_NAV } from '../gameplay/skillNav'
+import { isBlockedName } from '../gameplay/nameFilter'
 import { SkillActionList } from './SkillActionList'
 import { CraftRecipeList, stripCraftVerb, type CraftRecipeView } from './CraftRecipeList'
 import { skillActionRows, type SkillActionRow } from '../gameplay/skillActions'
@@ -28,11 +29,13 @@ import { NextGoalBar } from './NextGoalBar'
 import { ActionQueueBar } from './ActionQueueBar'
 import { CharacterSheet } from './CharacterSheet'
 import { encounterStages } from '../gameplay/encounters'
+import { effectiveTier, tierMonster } from '../gameplay/zoneTiers'
 import { nextChapterGoal, chapter1Complete } from '../gameplay/chapter1'
 import { CHAPTER1_MONSTERS } from '../gameplay/ia'
 import { COMBAT_SKILL_KEYS, abilitySlotCount, activeSetBonuses, combatSheetFromPack, equippedWeaponAtk, mainCombatSkill } from '../gameplay/combatSheet'
 import { enhancementStatMultiplier, toolEffectLine } from '../gameplay/enhancement'
 import { previewAbilities } from '../gameplay/fightPreview'
+import { secondaryLine } from '../gameplay/combatSecondary'
 import { describeTrigger } from './AbilityBar'
 import { InventoryPage } from './InventoryPage'
 import { TasksPage } from './TasksPage'
@@ -109,17 +112,29 @@ export default function NewGameInterface() {
       if (s?.avatar) setCustomPlayerAvatar(s.avatar)
     }).catch(() => undefined)
   }, [])
-  // 玩家展示名：优先自定义角色名（存档里的 settings.playerName），其次注册账号名，最后按用户 id 派生
+  // 玩家展示名：优先自定义角色名（存档里的 settings.playerName），其次注册账号名（只有自己看得到），最后按用户 id 派生
   const fallbackName = user?.username || (user?.id ? `玩家_${String(user.id).slice(0, 6)}` : '玩家')
-  const playerName = customPlayerName || (playerState?.settings as any)?.playerName || fallbackName
+  // 玩家自己起过的名字；账号名只在自己界面上垫底显示，绝不预填进会公开的输入框
+  const chosenName: string = customPlayerName || playerState?.settings?.playerName || ''
+  const playerName = chosenName || fallbackName
   const rawGender = customPlayerGender || (playerState?.settings as any)?.playerGender || playerState?.settings?.gender || 'male'
   const playerGender: 'male' | 'female' | 'animal' = rawGender === 'female' ? 'female' : (rawGender === 'animal' || rawGender === 'secret') ? 'animal' : 'male'
   const playerAvatar = customPlayerAvatar || (playerState?.settings as any)?.avatarId || playerState?.settings?.avatar
   const renamePlayer = useCallback(async (name: string) => {
     const trimmed = name.trim().slice(0, 16)
-    await apiClient.updateSettings({ playerName: trimmed || null })
+    if (trimmed && isBlockedName(trimmed)) {
+      toast.error('这个名字不能用，换一个')
+      return
+    }
+    try {
+      await apiClient.updateSettings({ playerName: trimmed || null })
+    } catch (e) {
+      const code = (e as { code?: string })?.code
+      toast.error(code === 'invalid_request' ? '这个名字不能用，换一个' : (e as Error)?.message || '没改成，请重试')
+      return
+    }
     setCustomPlayerName(trimmed || null)
-  }, [])
+  }, [toast])
   const changePlayerAvatar = useCallback(async (avatar: string) => {
     setCustomPlayerAvatar(avatar)
     await apiClient.updateSettings({ avatar }).catch(() => undefined)
@@ -214,9 +229,14 @@ export default function NewGameInterface() {
   const [contentPackLoading, setContentPackLoading] = useState(true)
   const adventureStages = useMemo(() => encounterStages(contentPack), [contentPack])
   const isChapter1Done = Boolean(playerState && chapter1Complete(playerState))
+  const selectedStage = adventureStages.find((stage) => stage.id === selectedMap)
+  // 这个区域选的难度：没开放的档位退回已开放的最高档（与服务端同一条规则）
+  const selectedTier = selectedStage
+    ? effectiveTier(playerState?.stats, { id: selectedStage.id, monsters: selectedStage.encounters.map((e) => e.id) }, playerState?.zoneTiers?.[selectedStage.id])
+    : 0
   const selectedEncounters = useMemo(() => {
-    const all = adventureStages.find((stage) => stage.id === selectedMap)?.encounters ?? []
-    // Chapter 1 keeps the four tutorial cards; afterwards the whole zone is listed (MWI) with
+    const all = (selectedStage?.encounters ?? []).map((encounter) => tierMonster(encounter, selectedTier))
+    // Chapter 1 keeps the four tutorial cards; afterwards the whole zone is listed with
     // the real difficulty forecast on each card, so the harder forest monsters become the
     // post-chapter content until the mine opens.
     if (playerState && !isChapter1Done) {
@@ -224,7 +244,7 @@ export default function NewGameInterface() {
     }
     const bossLast = (a: { isBoss?: boolean }, b: { isBoss?: boolean }) => Number(!!a.isBoss) - Number(!!b.isBoss)
     return [...all].sort(bossLast)
-  }, [adventureStages, selectedMap, isChapter1Done, Boolean(playerState)])
+  }, [selectedStage, selectedTier, isChapter1Done, Boolean(playerState)])
   
   // 道具列表状态 - 用于交易所
   const [allItems, setAllItems] = useState<any>(null)
@@ -233,7 +253,7 @@ export default function NewGameInterface() {
   // 聊天相关状态 —— 接入 WebSocket 实时通信
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
   const [chatInput, setChatInput] = useState('')
-  const [chatChannel, setChatChannel] = useState<'world' | 'profession' | 'party' | 'private'>('world')
+  const [chatChannel, setChatChannel] = useState<'world' | 'profession' | 'party' | 'circle' | 'private'>('world')
   // 私聊目标：点消息里的玩家名设置；未选择时私聊频道不可发送
   const [privateTarget, setPrivateTarget] = useState<{ id: string; name: string } | null>(null)
   // 窄屏（≤768px）下聊天默认收起，避免底部抽屉遮挡主内容
@@ -249,11 +269,36 @@ export default function NewGameInterface() {
     world: 0,
     profession: 0,
     party: 0,
+    circle: 0,
     private: 0
   })
   const [wsStatus, setWsStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected')
   const chatChannelRef = useRef(chatChannel)
   chatChannelRef.current = chatChannel
+  // 聊天屏蔽名单：存服务端、随账号走；屏蔽后他的公聊、私聊、组队邀请都收不到，对方不知道
+  const [chatBlocks, setChatBlocks] = useState<Array<{ userId: string; name: string }>>([])
+  useEffect(() => {
+    if (!apiClient.getToken()) return
+    void apiClient.getChatBlocks().then((r) => setChatBlocks(r.blocked || [])).catch(() => {})
+  }, [user])
+  const setChatBlock = async (target: { id: string; name: string }, blocked: boolean) => {
+    try {
+      const r = await apiClient.setChatBlock(target.id, blocked)
+      setChatBlocks(r.blocked || [])
+      if (blocked) setPrivateTarget((prev) => (prev?.id === target.id ? null : prev))
+      toast.success(blocked ? `已屏蔽 ${target.name}` : `已解除屏蔽 ${target.name}`)
+    } catch (e) {
+      toast.error((e as Error)?.message || '没成功，请重试')
+    }
+  }
+  const reportChat = async (target: { id: string; name: string }, reason: string, channel: string) => {
+    try {
+      await apiClient.reportChat(target.id, reason, channel)
+      toast.success('举报已收到')
+    } catch (e) {
+      toast.error((e as Error)?.message || '没成功，请重试')
+    }
+  }
 
   // WebSocket 连接管理
   useEffect(() => {
@@ -318,6 +363,21 @@ export default function NewGameInterface() {
           break
         case 'party:party_disbanded':
           toast.info('队伍已解散')
+          break
+        case 'circle:invite':
+          toast.info('收到同好会邀请')
+          break
+        case 'circle:apply':
+          toast.info('有人申请加入同好会')
+          break
+        case 'circle:kicked':
+          toast.info('你已被移出同好会')
+          break
+        case 'circle:leader':
+          toast.success('你成了同好会会长')
+          break
+        case 'circle:disbanded':
+          toast.info('同好会已解散')
           break
         case 'enhancement:service_request':
           toast.info(`收到强化委托${item ? `：${item}` : ''}`)
@@ -446,7 +506,7 @@ export default function NewGameInterface() {
   }
   
   // 切换频道时清除未读计数
-  const switchChannel = (channel: 'world' | 'profession' | 'party' | 'private') => {
+  const switchChannel = (channel: 'world' | 'profession' | 'party' | 'circle' | 'private') => {
     setChatChannel(channel)
     setUnreadCounts(prev => ({ ...prev, [channel]: 0 }))
   }
@@ -626,7 +686,7 @@ export default function NewGameInterface() {
       // 查找物品信息
       const itemInfo = contentPack.items.find((item: any) => item.id === outputItem)
       if (!itemInfo) return
-      // MWI: every recipe is listed from minute one; rows above the skill level render locked with
+      // Every recipe is listed from minute one; rows above the skill level render locked with
       // "再升 N 级解锁", and the chapter-1 goal bar does the guiding.
       
       // 转换为前端格式
@@ -648,6 +708,10 @@ export default function NewGameInterface() {
         mag: itemInfo.mag,
         def: itemInfo.def,
         hp: itemInfo.hp,
+        accuracy: itemInfo.accuracy,
+        evasion: itemInfo.evasion,
+        physResist: itemInfo.physResist,
+        elemResist: itemInfo.elemResist,
         toolFor: itemInfo.toolFor,
         toolSpeed: itemInfo.toolSpeed,
         enhanceSuccess: itemInfo.enhanceSuccess,
@@ -751,7 +815,8 @@ export default function NewGameInterface() {
     const isNewFight = Boolean(prev && ((hp.startedAt && prev.startedAt && hp.startedAt !== prev.startedAt) || (prev.outcome && !hp.outcome)))
     const showFullSpawnFirst = isNewFight && !hp.outcome && hp.enemyHp < hp.enemyMaxHp
     const allEncounters = adventureStages.flatMap((s) => s.encounters)
-    const matchedEncounter = selectedEncounters.find((e) => e.id === hp.monsterId) || allEncounters.find((e) => e.id === hp.monsterId)
+    const baseEncounter = allEncounters.find((e) => e.id === hp.monsterId)
+    const matchedEncounter = baseEncounter ? tierMonster(baseEncounter, hp.tier) : undefined
     const baseState = {
       isActive: !hp.outcome,
       monster: {
@@ -816,7 +881,7 @@ export default function NewGameInterface() {
     return () => window.clearInterval(id)
   }, [battleState?.isActive, playerState?.hpCombat?.outcome, playerState?.hpCombat?.nextFightAt])
 
-  // MWI timed enhancing: attempts land on the server every interval; poll so the page keeps up.
+  // Timed enhancing: attempts land on the server every interval; poll so the page keeps up.
   useEffect(() => {
     if (!(playerState?.mode === 'enhancing' && playerState.enhanceRun && !playerState.enhanceRun.outcome)) return
     const id = window.setInterval(() => {
@@ -1230,7 +1295,7 @@ export default function NewGameInterface() {
     void refreshPlayerState();
   };
 
-  // ---- 采集页（内容包驱动，银河奶牛式动作列表）----
+  // ---- 采集页（内容包驱动的动作列表）----
   const openGatherRow = (row: SkillActionRow) => {
     if ( Boolean(playerState?.activePartyActivity || partyCombatInfo?.active || battleState?.isActive || (playerState?.hpCombat && (!playerState.hpCombat.outcome || playerState.hpCombat.nextFightAt))) ) {
       toast.info("当前正在战斗中，无法进行生产与生活技能（请先在顶部停止战斗）");
@@ -1487,7 +1552,7 @@ export default function NewGameInterface() {
     return () => { cancelled = true; };
   }, [previewActionId, playerState?.skills, playerState?.equipment]);
 
-  // ---- 行动队列（银河奶牛式，受传承星盘「行囊统筹」动态扩充）----
+  // ---- 行动队列（受传承星盘「行囊统筹」动态扩充）----
   const ACTION_QUEUE_MAX =
     5 + Math.min(3, Math.max(0, Math.floor(Number((playerState as any)?.prestige?.astrolabe?.astro_queue_cap || 0))));
   const [gatherQuantity, setGatherQuantity] = useState<number | null>(null); // null = 无限
@@ -1833,16 +1898,16 @@ export default function NewGameInterface() {
     const item = contentPack?.items?.find((i: any) => i.id === rare || i.name === rare)
     return item ? { id: item.id, name: item.name || rare } : null
   }
-  // 左栏（银河奶牛式技能列表）：17 行从第一分钟起全部可见，第一章相关的四行只打"推荐"标签
+  // 左栏（技能列表）：17 行从第一分钟起全部可见，第一章相关的四行只打"推荐"标签
   const sidebarItems = visibleSkillNav(chapterDone)
   const sidebarRecommended = recommendedSkillNavIds(chapterDone)
-  // MWI total level: every skill row's level added up (professions + enhancing + seven combat skills)
+  // Total level: every skill row's level added up (professions + enhancing + seven combat skills)
   const totalLevel =
     Object.values(playerState.skills || {}).reduce((sum: number, s: any) => sum + Number(s?.level || 1), 0) +
     (playerState.combatSkills
       ? Object.values(playerState.combatSkills).reduce<number>((sum: number, s: any) => sum + Number(s?.level || 1), 0)
       : (playerState.combatLevel || 1) * 7)
-  // MWI attention badges: claimable tasks (+1 when the gift is ready)
+  // Attention badges: claimable tasks (+1 when the gift is ready)
   const navBadges: Record<string, number | undefined> = {
     tasks: (playerState.taskSummary?.ready || 0) + (playerState.taskSummary?.giftReady ? 1 : 0) || undefined,
   }
@@ -2094,6 +2159,9 @@ export default function NewGameInterface() {
           showEmojiPicker={showEmojiPicker}
           onToggleEmoji={() => setShowEmojiPicker(!showEmojiPicker)}
           onInsertEmoji={insertEmoji}
+          blocked={chatBlocks}
+          onBlock={setChatBlock}
+          onReport={reportChat}
         />
 
         
@@ -2146,6 +2214,7 @@ export default function NewGameInterface() {
             totalLevel={totalLevel}
             combatLevel={playerState.combatLevel || 1}
             sheet={combatSheet}
+            rareFind={playerState.combatGains ? { solo: playerState.combatGains.rareSolo, party: playerState.combatGains.rareParty } : undefined}
             activeClassId={currentProfession}
             activeClassName={getCurrentProfession().name}
             playerGender={playerGender}
@@ -2191,6 +2260,7 @@ export default function NewGameInterface() {
                 durationMs: def?.durationMs,
                 breaksGuard: def?.breaksGuard,
                 levelStep: def?.levelStep,
+                multiEffect: [def?.damageMult, def?.healPct, def?.guardMult, def?.mpRestore, def?.auraAtkPct].filter(Boolean).length > 1,
                 triggerText: slot ? describeTrigger(slot.trigger) : undefined,
               }
             })}
@@ -2225,7 +2295,7 @@ export default function NewGameInterface() {
                 available: !itemId && getEquippableItems(s.id).length > 0,
                 effect: tool
                   ? toolEffectLine(def, professionLabel(def?.toolFor), enh)
-                  : def ? [def.atk ? `攻击 +${effective(def.atk)}` : '', def.mag ? `魔力伤害 +${effective(def.mag)}` : '', def.def ? `防御 +${effective(def.def)}` : '', def.hp ? `生命 +${effective(def.hp)}` : ''].filter(Boolean).join(' · ') : '',
+                  : def ? [def.atk ? `攻击 +${effective(def.atk)}` : '', def.mag ? `魔力伤害 +${effective(def.mag)}` : '', def.def ? `防御 +${effective(def.def)}` : '', def.hp ? `生命 +${effective(def.hp)}` : '', secondaryLine(def, mult)].filter(Boolean).join(' · ') : '',
                 hint: tool ? '斧头、锤子等工具：加快对应技能，不参与战斗' : undefined,
               }
             })}
@@ -2275,7 +2345,7 @@ export default function NewGameInterface() {
           />
         )}
 
-        {/* 背包页（银河奶牛式分组物品格） */}
+        {/* 背包页（分组物品格） */}
         {activeTab === 'inventory' && (
           <InventoryPage
             rows={Object.entries(playerState.inventory)
@@ -2293,7 +2363,7 @@ export default function NewGameInterface() {
           />
         )}
 
-        {/* 任务板（银河奶牛式：按冷却发放的技能任务 + 代币商店） */}
+        {/* 任务板（按冷却发放的技能任务 + 代币商店） */}
         {activeTab === 'tasks' && (
           <TasksPage
             actions={contentPack?.actions}
@@ -2304,7 +2374,7 @@ export default function NewGameInterface() {
           />
         )}
 
-        {/* 房屋（银河奶牛式：每技能一间房，材料沉没换永久加成） */}
+        {/* 房屋（每技能一间房，材料沉没换永久加成） */}
         {activeTab === 'houses' && (
           <HousesPage
             iconOf={getItemIcon}
@@ -2422,6 +2492,7 @@ export default function NewGameInterface() {
         expanded={isRightPanelExpanded}
         onToggle={() => setIsRightPanelExpanded(!isRightPanelExpanded)}
         playerName={playerName}
+        renameDraft={chosenName}
         playerAvatar={playerAvatar}
         playerGender={playerGender}
         equippedGuildFrame={resolveEquippedGuildFrame(playerState.guildHonor)?.id || null}
@@ -2709,7 +2780,7 @@ export default function NewGameInterface() {
       {playerState && !playerState.settings?.characterCreated && (
         <CharacterCreate
           classes={Object.values(professions).map((p) => ({ id: p.id, name: p.name, icon: p.icon, gatherName: p.gatherName, craftName: p.craftName }))}
-          currentName={playerName}
+          currentName={chosenName}
           currentClassId={playerState.activeClassId || 'woodcutter'}
           onDone={(res) => {
             if (res?.name) setCustomPlayerName(res.name);

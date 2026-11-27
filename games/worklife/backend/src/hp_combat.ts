@@ -1,5 +1,5 @@
 import type { AllChapterBuildId, BossMechanicDef, EnhancedContentPack, EnhancedPlayerState, HpCombatState } from "./types";
-import { appendLog, applyDurabilityWear, getBuffEffects, getRareFindMultiplier, isDurabilityBroken } from "./storage";
+import { appendLog, applyDurabilityWear, getBuffEffects, getRareFindMultiplier, getSoloRareFindMultiplier, isDurabilityBroken } from "./storage";
 import { hitDamage, monsterCombatant, playerCombatant } from "./first_hour_combat";
 import { syncAchievements } from "./progression";
 import {
@@ -25,7 +25,13 @@ import { e2eFastCombatInterval, e2eFastHeavyChopCdMs } from "./e2e_fast";
 import { consumeItem } from "./systems";
 import { COMBAT_SKILL_NAMES, grantCombatXp } from "./combat_skills";
 import { HOUSE_XP_PER_LEVEL, houseLevelForSkill } from "./houses";
-import { isMonsterInOpenZone } from "./zones";
+import { enrageDamageMult, enrageStacksAt } from "./growth_curves";
+import { missBp, swingMeter } from "./combat_secondary";
+import { isMonsterInOpenZone, stageForMonster } from "./zones";
+import { ZONE_TIER_RULES, clampTier, effectiveTier, tierMonster, tierRespawnMs } from "./zone_tiers";
+import { essenceBaseChance, zoneEssenceId } from "./zone_essence";
+import { dungeonAfterFight, dungeonNextFight, isDungeonActive } from "./dungeon";
+import { DUNGEON_RULES } from "./dungeon_rules";
 import {
   advancePhases,
   chargeTelegraph,
@@ -55,13 +61,13 @@ import {
 
 export const HEAVY_CHOP_COOLDOWN_MS = 8000;
 export const HEAVY_CHOP_MULT = 2.2;
-/** MWI food cooldown: one bite per slot per 30s. */
+/** Food cooldown: one bite per slot per 10 base swings (10 × 3s). */
 export const FOOD_COOLDOWN_MS = 30_000;
-/** MWI mana potion cooldown: 20s per MP slot. */
+/** Mana potion cooldown: 20s per MP slot. */
 export const MP_POTION_COOLDOWN_MS = 20_000;
 /** Pause between auto-repeated fights so the victory panel is readable. */
 export const AUTO_REPEAT_INTERMISSION_MS = 3000;
-/** MWI: a defeat costs a respawn timer, then the run continues automatically. */
+/** A defeat costs a respawn timer, then the run continues automatically (longer on higher zone tiers). */
 export const RESPAWN_MS = 30_000;
 /**
  * Death-spiral guard: auto-repeat against a monster that keeps winning just burns gear durability
@@ -69,11 +75,12 @@ export const RESPAWN_MS = 30_000;
  * After this many defeats in a row the run switches itself off and says why.
  */
 export const AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS = 3;
-/** Base slots; pouch accessories add more (MWI: 1 base, up to 3). */
+/** Base slots; pouch accessories add more (food: 1 → at most 3, drinks: 3 → at most 4). */
 export const BASE_FOOD_SLOTS = 1;
-export const BASE_DRINK_SLOTS = 1;
+export const BASE_DRINK_SLOTS = 3;
 export const MAX_SLOTS_CAP = 3;
-/** Out of combat, the persistent HP pool refills 0→max over this span (MWI passive regen). */
+export const MAX_DRINK_SLOTS = 4;
+/** Out of combat, the persistent HP pool refills 0→max over this span. */
 export const COMBAT_HP_FULL_REGEN_MS = 60_000;
 
 /**
@@ -129,13 +136,9 @@ export function combatSlotCounts(player: EnhancedPlayerState, pack: EnhancedCont
     food += Number(def.foodSlots || 0);
     drink += Number(def.drinkSlots || 0);
   }
-  return { food: Math.min(MAX_SLOTS_CAP, food), drink: Math.min(MAX_SLOTS_CAP, drink) };
+  return { food: Math.min(MAX_SLOTS_CAP, food), drink: Math.min(MAX_DRINK_SLOTS, drink) };
 }
-/** MWI enrage: every 3 minutes a fight lasts, the monster gains +10% damage (max 10 stacks); bosses 10 min. */
-export const ENRAGE_INTERVAL_MS = 3 * 60_000;
-export const BOSS_ENRAGE_INTERVAL_MS = 10 * 60_000;
-export const ENRAGE_STEP = 0.1;
-export const ENRAGE_MAX_STACKS = 10;
+// Enrage (a penalty for fights that drag on) lives in growth_curves.ENRAGE, shared with the frontend preview.
 // Guard / wrath thresholds, multipliers and log lines live in the pack's `bossMechanics` table
 // (see boss_mechanics.ts) so the frontend preview reads the very same numbers.
 
@@ -224,6 +227,7 @@ export function playerBuildExtras(
   let thornsDefRatio = 0;
   let intervalMult = 1;
   let goldMult = 1;
+  // 稀有发现（词缀、圣物、天空锻炉等）都在 rare_find.ts 里算；这里只有流派自己的掉落倍率
   let dropMult = 1;
   let potionBuffMult = 1;
   let mpRestoreMult = 1;
@@ -269,9 +273,6 @@ export function playerBuildExtras(
   if (affix.goldGainPct > 0) {
     goldMult = Math.round(goldMult * (1 + affix.goldGainPct / 100) * 1000) / 1000;
   }
-  if (affix.rareFindPct > 0) {
-    dropMult = Math.round(dropMult * (1 + affix.rareFindPct / 100) * 1000) / 1000;
-  }
   if (hw.armorPenPct > 0) {
     armorPenPct = Math.min(0.75, Math.round((armorPenPct + hw.armorPenPct) * 1000) / 1000);
   }
@@ -311,15 +312,9 @@ export function playerBuildExtras(
   if (relics.goldGainPct > 0) {
     goldMult = Math.round(goldMult * (1 + relics.goldGainPct / 100) * 1000) / 1000;
   }
-  if (relics.rareFindPct > 0) {
-    dropMult = Math.round(dropMult * (1 + relics.rareFindPct / 100) * 1000) / 1000;
-  }
   // WL-10：契约代价可令天空锻炉金币净值为负（如新月疾猎契），因此按 !== 0 接入
   if (forge.goldGainPct !== 0) {
     goldMult = Math.round(goldMult * (1 + forge.goldGainPct / 100) * 1000) / 1000;
-  }
-  if (forge.rareFindPct > 0) {
-    dropMult = Math.round(dropMult * (1 + forge.rareFindPct / 100) * 1000) / 1000;
   }
   // WL-11 海港水族馆：收藏进度 + 主展缸共鸣的金币收益同样作用于战斗金币
   if (harbor.goldGainPct > 0) {
@@ -394,6 +389,20 @@ function monsterById(pack: EnhancedContentPack, id: string) {
   return m;
 }
 
+/** 这一场的怪物：按开打时的档位（普通档就是内容包里的原样）。 */
+function fightMonster(pack: EnhancedContentPack, enc: HpCombatState) {
+  return tierMonster(monsterById(pack, enc.monsterId), enc.tier);
+}
+
+/** 这只怪会用哪一档：所在区域选的档位；没选、没开放、不属于任何区域（竞技场等）都是普通。 */
+export function tierForMonster(player: EnhancedPlayerState, pack: EnhancedContentPack, monsterId: string): number {
+  const selected = player.zoneTiers;
+  if (!selected) return 0;
+  const zone = stageForMonster(pack, monsterId);
+  if (!zone?.monsters || !selected[zone.id]) return 0;
+  return effectiveTier(player.stats, { id: zone.id, monsters: zone.monsters }, selected[zone.id]);
+}
+
 /** Build extras + active buff stats (狂战药剂 atk etc.) capped at +40% of unbuffed stats so low-level players don't one-shot monsters. */
 function playerExtras(player: EnhancedPlayerState, now: Date, pack?: EnhancedContentPack) {
   const build = playerBuildExtras(player);
@@ -417,17 +426,25 @@ function playerExtras(player: EnhancedPlayerState, now: Date, pack?: EnhancedCon
     relicCritAmpPct: build.relicCritAmpPct,
     thornsDefRatio: build.thornsDefRatio,
     intervalMult: build.intervalMult,
+    combatSpeedPoints: buffs.combatSpeedPoints,
+    secondary: buffs.secondary,
   };
 }
 
+/** The player exactly as a fight would roll them right now (gear, skills, builds, active buffs). */
+export function currentCombatant(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date) {
+  return playerCombatant(player, pack, playerExtras(player, now, pack));
+}
+
 /**
- * Drink slot: re-apply the drink whenever its buff is not active (MWI drinks tick down and get
+ * Drink slot: re-apply the drink whenever its buff is not active (drinks tick down and get
  * re-drunk automatically). Pure MP potions placed in a drink slot trigger when missing MP reaches threshold.
  */
 function maybeDrink(player: EnhancedPlayerState, pack: EnhancedContentPack, enc: HpCombatState, now: Date) {
   const slots = player.combatLoadout?.drink || [];
+  if (!slots.length) return;
   const atMs = now.getTime();
-  slots.slice(0, MAX_SLOTS_CAP).forEach((slot, i) => {
+  slots.slice(0, combatSlotCounts(player, pack).drink).forEach((slot, i) => {
     if (!slot?.itemId) return;
     if ((player.inventory[slot.itemId] || 0) < 1) return;
     const def = (pack.items as any[]).find((x) => x.id === slot.itemId);
@@ -505,6 +522,13 @@ function maybeDrinkMp(player: EnhancedPlayerState, pack: EnhancedContentPack, en
   });
 }
 
+/** 受伤倍率：坚守类技能与盛宴护盾各有各的时间窗，同时在就取更强的那个，过期的不算。 */
+function guardWindowMult(enc: HpCombatState, atMs: number): number {
+  const brace = (enc.braceUntil || 0) > atMs ? enc.braceMult ?? ABILITY_BY_ID.brace?.guardMult ?? 1 : 1;
+  const feast = (enc.feastUntil || 0) > atMs ? BUILD_FEAST_VITALITY.foodGuardMult : 1;
+  return Math.min(brace, feast);
+}
+
 /** Food slot: eat when missing HP reaches the trigger and the slot cooldown is over. */
 function maybeEat(player: EnhancedPlayerState, pack: EnhancedContentPack, enc: HpCombatState, atMs: number, mechDefs: BossMechanicDef[] = []) {
   const slots = player.combatLoadout?.food || [];
@@ -523,14 +547,14 @@ function maybeEat(player: EnhancedPlayerState, pack: EnhancedContentPack, enc: H
     if (!res.ok) return;
     const beforeHp = enc.playerHp;
     const baseHeal = res.healed?.hp ?? heal;
-    const actualHeal = hasFeast ? Math.round(baseHeal * BUILD_FEAST_VITALITY.foodHealMult) : baseHeal;
+    // 盛宴流派、传世工坊（符文、图鉴）的料理恢复都算
+    const actualHeal = Math.round(baseHeal * playerBuildExtras(player).foodHealMult);
     enc.playerHp = Math.min(enc.playerMaxHp, enc.playerHp + actualHeal);
     if (Number(def?.effect?.mp) > 0) {
       enc.playerMp = Math.min(enc.playerMaxMp || 0, (enc.playerMp || 0) + (res.healed?.mp ?? Number(def.effect.mp)));
     }
     if (hasFeast) {
-      enc.braceUntil = Math.max(enc.braceUntil || 0, atMs + BUILD_FEAST_VITALITY.foodGuardMs);
-      enc.braceMult = Math.min(enc.braceMult ?? 1, BUILD_FEAST_VITALITY.foodGuardMult);
+      enc.feastUntil = atMs + BUILD_FEAST_VITALITY.foodGuardMs;
     }
     enc.foodReadyAt![i] = atMs + FOOD_COOLDOWN_MS;
     recordConsumed(enc, slot.itemId, res.itemName);
@@ -597,7 +621,7 @@ export function startHpCombat(
   pack: EnhancedContentPack,
   monsterId: string,
   now: Date,
-  opts: { streak?: number; deaths?: number; lossStreak?: number; runStats?: HpCombatState["runStats"] } = {}
+  opts: { streak?: number; deaths?: number; lossStreak?: number; runStats?: HpCombatState["runStats"]; tier?: number } = {}
 ): HpCombatState {
   const m = monsterById(pack, monsterId);
   // 区域门：前端按 zoneDoors 只列已开放关卡，后端独立复核防止 API 直调进未发布区域
@@ -609,14 +633,16 @@ export function startHpCombat(
       .find((a) => a.id === `act_combat_${monsterId}`)?.requirements?.skillLevel || 1
   );
   if (reqLevel > 1 && (player.combatLevel || 1) < reqLevel) throw new Error(`skill_level_required:${reqLevel}`);
-  const enemy = monsterCombatant(m);
+  // 地下城自带档位（开地下城时选的），其余按区域当前选的档位。
+  const tier = opts.tier !== undefined ? clampTier(opts.tier) : tierForMonster(player, pack, monsterId);
+  const enemy = monsterCombatant(tierMonster(m, tier));
   ensureAbilities(player);
   // Drink before rolling max HP / atk so the buff counts from the first swing.
   const pre: HpCombatState = { monsterId, monsterName: enemy.name, playerHp: 0, playerMaxHp: 0, enemyHp: 0, enemyMaxHp: 0, playerIntervalMs: 0, enemyIntervalMs: 0, enemyBaseIntervalMs: 0, playerCooldownMs: 0, enemyCooldownMs: 0, heavyChopReadyAt: 0, guardActive: false, wrathActive: false, log: [] };
   maybeDrink(player, pack, pre, now);
   const extras = playerExtras(player, now, pack);
   const pc = playerCombatant(player, pack, extras);
-  // MWI persistent HP: carry the pool (plus out-of-combat regen) into the new fight.
+  // Persistent HP: carry the pool (plus out-of-combat regen) into the new fight.
   // The enemy always enters at full HP — only the player's side remembers damage.
   const carriedHp = Math.max(1, currentCombatHp(player, pc.hp, now.getTime()));
   persistCombatHp(player, carriedHp, now.getTime());
@@ -646,6 +672,7 @@ export function startHpCombat(
     lossStreak: opts.lossStreak || 0,
     startedAt: now.getTime(),
     enrageStacks: 0,
+    ...(tier > 0 ? { tier } : {}),
     runStats: opts.runStats || { startedAt: now.getTime(), kills: 0, xp: 0, gold: 0, loot: {} },
   };
   return state;
@@ -723,7 +750,7 @@ function castAbility(
   if (def.guardMult && def.durationMs) {
     enc.braceUntil = atMs + Math.round(def.durationMs * mult);
     enc.braceMult = def.guardMult;
-    pushLog(enc, `${def.name}！${Math.round(def.durationMs / 1000)} 秒内受伤 -${Math.round((1 - def.guardMult) * 100)}%${xpSuffix}`);
+    pushLog(enc, `${def.name}！${Math.round((def.durationMs * mult) / 100) / 10} 秒内受伤 -${Math.round((1 - def.guardMult) * 100)}%${xpSuffix}`);
   }
   if (def.mpRestore) {
     const gain = Math.max(1, Math.round(def.mpRestore * mult));
@@ -744,12 +771,12 @@ function slotCanFire(
   if (abilityReadyAt(enc, def.id) > atMs) return undefined;
   if (def.mpCost > (enc.playerMp || 0)) return undefined;
   if (def.healPct && !def.damageMult && !def.guardMult && enc.playerHp >= enc.playerMaxHp) return undefined;
-  if (def.guardMult && !def.damageMult && !def.healPct && (enc.braceUntil || 0) > atMs) return undefined;
+  if (def.guardMult && !def.damageMult && !def.healPct && guardWindowMult(enc, atMs) < 1) return undefined;
   if (!triggerSatisfied(slot.trigger, enc)) return undefined;
   return def;
 }
 
-/** MWI: equipped abilities fire left to right whenever ready and their trigger holds. */
+/** Equipped abilities fire left to right whenever ready and their trigger holds. */
 function autoCast(player: EnhancedPlayerState, pack: EnhancedContentPack, enc: HpCombatState, atMs: number, monster: Record<string, unknown>) {
   for (const slot of activeAbilitySlots(player)) {
     if (enc.enemyHp <= 0 || enc.playerHp <= 0) return;
@@ -771,12 +798,10 @@ function nextAbilityWake(player: EnhancedPlayerState, enc: HpCombatState, atMs: 
 /** Enrage stacks the fight should have at `atMs`; logs the moment a new stack lands. */
 function updateEnrage(enc: HpCombatState, monster: Record<string, unknown>, atMs: number) {
   const isBoss = Boolean(monster.isBoss) || String(monster.id || "").endsWith("_boss");
-  const interval = isBoss ? BOSS_ENRAGE_INTERVAL_MS : ENRAGE_INTERVAL_MS;
-  const elapsed = Math.max(0, atMs - (enc.startedAt ?? atMs));
-  const stacks = Math.min(ENRAGE_MAX_STACKS, Math.floor(elapsed / interval));
+  const stacks = enrageStacksAt(atMs - (enc.startedAt ?? atMs), isBoss);
   if (stacks > (enc.enrageStacks || 0)) {
     enc.enrageStacks = stacks;
-    pushLog(enc, `${enc.monsterName} 狂暴了！伤害 +${stacks * 10}%（战斗拖得越久越危险）`);
+    pushLog(enc, `${enc.monsterName} 狂暴了！伤害 +${Math.round((enrageDamageMult(stacks) - 1) * 100)}%（战斗拖得越久越危险）`);
   }
 }
 
@@ -840,6 +865,54 @@ function wearCombatGear(player: EnhancedPlayerState, extra: number) {
   }
 }
 
+/** 单人战斗金币的个人倍率（增益、声望、转生、流派与各建筑；樵夫在森林另有加成）。 */
+function soloGoldMult(player: EnhancedPlayerState, combatNow: Date, monsterId?: string): number {
+  const isForestMonster = monsterId !== undefined && ["slime", "caterpillar", "monkey", "mushroom", "bee", "crab", "forest_boss"].includes(monsterId);
+  return (
+    (player.activeClassId === "woodcutter" && player.settings?.characterCreated && isForestMonster ? 1.15 : 1) *
+    (getBuffEffects(player, combatNow).goldGain || 1) *
+    getReputationBonuses(player, combatNow).goldGain *
+    getPrestigeMultiplier(player) *
+    playerBuildExtras(player).goldMult
+  );
+}
+
+/** 单人战斗经验的个人倍率：训练场、增益、声望、转生、星盘与各建筑。 */
+function soloXpMult(player: EnhancedPlayerState, combatNow: Date): number {
+  const astro = getAstrolabeBonuses(player);
+  return (
+    (1 + houseLevelForSkill(player, "skill_combat") * HOUSE_XP_PER_LEVEL * astro.houseBonusMult) *
+    (getBuffEffects(player, combatNow).xpGain || 1) *
+    getReputationBonuses(player, combatNow).xpGain *
+    getPrestigeMultiplier(player) *
+    astro.combatXpMult *
+    (1 + getHeritageWorkshopBonuses(player).xpGainPct / 100) *
+    (1 + getAstralRelicsBonuses(player).xpGainPct / 100) *
+    (1 + getSkyForgeBonuses(player).xpGainPct / 100)
+  );
+}
+
+/** 给界面的个人倍率：预览每小时收益、角色面板的稀有掉落（单人 / 组队）都用它，与结算同一套来源。 */
+export function combatGains(player: EnhancedPlayerState, pack: EnhancedContentPack, now: Date) {
+  const round = (n: number) => Math.round(n * 10_000) / 10_000;
+  return {
+    xp: round(soloXpMult(player, now)),
+    gold: round(soloGoldMult(player, now)),
+    rareSolo: round(getSoloRareFindMultiplier(player, pack, now) * playerBuildExtras(player).dropMult),
+    rareParty: round(getRareFindMultiplier(player, pack, now)),
+  };
+}
+
+/** 困难、噩梦的击杀另计一份（每个区域 [困难, 噩梦]），用来开放更高档。 */
+function countTierKill(player: EnhancedPlayerState, pack: EnhancedContentPack, enc: HpCombatState) {
+  const zone = enc.tier ? stageForMonster(pack, enc.monsterId) : undefined;
+  if (!zone || !enc.tier || !player.stats) return;
+  const all = (player.stats.zoneTierKills = { ...player.stats.zoneTierKills });
+  const row = [0, 0].map((_, i) => Number(all[zone.id]?.[i] || 0));
+  row[enc.tier - 1] += 1;
+  all[zone.id] = row;
+}
+
 function grantWin(
   player: EnhancedPlayerState,
   pack: EnhancedContentPack,
@@ -849,16 +922,14 @@ function grantWin(
   if (enc.rewardsGranted) return;
   enc.rewardsGranted = true;
   wearCombatGear(player, 0);
-  const m = monsterById(pack, enc.monsterId);
+  const m = fightMonster(pack, enc);
   const combatNow = new Date(enc.startedAt || Date.now());
   const buffEff = getBuffEffects(player, combatNow);
   const repBuffs = getReputationBonuses(player, combatNow);
   const prestigeMul = getPrestigeMultiplier(player);
   const buildAll = playerBuildExtras(player);
-  const isForestMonster = ["slime", "caterpillar", "monkey", "mushroom", "bee", "crab", "forest_boss"].includes(enc.monsterId);
-  const goldMul = (player.activeClassId === "woodcutter" && player.settings?.characterCreated && isForestMonster ? 1.15 : 1) * (buffEff.goldGain || 1) * repBuffs.goldGain * prestigeMul * buildAll.goldMult;
-  const gold = Math.round(Number(m.gold || 0) * goldMul);
-  // MWI house: 训练场 adds +1% combat XP per level (amplified by astro_house_keep & astro_battle_vigor).
+  const gold = Math.round(Number(m.gold || 0) * soloGoldMult(player, combatNow, enc.monsterId));
+  // House: 训练场 adds +1% combat XP per level (amplified by astro_house_keep & astro_battle_vigor).
   const astro = getAstrolabeBonuses(player);
   const hw = getHeritageWorkshopBonuses(player);
   const relics = getAstralRelicsBonuses(player);
@@ -868,14 +939,14 @@ function grantWin(
   player.inventory.gold = (player.inventory.gold || 0) + gold;
   const rare = rareDropFor(pack, m);
   enc.drops = [];
-  const rareFind = getRareFindMultiplier(player, pack) * buildAll.dropMult;
+  const rareFind = getSoloRareFindMultiplier(player, pack, combatNow) * buildAll.dropMult;
   const rareChance = rare ? Math.min(1, rare.chance * rareFind) : 0;
   if (rare && rng() < rareChance) {
     player.inventory[rare.itemId] = (player.inventory[rare.itemId] || 0) + 1;
     recordCodexItemUnlock(player, rare.itemId);
     enc.drops.push({ itemId: rare.itemId, name: rare.name, qty: 1 });
   }
-  // MWI-style drop table (ability books, essences …): each entry rolls independently, rare-find applies.
+  // Drop table (ability books, essences …): each entry rolls independently, rare-find applies.
   for (const d of dropTableFor(pack, m)) {
     if (rng() < Math.min(1, d.chance * rareFind)) {
       player.inventory[d.itemId] = (player.inventory[d.itemId] || 0) + d.qty;
@@ -883,9 +954,23 @@ function grantWin(
       enc.drops.push({ itemId: d.itemId, name: d.name, qty: d.qty });
     }
   }
-  // MWI 30 / 70 split across the combat skills; 战斗等级 is derived from them.
+  // 区域精华（zone_essence.ts）：最后掷，前面各项掉落的顺序与概率不变。档位掉率、稀有发现照乘。
+  const essenceId = zoneEssenceId(stageForMonster(pack, enc.monsterId)?.id);
+  const essence = essenceId ? (pack.items as Array<{ id: string; name?: string }>).find((i) => i.id === essenceId) : undefined;
+  if (essence) {
+    const isBoss = Boolean(m.isBoss) || String(enc.monsterId).endsWith("_boss");
+    const chance = Math.min(1, essenceBaseChance(isBoss) * (1 + ZONE_TIER_RULES.drop[clampTier(enc.tier)]) * rareFind);
+    if (rng() < chance) {
+      player.inventory[essence.id] = (player.inventory[essence.id] || 0) + 1;
+      recordCodexItemUnlock(player, essence.id);
+      enc.drops.push({ itemId: essence.id, name: essence.name || essence.id, qty: 1 });
+    }
+  }
+  // Shared out across the combat skills (growth_curves.COMBAT_XP_PARTS); 战斗等级 is derived from them.
   const grant = grantCombatXp(player, xp, pack);
   enc.xpGained = { ...grant.gained };
+  enc.xpTotal = xp;
+  enc.goldGained = gold;
   player.combatXp = (player.combatXp || 0) + xp;
   for (const up of grant.levelUps) pushLog(enc, `${COMBAT_SKILL_NAMES[up.skill]}升到 ${up.level} 级！`);
   const stats = player.stats;
@@ -895,6 +980,7 @@ function grantWin(
     stats.totalGoldEarned += gold;
     stats.totalXpEarned += xp;
     stats.killsByMonster[enc.monsterId] = (stats.killsByMonster[enc.monsterId] || 0) + 1;
+    countTierKill(player, pack, enc);
     if (Boolean(m.isBoss) || String(enc.monsterId).endsWith("_boss")) stats.totalBossKills += 1;
   }
   if (Boolean(m.isBoss) || String(enc.monsterId).endsWith("_boss")) {
@@ -906,7 +992,7 @@ function grantWin(
   const dropText = enc.drops.length ? `，掉落 ${enc.drops.map((d) => `${d.name} ×${d.qty}`).join("、")}` : "";
   appendLog(player, `击败 ${enc.monsterName}，获得 ${xp} 战斗经验、${gold} 金币${dropText}`);
   if (dropText) pushLog(enc, `掉落：${enc.drops.map((d) => `${d.name} ×${d.qty}`).join("、")}`);
-  // Run tally (MWI battle statistics): survives the auto-repeat hand-off in tickHpCombat.
+  // Run tally (battle statistics): survives the auto-repeat hand-off in tickHpCombat.
   if (!enc.runStats) enc.runStats = { startedAt: enc.startedAt || Date.now(), kills: 0, xp: 0, gold: 0, loot: {} };
   enc.runStats.kills += 1;
   enc.runStats.xp = Math.round((enc.runStats.xp + xp) * 10) / 10;
@@ -933,7 +1019,9 @@ export function tickHpCombat(
     if (enc.outcome) {
       // Auto-repeat: a finished fight restarts against the same monster once the intermission
       // (win) or the respawn timer (loss) has passed.
-      const canRepeat = Boolean(player.combatLoadout?.autoRepeat && enc.nextFightAt && now.getTime() >= enc.nextFightAt);
+      // 地下城不看「连续战斗」开关：下一波由 dungeon.ts 定（败了、全通了就不再有 nextFightAt）。
+      const dungeon = dungeonNextFight(player);
+      const canRepeat = Boolean((player.combatLoadout?.autoRepeat || dungeon) && enc.nextFightAt && now.getTime() >= enc.nextFightAt);
       if (!canRepeat) return now.getTime();
       const startAt = new Date(enc.nextFightAt!);
       const streak = enc.outcome === "win" ? (enc.streak || 0) + 1 : 0;
@@ -942,13 +1030,21 @@ export function tickHpCombat(
       // spawned encounter at 100% full HP (matching POST /combat/hp/start) before ticking
       // opening auto-cast skills, so the monster always starts at full health in the UI.
       const isLiveSpawn = fights === 0 && elapsedMs <= 5000 && now.getTime() - startAt.getTime() < 2500;
-      player.hpCombat = startHpCombat(player, pack, enc.monsterId, startAt, {
+      player.hpCombat = startHpCombat(player, pack, dungeon?.monsterId ?? enc.monsterId, startAt, {
         streak,
         deaths,
         lossStreak: enc.outcome === "loss" ? enc.lossStreak || 0 : 0,
         runStats: enc.runStats,
+        ...(dungeon ? { tier: dungeon.tier } : {}),
       });
-      pushLog(player.hpCombat, enc.outcome === "win" ? `连续战斗 · 第 ${streak + 1} 场` : `重生完毕，重新挑战 ${enc.monsterName}（本轮已阵亡 ${deaths} 次）`);
+      pushLog(
+        player.hpCombat,
+        dungeon
+          ? `地下城 · 第 ${player.dungeonRun!.cleared + 1}/${player.dungeonRun!.waves.length} 波`
+          : enc.outcome === "win"
+            ? `连续战斗 · 第 ${streak + 1} 场`
+            : `重生完毕，重新挑战 ${enc.monsterName}（本轮已阵亡 ${deaths} 次）`
+      );
       if (isLiveSpawn) {
         return startAt.getTime();
       }
@@ -969,7 +1065,7 @@ function tickOneFight(
   now: Date,
   rng: () => number
 ): number {
-  const monster = monsterById(pack, enc.monsterId);
+  const monster = fightMonster(pack, enc);
   const mechDefs = mechanicDefsFor(pack, monster);
   maybePhases(enc, monster, pack);
 
@@ -988,7 +1084,7 @@ function tickOneFight(
     maybeDrink(player, pack, enc, new Date(simMs));
     maybeEat(player, pack, enc, simMs, mechDefs);
     maybeDrinkMp(player, pack, enc, simMs);
-    // Abilities fire by trigger before the next swing (MWI casts are independent of auto-attack).
+    // Abilities fire by trigger before the next swing (casts are independent of auto-attack).
     autoCast(player, pack, enc, simMs, monster);
     if (enc.enemyHp <= 0) break;
     // Buff stats may have changed after drinking, so rebuild the attacker each step.
@@ -1004,7 +1100,7 @@ function tickOneFight(
     simMs += step;
     enc.playerCooldownMs += step;
     enc.enemyCooldownMs += step;
-    const braceNow = (enc.braceUntil || 0) > simMs ? (enc.braceMult ?? ABILITY_BY_ID.brace?.guardMult ?? 1) : 1;
+    const braceNow = guardWindowMult(enc, simMs);
     // Timed mechanics that change the board (frost armour up/down, eruption warning) land before the swings.
     runMechanicEvents(enc, mechDefs, simMs, "state", braceNow, pushLog);
     const enemyAtk = {
@@ -1014,29 +1110,44 @@ function tickOneFight(
     };
 
     if (enc.playerCooldownMs >= enc.playerIntervalMs) {
-      const dmg = hitDamage(playerAtk, enemyAtk);
-      enc.enemyHp = Math.max(0, enc.enemyHp - dmg);
+      // Only basic attacks can miss; abilities always land.
+      const swing = swingMeter(enc.playerMissMeter, missBp(playerAtk.accuracy, enemyAtk.evasion));
+      enc.playerMissMeter = swing.meter;
       enc.playerCooldownMs = 0;
       enc.playerMp = Math.min(enc.playerMaxMp || 0, (enc.playerMp || 0) + (pc.mpRegenPerTick || 1));
-      pushLog(enc, `普通攻击造成 ${dmg} 伤害`);
+      if (swing.miss) {
+        pushLog(enc, `普通攻击落空`);
+      } else {
+        const dmg = hitDamage(playerAtk, enemyAtk);
+        enc.enemyHp = Math.max(0, enc.enemyHp - dmg);
+        pushLog(enc, `普通攻击造成 ${dmg} 伤害`);
+      }
       maybePhases(enc, monster, pack);
     }
     if (enc.enemyHp <= 0) break;
     if (enc.enemyCooldownMs >= enc.enemyIntervalMs) {
       // Enrage is read at the moment the hit lands, so results do not depend on poll granularity.
       updateEnrage(enc, monster, simMs);
-      const enraged = enemy.outgoingDamageMult * (1 + (enc.enrageStacks || 0) * ENRAGE_STEP);
-      const braced = (enc.braceUntil || 0) > simMs ? (enc.braceMult ?? ABILITY_BY_ID.brace?.guardMult ?? 1) : 1;
+      const enraged = enemy.outgoingDamageMult * enrageDamageMult(enc.enrageStacks || 0);
+      const braced = guardWindowMult(enc, simMs);
       const hitNumber = (enc.bossHits || 0) + 1;
       enc.bossHits = hitNumber;
       const baseHit = hitDamage({ ...enemyAtk, outgoingDamageMult: enraged, incomingDamageMult: 1 }, { ...playerAtk, incomingDamageMult: 1 });
       // A charged attack (e.g. rockfall) hits for a share of max HP and is never weaker than a normal swing.
       const charged = chargedHit(mechDefs, hitNumber, enc.playerMaxHp);
-      const dmg = Math.max(1, Math.floor((charged ? Math.max(baseHit, charged.damage) : baseHit) * braced));
-      enc.playerHp = Math.max(0, enc.playerHp - dmg);
       enc.enemyCooldownMs = 0;
-      pushLog(enc, `${enc.monsterName} 造成 ${dmg} 伤害${braced < 1 ? "（坚守中）" : ""}${charged ? `（${charged.label}）` : ""}`);
-      if (enc.playerHp > 0 && enc.enemyHp > 0 && playerAtk.thornsDefRatio && playerAtk.thornsDefRatio > 0) {
+      // Charged attacks cannot be dodged (and leave the miss meter alone).
+      const swing = charged ? undefined : swingMeter(enc.enemyMissMeter, missBp(enemyAtk.accuracy, playerAtk.evasion));
+      if (swing) enc.enemyMissMeter = swing.meter;
+      const landed = !swing?.miss;
+      if (landed) {
+        const dmg = Math.max(1, Math.floor((charged ? Math.max(baseHit, charged.damage) : baseHit) * braced));
+        enc.playerHp = Math.max(0, enc.playerHp - dmg);
+        pushLog(enc, `${enc.monsterName} 造成 ${dmg} 伤害${braced < 1 ? "（坚守中）" : ""}${charged ? `（${charged.label}）` : ""}`);
+      } else {
+        pushLog(enc, `你闪开了 ${enc.monsterName} 的攻击`);
+      }
+      if (landed && enc.playerHp > 0 && enc.enemyHp > 0 && playerAtk.thornsDefRatio && playerAtk.thornsDefRatio > 0) {
         const thornsDmg = Math.max(1, Math.floor(playerAtk.def * playerAtk.thornsDefRatio));
         enc.enemyHp = Math.max(0, enc.enemyHp - thornsDmg);
         pushLog(enc, `淬火反伤回敬 ${thornsDmg} 伤害`);
@@ -1044,7 +1155,7 @@ function tickOneFight(
       }
       const warning = chargeTelegraph(mechDefs, hitNumber);
       if (warning) pushLog(enc, warning);
-      onBossHit(enc, mechDefs);
+      if (landed) onBossHit(enc, mechDefs);
     }
     // Timed damage (miasma tick, eruption) resolves after the swings of the same instant.
     if (enc.playerHp > 0 && enc.enemyHp > 0) runMechanicEvents(enc, mechDefs, simMs, "damage", braceNow, pushLog);
@@ -1072,18 +1183,21 @@ function tickOneFight(
       enc.nextFightAt = undefined;
       pushLog(enc, `连续阵亡 ${enc.lossStreak} 次，已自动关闭连续战斗以保护装备耐久。检查装备、技能和补给，或换个更弱的对手。`);
       appendLog(player, `在 ${enc.monsterName} 面前连续阵亡 ${enc.lossStreak} 次，连续战斗已自动关闭`);
-    } else if (player.combatLoadout?.autoRepeat) {
-      enc.nextFightAt = simMs + RESPAWN_MS;
-      pushLog(enc, `你被击败了。${Math.round(RESPAWN_MS / 1000)} 秒后重生并继续战斗（连续阵亡 ${AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS} 次会自动停止）。`);
+    } else if (player.combatLoadout?.autoRepeat && !isDungeonActive(player)) {
+      const respawnMs = tierRespawnMs(enc.tier);
+      enc.nextFightAt = simMs + respawnMs;
+      pushLog(enc, `你被击败了。${Math.round(respawnMs / 1000)} 秒后重生并继续战斗（连续阵亡 ${AUTO_REPEAT_MAX_CONSECUTIVE_DEATHS} 次会自动停止）。`);
     } else {
       pushLog(enc, "你被击败了。检查装备与等级后再战。");
     }
   }
+  // 地下城：推进下一波、全通发奖励或战败收尾（自己设 nextFightAt，盖过连续战斗）。
+  if (enc.outcome) dungeonAfterFight(player, pack, enc, simMs, DUNGEON_RULES.waveBreakMs, rng, pushLog);
   return simMs;
 }
 
 /**
- * Manual cast from the client. Any learned ability may be cast by hand (MWI lets you override the
+ * Manual cast from the client. Any learned ability may be cast by hand (the player may override the
  * trigger with a click); cooldown and mana are still the server's call.
  */
 export function tryCastAbility(
@@ -1106,7 +1220,7 @@ export function tryCastAbility(
   if (def.mpCost > (enc.playerMp || 0)) return { ok: false, error: "no_mana" };
   if (def.healPct && !def.damageMult && !def.guardMult && enc.playerHp >= enc.playerMaxHp) return { ok: false, error: "full_hp" };
 
-  const monster = monsterById(pack, enc.monsterId);
+  const monster = fightMonster(pack, enc);
   castAbility(player, pack, enc, def, now.getTime(), monster);
   if (enc.enemyHp <= 0 && enc.playerHp > 0) {
     enc.outcome = "win";
@@ -1149,7 +1263,7 @@ export function setCombatLoadout(
   const counts = combatSlotCounts(player, pack);
   // 超出槽位的输入直接拒绝而不是静默截断——槽位 0 的玩家塞食物曾被"成功"吞掉，看起来像坏了
   if ((input.food?.length || 0) > counts.food) return { ok: false, error: `slot_limit_food:${counts.food}` };
-  if ((input.drink?.length || 0) > MAX_SLOTS_CAP) return { ok: false, error: `slot_limit_drink:${MAX_SLOTS_CAP}` };
+  if ((input.drink?.length || 0) > counts.drink) return { ok: false, error: `slot_limit_drink:${counts.drink}` };
   if ((input.mp?.length || 0) > MAX_SLOTS_CAP) return { ok: false, error: `slot_limit_mp:${MAX_SLOTS_CAP}` };
   const rawFood = input.food !== undefined ? input.food : (player.combatLoadout?.food || []);
   const rawDrink = input.drink !== undefined ? input.drink : (player.combatLoadout?.drink || []);
@@ -1203,7 +1317,7 @@ export function setCombatLoadout(
   // 否则玩家在胜利界面打开开关后仍要手动再点一次怪物——开关看起来像坏的。
   if (player.combatLoadout.autoRepeat && player.hpCombat?.outcome && !player.hpCombat.nextFightAt) {
     const base = (now ?? new Date()).getTime();
-    player.hpCombat.nextFightAt = base + (player.hpCombat.outcome === "loss" ? RESPAWN_MS : AUTO_REPEAT_INTERMISSION_MS);
+    player.hpCombat.nextFightAt = base + (player.hpCombat.outcome === "loss" ? tierRespawnMs(player.hpCombat.tier) : AUTO_REPEAT_INTERMISSION_MS);
     // Re-enabling is an explicit "try again": give back the full defeat allowance.
     player.hpCombat.lossStreak = 0;
   } else if (!player.combatLoadout.autoRepeat && player.hpCombat?.outcome && player.hpCombat.nextFightAt) {
@@ -1250,8 +1364,8 @@ export function chooseBuild(
     appendLog(
       player,
       id === "elixir_frenzy"
-        ? "你觉醒了雪山火山流派「秘药狂热」：攻击 +8，战斗药剂增益放大 50%、回蓝提升 35%。"
-        : "你觉醒了雪山火山流派「盛宴生机」：生命 +55、防御 +8，战斗进食额外回血 35% 并获得活力护盾。"
+        ? "你觉醒了雪山火山流派「秘药狂热」：攻击 +8，战斗药剂攻防增益 ×1.5、魔力槽自动回蓝 +35%。"
+        : "你觉醒了雪山火山流派「盛宴生机」：生命 +55、防御 +8，食物槽进食回血 ×1.35 并获得 4.5 秒减伤护盾。"
     );
     return { ok: true };
   }

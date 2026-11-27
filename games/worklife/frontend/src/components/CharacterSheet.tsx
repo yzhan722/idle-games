@@ -23,12 +23,16 @@ export type CharacterAbilityRow = {
   durationMs?: number;
   breaksGuard?: boolean;
   levelStep?: number;
+  /** 伤害 / 治疗 / 减伤 / 回蓝 / 光环里占了不止一样。 */
+  multiEffect?: boolean;
   triggerText?: string;
 };
 
 function formatAbilityEffect(a: CharacterAbilityRow): string {
   const step = a.levelStep ?? 0.05;
   const mult = 1 + Math.max(0, (a.level || 1) - 1) * step;
+  // 不止一种效果的技能写不进一句话，直接用完整说明
+  if (a.blurb && a.multiEffect) return a.blurb;
   if (typeof a.damageMult === "number") {
     const dmgPct = Math.round(a.damageMult * mult * 100);
     const dmgRatio = Math.round(a.damageMult * mult * 100) / 100;
@@ -42,10 +46,10 @@ function formatAbilityEffect(a: CharacterAbilityRow): string {
     return `立即恢复自身 ${healPct}% 最大生命值（每升 1 级治疗量提升 +${Math.round(step * 100)}%）。`;
   }
   if (typeof a.guardMult === "number") {
-    const baseReduce = 1 - a.guardMult;
-    const reducePct = Math.min(80, Math.round(baseReduce * mult * 1000) / 10);
-    const sec = Math.round((a.durationMs || 6000) / 1000);
-    return `进入坚守姿态，在 ${sec} 秒内受到的所有伤害降低 ${reducePct}%（每升 1 级减伤额外提升 +${Math.round(step * 100)}%）。`;
+    // 单人：升级延长持续时间；组队：升级加强减伤（hp_combat.castAbility / PartyPanel）
+    const reducePct = Math.round((1 - a.guardMult) * 100);
+    const sec = Math.round(((a.durationMs || 6000) * mult) / 100) / 10;
+    return `进入坚守姿态，${sec} 秒内受到的伤害降低 ${reducePct}%（每升 1 级持续时间 +${Math.round(step * 100)}%，组队时改为减伤 +${Math.round(step * 100)}%）。`;
   }
   if (a.blurb) return a.blurb;
   if (a.id === "heavy_chop") {
@@ -72,7 +76,7 @@ type Props = {
   equippedGuildFrame?: string | null;
   onChangeAvatar?: (avatar: string) => void;
   onOpenProfessionModal?: () => void;
-  /** MWI total level: every skill row added up. */
+  /** Total level: every skill row added up. */
   totalLevel: number;
   combatLevel: number;
   sheet: {
@@ -81,20 +85,22 @@ type Props = {
     def: number;
     mp?: number;
     intervalMs?: number;
-    accuracyPct?: number;
-    evasionPct?: number;
-    critRatePct?: number;
-    critDmgPct?: number;
+    accuracy?: number;
+    evasion?: number;
+    physResist?: number;
+    elemResist?: number;
   };
-  /** MWI combat skills, in display order. */
+  /** 稀有掉落的最终倍率（服务端算好的）：单人 / 组队。 */
+  rareFind?: { solo: number; party: number };
+  /** Combat skills, in display order. */
   combatSkills?: CombatSkillRow[];
   /** The damage skill the equipped weapon trains (gets the 主修 tag). */
   mainSkill?: string;
-  /** Skill an equipped charm focuses the 70% share on, if any. */
+  /** Skill an equipped charm focuses the support share on, if any. */
   focusSkill?: string;
   /** Learned abilities with level and effect details, for the sheet's skill summary. */
   abilities?: CharacterAbilityRow[];
-  /** Every equipment slot (MWI paperdoll): main / off hand, head … tool. */
+  /** Every equipment slot (paperdoll): main / off hand, head … tool. */
   slots: EquipSlotView[];
   onOpenSlot: (slotId: string) => void;
   onRepairItem?: (itemId: string) => void;
@@ -276,30 +282,16 @@ export function CharacterSheet(props: Props) {
           displayValue={`${((props.sheet.intervalMs ?? 3000) / 1000).toFixed(2)}s`}
           invertDelta
         />
-        <StatBox
-          icon="stat-atk"
-          label="命中率"
-          value={Math.round((props.sheet.accuracyPct ?? 88) * 10)}
-          displayValue={`${props.sheet.accuracyPct ?? 88}%`}
-        />
-        <StatBox
-          icon="stat-def"
-          label="闪避率"
-          value={Math.round((props.sheet.evasionPct ?? 8) * 10)}
-          displayValue={`${props.sheet.evasionPct ?? 8}%`}
-        />
-        <StatBox
-          icon="stat-atk"
-          label="暴击率"
-          value={Math.round((props.sheet.critRatePct ?? 15) * 10)}
-          displayValue={`${props.sheet.critRatePct ?? 15}%`}
-        />
-        <StatBox
-          icon="stat-spd"
-          label="暴击伤害"
-          value={props.sheet.critDmgPct ?? 165}
-          displayValue={`${props.sheet.critDmgPct ?? 165}%`}
-        />
+        <StatBox icon="stat-atk" label="命中" value={props.sheet.accuracy ?? 0} />
+        <StatBox icon="stat-def" label="闪避" value={props.sheet.evasion ?? 0} />
+        <StatBox icon="stat-def" label="物抗" value={props.sheet.physResist ?? 0} />
+        <StatBox icon="stat-def" label="元抗" value={props.sheet.elemResist ?? 0} />
+        {props.rareFind && (
+          <>
+            <StatBox icon="stat-atk" label="珍稀·单人" value={0} displayValue={`×${props.rareFind.solo.toFixed(2)}`} />
+            <StatBox icon="stat-atk" label="珍稀·组队" value={0} displayValue={`×${props.rareFind.party.toFixed(2)}`} />
+          </>
+        )}
       </div>
       {props.abilities && props.abilities.length > 0 && (
         <div className="sheet-abilities" aria-label="战斗技能">

@@ -24,7 +24,7 @@ function formatEta(totalSec: number): string {
 }
 
 /**
- * MWI-style action queue strip: what runs now, what runs next, in order.
+ * Action queue strip: what runs now, what runs next, in order.
  * Rendered only when something is queued so the chapter-1 shell stays quiet.
  */
 export function ActionQueueBar(props: Props) {

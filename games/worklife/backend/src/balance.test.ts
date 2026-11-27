@@ -11,6 +11,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import enhancedContentPack from "../../shared/enhanced_content_pack_chinese.json";
+import { getXpForLevel } from "./storage";
+import { xpPacePerSecond } from "./growth_curves";
 
 type PackAction = { id: string; skillId?: string; duration?: number; xp?: number; requirements?: { skillLevel?: number }; yields?: { itemId: string }[]; consumes?: { itemId: string }[] };
 type PackSet = { id: string; pieces?: { itemId: string }[] };
@@ -131,29 +133,29 @@ describe("profession balance", () => {
       }
     }
   });
-  it("升级耗时曲线：里程碑小时内且全程近似单调（MWI 500-1000h 挂机曲线参照）", async () => {
-    // 需求曲线与 storage.ts getXpForLevel 保持同步——曲线形状回归而非数值镜像
-    const xpNeed = (level: number): number => {
-      if (level >= 200) return Infinity;
-      const e15 = Math.floor(40 * Math.pow(15, 1.35));
-      if (level <= 15) return Math.floor(40 * Math.pow(level, 1.35));
-      const e30 = Math.floor(e15 + 65 * Math.pow(15, 1.65));
-      if (level <= 30) return Math.floor(e15 + 65 * Math.pow(level - 15, 1.65));
-      const e100 = Math.floor(e30 + 56 * Math.pow(70, 1.96));
-      if (level <= 100) return Math.floor(e30 + 56 * Math.pow(level - 30, 1.96));
-      const d = level - 100;
-      return Math.floor(e100 + 9500 * d + 110 * Math.pow(d, 2.15));
-    };
+  it("升级耗时曲线：里程碑小时内且全程近似单调", async () => {
+    // 直接用线上的需求曲线（growth_curves.ts），不另抄一份公式
+    const xpNeed = getXpForLevel;
     const frontierRate = (level: number) =>
       Math.max(0, ...pack.actions
         .filter((a) => (a.skillId ?? "").startsWith("skill_") && lvlOf(a) <= level && a.xp && a.duration)
         .map((a) => (a.xp ?? 0) / ((a.duration ?? 1) / 1000)));
     const hoursAt = (level: number) => xpNeed(level) / frontierRate(level) / 3600;
-    // 里程碑上限（裸基础速率，算入工具/房屋/效率/药剂后全技能寿命落在 500-1000h 区间）
+    // 里程碑上限（裸基础速率，未算工具/房屋/效率/药剂）
     const budgets: [number, number][] = [[30, 1], [60, 4], [100, 16], [130, 30], [160, 55], [199, 120]];
     for (const [lv, maxH] of budgets) {
       const h = hoursAt(lv);
       assert.ok(h <= maxH, `Lv${lv} 单级耗时 ${h.toFixed(1)}h 超出预算 ${maxH}h（速率追不上需求曲线）`);
+    }
+    // 曲线里假定的标准经验速率要贴着内容包：各技能最高阶动作速率的中位数，上下不超过 35%
+    const skillIds = [...new Set(pack.actions.filter((a) => !a.id.startsWith("act_combat_") && a.skillId).map((a) => a.skillId!))];
+    const bestRate = (skillId: string, level: number) =>
+      Math.max(0, ...pack.actions
+        .filter((a) => a.skillId === skillId && !a.id.startsWith("act_combat_") && lvlOf(a) <= level && a.xp && a.duration)
+        .map((a) => a.xp! / (a.duration! / 1000)));
+    for (const lv of [1, 10, 20, 30, 50, 70, 90, 100, 120, 150]) {
+      const ratio = xpPacePerSecond(lv) / med(skillIds.map((id) => bestRate(id, lv)));
+      assert.ok(ratio >= 0.65 && ratio <= 1.35, `Lv${lv} 标准速率与内容包中位数之比 ${ratio.toFixed(2)}`);
     }
     // 60 级以后耗时必须单调不减（解锁新动作只允许提速 ~25% 以内，不允许回退到更快）
     let prev = 0;

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -59,7 +60,7 @@ describe("WL-8 frontend art contract, navigation IA, zero-SVG/Emoji guard, and C
     assert.ok(endgameGroup);
     assert.equal(endgameGroup.items.includes("cauldron"), true);
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     const acIndex = advSrc.indexOf("export function AlchemyCauldronPanel");
     assert.ok(acIndex > 0, "AlchemyCauldronPanel must be exported in AdvancementPanels.tsx");
     const acSlice = advSrc.slice(acIndex);

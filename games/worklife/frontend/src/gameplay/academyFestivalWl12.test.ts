@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -35,7 +36,7 @@ const t1Root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../as
 const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 describe("WL-12 frontend art contract, navigation IA, zero-SVG/Emoji guard and Academy / Festival helpers", () => {
-  it("registers the 6 WL-12 512x512 RGBA .webp icons in the T1 contract and keeps a dated wl cache version", () => {
+  it("registers the 6 WL-12 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract and keeps a dated wl cache version", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL12_ACADEMY_FESTIVAL_ART_IDS], [
       "academy_crest",
@@ -58,8 +59,8 @@ describe("WL-12 frontend art contract, navigation IA, zero-SVG/Emoji guard and A
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
       assert.ok(size, `Unreadable webp ${webp}`);
-      assert.equal(size!.width, 512);
-      assert.equal(size!.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(
       withAssetCacheVersion("/assets/academy_crest.webp"),
@@ -90,7 +91,7 @@ describe("WL-12 frontend art contract, navigation IA, zero-SVG/Emoji guard and A
     assert.ok(endgame.items.indexOf("academy") > endgame.items.indexOf("harbor"));
     assert.ok(endgame.items.indexOf("academy") < endgame.items.indexOf("prestige"));
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     assert.ok(advSrc.indexOf("export function AcademyFestivalPanel") > 0, "AcademyFestivalPanel must be exported from AdvancementPanels.tsx");
     const slice = advSrc.slice(advSrc.lastIndexOf("冒险者学院进修课程 & 四季节庆活动日历 (WL-12)"));
     assert.equal(/<svg[\s>]/i.test(slice), false, "AcademyFestivalPanel must not contain inline <svg>");

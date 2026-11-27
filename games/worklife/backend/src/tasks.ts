@@ -4,27 +4,47 @@ import { appendLog, ensurePlayerExtensions } from "./storage";
 import { syncAchievements } from "./progression";
 import { todayLocal } from "./time";
 import { isMonsterInOpenZone } from "./zones";
+import { COMBAT_SUPPORT_POOL } from "./growth_curves";
 
 const newTaskId = () => `task_${randomUUID().slice(0, 8)}`;
 
 /**
- * MWI 任务板 (Tasks).
+ * 任务板 (Tasks).
  *
- * A task is handed out every cooldown (8h → 4h with upgrades) into up to 8 slots. Tasks name a
+ * A task is handed out every cooldown (6h → 3h with upgrades) into up to 8 slots. Tasks name a
  * specific action ("砍伐小白杨 ×120") or monster ("击败果冻史莱姆 ×30"), lean toward the player's
  * higher skills, and pay gold + task tokens. Tokens buy cooldown upgrades, block slots for skills
- * the player never wants tasks in, and loot crates; every 50 task points opens a gift.
+ * the player never wants tasks in, and supply crates; every GIFT_POINTS task points open a gift.
+ *
+ * Design targets (docs/design/OWN_CURVES.md): four tasks a day at the start, a board that holds two
+ * days of tasks so a weekend away loses nothing, and one gift for about five days of full boards.
  */
-export const TASK_SLOTS = 8;
-export const BASE_COOLDOWN_MS = 8 * 3600_000;
-export const COOLDOWN_STEP_MS = 30 * 60_000;
-export const MAX_COOLDOWN_LEVEL = 8; // 8h − 8 × 30min = 4h
-export const GIFT_POINTS = 50;
-export const REROLL_BASE_GOLD = 200;
-export const REROLL_MAX_GOLD = 6400;
+export const BASE_COOLDOWN_MS = 6 * 3600_000;
+/** How long an absence the board buffers at the base cooldown. */
+export const TASK_BUFFER_MS = 48 * 3600_000;
+export const TASK_SLOTS = TASK_BUFFER_MS / BASE_COOLDOWN_MS;
+/** Every upgrade shortens the wait by the same proportion; the last one lands on half of the base. */
+export const MAX_COOLDOWN_LEVEL = 8;
+export const FULL_UPGRADE_COOLDOWN_RATIO = 0.5;
+export const GIFT_POINTS = 40;
+/** The n-th reroll of a day costs base × 1, 3, 6, 10 … (triangular numbers), up to the cap. */
+export const REROLL_BASE_GOLD = 120;
+export const REROLL_MAX_GOLD = 6000;
 /** How much play a task should represent: 20–45 minutes of the action. */
 const TARGET_MINUTES_MIN = 20;
 const TARGET_MINUTES_MAX = 45;
+
+/** 补给箱：金币在区间内每个整数一样可能；消耗品抽 CRATE_PICKS 次，每次在 CRATE_CONSUMABLES 里等概率挑一种。 */
+export const CRATE_GOLD_MIN = 800;
+export const CRATE_GOLD_MAX = 1500;
+export const CRATE_PICKS = 3;
+export const CRATE_CONSUMABLES = ["food_simple", "potion_hp_t1", "potion_mp_t1", "drink_basic"];
+/** 行会谢礼里的技能书：三本等概率挑一本。 */
+export const GIFT_BOOKS = ["book_smash", "book_minor_heal", "book_brace"];
+const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
+/** 物品说明里的几率一行，从上面的常量算出来（tasks.test.ts 绑定）。 */
+export const CRATE_ODDS_TEXT = `金币 ${CRATE_GOLD_MIN}–${CRATE_GOLD_MAX} 与 ${CRATE_PICKS} 份消耗品（每份 ${CRATE_CONSUMABLES.length} 种各 ${pct(1 / CRATE_CONSUMABLES.length)}）`;
+export const GIFT_BOOK_ODDS_TEXT = `技能书 ${GIFT_BOOKS.length} 本各 ${pct(1 / GIFT_BOOKS.length)}`;
 
 export type TaskShopItem = {
   id: string;
@@ -37,8 +57,8 @@ export type TaskShopItem = {
 export const TASK_SHOP: TaskShopItem[] = [
   {
     id: "cooldown",
-    name: "任务冷却 −30 分钟",
-    blurb: "下一个任务来得更快（最低 4 小时）",
+    name: "任务冷却缩短",
+    blurb: "下一个任务来得更快（满级 3 小时）",
     cost: (s) => 20 + s.cooldownLevel * 10,
     soldOut: (s) => s.cooldownLevel >= MAX_COOLDOWN_LEVEL,
   },
@@ -51,16 +71,16 @@ export const TASK_SHOP: TaskShopItem[] = [
   },
   {
     id: "crate",
-    name: "大宝箱",
-    blurb: "金币 800–1500 与几份消耗品",
+    name: "补给箱",
+    blurb: CRATE_ODDS_TEXT,
     cost: () => 15,
     soldOut: () => false,
   },
-  // MWI charms: bought once, worn in an accessory slot, they focus the 70% combat-XP share.
+  // Training charms: bought once, worn in an accessory slot, they focus the support share of combat XP.
   ...(["stamina", "intelligence", "attack", "defense"] as const).map((skill) => ({
     id: `charm_${skill}`,
     name: `训练护符·${{ stamina: "耐力", intelligence: "智力", attack: "攻击", defense: "防御" }[skill]}`,
-    blurb: "佩戴在饰品槽：击杀的 70% 经验全给这条技能",
+    blurb: `佩戴在饰品槽：击杀的 ${Math.round(COMBAT_SUPPORT_POOL * 100)}% 经验全给这条技能`,
     cost: () => 25,
     soldOut: () => false,
   })),
@@ -76,12 +96,14 @@ export function ownsShopItem(player: EnhancedPlayerState, itemId: string): boole
 }
 
 export function cooldownMs(state: TaskState): number {
-  return Math.max(4 * 3600_000, BASE_COOLDOWN_MS - state.cooldownLevel * COOLDOWN_STEP_MS);
+  const level = Math.max(0, Math.min(MAX_COOLDOWN_LEVEL, state.cooldownLevel || 0));
+  const ms = BASE_COOLDOWN_MS * Math.pow(FULL_UPGRADE_COOLDOWN_RATIO, level / MAX_COOLDOWN_LEVEL);
+  return Math.round(ms / 60_000) * 60_000;
 }
 
 export function rerollCost(state: TaskState, day: string): number {
   const n = state.rerollDay === day ? state.rerollsToday : 0;
-  return Math.min(REROLL_MAX_GOLD, REROLL_BASE_GOLD * 2 ** n);
+  return Math.min(REROLL_MAX_GOLD, (REROLL_BASE_GOLD * (n + 1) * (n + 2)) / 2);
 }
 
 function dayKey(now: Date): string {
@@ -156,7 +178,7 @@ function eligibleMonsters(pack: EnhancedContentPack, player: EnhancedPlayerState
 }
 
 /**
- * Pick a skill weighted by level (MWI: tasks lean toward the skills you actually play), skipping
+ * Pick a skill weighted by level (tasks lean toward the skills you actually play), skipping
  * blocked skills. Combat counts as a skill with the derived combat level.
  */
 function pickSkill(player: EnhancedPlayerState, blocked: Set<string>, rng: () => number): string | undefined {
@@ -271,7 +293,7 @@ export function ensureTasks(
   let guard = 0;
   while (Date.parse(state.nextTaskAt) <= now.getTime() && guard++ < TASK_SLOTS + 1) {
     if (state.tasks.length >= TASK_SLOTS) {
-      // Full board: the timer waits (MWI does not bank tasks past the slot cap).
+      // Full board: the timer waits (nothing is banked past the slot cap).
       state.nextTaskAt = now.toISOString();
       break;
     }
@@ -361,7 +383,6 @@ export function setTaskBlock(player: EnhancedPlayerState, pack: EnhancedContentP
   return { ok: true as const };
 }
 
-const CRATE_CONSUMABLES = ["food_simple", "potion_hp_t1", "potion_mp_t1", "drink_basic"];
 
 export function buyTaskShop(player: EnhancedPlayerState, pack: EnhancedContentPack, itemId: string, now: Date, rng: () => number = Math.random) {
   const state = ensureTasks(player, pack, now);
@@ -387,18 +408,18 @@ export function buyTaskShop(player: EnhancedPlayerState, pack: EnhancedContentPa
     state.blockSlots += 1;
     appendLog(player, `任务屏蔽槽位 +1（现在 ${state.blockSlots} 个）`);
   } else if (item.id === "crate") {
-    const gold = 800 + Math.floor(rng() * 701);
+    const gold = CRATE_GOLD_MIN + Math.floor(rng() * (CRATE_GOLD_MAX - CRATE_GOLD_MIN + 1));
     player.inventory.gold = (player.inventory.gold || 0) + gold;
     player.stats!.totalGoldEarned += gold;
     gained.gold = gold;
     const items = (pack.items as Array<{ id: string }>).map((i) => i.id);
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < CRATE_PICKS; i++) {
       const pick = CRATE_CONSUMABLES[Math.floor(rng() * CRATE_CONSUMABLES.length)];
       if (!items.includes(pick)) continue;
       player.inventory[pick] = (player.inventory[pick] || 0) + 1;
       gained[pick] = (gained[pick] || 0) + 1;
     }
-    appendLog(player, `打开大宝箱：金币 +${gold}`);
+    appendLog(player, `打开补给箱：金币 +${gold}`);
     syncAchievements(player);
   }
   return { ok: true as const, cost, gained };
@@ -412,11 +433,11 @@ export function claimGift(player: EnhancedPlayerState, pack: EnhancedContentPack
   player.inventory.gold = (player.inventory.gold || 0) + gold;
   player.stats!.totalGoldEarned += gold;
   state.tokens += 5;
-  const books = ["book_smash", "book_minor_heal", "book_brace"].filter((b) => (pack.items as Array<{ id: string }>).some((i) => i.id === b));
+  const books = GIFT_BOOKS.filter((b) => (pack.items as Array<{ id: string }>).some((i) => i.id === b));
   const book = books[Math.floor(rng() * books.length)];
   if (book) player.inventory[book] = (player.inventory[book] || 0) + 1;
   syncAchievements(player);
-  appendLog(player, `打开小紫牛的礼物：金币 +${gold}，任务代币 +5${book ? "，还有一本技能书" : ""}`);
+  appendLog(player, `打开行会谢礼：金币 +${gold}，任务代币 +5${book ? "，还有一本技能书" : ""}`);
   return { ok: true as const, gold, tokens: 5, book };
 }
 
@@ -442,6 +463,7 @@ export function taskBoardView(player: EnhancedPlayerState, pack: EnhancedContent
     tokens: state.tokens,
     points: state.points,
     giftPoints: GIFT_POINTS,
+    giftOdds: `金币 2000、代币 5、${GIFT_BOOK_ODDS_TEXT}`,
     giftReady: Math.floor(state.points / GIFT_POINTS) > state.giftsClaimed,
     giftsClaimed: state.giftsClaimed,
     completed: state.completed,

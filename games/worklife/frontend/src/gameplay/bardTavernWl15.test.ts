@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -40,7 +41,7 @@ const t1Root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../as
 const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 describe("WL-15 frontend art contract, navigation IA, header fit, zero-SVG/Emoji guard and Bard Tavern / Chronicle helpers", () => {
-  it("registers the 6 WL-15 512x512 RGBA .webp icons in the T1 contract and keeps a dated wl cache version", () => {
+  it("registers the 6 WL-15 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract and keeps a dated wl cache version", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL15_TAVERN_CHRONICLE_ART_IDS], [
       "bard_tavern",
@@ -63,8 +64,8 @@ describe("WL-15 frontend art contract, navigation IA, header fit, zero-SVG/Emoji
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
       assert.ok(size, `Unreadable webp ${webp}`);
-      assert.equal(size!.width, 512);
-      assert.equal(size!.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(withAssetCacheVersion("/assets/bard_tavern.webp"), `/assets/bard_tavern.webp?v=${T1_ASSET_CACHE_VERSION}`);
     // visitors render through the real character avatars; every menu item shown has raster item art
@@ -86,7 +87,7 @@ describe("WL-15 frontend art contract, navigation IA, header fit, zero-SVG/Emoji
     assert.ok(endgame.items.indexOf("tavern") > endgame.items.indexOf("ranch"));
     assert.ok(endgame.items.indexOf("tavern") < endgame.items.indexOf("prestige"));
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     assert.ok(advSrc.indexOf("export function BardTavernChroniclePanel") > 0, "BardTavernChroniclePanel must be exported from AdvancementPanels.tsx");
     const slice = advSrc.slice(advSrc.lastIndexOf("吟游诗人酒馆 & 冒险者编年史 (WL-15)"));
     assert.equal(/<svg[\s>]/i.test(slice), false, "panel must not contain inline <svg>");

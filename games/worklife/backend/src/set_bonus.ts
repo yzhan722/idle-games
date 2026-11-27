@@ -1,3 +1,5 @@
+import { attackSpeedPct } from "./combat_secondary";
+
 /**
  * Set bonuses: only the HIGHEST satisfied tier applies.
  *
@@ -20,4 +22,23 @@ export function highestActiveBonus<T extends SetBonusLike>(
     if (!best || need >= (best.requiredPieces || 99)) best = bonus;
   }
   return best;
+}
+
+const SET_STAT_TEXT: ReadonlyArray<readonly [string, string, string]> = [
+  ["atk", "攻击", ""],
+  ["def", "防御", ""],
+  ["gatherSpeed", "采集速度", "%"],
+  ["craftSpeed", "制作速度", "%"],
+  ["xpGain", "生活技能经验", "%"],
+];
+
+/**
+ * 一档套装的说明文字，只写真会结算的：combatSpeed 按 attackSpeedPct 折成真正的攻击速度；goldGain（套装金币）没有任何结算读取，不写。
+ * 内容包里的 description 必须等于它（damage_model.test.ts 守着）。
+ */
+export function setBonusText(bonus: SetBonusLike): string {
+  const parts = SET_STAT_TEXT.filter(([key]) => bonus.stats?.[key]).map(([key, name, unit]) => `${name}+${bonus.stats![key]}${unit}`);
+  const speed = attackSpeedPct(Number(bonus.stats?.combatSpeed || 0));
+  if (speed > 0) parts.push(`攻击速度+${speed}%`);
+  return `${bonus.requiredPieces}件套：${parts.join("，")}`;
 }

@@ -89,8 +89,84 @@ CREATE TABLE IF NOT EXISTS player_command_receipts (
     PRIMARY KEY (user_id, operation_id)
 );
 
+-- 账号注销墓碑：只有随机编号与时间，30 天后清除（见 backend/src/account_deletion.ts）
+CREATE TABLE IF NOT EXISTS account_deletions (
+    user_id UUID PRIMARY KEY,
+    deleted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 真人排行榜（backend/src/leaderboard.ts）：只有起过名字的真人有一行，分数变了才更新
+CREATE TABLE IF NOT EXISTS player_rankings (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    total_level INTEGER NOT NULL,
+    combat_level INTEGER NOT NULL,
+    zone_score INTEGER NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_player_rankings_total ON player_rankings(total_level DESC, user_id);
+CREATE INDEX IF NOT EXISTS idx_player_rankings_combat ON player_rankings(combat_level DESC, user_id);
+CREATE INDEX IF NOT EXISTS idx_player_rankings_zone ON player_rankings(zone_score DESC, user_id);
+
+-- 一次性的数据补录做没做完
+CREATE TABLE IF NOT EXISTS data_backfills (
+    name TEXT PRIMARY KEY,
+    done_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 匿名留存统计（backend/src/retention_metrics.ts）：只有日期、事件名、人数，400 天后清除
+CREATE TABLE IF NOT EXISTS metrics_daily (
+    day DATE NOT NULL,
+    event TEXT NOT NULL,
+    count BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (day, event)
+);
+
+-- 聊天屏蔽名单与举报（backend/src/chat_moderation.ts）：举报 90 天后清除，任一方注销时级联删除
+CREATE TABLE IF NOT EXISTS chat_blocks (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, blocked_user_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_reports (
+    id UUID PRIMARY KEY,
+    reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    snapshot JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_reports_created ON chat_reports(created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_reports_reporter ON chat_reports(reporter_id, created_at);
+
+-- 同好会（backend/src/circle.ts）：成员、申请、邀请在 doc；一人一个会；解散 / 注销级联删除
+CREATE TABLE IF NOT EXISTS circles (
+    id UUID PRIMARY KEY,
+    name TEXT NOT NULL,
+    name_key TEXT NOT NULL,
+    doc JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_circles_name_key ON circles(name_key);
+CREATE INDEX IF NOT EXISTS idx_circles_doc ON circles USING GIN (doc jsonb_path_ops);
+
+CREATE TABLE IF NOT EXISTS circle_members (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    circle_id UUID NOT NULL REFERENCES circles(id) ON DELETE CASCADE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_circle_members_circle ON circle_members(circle_id);
+
 -- 常用查询索引
 CREATE INDEX IF NOT EXISTS idx_trading_orders_item_created ON trading_orders(item_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_trading_orders_user_created ON trading_orders(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_trading_orders_type_item ON trading_orders(type, item_id);
 CREATE INDEX IF NOT EXISTS idx_trade_history_item_date ON trade_history(item_id, completed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trade_history_buyer ON trade_history(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_trade_history_seller ON trade_history(seller_id);

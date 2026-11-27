@@ -8,6 +8,8 @@
  */
 import type { CombatSheet } from "./combatSheet";
 import type { AbilityDef, AbilitySlot, AbilityTrigger } from "../types/game";
+import { enrageDamageMult, enrageStacksAt } from "./growthCurves";
+import { missBp, resistAgainst, resistMult, swingMeter, type DamageType } from "./combatSecondary";
 import {
   chargedHitDamage,
   mechanicEventOffset,
@@ -23,11 +25,7 @@ export const PLAYER_INTERVAL_MS = 3000;
 export const HEAVY_CHOP_MULT = 2.2;
 export const HEAVY_CHOP_COOLDOWN_MS = 8000;
 // Guard / wrath numbers come from the pack's `bossMechanics` table (monster.mechanicDefs), not constants.
-// MWI enrage (mirrors hp_combat): +10% monster damage per 3 min (boss 10 min), max 10 stacks
-const ENRAGE_INTERVAL_MS = 3 * 60_000;
-const BOSS_ENRAGE_INTERVAL_MS = 10 * 60_000;
-const ENRAGE_STEP = 0.1;
-const ENRAGE_MAX_STACKS = 10;
+// Enrage comes from growthCurves.ENRAGE, the same curve hp_combat uses.
 
 export type PreviewMonster = {
   id: string;
@@ -43,6 +41,12 @@ export type PreviewMonster = {
   mechanics?: string[];
   /** `mechanics` resolved against the pack table (see bossMechanics.ts); attached by `encounterStages`. */
   mechanicDefs?: BossMechanicDef[];
+  /** Secondary stats (combatSecondary.ts). Absent = always hits / no resistance. */
+  accuracy?: number;
+  evasion?: number;
+  physResist?: number;
+  elemResist?: number;
+  damageType?: DamageType;
 };
 
 /** One equipped ability as the simulator sees it (definition + the player's level + trigger). */
@@ -134,6 +138,8 @@ export type FightPreview = {
   heavyChops: number;
   /** Casts per ability id. */
   casts: Record<string, number>;
+  /** 这一场吃喝了哪些格（supplies 的下标）、在第几毫秒。 */
+  eaten?: Array<{ index: number; atMs: number }>;
 };
 
 /** Mirror of backend first_hour_combat.mitigatedDamage / hitDamage: atk² / (atk + floor(def/2)) × critAmp. */
@@ -143,13 +149,14 @@ function hit(
   def: number,
   incoming: number,
   armorPenPct = 0,
-  relicCritAmpPct = 0
+  relicCritAmpPct = 0,
+  resist = 0
 ): number {
   const a = atk * outgoing;
   const effDef = armorPenPct > 0 ? Math.floor(def * (1 - armorPenPct)) : def;
   const critAmp = relicCritAmpPct > 0 ? 1 + relicCritAmpPct / 100 : 1;
   const raw = a > 0 ? ((a * a) / (a + Math.max(0, Math.floor(effDef / 2)))) * critAmp : 0;
-  return Math.max(1, Math.floor(raw * incoming));
+  return Math.max(1, Math.floor(raw * incoming * resistMult(resist)));
 }
 
 export function monsterBaseInterval(m: PreviewMonster): number {
@@ -215,13 +222,37 @@ function resolveAbilities(arg: HeavyChopMode | PreviewAbility[] | undefined): Pr
   return [];
 }
 
+/** 战斗中自动吃喝的一格（hp_combat 的 maybeEat / maybeDrinkMp）。stock 会被预览扣掉。 */
+export type PreviewSupply = {
+  kind: "food" | "mp";
+  amount: number;
+  mp?: number;
+  trigger: number;
+  cooldownMs: number;
+  stock: number;
+  /** 吃下去得到的状态（下一场起算，见 farmPreview.ts）。 */
+  buff?: { id: string; durationMs: number; xpGain: number; goldGain: number };
+};
+
+export type FightOptions = {
+  /** 开打时的生命；缺省满血。 */
+  startHp?: number;
+  supplies?: PreviewSupply[];
+  /** 盛宴流派：吃东西后的护盾。 */
+  feast?: { ms: number; mult: number };
+};
+
 export function previewFight(
   sheet: CombatSheet,
   m: PreviewMonster,
   abilitiesOrMode: HeavyChopMode | PreviewAbility[] = "none",
-  maxMs = 10 * 60_000
+  maxMs = 10 * 60_000,
+  opts: FightOptions = {}
 ): FightPreview {
   const abilities = resolveAbilities(abilitiesOrMode);
+  const supplies = opts.supplies ?? [];
+  const supplyReadyAt = supplies.map(() => 0);
+  const eaten: Array<{ index: number; atMs: number }> = [];
   const guardDef = mechanicOfKind(m.mechanicDefs, "guard");
   const wrathDef = mechanicOfKind(m.mechanicDefs, "wrath");
   const guardStart = guardDef ? mechanicParam(guardDef, "startRatio") : 0;
@@ -236,8 +267,7 @@ export function previewFight(
   const enemyOutgoing = Number(m.outgoingDamageMult || 1);
   const baseInterval = monsterBaseInterval(m);
   const isBoss = Boolean(m.isBoss) || String(m.id || "").endsWith("_boss") || String(m.name || "").includes("BOSS");
-  const enrageInterval = isBoss ? BOSS_ENRAGE_INTERVAL_MS : ENRAGE_INTERVAL_MS;
-  const enrageMult = (atMs: number) => 1 + Math.min(ENRAGE_MAX_STACKS, Math.floor(atMs / enrageInterval)) * ENRAGE_STEP;
+  const enrageMult = (atMs: number) => enrageDamageMult(enrageStacksAt(atMs, isBoss));
   const playerInterval = sheet.intervalMs || PLAYER_INTERVAL_MS;
   const maxMp = sheet.mp ?? 20;
   const mpRegen = sheet.mpRegenPerTick ?? 1;
@@ -248,8 +278,14 @@ export function previewFight(
     (sheet.armorPenPct || 0) + (isBossEnemy ? sheet.bossArmorBreakPct || 0 : 0)
   );
   const relicCritAmp = sheet.relicCritAmpPct || 0;
+  const enemyResist = resistAgainst(sheet.damageType, m);
+  const playerResist = resistAgainst(m.damageType, sheet);
+  const playerMiss = missBp(sheet.accuracy, m.evasion);
+  const enemyMiss = missBp(m.accuracy, sheet.evasion);
+  let playerMeter: number | undefined;
+  let enemyMeter: number | undefined;
 
-  let playerHp = sheet.hp;
+  let playerHp = opts.startHp ?? sheet.hp;
   let playerMp = maxMp;
   let enemyHp = m.hp;
   const enemyMax = m.hp;
@@ -261,6 +297,7 @@ export function previewFight(
   let guardUsed = false;
   let wrathActive = false;
   let braceUntil = 0;
+  let feastUntil = 0;
   let bossHits = 0;
   const readyAt: Record<string, number> = {};
   const casts: Record<string, number> = {};
@@ -310,11 +347,35 @@ export function previewFight(
     }
   };
 
+  // Mirror of backend guardWindowMult: 坚守类技能与盛宴护盾取更强的那个。
+  const guardAt = (atMs: number) => Math.min(braceUntil > atMs ? braceMult : 1, opts.feast && feastUntil > atMs ? opts.feast.mult : 1);
+
+  // Mirror of backend maybeEat / maybeDrinkMp.
+  const consume = (atMs: number) => {
+    supplies.forEach((s, i) => {
+      if (s.stock < 1 || supplyReadyAt[i] > atMs) return;
+      if (s.kind === "mp") {
+        if (maxMp <= 0 || maxMp - playerMp < Math.max(1, s.trigger)) return;
+        playerMp = Math.min(maxMp, playerMp + s.amount);
+      } else {
+        if (sheet.hp - playerHp < Math.max(1, s.trigger)) return;
+        const before = playerHp;
+        playerHp = Math.min(sheet.hp, playerHp + s.amount);
+        playerMp = Math.min(maxMp, playerMp + (s.mp || 0));
+        if (opts.feast) feastUntil = atMs + opts.feast.ms;
+        if (playerHp > before) miasmaStacks = 0;
+      }
+      s.stock -= 1;
+      eaten.push({ index: i, atMs });
+      supplyReadyAt[i] = atMs + s.cooldownMs;
+    });
+  };
+
   const canFire = (a: PreviewAbility, atMs: number) => {
     if ((readyAt[a.def.id] || 0) > atMs) return false;
     if (a.def.mpCost > playerMp) return false;
     if (a.def.healPct && !a.def.damageMult && !a.def.guardMult && playerHp >= sheet.hp) return false;
-    if (a.def.guardMult && !a.def.damageMult && !a.def.healPct && braceUntil > atMs) return false;
+    if (a.def.guardMult && !a.def.damageMult && !a.def.healPct && guardAt(atMs) < 1) return false;
     return triggerSatisfied(a.trigger, { playerHp, playerMaxHp: sheet.hp, enemyHp, enemyMaxHp: enemyMax, guardActive });
   };
 
@@ -342,7 +403,7 @@ export function previewFight(
       const incoming = guardBefore ? (a.def.breaksGuard ? 1 : guardIncoming) : enemyIncoming;
       const dmg = Math.max(
         1,
-        Math.floor(hit(sheet.atk, 1, m.def, incoming, effectiveArmorPen, relicCritAmp) * a.def.damageMult * mult)
+        Math.floor(hit(sheet.atk, 1, m.def, incoming, effectiveArmorPen, relicCritAmp, enemyResist) * a.def.damageMult * mult)
       );
       // Mirror of backend castAbility: only the opening cast into a full-HP enemy is floored at 25%
       // (a second damaging slot firing at t=0 hits normally).
@@ -368,6 +429,7 @@ export function previewFight(
   };
 
   while (playerHp > 0 && enemyHp > 0 && t < maxMs) {
+    consume(t);
     for (const a of abilities) {
       if (enemyHp <= 0 || playerHp <= 0) break;
       if (canFire(a, t)) cast(a, t);
@@ -384,26 +446,36 @@ export function previewFight(
     t += step;
     playerCd += step;
     enemyCd += step;
-    const braceNow = braceUntil > t ? braceMult : 1;
+    const braceNow = guardAt(t);
     runEvents("state", braceNow);
     if (playerCd >= playerInterval) {
-      const dmg = hit(sheet.atk, 1, m.def, guardActive ? guardIncoming : enemyIncoming, effectiveArmorPen, relicCritAmp);
-      enemyHp = Math.max(0, enemyHp - dmg);
+      const swing = swingMeter(playerMeter, playerMiss);
+      playerMeter = swing.meter;
+      if (!swing.miss) {
+        const dmg = hit(sheet.atk, 1, m.def, guardActive ? guardIncoming : enemyIncoming, effectiveArmorPen, relicCritAmp, enemyResist);
+        enemyHp = Math.max(0, enemyHp - dmg);
+      }
       playerCd = 0;
       playerMp = Math.min(maxMp, playerMp + mpRegen);
       phases();
     }
     if (enemyHp <= 0) break;
     if (enemyCd >= enemyInterval) {
-      const braced = braceUntil > t ? braceMult : 1;
+      const braced = guardAt(t);
       bossHits += 1;
-      const baseHit = hit(m.atk, enemyOutgoing * enrageMult(t), sheet.def, 1);
+      const baseHit = hit(m.atk, enemyOutgoing * enrageMult(t), sheet.def, 1, 0, 0, playerResist);
       const charged = chargedHitDamage(m.mechanicDefs, bossHits, sheet.hp);
-      const dmg = Math.max(1, Math.floor((charged === undefined ? baseHit : Math.max(baseHit, charged)) * braced));
-      playerHp = Math.max(0, playerHp - dmg);
       enemyCd = 0;
-      if (miasmaDef) miasmaStacks = Math.min(mechanicParam(miasmaDef, "maxStacks"), miasmaStacks + 1);
-      if (playerHp > 0 && enemyHp > 0 && sheet.thornsDefRatio && sheet.thornsDefRatio > 0) {
+      // Charged attacks cannot be dodged (and leave the miss meter alone).
+      const swing = charged === undefined ? swingMeter(enemyMeter, enemyMiss) : undefined;
+      if (swing) enemyMeter = swing.meter;
+      const landed = !swing?.miss;
+      if (landed) {
+        const dmg = Math.max(1, Math.floor((charged === undefined ? baseHit : Math.max(baseHit, charged)) * braced));
+        playerHp = Math.max(0, playerHp - dmg);
+        if (miasmaDef) miasmaStacks = Math.min(mechanicParam(miasmaDef, "maxStacks"), miasmaStacks + 1);
+      }
+      if (landed && playerHp > 0 && enemyHp > 0 && sheet.thornsDefRatio && sheet.thornsDefRatio > 0) {
         const thornsDmg = Math.max(1, Math.floor(sheet.def * sheet.thornsDefRatio));
         enemyHp = Math.max(0, enemyHp - thornsDmg);
         phases();
@@ -419,14 +491,15 @@ export function previewFight(
     playerHpLeft: Math.max(0, playerHp),
     playerHpLeftPct: sheet.hp > 0 ? Math.max(0, playerHp) / sheet.hp : 0,
     enemyHpLeft: Math.max(0, enemyHp),
-    normalHit: hit(sheet.atk, 1, m.def, enemyIncoming, effectiveArmorPen, relicCritAmp),
+    normalHit: hit(sheet.atk, 1, m.def, enemyIncoming, effectiveArmorPen, relicCritAmp, enemyResist),
     heavyHit: Math.max(
       1,
-      Math.floor(hit(sheet.atk, 1, m.def, enemyIncoming, effectiveArmorPen, relicCritAmp) * HEAVY_CHOP_MULT)
+      Math.floor(hit(sheet.atk, 1, m.def, enemyIncoming, effectiveArmorPen, relicCritAmp, enemyResist) * HEAVY_CHOP_MULT)
     ),
-    enemyHit: hit(m.atk, enemyOutgoing, sheet.def, 1),
+    enemyHit: hit(m.atk, enemyOutgoing, sheet.def, 1, 0, 0, playerResist),
     heavyChops,
     casts,
+    ...(supplies.length ? { eaten } : {}),
   };
 }
 

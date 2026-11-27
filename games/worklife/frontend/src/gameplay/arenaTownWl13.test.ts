@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import { readAdvancementPanels } from "./advancementSource";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import packJson from "../../../shared/enhanced_content_pack_chinese.json";
@@ -35,7 +36,7 @@ const t1Root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../as
 const frontendSrcRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 describe("WL-13 frontend art contract, navigation IA, zero-SVG/Emoji guard and Sky Arena / Guild Town helpers", () => {
-  it("registers the 6 WL-13 512x512 RGBA .webp icons in the T1 contract and keeps a dated wl cache version", () => {
+  it("registers the 6 WL-13 square RGBA .webp icons (shipped size, see docs/PERF.md) in the T1 contract and keeps a dated wl cache version", () => {
     assert.match(T1_ASSET_CACHE_VERSION, /^\d{8}wl\d+$/);
     assert.deepEqual([...WL13_ARENA_TOWN_ART_IDS], [
       "sky_arena",
@@ -58,8 +59,8 @@ describe("WL-13 frontend art contract, navigation IA, zero-SVG/Emoji guard and S
       assert.ok(statSync(webp).size > 2048, `Asset ${webp} unexpectedly small`);
       const size = rasterSize(readFileSync(webp), "webp");
       assert.ok(size, `Unreadable webp ${webp}`);
-      assert.equal(size!.width, 512);
-      assert.equal(size!.height, 512);
+      assert.ok(size!.width >= 256 && size!.width <= 512, `${key} ${size!.width}`);
+      assert.equal(size!.height, size!.width);
     }
     assert.equal(withAssetCacheVersion("/assets/sky_arena.webp"), `/assets/sky_arena.webp?v=${T1_ASSET_CACHE_VERSION}`);
     // facilities render through registered art (data-driven icon ids); every real cost / chest item has raster art
@@ -83,7 +84,7 @@ describe("WL-13 frontend art contract, navigation IA, zero-SVG/Emoji guard and S
     assert.ok(endgame.items.indexOf("arena") > endgame.items.indexOf("academy"));
     assert.ok(endgame.items.indexOf("arena") < endgame.items.indexOf("prestige"));
 
-    const advSrc = readFileSync(path.join(frontendSrcRoot, "components/AdvancementPanels.tsx"), "utf8");
+    const advSrc = readAdvancementPanels(frontendSrcRoot);
     assert.ok(advSrc.indexOf("export function SkyArenaTownPanel") > 0, "SkyArenaTownPanel must be exported from AdvancementPanels.tsx");
     const slice = advSrc.slice(advSrc.lastIndexOf("天空竞技场赛季排位 & 公会领地城镇建设 (WL-13)"));
     assert.equal(/<svg[\s>]/i.test(slice), false, "SkyArenaTownPanel must not contain inline <svg>");

@@ -3,9 +3,12 @@ import { z } from "zod";
 import type { Storage } from "../storage";
 import type { EnhancedContentPack, EnhancedPlayerState } from "../types";
 import { operationPayload, PlayerCommandConflict, PlayerCommandRejected } from "../player_commands";
-import { chooseBuild, persistCombatHp, setCombatLoadout, startHpCombat, tryCastAbility } from "../hp_combat";
+import { MAX_DRINK_SLOTS, MAX_SLOTS_CAP, chooseBuild, persistCombatHp, setCombatLoadout, startHpCombat, tryCastAbility } from "../hp_combat";
 import { startNextQueuedAction } from "../storage";
 import { learnFromBook, setAbilityLoadout } from "../abilities";
+import { ZONE_TIER_COUNT, ZONE_TIER_NAMES, zoneTierKillsLeft } from "../zone_tiers";
+import { isStageOpen } from "../zones";
+import { leaveDungeon, markDungeonResultSeen, startDungeon } from "../dungeon";
 
 const revisionSchema = {
   expectedRevision: z.number().int().nonnegative().optional(),
@@ -74,6 +77,8 @@ export async function combatHpRoutes(
                   runStats: state.hpCombat.runStats,
                 }
               : undefined;
+            // 换打别的怪 = 离开地下城（按已过的波数结束）。
+            leaveDungeon(state as EnhancedPlayerState, now);
             state.hpCombat = startHpCombat(state, contentPack, body.monsterId, now, carry);
           } catch (e) {
             throw new PlayerCommandRejected(String((e as Error)?.message || "unknown_monster"));
@@ -228,9 +233,9 @@ export async function combatHpRoutes(
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
     const body = z
       .object({
-        food: z.array(z.object({ itemId: z.string().min(1), triggerMissingHp: z.number().int().positive().optional() })).max(3).optional(),
-        drink: z.array(z.object({ itemId: z.string().min(1), triggerMissingMp: z.number().int().positive().optional() })).max(3).optional(),
-        mp: z.array(z.object({ itemId: z.string().min(1), triggerMissingMp: z.number().int().positive().optional() })).max(3).optional(),
+        food: z.array(z.object({ itemId: z.string().min(1), triggerMissingHp: z.number().int().positive().optional() })).max(MAX_SLOTS_CAP).optional(),
+        drink: z.array(z.object({ itemId: z.string().min(1), triggerMissingMp: z.number().int().positive().optional() })).max(MAX_DRINK_SLOTS).optional(),
+        mp: z.array(z.object({ itemId: z.string().min(1), triggerMissingMp: z.number().int().positive().optional() })).max(MAX_SLOTS_CAP).optional(),
         autoRepeat: z.boolean().optional(),
         ...revisionSchema,
       })
@@ -254,6 +259,103 @@ export async function combatHpRoutes(
     }
   });
 
+  /** 选一个区域的难度档位：下一场开打（含连续战斗的下一场）起算。 */
+  app.post("/combat/hp/zone-tier", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const body = z
+      .object({ zoneId: z.string().min(1).max(64), tier: z.number().int().min(0).max(ZONE_TIER_COUNT - 1), ...revisionSchema })
+      .strict()
+      .parse((req.body ?? {}) as unknown);
+    const zone = (contentPack.stages as Array<{ id: string; monsters?: string[] }>).find((s) => s.id === body.zoneId);
+    if (!zone?.monsters?.length || !isStageOpen(zone.id)) return reply.status(400).send({ error: "stage_locked", message: "该区域尚未开放" });
+    const { id: zoneId, monsters } = zone as { id: string; monsters: string[] };
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const left = zoneTierKillsLeft(state.stats, { id: zoneId, monsters }, body.tier);
+          if (left > 0) throw new PlayerCommandRejected(`tier_locked:${left}`);
+          const { [zoneId]: _old, ...rest } = state.zoneTiers ?? {};
+          state.zoneTiers = body.tier > 0 ? { ...rest, [zoneId]: body.tier } : rest;
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) =>
+        r.status(400).send({
+          error: code.split(":")[0],
+          message: `在这里用「${ZONE_TIER_NAMES[Math.max(0, body.tier - 1)]}」再击败 ${code.split(":")[1]} 只，开放「${ZONE_TIER_NAMES[body.tier]}」`,
+        })
+      );
+    }
+  });
+
+  /** 单人地下城：选一个打通过的区域和已开放的档位，连打几波（dungeon_rules.ts）。离开、换怪都走原来的入口。 */
+  app.post("/combat/dungeon/start", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const body = z
+      .object({ zoneId: z.string().min(1).max(64), tier: z.number().int().min(0).max(ZONE_TIER_COUNT - 1), ...revisionSchema })
+      .strict()
+      .parse((req.body ?? {}) as unknown);
+    const now = new Date();
+    const activeParty = await storage.getPartyForUser({ userId }).catch(() => null);
+    if (activeParty?.currentActivity) {
+      return reply.status(409).send({ error: "already_in_combat", message: "正在组队副本中，先离开队伍" });
+    }
+    const messages: Record<string, string> = {};
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now, expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          const player = state as EnhancedPlayerState;
+          const started = startDungeon(player, contentPack, body.zoneId, body.tier, now);
+          if (!started.ok) {
+            messages[started.error] = started.message;
+            throw new PlayerCommandRejected(started.error);
+          }
+          state.lifeActionState = undefined;
+          state.combatFarmState = undefined;
+          state.hpCombat = startHpCombat(player, contentPack, started.monsterId, now, {
+            tier: started.tier,
+            runStats: { startedAt: now.getTime(), kills: 0, xp: 0, gold: 0, loot: {} },
+          });
+          state.mode = "combat";
+          state.lastSimulatedAt = now.toISOString();
+          return { ok: true as const };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) =>
+        r.status(code === "already_in_combat" || code === "already_enhancing" ? 409 : 400).send({ error: code, message: messages[code] || code })
+      );
+    }
+  });
+
+  /** 地下城结算弹窗看过了：记进存档，刷新、换设备不再弹。startedAt 对不上（已经开了下一趟）就什么也不做。 */
+  app.post("/combat/dungeon/seen", async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req as any).userId as string;
+    if (!userId) return reply.status(401).send({ error: "Unauthorized" });
+    const body = z.object({ startedAt: z.number().int().nonnegative(), ...revisionSchema }).strict().parse((req.body ?? {}) as unknown);
+    try {
+      const outcome = await storage.executePlayerCommand({
+        userId, contentPack, now: new Date(), expectedRevision: body.expectedRevision,
+        operationId: body.operationId, operationPayload: operationPayload(body),
+        apply(state) {
+          return { ok: true as const, changed: markDungeonResultSeen(state as EnhancedPlayerState, body.startedAt) };
+        },
+      });
+      return reply.send(outcome.state);
+    } catch (error) {
+      return commandFail(reply, error, (code, r) => r.status(400).send({ error: code }));
+    }
+  });
+
   app.post("/combat/hp/flee", async (req: FastifyRequest, reply: FastifyReply) => {
     const userId = (req as any).userId as string;
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
@@ -271,6 +373,7 @@ export async function combatHpRoutes(
           if (state.hpCombat && !state.hpCombat.outcome) {
             persistCombatHp(state as EnhancedPlayerState, state.hpCombat.playerHp, now.getTime());
           }
+          leaveDungeon(state as EnhancedPlayerState, now);
           state.hpCombat = undefined;
           if (state.enhanceRun?.outcome) state.enhanceRun = undefined;
           state.mode = "idle";

@@ -1,0 +1,61 @@
+/* 隐私政策 / 用户协议全屏页 */
+.legal-page {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  overflow-y: auto;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  padding: max(16px, env(safe-area-inset-top, 16px)) 16px max(40px, env(safe-area-inset-bottom, 40px));
+}
+.legal-body {
+  max-width: 680px;
+  margin: 0 auto;
+  font-size: 17px;
+  line-height: 1.75;
+}
+.legal-body h1 { font-size: 28px; margin: 16px 0 8px; }
+.legal-body h2 { font-size: 20px; margin: 28px 0 6px; }
+.legal-body p { margin: 0 0 8px; }
+.legal-body a { color: var(--brand-bright, #e8bc72); }
+.legal-draft {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(220, 80, 80, 0.4);
+  background: rgba(220, 80, 80, 0.12);
+  color: #e88484;
+}
+.legal-close {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 16px;
+  cursor: pointer;
+}
+.legal-other { margin-top: 28px; }
+
+/* 登录页勾选 */
+.login-consent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.login-consent input { width: 20px; height: 20px; flex-shrink: 0; }
+.login-consent a { color: var(--brand-bright, #e8bc72); }
+
+/* 设置里的条款入口与注销 */
+.settings-legal { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.settings-legal-links { display: flex; gap: 16px; font-size: 15px; margin-bottom: 12px; }
+.settings-legal-links a { color: var(--brand-bright, #e8bc72); }
+.settings-delete-box { display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: var(--text-secondary); }
+.settings-delete-box strong { color: #e88484; }
+.settings-delete-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.settings-delete-btn { border-color: rgba(220, 80, 80, 0.5); background: rgba(220, 80, 80, 0.16); }

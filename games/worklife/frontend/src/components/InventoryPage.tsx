@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { GoldIcon, T1Art, T1ItemIcon } from "./T1Art";
 import { enhancementStatMultiplier } from "../gameplay/enhancement";
+import { secondaryLine } from "../gameplay/combatSecondary";
+import { essenceUseLine } from "../gameplay/zoneEssence";
 import "./T1UiIcons.css";
 
 export type InventoryRow = {
@@ -23,6 +25,10 @@ type PackItem = {
   mag?: number;
   def?: number;
   hp?: number;
+  accuracy?: number;
+  evasion?: number;
+  physResist?: number;
+  elemResist?: number;
   effect?: { hp?: number; mp?: number; buff?: { name?: string } };
 };
 
@@ -71,6 +77,8 @@ function quickStatLine(pack: PackItem | undefined, enh = 0): string {
   if (pack.mag) parts.push(`魔+${Math.round(pack.mag * mult)}`);
   if (pack.def) parts.push(`防+${Math.round(pack.def * mult)}`);
   if (pack.hp) parts.push(`血+${Math.round(pack.hp * mult)}`);
+  const secondary = secondaryLine(pack, mult);
+  if (parts.length < 2 && secondary) parts.push(secondary);
   if (parts.length) return parts.slice(0, 2).join(" ");
   if (pack.effect?.hp) return `回血 +${pack.effect.hp}`;
   if (pack.effect?.mp) return `回蓝 +${pack.effect.mp}`;
@@ -79,7 +87,7 @@ function quickStatLine(pack: PackItem | undefined, enh = 0): string {
 }
 
 /**
- * MWI-style bag: one page, grouped by what the item is for, every tile shows icon / name / count,
+ * Bag: one page, grouped by what the item is for, every tile shows icon / name / count,
  * the header shows gold and the shop value of everything you carry. Actions live in the item modal.
  */
 export function InventoryPage(props: Props) {
@@ -144,7 +152,7 @@ export function InventoryPage(props: Props) {
       <div className="inventory-page-summary">
         <span className="inv-sum" title="金币"><GoldIcon /> <strong>{formatGold(props.gold)}</strong> 金币</span>
         <span className="inv-sum" title="物品种类"><T1Art kind="ui" id="nav-inventory" fallback="" alt="" /> <strong>{kinds}</strong> 种物品</span>
-        <span className="inv-sum" title="按商店售价估算"><GoldIcon /> 商店估值 <strong>{formatGold(totalValue)}</strong></span>
+        <span className="inv-sum" title="按商店售价估算，卖给商店只收 35%"><GoldIcon /> 商店估值 <strong>{formatGold(totalValue)}</strong></span>
       </div>
       <div className="inventory-page-tools">
         <input
@@ -215,11 +223,11 @@ export function InventoryPage(props: Props) {
                   key={r.itemId}
                   data-tier={r.tier}
                   data-item-id={r.itemId}
-                  title={r.description || r.name}
+                  title={[r.description || r.name, essenceUseLine(r.itemId)].filter(Boolean).join(" · ")}
                   onClick={() => props.onOpen(r)}
                 >
                   <span className="inv-tile-icon">
-                    <T1ItemIcon itemId={r.itemId} fallback={props.iconOf(r.itemId)} alt="" />
+                    <T1ItemIcon itemId={r.itemId} fallback={props.iconOf(r.itemId)} alt="" loading="lazy" />
                   </span>
                   <span className="inv-tile-count">×{r.count}</span>
                   <span className="inv-tile-name">

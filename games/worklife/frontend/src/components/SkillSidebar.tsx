@@ -24,12 +24,12 @@ type Props = {
   runningId?: string;
   skills: Record<string, SkillRowState | undefined>;
   combat: SkillRowState;
-  /** MWI combat skills (stamina / intelligence / attack / defense / melee). */
+  /** Combat skills (stamina / intelligence / attack / defense / melee). */
   combatSkills?: Record<string, SkillRowState | undefined>;
   lockedIds?: Set<string>;
   /** Rows the current chapter goal points at (rendered with a small 推荐 tag, never hidden). */
   recommendedIds?: Set<string>;
-  /** Attention badges by nav id (MWI: claimable tasks, ready gift …). */
+  /** Attention badges by nav id (claimable tasks, ready gift …). */
   badges?: Record<string, number | undefined>;
   onSelect: (id: string) => void;
   onLocked?: (id: string) => void;
@@ -40,7 +40,7 @@ type Props = {
 const GROUP_ORDER: SkillNavGroup[] = ["gathering", "production", "combat", "system"];
 
 /**
- * MWI-style left rail: one row per skill with level + XP bar, grouped, running action highlighted.
+ * Left rail: one row per skill with level + XP bar, grouped, running action highlighted.
  * Replaces the four-button GameActionNav once chapter 1 is complete; before that the same component
  * renders just the four chapter-1 rows so the shell does not change shape mid-tutorial.
  */
@@ -82,7 +82,7 @@ export function SkillSidebar(props: Props) {
                 className={`tab-btn skill-row${active ? " active" : ""}${locked ? " locked" : ""}${running ? " running" : ""}${recommended ? " recommended" : ""}`}
               >
                 <span className="tab-icon" aria-hidden="true">
-                  {item.icon ? <T1Art kind="ui" id={item.icon} fallback={item.emoji} alt="" /> : <span className="skill-emoji">{item.emoji}</span>}
+                  {item.icon ? <T1Art kind="ui" id={item.icon} fallback={item.emoji} alt="" small /> : <span className="skill-emoji">{item.emoji}</span>}
                 </span>
                 <span className="skill-row-main">
                   <span className="skill-row-head">

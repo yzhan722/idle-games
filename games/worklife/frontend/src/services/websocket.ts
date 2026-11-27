@@ -30,6 +30,9 @@ export interface ChatMsg {
   isSelf?: boolean
 }
 
+/** 登录状态被吊销（登出、绑定凭据）时服务端的关闭码，与 backend/src/ws_socket.ts 一致。 */
+const WS_SESSION_REVOKED = 4401
+
 type MsgListener = (msg: ChatMsg) => void
 type StatusListener = (status: 'connecting' | 'connected' | 'disconnected') => void
 type NotifyListener = (msg: NotifyMsg) => void
@@ -206,12 +209,13 @@ class ChatWebSocket {
       }
     }
 
-    socket.onclose = () => {
+    socket.onclose = (event) => {
       // 旧 socket 关闭不得清掉新连接（token 变更换号场景）
       if (this.ws !== socket) return
       this.ws = null
       this.setStatus('disconnected')
-      if (!this.intentionalClose) {
+      // 旧凭证已吊销：等 connect(新凭证)，不拿旧的重连
+      if (!this.intentionalClose && event.code !== WS_SESSION_REVOKED) {
         this.scheduleReconnect()
       }
     }

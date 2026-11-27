@@ -1,5 +1,5 @@
 // 港湾垂钓大赛 & 海港水族馆收藏图鉴 (WL-11) —— 前端镜像。
-// 与 backend/src/progression2.ts 同名表与纯函数逐字对称（scripts/harbor-derby-parity.test.ts 守护），
+// 与 backend/src/progression2/harbor_derby.ts 同名表与纯函数逐字对称（scripts/harbor-derby-parity.test.ts 守护），
 // 供面板预览鱼种池概率、计分、周榜段位结算预览、大师钓竿与水族馆加成，以及 combatSheet 金币倍率使用；
 // 任何数值改动必须两端同步。
 

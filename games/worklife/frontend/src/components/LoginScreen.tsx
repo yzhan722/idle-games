@@ -1,7 +1,19 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { T1Art } from './T1Art'
+import { LEGAL_ACCEPTED_KEY, LEGAL_VERSION, legalAccepted } from '../gameplay/legalDocs'
+import { UiArt } from './UiArt'
+import logoUrl from '../assets/t1/ui/logo.webp'
 import './LoginScreen.css'
+import './LegalPage.css'
+
+/** 本机记住的勾选；浏览器禁用本地存储时当作没勾过。 */
+function readAccepted(): boolean {
+  try {
+    return legalAccepted(localStorage.getItem(LEGAL_ACCEPTED_KEY))
+  } catch {
+    return false
+  }
+}
 
 export default function LoginScreen() {
   const { loginAccount, registerAccount } = useAuth()
@@ -12,6 +24,7 @@ export default function LoginScreen() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [accepted, setAccepted] = useState(readAccepted)
   const typedText = '奇幻放置冒险与生活工坊 RPG'
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -90,6 +103,11 @@ export default function LoginScreen() {
   const handleSubmit = async (overrideMode?: 'login' | 'register') => {
     const activeMode = overrideMode || tab
     const trimmed = username.trim()
+    if (!accepted) {
+      setErrorCode('')
+      setErrorMsg('请先勾选用户协议和隐私政策')
+      return
+    }
     if (!trimmed || !password) {
       setErrorCode('')
       setErrorMsg('请输入账号和密码')
@@ -143,7 +161,7 @@ export default function LoginScreen() {
       <div className="login-card">
         <div className="login-head">
           <div className="login-crest" aria-hidden="true">
-            <T1Art kind="ui" id="logo" alt="" />
+            <UiArt src={logoUrl} assetKey="ui/logo" />
           </div>
           <p className="login-kicker">异世界の</p>
           <h1 className="login-title">打工生活</h1>
@@ -221,6 +239,26 @@ export default function LoginScreen() {
               />
             </div>
           )}
+
+          <label className="login-consent">
+            <input
+              id="legal-consent"
+              type="checkbox"
+              checked={accepted}
+              onChange={(e) => {
+                setAccepted(e.target.checked)
+                try {
+                  if (e.target.checked) localStorage.setItem(LEGAL_ACCEPTED_KEY, LEGAL_VERSION)
+                  else localStorage.removeItem(LEGAL_ACCEPTED_KEY)
+                } catch {
+                  // 存不下就每次都勾
+                }
+              }}
+            />
+            <span>
+              同意 <a href="#terms">用户协议</a> 和 <a href="#privacy">隐私政策</a>
+            </span>
+          </label>
 
           <button
             type="submit"
