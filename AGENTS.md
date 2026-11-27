@@ -4,6 +4,7 @@
 
 ## 定时循环迭代唯一任务源（Mandatory Loop Roadmap）
 
+- **终局目标与防偏离规则**：[`ENDGAME_GOALS.md`](./ENDGAME_GOALS.md)。开题、续写路线图、派任务前先读；所有游戏以商业化为目标（2026-11-25），权利门槛 `COM1` 没过的不收费、不推广。目标只能由用户改。
 - **全仓 8 款项目拓展任务单**：[`EXPANSION_ROADMAP.md`](./EXPANSION_ROADMAP.md)（共 26 个原子拓展里程碑）。
 - 每小时定时循环任务唤醒时，**必须优先读取 `EXPANSION_ROADMAP.md`**，按批次每轮聚焦深耕 **1～2 个未完成（`[ ]`）的拓展子模块**，走完「原地编码 → 构建与自动化测试 → 真机视口截图 + `read_file` 多模态自审 → 勾选 `[x]` → 全量回归找 Bug → `git commit & git push`」完整闭环。
 
