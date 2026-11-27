@@ -29,7 +29,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verify_pc8 as pc8  # noqa: E402
 import verify_pc9 as pc9  # noqa: E402
 import verify_pc10 as pc10  # noqa: E402
+import casefile_checks as cf  # noqa: E402
 import verify_pc11 as pc11  # noqa: E402
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -257,36 +259,7 @@ def check_layout_and_pixel_bounds():
     # 2.2 accordion sub-bar: 14 tabs in 5 groups, each exactly once; EVERY open state <= 702px.
     #     Keeping PC-11's 4 groups would put 6 pills in group 4 -> measured below, it overflows (the reason for a 5th group).
     sb = pc10.measure_salon_subbar()
-    if _later_present():
-        # PC-13+ may append tabs to a group (each PC-12 group keeps its tabs first, in order; widths re-measured)
-        assert [g[0] for g in sb["groups"]] == [g for g, _t in SALON_GROUPS_EXPECTED], sb["groups"]
-        for (gkey, gtabs), g in zip(SALON_GROUPS_EXPECTED, sb["groups"]):
-            assert tuple(g[3])[:len(gtabs)] == gtabs, (gkey, g[3])
-        assert len(sb["keys"]) == len(set(sb["keys"])) and set(SALON_KEYS) <= set(sb["keys"]), sb["keys"]
-    else:
-        assert [(g[0], tuple(g[3])) for g in sb["groups"]] == SALON_GROUPS_EXPECTED, sb["groups"]
-        assert len(sb["keys"]) == len(set(sb["keys"])) == 14
-    assert sb["inner"] == 702
-    for gkey, px in sb["per_group"].items():
-        assert px <= sb["inner"], f"Sub-bar with `{gkey}` open overflows 702px: {px}px"
-    labels = {g[0]: g[1] for g in sb["groups"]}
-    assert labels["closedlib"] == "放学后短案" and labels["keepsake"] == "纪念与寄语", labels
-    assert {g[0]: g[2] for g in sb["groups"]}["keepsake"] == "images/ui/icon_graduation_card.png"
-    for k in SALON_KEYS:
-        assert f'elif cur == "{k}":' in extra_src, f"extras() viewport does not route `{k}`"
-    assert sb["totals"]["atelier"] == 1 and sb["totals"]["wall"] == 12
-    pill_w = lambda t: max(66, _w(f[11], t) + 12)  # noqa: E731
-    grp_w = lambda t: max(66, _w(f[11], t) + 12)  # noqa: E731
-    four_group = 0
-    for okey, olabel, _oi, otabs in sb["groups"][:3]:
-        four_group += 14 + 4 + grp_w(olabel) + 4
-    for t in ("library", "theater", "atelier", "album", "capsule", "wall"):
-        name = sb["pills"][t][0]
-        four_group += 14 + 4 + pill_w(f"{name} {sb['totals'][t]}/{sb['totals'][t]}") + 4
-    four_group -= 4
-    assert four_group > 702, "If 6 pills fit in group 4 the 5th group would be unnecessary"
-    report["SubBarWorst"] = sb["worst"]
-    report["SubBarIf4Groups"] = four_group
+    cf.check_subbar(sb, SALON_KEYS, extra_src, report)  # (PC-G2: the short cases are one 「案卷」 pill)
 
     # 2.3 subtitle & vertical budget unchanged
     sub = re.search(r'use game_menu\(_\("鉴赏"\), subtitle=_\("([^"]+)"\)\)', extra_src).group(1)
@@ -332,14 +305,14 @@ def check_layout_and_pixel_bounds():
         assert chip <= tier_w - 16, f"Tier chip `{t['name']}` overflows: {chip}px"
     report["AtelierTierChip"] = widest_tier
     best_lines = [f"{t['name']}「{t['title']}」 · 最少失误 99 次" for t in tiers]
-    rate_row = 16 + 6 + _w(sf[13], "画框评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
+    rate_row = 16 + 6 + _w(sf[13], "评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
     assert rate_row <= scroll_inner, f"Rating header row overflows: {rate_row}px"
 
     hdr_right = (max(96, 14 + 4 + _w(f[12], "最佳 待结案") + 20) + 6 + max(96, _w(f[12], "结案 99 次") + 20))
     hdr = 36 + 10 + 398 + hdr_right
     assert hdr <= console_inner, f"Atelier header overflows: {hdr}px"
     assert _w(sf[19], "美术室消失的油画") <= 398
-    for s in ("已结案 · 四笔推理全部画完 · 可随时重返北窗画室冲击金画框", "开展前一天，画了三年的压轴油画不见了 · 六处痕迹等你勘查"):
+    for s in ("已结案 · 四笔推理全部画完 · 可随时重返北窗画室冲击金牌", "开展前一天，画了三年的压轴油画不见了 · 六处痕迹等你勘查"):
         assert _w(f[12], s) <= 398, f"Atelier header line wraps ({_w(f[12], s)}px): {s}"
     thumb_w = int(_style_prop(_read("game/extra.rpy"), "mailbox_thumb_frame", "xsize"))
     assert thumb_w + 14 + 492 <= console_inner
@@ -355,7 +328,7 @@ def check_layout_and_pixel_bounds():
     assert arch_solved <= 492 and arch_open <= 492, f"Atelier archive line overflows: {arch_solved}/{arch_open}px"
     report["AtelierTagLine"] = tag_line
     report["AtelierArchive"] = max(arch_solved, arch_open)
-    at_footer = (_w(f[12], "零失误画完四笔推理可获金画框 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
+    at_footer = (_w(f[12], "零失误画完四笔推理可获金牌 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
                  + 8 + max(146, _w(f[15], "重返北窗画室") + 36, _w(f[15], "推开美术室的门") + 36))
     assert at_footer <= console_inner, f"Atelier footer overflows: {at_footer}px"
     report["AtelierFooter"] = at_footer
@@ -372,7 +345,7 @@ def check_layout_and_pixel_bounds():
     assert 3 + round(10 * CJK_LINE) + round(11 * CJK_LINE) <= banner_h - 8, "Banner slot content too tall"
     for k in links:
         assert _wb(f[10], f"{k['step']} · {k['name']}") <= banner_slot - 16 and _w(f[11], k["short"]) <= banner_slot - 16
-    head = 22 + 8 + _wb(f[12], "美术室 · 四笔推理") + 8 + _w(f[11], "已落笔 4/4 · 失误只计入本案画框评级，不影响主线")
+    head = 22 + 8 + _wb(f[12], "美术室 · 四笔推理") + 8 + _w(f[11], "已落笔 4/4 · 失误只计入本案评级，不影响主线")
     assert head <= 728, f"Banner header overflows: {head}px"
     prompts = re.findall(r'show screen atelier_stroke_banner\((\d), "([^"]+)"\)', new_src)
     assert [int(p[0]) for p in prompts] == [0, 1, 2, 3]
@@ -386,11 +359,11 @@ def check_layout_and_pixel_bounds():
     assert title_row <= 608
     assert len(pigments) * 101 <= 608 and "xysize (101, 3)" in new_src
     widest_result = 0
-    for s in ["本局失误 99 次（只计入美术室评级，不影响主线）",
+    for s in ["本局失误 99 次（只计入本案评级，不影响主线）",
               "首次结案 · 四笔推理已写入鉴赏室「美术室油画」分页，寄语墙的前两张寄语卡写好了",
               "重玩挑战 · 刷新个人纪录！这一次落笔比以往任何一次都更稳",
-              "重玩挑战 · 再次挂上金画框，北窗画室名侦探实至名归",
-              "重玩挑战 · 零失误画完四笔推理，就能把金画框挂上北窗",
+              "重玩挑战 · 再次拿下金牌，北窗画室名侦探实至名归",
+              "重玩挑战 · 零失误画完四笔推理，就能拿下金牌",
               env["ATELIER_CASE"]["mo_note_pub"]] + \
              [f"历史最佳：{t['name']}「{t['title']}」 · 最少失误 99 次 · 累计结案 99 次" for t in tiers]:
         widest_result = max(widest_result, _w(f[12], s))
@@ -410,7 +383,7 @@ def check_layout_and_pixel_bounds():
     card_w = int(_style_prop(new_src, "wall_card_button", "xsize"))
     card_h = int(_style_prop(new_src, "wall_card_button", "ysize"))
     card_pad = [int(x) for x in _style_prop(new_src, "wall_card_button", "padding").strip("()").split(",")]
-    assert "grid 4 ((len(WALL_CARDS) + 3) // 4):" in new_src and len(cards) == 12
+    assert "$ _wall_rows = (len(WALL_CARDS) + 3) // 4\n        grid 4 _wall_rows:" in new_src and len(cards) == 12
     assert 4 * card_w + 3 * 10 == 722, "Wall 4-column grid must equal 722px"
     inner_w = card_w - 2 * card_pad[0]
     stack = round(11 * CJK_LINE) + 2 + round(11 * CJK_LINE) + 2 + round(13 * CJK_LINE)
@@ -610,9 +583,9 @@ def check_pc12_runtime():
     for k in links:
         assert pig[k["pigment"]] == k["color"] and re.fullmatch(r"#[0-9a-f]{6}", k["color"]), k["id"]
     assert len({k["color"] for k in links}) == 4, "Each stroke gets its own pigment"
-    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金画框", "银画框", "铜画框"]
+    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金牌", "银牌", "铜牌"]
     older_tiers = {t["name"] for t in env["LIBRARY_RATING_TIERS"]} | {t["name"] for t in env["THEATER_RATING_TIERS"]}
-    assert not older_tiers & {t["name"] for t in tiers}, "Atelier rating must not reuse bookmarks / ticket stubs"
+    assert [t["name"] for t in tiers] == cf.GRADE_NAMES  # (PC-G2: one set of rating names for all eight cases)
     for h in hotspots:
         assert h["scene"] in env["BG_LIGHT"] and len(h["detail"]) >= 70 and h["evidence"] and h["surface"]
         assert env["EVIDENCE_DETAILS"][h["evidence"]] == (h["observer"], h["detail"]), f"{h['id']} flip detail not registered"
@@ -754,14 +727,14 @@ def check_pc12_runtime():
     for g in env["EXTRAS_SALON_GROUPS"]:
         for t in g[3]:
             assert env["salon_group_of"](t) == g[0] and env["salon_open_group"](t) == g[0]
-            if t not in SALON_KEYS:
-                continue  # PC-13+ tab: its counter lives in a later module (pill text verified by that milestone)
+            if t not in SALON_KEYS or t in cf.CASE_TABS:
+                continue  # later milestone's tab, or a short case (PC-G2: no pill of its own, it lives in the case file)
             txt = env["salon_tab_pill_text"](t)
             assert re.fullmatch(r"\S+ \d+/\d+", txt), f"pill text `{txt}`"
     for t, g in (("library", "closedlib"), ("theater", "closedlib"), ("atelier", "closedlib"),
                  ("album", "keepsake"), ("capsule", "keepsake"), ("wall", "keepsake")):
         assert env["salon_open_group"](t) == g
-    assert env["salon_tab_pill_text"]("atelier") == "画室 1/1" and env["salon_tab_pill_text"]("wall") == "寄语 0/12"
+    assert env["salon_tab_pill_text"]("wall") == "寄语 0/12"
     assert env["salon_tab_icon"]("atelier").endswith("icon_art_room.png")
     assert env["salon_tab_icon"]("wall").endswith("icon_message_wall.png")
     saved_fn = env.pop("wall_pinned_count")
@@ -1052,12 +1025,13 @@ def check_pc12_runtime():
 ################################################################################
 
 def check_zero_intrusion_and_icons():
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES, *READ_ONLY_MODULES],
+    res = subprocess.run(["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES), *cf.unchanged_modules(READ_ONLY_MODULES)],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay / PC-10 / PC-11 modules were modified!\n{res.stdout}"
-    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES, *READ_ONLY_MODULES],
+    diff = subprocess.run(["git", "diff", "--numstat", "--", *rs.strict_files(MAIN_STORY_FILES), *cf.unchanged_modules(READ_ONLY_MODULES)],
                           cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert diff.stdout.strip() == "", "Main story / read-only module files have a diff"
+    cf.check_story_frozen()  # (the modules the release touches keep their stories)
 
     diff = subprocess.run(["git", "diff", "-U0", "--", *[p for p in PC12_TOUCHED_FILES if p != NEW_MODULE]],
                           cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", check=True)
@@ -1230,8 +1204,10 @@ def check_balanced_delimiters_and_references():
     for fld in ("atelier_painting_record", "atelier_selected_hotspot", "message_wall_record", "wall_selected_card"):
         assert f"default persistent.{fld} =" in extra_src and f"persistent.{fld} =" in reset_src, fld
     scr_src = _read("game/screens.rpy")
-    assert 'SetField(persistent, "extras_tab", "atelier")' in scr_src and 'SetField(persistent, "extras_tab", "wall")' in scr_src
-    assert "atelier_best_short()" in scr_src and "wall_pinned_count()" in scr_src
+    # (PC-G2: the case opens from the data-driven case file)
+    assert '("atelier",' in extra_src.split("CASEFILE_CASES = [", 1)[1].split("\n    ]", 1)[0]
+    assert 'SetField(persistent, "extras_tab", "wall")' in scr_src
+    assert "wall_pinned_count()" in scr_src
 
     for rel in PC12_TOUCHED_FILES:
         src = _read(rel)

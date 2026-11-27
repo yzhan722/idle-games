@@ -403,7 +403,7 @@ init python:
             Function(stop_all_gramophone_ambience, True),
             SetField(persistent, "extras_tab", "radio"),
             SetField(persistent, "radio_selected_broadcast", bdef["id"]),
-            Replay(bdef["label"], locked=False),
+            Replay(bdef["label"], scope={"player_name": persistent.last_player_name or "陈默"}, locked=False),
         ]
 
     ############################################################################
@@ -831,7 +831,7 @@ screen extras_radio_booth():
     $ _solved_n = radio_solved_count()
     $ _gold_n = radio_gold_count()
     $ _cur_clue_id = _brec["active_clue"] or _bdef["booth_clues"][0]["id"]
-    $ _cur_clue = [c for c in _bdef["booth_clues"] if c["id"] == _cur_clue_id][0]
+    $ _cur_clue = dict((c["id"], c) for c in _bdef["booth_clues"]).get(_cur_clue_id, _bdef["booth_clues"][0])
 
     vbox:
         spacing 9
@@ -967,7 +967,7 @@ screen extras_radio_booth():
                         button:
                             style "restoration_clue_card"
                             selected _c_active
-                            action Function(radio_inspect_clue, _bdef["id"], c_obj["id"])
+                            action Function(do_quietly, radio_inspect_clue, _bdef["id"], c_obj["id"])
                             vbox:
                                 spacing 2
                                 xfill True
@@ -1005,15 +1005,15 @@ screen extras_radio_booth():
                             text ("金牌电波 %d/3" % _gold_n) size 11 color "#f4d98a" xalign 1.0 yalign 0.5
                         text _pview["display_body"] size 12 color "#ebe2f8" line_spacing 3
                         if _brec["solved"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _pview["display_echo"] size 12 color "#86efac" line_spacing 2
                             text _pview["display_mo_note"] size 12 color "#cfa6f0"
                             text _pview["display_alice_note"] size 12 color "#f0c060"
                         if _pview["display_deep_secret"]:
-                            add Solid("#f4d98a44") xfill True ysize 1
+                            add Solid("#f4d98a44") ysize 1
                             text _pview["display_deep_secret"] size 12 color "#fff1d0" line_spacing 3
                         elif _pview["display_masked_prompt"]:
-                            add Solid("#6a5c8044") xfill True ysize 1
+                            add Solid("#6a5c8044") ysize 1
                             text _pview["display_masked_prompt"] size 11 color "#f0a4b8"
 
                 ## 3C. 底部操作栏
@@ -1096,7 +1096,7 @@ screen radio_postcard_modal(broadcast_id="b1"):
                     add "images/ui/icon_radio_booth_mic.png" xysize (32, 32) yalign 0.5
                     text _mv["best_badge"] size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             viewport:
                 xfill True
@@ -1109,15 +1109,15 @@ screen radio_postcard_modal(broadcast_id="b1"):
                     xsize 672
                     text _mv["salutation"] font gui.name_text_font size 17 color "#fff1d0"
                     text _mv["display_body"] size 14 color "#f2e6ff" line_spacing 5
-                    add Solid("#cbb0e633") xfill True ysize 1
+                    add Solid("#cbb0e633") ysize 1
                     text _mv["display_echo"] size 13 color "#86efac" line_spacing 4
                     text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4
                     text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4
                     if _mv["display_deep_secret"]:
-                        add Solid("#f4d98a44") xfill True ysize 1
+                        add Solid("#f4d98a44") ysize 1
                         text _mv["display_deep_secret"] size 13 color "#fff1d0" line_spacing 4
                     elif _mv["display_masked_prompt"]:
-                        add Solid("#6a5c8055") xfill True ysize 1
+                        add Solid("#6a5c8055") ysize 1
                         text _mv["display_masked_prompt"] size 12 color "#f0a4b8"
 
             hbox:
@@ -1192,7 +1192,7 @@ screen radio_broadcast_result_card(broadcast_id, cur_badge, best_badge, mistakes
                     text ("《%s》" % _bdef["title"]) font gui.name_text_font size 21 color "#f6e7c0"
                     text ("本期播音评级：【%s】" % cur_badge) size 14 color ("#f4d98a" if _is_gold else "#86efac")
 
-            add Solid("#f4d98a33") xfill True ysize 1
+            add Solid("#f4d98a33") ysize 1
 
             frame:
                 xfill True
@@ -1370,7 +1370,7 @@ screen extras_origami_cabinet():
                         button:
                             style "origami_step_btn"
                             selected _st_lit
-                            action Function(origami_advance_step, _cview["id"], _st_num)
+                            action Function(do_quietly, origami_advance_step, _cview["id"], _st_num)
                             hbox:
                                 spacing 6
                                 xfill True
@@ -1432,7 +1432,7 @@ screen extras_origami_cabinet():
                             xminimum 176
                             ysize 36
                             text_size 14
-                            action Function(origami_fold_and_inspect, _cview["id"], True)
+                            action Function(do_quietly, origami_fold_and_inspect, _cview["id"], True)
 
 
 ## 千纸鹤折检完成 · 象牙誓约短册特写弹窗（Fold & Inspect Vow Slip Modal）
@@ -1473,7 +1473,7 @@ screen origami_vow_modal(crane_id="c01"):
                     add "images/ui/icon_origami_cabinet.png" xysize (28, 28) yalign 0.5
                     text ("已折检 %d/12" % origami_inspected_count()) size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             frame:
                 xfill True
@@ -1624,7 +1624,7 @@ label _radio_booth_finish_broadcast(broadcast_id, local_mistakes=0):
 ################################################################################
 
 label radio_letter_b1:
-    call _radio_booth_init_sandbox("旧广播电台 · B-01 第三音乐室午后四点的幽灵伴奏", "warm")
+    call _radio_booth_init_sandbox("旧广播电台 · B-01 第三音乐室午后四点的幽灵伴奏", "warm") from _call__radio_booth_init_sandbox
     $ _rb_mistakes = 0
     $ _b1_c1 = False
     $ _b1_c2 = False
@@ -1743,7 +1743,7 @@ label radio_b1_q_loop:
     play sound se_crane
     "广播室窗外的走廊尽头，似乎传来林依依轻轻松了一口气的脚步声。墨墨摘下半边耳机，弯起眼眸在值机日志第一页画下了一只站在五线谱上的小纸鹤。"
 
-    call _radio_booth_finish_broadcast("b1", _rb_mistakes)
+    call _radio_booth_finish_broadcast("b1", _rb_mistakes) from _call__radio_booth_finish_broadcast
     return
 
 
@@ -1752,7 +1752,7 @@ label radio_b1_q_loop:
 ################################################################################
 
 label radio_letter_b2:
-    call _radio_booth_init_sandbox("旧广播电台 · B-02 植物园温室消失的蓝玫瑰名牌", "clear")
+    call _radio_booth_init_sandbox("旧广播电台 · B-02 植物园温室消失的蓝玫瑰名牌", "clear") from _call__radio_booth_init_sandbox_1
     $ _rb_mistakes = 0
     $ _b2_c1 = False
     $ _b2_c2 = False
@@ -1863,7 +1863,7 @@ label radio_b2_q_loop:
     play sound se_crane
     "窗外暮色渐浓，艺术楼与植物园玻璃穹顶依次亮起柔和的暖白路灯。墨墨笑着合上物证袋，在广播站台历的周五格子里轻轻盖上了一枚小小的纸鹤印记。"
 
-    call _radio_booth_finish_broadcast("b2", _rb_mistakes)
+    call _radio_booth_finish_broadcast("b2", _rb_mistakes) from _call__radio_booth_finish_broadcast_1
     return
 
 
@@ -1872,7 +1872,7 @@ label radio_b2_q_loop:
 ################################################################################
 
 label radio_letter_b3:
-    call _radio_booth_init_sandbox("旧广播电台 · B-03 旧广播站天台寄往四年前的电波", "dusk")
+    call _radio_booth_init_sandbox("旧广播电台 · B-03 旧广播站天台寄往四年前的电波", "dusk") from _call__radio_booth_init_sandbox_2
     $ _rb_mistakes = 0
     $ _b3_c1 = False
     $ _b3_c2 = False
@@ -1994,5 +1994,5 @@ label radio_b3_q_loop:
     play sound se_crane
     "橙黄色的『ON AIR』指示灯缓缓熄灭，窗外漫天晚霞映着并肩整理磁带与纸鹤的三道身影，温暖而绵长。"
 
-    call _radio_booth_finish_broadcast("b3", _rb_mistakes)
+    call _radio_booth_finish_broadcast("b3", _rb_mistakes) from _call__radio_booth_finish_broadcast_2
     return

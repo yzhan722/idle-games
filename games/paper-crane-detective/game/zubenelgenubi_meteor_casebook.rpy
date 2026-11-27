@@ -10,12 +10,12 @@
 ##      带队的黄老师限十点散场前找回，否则天文社的夜间观测一律取消。
 ##      六处勘查点（空三脚架、流星记录表、楼梯口出入登记、茉莉味的热可可、南门草坪的镜头盖、缺了一支的红光手电），
 ##      推理链是「连起四颗星」：手法 → 去向 → 时机 → 掌镜人。每颗星三选一、各配一种冬夜亮星的颜色，选错只给温柔提示、
-##      只计入本地 _at_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定一等星 / 二等星 / 三等星并保存历史最佳纪录，
+##      只计入本地 _at_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，
 ##      可无限重玩刷新纪录，持久化于 persistent.astro_telescope_record。
 ##      真相完全写实（卸镜步骤、记录表上的极限星等与路灯光害、锁门的开水房与茉莉花茶、草坪上的镜头盖和三脚架小坑、
 ##      替人亮着的红光手电），没有任何超自然要素。
 ##   3. 防剧透联动：墨墨在本案页边的续批、复盘本新增两页的页边续批，都严格经 truth_spoiler_unlocked() 零侧信道遮罩，
-##      与复盘本、合照相册、番外卷宗等共用同一个「解锁剧透 / 恢复遮罩」开关。
+##      与复盘本、合照相册、案卷等共用同一个「解锁剧透 / 恢复遮罩」开关。
 ##   4. 推理笔记复盘本扩容（screen extras_casebook_expanded）：收录鬼屋案与本案，由四页扩为六页。
 ##      PC-13 的 notebook_render_page / notebook_page_modal 等只读渲染原样复用（直接读各案 persistent 字段、快照比对零写入），
 ##      新页面改用 3 × 2 索引签网格；PC-13 的四签单行页面保留不动，鉴赏页的「复盘」分页改由本页面承载。
@@ -47,12 +47,12 @@ init python:
         register_extra_achievement(
             "ach_first_magnitude",
             "一等星的观星侦探",
-            "零失误连起四颗星，摘得一等星评级。",
+            "零失误连起四颗星，拿下金牌。",
             False,
         )
 
     ############################################################################
-    ## 一、天文社流星夜的失踪望远镜（1 桩可重玩短案 · 6 处勘查点 · 连起四颗星 · 一二三等星评级）
+    ## 一、天文社流星夜的失踪望远镜（1 桩可重玩短案 · 6 处勘查点 · 连起四颗星 · 金银铜牌评级）
     ############################################################################
 
     ASTRO_CASE = {
@@ -248,9 +248,9 @@ init python:
     ]
 
     ASTRO_RATING_TIERS = [
-        {"key": "gold",   "name": "一等星", "title": "流星夜名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "二等星", "title": "观星推理员",   "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "三等星", "title": "见习观星",     "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "流星夜名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "观星推理员",   "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "见习观星",     "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _ASTRO_TIER_BY_KEY = {t["key"]: t for t in ASTRO_RATING_TIERS}
@@ -265,7 +265,7 @@ init python:
         return _ASTRO_TIER_BY_KEY.get(tier_key, ASTRO_RATING_TIERS[-1])
 
     def astro_rate(mistakes_count=0):
-        """按本局失误数评定星等：0 次一等星，1～2 次二等星，3 次及以上三等星。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in ASTRO_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -282,17 +282,14 @@ init python:
 
     def astro_get_record():
         raw = _ensure_astro_store()
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _ASTRO_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _ASTRO_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _ASTRO_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [s for s in (raw.get("inspected") or []) if s in _ASTRO_SPOT_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -310,7 +307,7 @@ init python:
         return 1 if astro_get_record()["best_tier"] == "gold" else 0
 
     def astro_best_short():
-        """番外卷宗与鉴赏页使用：历史最佳星等，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级，未结案时显示「待结案」。"""
         rec = astro_get_record()
         return astro_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -335,8 +332,8 @@ init python:
         return True
 
     def astro_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局星等、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
-        只写天文社案自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加一等星成就。"""
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        只写天文社案自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加金牌成就。"""
         m = max(0, int(mistakes_count or 0))
         tier = astro_rate(m)
         prev = astro_get_record()
@@ -451,7 +448,7 @@ init python:
                 NOTEBOOK_CASES.append(_cbp)
         _NOTEBOOK_BY_KEY = {n["key"]: n for n in NOTEBOOK_CASES}
 
-    # PC-13 成就「推理笔记的复盘人」说明写的是「盖满四枚复盘章」：扩容后仍按 PC-13 的原四页盖满颁发，不因新增两页推迟
+    # PC-13 成就「推理笔记的复盘人」说明写的是「盖满前四页的复盘章」：扩容后仍按 PC-13 的原四页盖满颁发，不因新增两页推迟
     CASEBOOK_PC13_KEYS = ("library", "theater", "atelier", "sportsday")
     CASEBOOK_CN_NUMS = {1: "一", 2: "两", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
     CASEBOOK_VERDICT = ("艾丽丝总评：%s桩案子，没有一个坏人——只有一群太在乎某个人、某样东西的人。"
@@ -515,7 +512,7 @@ screen extras_astro_telescope():
                         xsize 398
                         text _("天文社流星夜的失踪望远镜") font gui.name_text_font size 19 color "#eef4ff"
                         if _av["solved"]:
-                            text _("已结案 · 四颗星已全部连起 · 可随时重回天台冲击一等星") size 12 color "#9fe3b0"
+                            text _("已结案 · 四颗星已全部连起 · 可随时重回天台冲击金牌") size 12 color "#9fe3b0"
                         else:
                             text _("双子座流星雨极大夜，三脚架上只剩空云台 · 望远镜去了哪") size 12 color "#c4d4f2"
                 hbox:
@@ -533,7 +530,7 @@ screen extras_astro_telescope():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _av["replays"]) size 12 color "#bcd2ff" align (0.5, 0.5) substitute False
 
-        ## 2. 卷宗详情：夜空缩略图（底部四段星色带，结案后点亮）、案情、六处勘查点、四颗星、星等评级与页边续批
+        ## 2. 卷宗详情：夜空缩略图（底部四段星色带，结案后点亮）、案情、六处勘查点、四颗星、评级与页边续批
         frame:
             style "astro_console_card"
             vbox:
@@ -639,7 +636,7 @@ screen extras_astro_telescope():
                                 text ("%s · %s" % (k_obj["step"], k_obj["name"])) size 11 color ("#9fe3b0" if _av["solved"] else "#b8c8ea") bold True substitute False
                                 text (_av["star_shorts"][_ki] if _av["solved"] else _("？ 待连星")) size 12 color ("#f2f6ff" if _av["solved"] else "#7f8fb2") substitute False
 
-                ## 2C. 星等评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "astro_rating_card"
                     vbox:
@@ -652,7 +649,7 @@ screen extras_astro_telescope():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_missing_telescope.png" xysize (16, 16) yalign 0.5
-                                text _("星等评级 · 重玩挑战") font gui.name_text_font size 13 color "#f2f6ff" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#f2f6ff" yalign 0.5
                             text ("历史最佳：%s" % _av["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -665,7 +662,7 @@ screen extras_astro_telescope():
                                         text ("%s「%s」" % (t_obj["name"], t_obj["title"])) size 12 color ("#f4d98a" if _av["best_tier"] == t_obj["key"] else "#e4ebfa") yalign 0.5 substitute False
                                         text t_obj["rule"] size 11 color "#a9b9dc" xalign 1.0 yalign 0.5 substitute False
                         if _av["solved"]:
-                            add Solid("#a9c2f033") xfill True ysize 1
+                            add Solid("#a9c2f033") ysize 1
                             text _av["display_solution"] size 12 color "#9fe3b0" line_spacing 2 substitute False
                             text _av["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _av["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -713,7 +710,7 @@ screen extras_astro_telescope():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误连起四颗星可获一等星 · 已结案 %d 次" % _av["replays"]) size 12 color "#a9b9dc" yalign 0.5 substitute False
+                    text ("零失误连起四颗星可获金牌 · 已结案 %d 次" % _av["replays"]) size 12 color "#a9b9dc" yalign 0.5 substitute False
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -803,7 +800,7 @@ screen astro_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#a9c2f0" bold True
                     text _mv["summary"] size 13 color "#eef2fc" line_spacing 4 substitute False
-                    add Solid("#b8c8ea33") xfill True ysize 1
+                    add Solid("#b8c8ea33") ysize 1
                     if _mv["solved"]:
                         text _("四颗星：") size 12 color "#a9c2f0" bold True
                         for _ri, r_obj in enumerate(ASTRO_STAR_LINKS):
@@ -811,12 +808,12 @@ screen astro_report_modal():
                                 spacing 8
                                 add Solid(r_obj["color"]) xysize (6, 18) yalign 0.0
                                 text ("%s · %s（%s）：%s" % (r_obj["step"], r_obj["name"], r_obj["star"], _mv["star_fulls"][_ri])) size 13 color "#e4ebfa" line_spacing 3 xsize 658 substitute False
-                        add Solid("#a9c2f033") xfill True ysize 1
+                        add Solid("#a9c2f033") ysize 1
                         text _mv["display_solution"] size 13 color "#9fe3b0" line_spacing 4 substitute False
                         text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
                         if _mv["display_secret"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _mv["display_secret"] size 13 color "#f4d98a" line_spacing 4 substitute False
                     else:
                         text _("这桩案子还没有结案。回到流星夜、查完六处线索并连起四颗星后，完整的结案报告会显影在这里。") size 13 color "#a9b9dc" line_spacing 4
@@ -858,7 +855,7 @@ screen astro_star_banner(stars_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_star_lamp.png" xysize (22, 22) yalign 0.5
                 text _("流星夜 · 连起四颗星") size 12 color "#a9c2f0" bold True yalign 0.5
-                text ("已连起 %d/%d · 失误只计入本案星等评级，不影响主线" % (stars_done, len(ASTRO_STAR_LINKS))) size 11 color "#b8c8ea" yalign 0.5
+                text ("已连起 %d/%d · 失误只计入本案评级，不影响主线" % (stars_done, len(ASTRO_STAR_LINKS))) size 11 color "#b8c8ea" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(ASTRO_STAR_LINKS):
@@ -872,7 +869,7 @@ screen astro_star_banner(stars_done, prompt_line):
             text prompt_line size 14 color "#f2f6ff" substitute False
 
 
-## 流星夜结案结算卡：本局星等评级 + 历史最佳纪录 + 重玩挑战提示
+## 流星夜结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen astro_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -921,16 +918,16 @@ screen astro_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, 
                     spacing 4
                     text _rv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _rv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入流星夜星等评级，不影响主线）" % mistakes) size 12 color "#b8c8ea"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#b8c8ea"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_bt["name"], _bt["title"], best_mistakes, replays)) size 12 color "#b8c8ea" substitute False
                     if is_first:
                         text _("首次结案 · 四颗星已写入鉴赏室「天文社流星夜」分页，复盘本扩容到了六页") size 12 color "#9fe3b0"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一次的四颗星比以往任何一次都连得更稳") size 12 color "#f4d98a"
                     elif _is_gold:
-                        text _("重玩挑战 · 再次摘下一等星，流星夜名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，流星夜名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误连起四颗星，就能把一等星挂上天文社的星图") size 12 color "#b8c8ea"
+                        text _("重玩挑战 · 零失误连起四颗星，就能拿下金牌") size 12 color "#b8c8ea"
 
             textbutton _("收好星图并返回鉴赏室"):
                 style "pill_button"
@@ -1068,7 +1065,8 @@ screen extras_casebook_expanded():
                 ## 3A. 关键证物（3 × 226 + 2 × 8 = 694px 贴合内宽；只抄该案存档里已勘查过的证物）
                 text _("关键证物 · 亲自勘查过的才抄进复盘本（读取该案存档，只读不写）：") size 12 color "#e8c88a" bold True
                 if _np["evidence_rows"]:
-                    grid 3 ((len(_np["evidence_rows"]) + 2) // 3):
+                    $ _ev_rows = (len(_np["evidence_rows"]) + 2) // 3
+                    grid 3 _ev_rows:
                         spacing 8
                         for _ev in _np["evidence_rows"]:
                             frame:
@@ -1106,7 +1104,7 @@ screen extras_casebook_expanded():
                             text _np["display_lesson"] size 12 color "#fbf1df" line_spacing 2 substitute False
                             text _np["display_mo_margin"] size 12 color "#cfa6f0" substitute False
                             if _np["display_secret"]:
-                                add Solid("#e8c88a44") xfill True ysize 1
+                                add Solid("#e8c88a44") ysize 1
                                 text _np["display_secret"] size 12 color "#f4d98a" line_spacing 2 substitute False
                         else:
                             text _("这一案还没有结案。走完它的推理之后，复盘要点和墨墨的页边批注会写在这里。") size 12 color "#b39d7a"
@@ -1130,14 +1128,14 @@ screen extras_casebook_expanded():
                         textbutton _("展开整页"):
                             style "gramophone_mini_pill"
                             yalign 0.5
-                            action (Function(notebook_open_page, _np["key"]) if _np["available"] else None)
+                            action (Function(do_quietly, notebook_open_page, _np["key"]) if _np["available"] else None)
                         textbutton (_("已盖复盘章") if _np["stamped"] else _("盖上复盘章")):
                             style "pill_button"
                             yalign 0.5
                             xminimum 146
                             ysize 36
                             text_size 15
-                            action (Function(casebook_stamp, _np["key"]) if _np["status"] == "ready" else None)
+                            action (Function(do_quietly, casebook_stamp, _np["key"]) if _np["status"] == "ready" else None)
 
         ## 4. 复盘总评（六页的公开计数；全部结案后显影艾丽丝的总评）
         frame:
@@ -1234,14 +1232,6 @@ style astro_margin_box is default:
 style casebook_index_tab is notebook_index_tab:
     xsize 234
 
-## 侦探社沙龙子栏：某组装进六项玩法时，展开态仍只放一枚当前分页图标，后接六枚 48px 紧凑等宽短签
-## （xminimum 48 / 左右内边距 4），由 extra.rpy 的子栏按组内项数选择；六签组展开态由 verify_pc15 逐一实测 <= 702px
-style salon_sext_pill is bookstreet_subtab_pill:
-    xminimum 48
-    padding (4, 0)
-
-style salon_sext_pill_text is bookstreet_subtab_pill_text
-
 
 ################################################################################
 ## 六、流星夜独立沙盒初始化与结案出口（零侵入主线好感/失误/存档）
@@ -1281,7 +1271,7 @@ label _astro_finish_case(local_mistakes=0):
 ################################################################################
 
 label astro_telescope_case:
-    call _astro_init_sandbox("天文社流星夜 · MN-01 流星夜的空三脚架")
+    call _astro_init_sandbox("天文社流星夜 · MN-01 流星夜的空三脚架") from _call__astro_init_sandbox
     $ _at_mistakes = 0
     $ _at_stars = 0
     $ _at_s1 = False
@@ -1490,9 +1480,9 @@ label astro_case_review_intro:
     mo_note "像连星座一样。四颗星连起来，就能看见它的形状。"
     alice "那就一颗一颗连！它是怎么被拿走的、去了哪、什么时候、是谁——四颗星连成一座，望远镜就无处可藏！"
     if _at_replays > 0:
-        sysmsg "【流星夜 · 重玩挑战】当前历史最佳：[_at_best_text]。零失误连起四颗星，就能摘下一等星。"
+        sysmsg "【流星夜 · 重玩挑战】当前历史最佳：[_at_best_text]。零失误连起四颗星，就能拿下金牌。"
     else:
-        sysmsg "【流星夜 · 连起四颗星】依次选出「手法 → 去向 → 时机 → 掌镜人」。零失误可获一等星评级，失误只计入本案评级，不影响主线。"
+        sysmsg "【流星夜 · 连起四颗星】依次选出「手法 → 去向 → 时机 → 掌镜人」。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label astro_star_k1:
     show screen astro_star_banner(0, "第一颗星 · 手法：云台放平、旋钮松了两圈、软包一起不见——望远镜是怎么被拿走的？")
@@ -1711,5 +1701,5 @@ label astro_case_resolution:
     show alice smile at left
     alice "好！万事屋推理笔记复盘本，今天正式扩容到六页！"
 
-    call _astro_finish_case(_at_mistakes)
+    call _astro_finish_case(_at_mistakes) from _call__astro_finish_case
     return

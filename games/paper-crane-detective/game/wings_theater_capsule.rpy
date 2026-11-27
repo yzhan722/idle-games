@@ -8,7 +8,7 @@
 ##      写满三个星期铅笔批注的导演本，在彩排前四十分钟从后台提词台上消失。
 ##      玩法三段式：六处后台勘查点（入证物簿、可翻面批注）→ 推理四幕（时刻 → 去向 → 动机 → 执行人，
 ##      每幕三选一，按顺序演完）→ 服装间结案。选错只给温柔提示、只计入本地 _th_mistakes，绝不触碰主线
-##      fail_count / 好感；结案按失误数评定金 / 银 / 铜票根并保存历史最佳纪录，可无限重玩刷新纪录，
+##      fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，可无限重玩刷新纪录，
 ##      持久化于 persistent.theater_script_record。真相完全写实（雷声铁皮、热可可、吸墨纸、跳闸的回路与
 ##      斜光下的铅笔凹痕），无任何超自然要素；犯人与动机温和可亲，与既有人物设定一致。
 ##   3. 「侦探社学期时间胶囊」（screen extras_time_capsule + 写给一年后的信弹窗）：
@@ -42,7 +42,7 @@ init python:
         )
 
     ############################################################################
-    ## 一、雨夜剧场后台的失踪剧本（1 桩可重玩短案 · 6 处勘查点 · 推理四幕 · 金银铜票根评级）
+    ## 一、雨夜剧场后台的失踪剧本（1 桩可重玩短案 · 6 处勘查点 · 推理四幕 · 金银铜牌评级）
     ############################################################################
 
     THEATER_CASE = {
@@ -202,9 +202,9 @@ init python:
     ]
 
     THEATER_RATING_TIERS = [
-        {"key": "gold",   "name": "金票根", "title": "谢幕名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "银票根", "title": "后台推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "铜票根", "title": "见习场务",   "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "谢幕名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "后台推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "见习场务",   "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _THEATER_TIER_BY_KEY = {t["key"]: t for t in THEATER_RATING_TIERS}
@@ -219,7 +219,7 @@ init python:
         return _THEATER_TIER_BY_KEY.get(tier_key, THEATER_RATING_TIERS[-1])
 
     def theater_rate(mistakes_count=0):
-        """按本局失误数评定票根：0 次金票根，1～2 次银票根，3 次及以上铜票根。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in THEATER_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -236,17 +236,14 @@ init python:
 
     def theater_get_record():
         raw = _ensure_theater_store()
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _THEATER_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _THEATER_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _THEATER_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [h for h in (raw.get("inspected") or []) if h in _THEATER_HOTSPOT_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -264,7 +261,7 @@ init python:
         return 1 if theater_get_record()["best_tier"] == "gold" else 0
 
     def theater_best_short():
-        """主菜单小胶囊与鉴赏页使用：历史最佳票根名，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级名，未结案时显示「待结案」。"""
         rec = theater_get_record()
         return theater_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -289,7 +286,7 @@ init python:
         return True
 
     def theater_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局票根、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
         只写雨夜剧场自己的存档，绝不触碰主线 fail_count / 好感。"""
         m = max(0, int(mistakes_count or 0))
         tier = theater_rate(m)
@@ -765,7 +762,7 @@ screen extras_rainy_theater():
                         xsize 398
                         text _("雨夜剧场后台的失踪剧本") font gui.name_text_font size 19 color "#ffe4ea"
                         if _tv["solved"]:
-                            text _("已结案 · 推理四幕全部演完 · 可随时重返后台冲击金票根") size 12 color "#f2c4d0"
+                            text _("已结案 · 推理四幕全部演完 · 可随时重返后台冲击金牌") size 12 color "#f2c4d0"
                         else:
                             text _("彩排前四十分钟，全社唯一的导演本不见了 · 六处后台等你勘查") size 12 color "#d9b4c6"
                 hbox:
@@ -783,7 +780,7 @@ screen extras_rainy_theater():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _tv["replays"]) size 12 color "#f2a7b8" align (0.5, 0.5) substitute False
 
-        ## 2. 卷宗详情：舞台缩略图、案情、六处勘查点、推理四幕与票根评级
+        ## 2. 卷宗详情：舞台缩略图、案情、六处勘查点、推理四幕与评级
         frame:
             style "theater_console_card"
             vbox:
@@ -877,7 +874,7 @@ screen extras_rainy_theater():
                                 text ("%s · %s" % (k_obj["step"], k_obj["name"])) size 11 color ("#86efac" if _tv["solved"] else "#e6b8c8") bold True substitute False
                                 text (_tv["act_shorts"][_ki] if _tv["solved"] else _("？ 待开演")) size 12 color ("#fff1f4" if _tv["solved"] else "#8f7088") substitute False
 
-                ## 2C. 票根评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "theater_ticket_card"
                     vbox:
@@ -890,7 +887,7 @@ screen extras_rainy_theater():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_missing_script.png" xysize (16, 16) yalign 0.5
-                                text _("票根评级 · 重玩挑战") font gui.name_text_font size 13 color "#fff1f4" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#fff1f4" yalign 0.5
                             text ("历史最佳：%s" % _tv["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -903,7 +900,7 @@ screen extras_rainy_theater():
                                         text ("%s「%s」" % (t_obj["name"], t_obj["title"])) size 12 color ("#f4d98a" if _tv["best_tier"] == t_obj["key"] else "#f0dce6") yalign 0.5 substitute False
                                         text t_obj["rule"] size 11 color "#c6a8b8" xalign 1.0 yalign 0.5
                         if _tv["solved"]:
-                            add Solid("#f2a7b833") xfill True ysize 1
+                            add Solid("#f2a7b833") ysize 1
                             text _tv["display_solution"] size 12 color "#86efac" line_spacing 2 substitute False
                             text _tv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _tv["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -914,7 +911,7 @@ screen extras_rainy_theater():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误演完推理四幕可获金票根 · 已结案 %d 次" % _tv["replays"]) size 12 color "#b08ca2" yalign 0.5 substitute False
+                    text ("零失误演完推理四幕可获金牌 · 已结案 %d 次" % _tv["replays"]) size 12 color "#b08ca2" yalign 0.5 substitute False
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -989,7 +986,7 @@ screen theater_report_modal():
                     add "images/ui/icon_missing_script.png" xysize (30, 30) yalign 0.5 at theater_spot_sway
                     text _mv["best_name"] size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f2a7b844") xfill True ysize 1
+            add Solid("#f2a7b844") ysize 1
 
             viewport:
                 xfill True
@@ -1002,12 +999,12 @@ screen theater_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#f2a7b8" bold True
                     text _mv["summary"] size 13 color "#f6e6ee" line_spacing 4 substitute False
-                    add Solid("#e6b8c833") xfill True ysize 1
+                    add Solid("#e6b8c833") ysize 1
                     if _mv["solved"]:
                         text _("推理四幕：") size 12 color "#f2a7b8" bold True
                         for _ri, r_obj in enumerate(THEATER_ACT_LINKS):
                             text ("%s · %s：%s" % (r_obj["step"], r_obj["name"], _mv["act_fulls"][_ri])) size 13 color "#f0dce6" line_spacing 3 substitute False
-                        add Solid("#f2a7b833") xfill True ysize 1
+                        add Solid("#f2a7b833") ysize 1
                         text _mv["display_solution"] size 13 color "#86efac" line_spacing 4 substitute False
                         text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
@@ -1049,7 +1046,7 @@ screen theater_act_banner(acts_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_theater_backstage.png" xysize (22, 22) yalign 0.5
                 text _("雨夜剧场 · 推理四幕") size 12 color "#f2a7b8" bold True yalign 0.5
-                text ("已演完 %d/%d 幕 · 失误只计入本案票根评级，不影响主线" % (acts_done, len(THEATER_ACT_LINKS))) size 11 color "#d9b4c6" yalign 0.5
+                text ("已演完 %d/%d 幕 · 失误只计入本案评级，不影响主线" % (acts_done, len(THEATER_ACT_LINKS))) size 11 color "#d9b4c6" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(THEATER_ACT_LINKS):
@@ -1062,7 +1059,7 @@ screen theater_act_banner(acts_done, prompt_line):
             text prompt_line size 14 color "#fff3f7" substitute False
 
 
-## 雨夜剧场结案结算卡：本局票根评级 + 历史最佳纪录 + 重玩挑战提示
+## 雨夜剧场结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen theater_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -1097,7 +1094,7 @@ screen theater_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays
                     text ("《%s》" % THEATER_CASE["short_title"]) font gui.name_text_font size 21 color "#ffe4ea" substitute False
                     text ("本局评级：【%s · %s】" % (_ct["name"], _ct["title"])) size 14 color ("#f4d98a" if _is_gold else "#86efac") substitute False
 
-            add Solid("#f2a7b833") xfill True ysize 1
+            add Solid("#f2a7b833") ysize 1
 
             frame:
                 xfill True
@@ -1107,16 +1104,16 @@ screen theater_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays
                     spacing 4
                     text _rv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _rv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入雨夜剧场评级，不影响主线）" % mistakes) size 12 color "#d9b4c6"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#d9b4c6"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_bt["name"], _bt["title"], best_mistakes, replays)) size 12 color "#d9b4c6" substitute False
                     if is_first:
                         text _("首次结案 · 推理四幕已写入鉴赏室「雨夜剧场」分页，C-11 纪念物可以放进胶囊了") size 12 color "#86efac"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一场比以往任何一次都更少走错台位") size 12 color "#f4d98a"
                     elif _is_gold:
-                        text _("重玩挑战 · 再次以金票根谢幕，雨夜剧场名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，雨夜剧场名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误演完推理四幕，就能把金票根夹进笔记本") size 12 color "#e6b8c8"
+                        text _("重玩挑战 · 零失误演完推理四幕，就能拿下金牌") size 12 color "#e6b8c8"
 
             textbutton _("收好票根并返回雨夜剧场"):
                 style "pill_button"
@@ -1203,7 +1200,8 @@ screen extras_time_capsule():
                 text ("可放入 %d · 已放入 %d · 首次完成对应玩法即可留下纪念物" % (_earn_n - _placed_n, _placed_n)) size 11 color "#efe2c4" xalign 1.0 yalign 0.5
 
         ## 3. 胶囊格（3 × 234 + 2 × 10 = 722px 严丝合缝，四行）
-        grid 3 ((len(CAPSULE_ITEMS) + 2) // 3):
+        $ _capsule_rows = (len(CAPSULE_ITEMS) + 2) // 3
+        grid 3 _capsule_rows:
             spacing 10
             for c_obj in CAPSULE_ITEMS:
                 $ _cst = capsule_item_status(c_obj["id"])
@@ -1329,7 +1327,7 @@ screen extras_time_capsule():
                             xminimum 146
                             ysize 36
                             text_size 15
-                            action (Function(capsule_place, _cv["id"]) if _cv["status"] == "earned" else None)
+                            action (Function(do_quietly, capsule_place, _cv["id"]) if _cv["status"] == "earned" else None)
 
         ## 5. 写给一年后的信（2 × 341 + 12 = 694px 贴合内宽）
         frame:
@@ -1369,7 +1367,7 @@ screen extras_time_capsule():
                                     style "gramophone_mini_pill"
                                     xalign 1.0
                                     yalign 0.5
-                                    action (Function(capsule_open_letter, _lv["id"]) if _lv["readable"] else None)
+                                    action (Function(do_quietly, capsule_open_letter, _lv["id"]) if _lv["readable"] else None)
 
         ## 6. 封存栏
         frame:
@@ -1389,7 +1387,7 @@ screen extras_time_capsule():
                     style "gramophone_mini_pill"
                     xalign 1.0
                     yalign 0.5
-                    action (Function(capsule_seal) if capsule_can_seal() else None)
+                    action (Function(do_quietly, capsule_seal) if capsule_can_seal() else None)
 
 
 ## 写给一年后的信：拆阅弹窗
@@ -1430,7 +1428,7 @@ screen capsule_letter_modal(letter_id="lt_alice"):
                     add "images/ui/icon_time_capsule.png" xysize (28, 28) yalign 0.5
                     text ("已放入 %d/%d" % (_lm["placed_count"], len(CAPSULE_ITEMS))) size 13 color "#f4d98a" bold True yalign 0.5 substitute False
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             viewport:
                 xfill True
@@ -1445,7 +1443,7 @@ screen capsule_letter_modal(letter_id="lt_alice"):
                         text _lm["display_body"] font gui.name_text_font size 14 color "#fff6dc" line_spacing 6 substitute False
                         text _lm["display_sign"] size 13 color "#f0c060" xalign 1.0 substitute False
                         if _lm["display_secret"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _lm["display_secret"] size 13 color "#f4d98a" line_spacing 4 substitute False
                     else:
                         text _("这封信还封着火漆。往胶囊里放入足够的学期纪念物之后，就可以在这里拆开它。") size 13 color "#9a86b8" line_spacing 4
@@ -1595,7 +1593,7 @@ label _theater_finish_case(local_mistakes=0):
 ################################################################################
 
 label rainy_theater_case:
-    call _theater_init_sandbox("雨夜剧场 · TH-01 失踪的导演批注本")
+    call _theater_init_sandbox("雨夜剧场 · TH-01 失踪的导演批注本") from _call__theater_init_sandbox
     $ _th_mistakes = 0
     $ _th_acts = 0
     $ _th_h1 = False
@@ -1823,9 +1821,9 @@ label theater_case_review_intro:
     "六处后台全部勘查完毕。我们回到提词台前。工作灯底下，那块甜甜的长方形空白安安静静地躺在桌面上。"
     alice "离七点还有二十五分钟！敲门之前，先把推理从头到尾排练一遍——就像彩排一样，四幕戏，一幕都不能演错！"
     if _th_replays > 0:
-        sysmsg "【雨夜剧场 · 重玩挑战】当前历史最佳：[_th_best_text]。零失误演完推理四幕，就能把金票根夹进笔记本。"
+        sysmsg "【雨夜剧场 · 重玩挑战】当前历史最佳：[_th_best_text]。零失误演完推理四幕，就能拿下金牌。"
     else:
-        sysmsg "【雨夜剧场 · 推理四幕】依次选出「时刻 → 去向 → 动机 → 执行人」四幕。零失误可获金票根，失误只计入本案评级，不影响主线。"
+        sysmsg "【雨夜剧场 · 推理四幕】依次选出「时刻 → 去向 → 动机 → 执行人」四幕。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label theater_act_k1:
     show screen theater_act_banner(0, "第一幕 · 时刻：便利贴、可可渍、雷声——导演本是什么时候离开提词台的？")
@@ -2034,5 +2032,5 @@ label theater_case_resolution:
     "墨墨把吸墨纸夹在票根后面，一起收进笔记本，在旁边写下了今晚的日期。"
     mo_note "铅笔写过的地方，纸会记得。泼湿的剧本能补回来，不敢说出口的话也一样。"
 
-    call _theater_finish_case(_th_mistakes)
+    call _theater_finish_case(_th_mistakes) from _call__theater_finish_case
     return

@@ -32,11 +32,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verify_pc8 as pc8  # noqa: E402
 import verify_pc9 as pc9  # noqa: E402
 import verify_pc10 as pc10  # noqa: E402
+import casefile_checks as cf  # noqa: E402
 import verify_pc11 as pc11  # noqa: E402
 import verify_pc12 as pc12  # noqa: E402
 import verify_pc13 as pc13  # noqa: E402
 import verify_pc14 as pc14  # noqa: E402
 import verify_glyphs as glyphs  # noqa: E402
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -309,31 +311,7 @@ def check_layout_and_pixel_bounds():
     #     Group 4 now holds 6 tabs: one leading icon + six 48px sext pills. With PC-14's 56px quint pills that state would
     #     overflow (measured below: the reason for the new style).
     sb = pc10.measure_salon_subbar()
-    expected_groups = PC17_SALON_GROUPS if _pc17_present() else PC16_SALON_GROUPS if _pc16_present() else SALON_GROUPS_EXPECTED
-    assert [(g[0], tuple(g[3])) for g in sb["groups"]] == expected_groups, sb["groups"]
-    assert len(sb["keys"]) == len(set(sb["keys"])) == 18 + len(_later_present())
-    assert sb["inner"] == 702
-    for gkey, px in sb["per_group"].items():
-        assert px <= sb["inner"], f"Sub-bar with `{gkey}` open overflows 702px: {px}px"
-    assert sb["quad"] == (4, 60, 4) and sb["quint"] == (5, 56, 4), (sb["quad"], sb["quint"])
-    assert sb["sext"] == (6, 48, 4), f"Sext pill rule changed: {sb['sext']}"
-    for k in SALON_KEYS:
-        assert f'elif cur == "{k}":' in extra_src, f"extras() viewport does not route `{k}`"
-    assert sb["totals"]["astro"] == 1 and sb["totals"]["notebook"] == 6 + len(_later_present())
-    pill = lambda t, mn, pad: max(mn, _w(f[11], t) + 2 * pad)  # noqa: E731
-    six = [g for g in sb["groups"] if len(g[3]) >= 6]
-    assert [g[0] for g in six] == ["closedlib"]
-    with_quint = sb["per_group"]["closedlib"] + sum(pill(f"{sb['pills'][t][0]} 1/1", 56, 4) - pill(f"{sb['pills'][t][0]} 1/1", 48, 4)
-                                                    for t in six[0][3])
-    assert with_quint > 702, "If 56px quint pills fit six tabs, the sext style would be unnecessary"
-    widths = {pill(f"{sb['pills'][t][0]} {sb['totals'][t]}/{sb['totals'][t]}", 48, 4) for t in six[0][3]}
-    assert widths == {48}, f"Sext pills are not equal-width: {widths}"
-    blk = re.search(r'style "salon_subbar_frame"\n(.*?)\n\s+viewport:', extra_src, re.S).group(1)
-    assert 'style ("salon_sext_pill" if len(_gtabs) >= 6 else "salon_quint_pill")' in blk
-    assert "add salon_tab_icon(cur if cur in _gtabs else _gtabs[0]) xysize (14, 14) yalign 0.5" in blk
-    report["SubBarWorst"] = sb["worst"]
-    report["SubBarClosedlib"] = sb["per_group"]["closedlib"]
-    report["SubBarIfQuintPills"] = with_quint
+    cf.check_subbar(sb, SALON_KEYS, extra_src, report)  # (PC-G2: the short cases are one 「案卷」 pill)
 
     # 2.3 subtitle & vertical budget unchanged
     sub = re.search(r'use game_menu\(_\("鉴赏"\), subtitle=_\("([^"]+)"\)\)', extra_src).group(1)
@@ -386,12 +364,12 @@ def check_layout_and_pixel_bounds():
         assert chip <= tier_w - 16, f"Tier chip `{t['name']}` overflows: {chip}px"
     report["StarTierChip"] = widest_tier
     best_lines = [f"{t['name']}「{t['title']}」 · 最少失误 99 次" for t in tiers]
-    rate_row = 16 + 6 + _w(sf[13], "星等评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
+    rate_row = 16 + 6 + _w(sf[13], "评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
     assert rate_row <= scroll_inner, f"Rating header row overflows: {rate_row}px"
     hdr_right = (max(96, 14 + 4 + _w(f[12], "最佳 待结案") + 20) + 6 + max(96, _w(f[12], "结案 99 次") + 20))
     assert 36 + 10 + 398 + hdr_right <= console_inner, "Meteor-night header overflows"
     assert _w(sf[19], case["title"]) <= 398
-    for s in ("已结案 · 四颗星已全部连起 · 可随时重回天台冲击一等星", "双子座流星雨极大夜，三脚架上只剩空云台 · 望远镜去了哪"):
+    for s in ("已结案 · 四颗星已全部连起 · 可随时重回天台冲击金牌", "双子座流星雨极大夜，三脚架上只剩空云台 · 望远镜去了哪"):
         assert _w(f[12], s) <= 398, f"Meteor-night header line wraps ({_w(f[12], s)}px): {s}"
     thumb_w = int(_style_prop(extra_src, "mailbox_thumb_frame", "xsize"))
     assert thumb_w + 14 + 492 <= console_inner
@@ -412,7 +390,7 @@ def check_layout_and_pixel_bounds():
     notice = _w(f[11], env["ASTRO_MASK_NOTICE"])
     assert notice <= margin_inner, f"Mask notice wraps ({notice}px > {margin_inner}px)"
     assert _lines(f[12], case["margin_secret"], margin_inner) <= 3
-    footer = (_w(f[12], "零失误连起四颗星可获一等星 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
+    footer = (_w(f[12], "零失误连起四颗星可获金牌 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
               + 8 + max(146, _w(f[15], "重回流星夜") + 36, _w(f[15], "走上天台") + 36))
     assert footer <= console_inner, f"Meteor-night footer overflows: {footer}px"
     report["AstroFooter"] = footer
@@ -428,7 +406,7 @@ def check_layout_and_pixel_bounds():
     assert 3 + round(10 * CJK_LINE) + round(11 * CJK_LINE) <= banner_h - 8
     for k in links:
         assert _wb(f[10], f"{k['step']} · {k['name']}") <= banner_slot - 16 and _w(f[11], k["short"]) <= banner_slot - 16
-    head = 22 + 8 + _wb(f[12], "流星夜 · 连起四颗星") + 8 + _w(f[11], "已连起 4/4 · 失误只计入本案星等评级，不影响主线")
+    head = 22 + 8 + _wb(f[12], "流星夜 · 连起四颗星") + 8 + _w(f[11], "已连起 4/4 · 失误只计入本案评级，不影响主线")
     assert head <= 728, f"Banner header overflows: {head}px"
     prompts = re.findall(r'show screen astro_star_banner\((\d), "([^"]+)"\)', new_src)
     assert [int(p[0]) for p in prompts] == [0, 1, 2, 3]
@@ -445,11 +423,11 @@ def check_layout_and_pixel_bounds():
     assert title_row <= 608
     assert len(stars) * 152 <= 608 and "xysize (152, 3)" in new_src
     widest_result = 0
-    for s in ["本局失误 99 次（只计入流星夜星等评级，不影响主线）",
+    for s in ["本局失误 99 次（只计入本案评级，不影响主线）",
               "首次结案 · 四颗星已写入鉴赏室「天文社流星夜」分页，复盘本扩容到了六页",
               "重玩挑战 · 刷新个人纪录！这一次的四颗星比以往任何一次都连得更稳",
-              "重玩挑战 · 再次摘下一等星，流星夜名侦探实至名归",
-              "重玩挑战 · 零失误连起四颗星，就能把一等星挂上天文社的星图"] + \
+              "重玩挑战 · 再次拿下金牌，流星夜名侦探实至名归",
+              "重玩挑战 · 零失误连起四颗星，就能拿下金牌"] + \
              [f"历史最佳：{t['name']}「{t['title']}」 · 最少失误 99 次 · 累计结案 99 次" for t in tiers]:
         widest_result = max(widest_result, _w(f[12], s))
         assert _w(f[12], s) <= 580, f"Result-card line wraps ({_w(f[12], s)}px): {s}"
@@ -536,65 +514,8 @@ def check_layout_and_pixel_bounds():
     report["CasebookSummary"] = summary
     report["CasebookQuickRow"] = cb_quick
 
-    # ---------------- folio modal: six cases in the 2 x 3 grid + the six-page casebook as a full-width card ----------------
-    folio = pc14._folio_block(scr_src)
-    panel_w = int(_style_prop(scr_src, "folio_panel", "xsize"))
-    panel_pad = [int(x) for x in _style_prop(scr_src, "folio_panel", "padding").strip("()").split(",")]
-    fcard_w = int(_style_prop(scr_src, "folio_card", "xsize"))
-    fcard_h = int(_style_prop(scr_src, "folio_card", "ysize"))
-    fcard_pad = [int(x) for x in _style_prop(scr_src, "folio_card", "padding").strip("()").split(",")]
-    panel_inner = panel_w - 2 * panel_pad[0]
-    if _pc16_present():
-        # (PC-16: the seven cases + the casebook share one 2 x 4 grid of 350px cards; the wide card is gone -- verify_pc16)
-        # (PC-17: the eight cases + the casebook share one 2 x 5 grid with one blank cell -- verify_pc17)
-        assert panel_inner == 2 * fcard_w + 12 == 712 and ("grid 2 5:" if _pc17_present() else "grid 2 4:") in folio and "xspacing 12" in folio
-        assert "folio_wide_card" not in scr_src and "wide=True" not in folio
-    else:
-        wide_w = int(_style_prop(scr_src, "folio_wide_card", "xsize"))
-        assert re.search(r"^style folio_wide_card is folio_card:\n    xsize 712\n", scr_src, re.M), "Wide card = same card, wider"
-        assert panel_inner == 2 * fcard_w + 12 == wide_w == 712 and "grid 2 3:" in folio and "xspacing 12" in folio
-        grid_blk = folio.split("grid 2 3:", 1)[1].split("\n            use ", 1)[0]
-        assert grid_blk.count("use extras_folio_case_card(") == 6, "The 2 x 3 grid holds exactly the six short cases"
-        assert 'xsize (648 if wide else 278)' in scr_src and wide_w - 2 * fcard_pad[0] == 34 + 10 + 648
-    card_titles = re.findall(r'use extras_folio_case_card\("[^"]+", _\("([^"]+)"\)', folio)
-    assert len(card_titles) == 7 + len(_later_present()), card_titles
-    statuses = ["待结案"]
-    for var in ("LIBRARY_RATING_TIERS", "THEATER_RATING_TIERS", "ATELIER_RATING_TIERS", "SPORTS_RATING_TIERS",
-                "HAUNTED_RATING_TIERS", "ASTRO_RATING_TIERS"):
-        statuses += [t["name"] for t in env[var]]
-    widest_title = 0
-    for t in card_titles:
-        for st in statuses + ["复盘章 6/6"]:
-            row = _w(sf[15], t) + 6 + _wb(f[12], st)
-            widest_title = max(widest_title, row)
-            assert row <= 278, f"Folio card `{t}` + `{st}` overflows 278px: {row}px"
-    # (cards of later milestones are measured by their own verifier: their case data is not in this sandbox)
-    case_lines = [env["folio_case_line"](v, u) for v, u in re.findall(r'folio_case_line\("(\w+)", "([^"]+)"\)', folio)
-                  if v in env]
-    assert len(case_lines) == 6 and max(_w(f[11], s) for s in case_lines) <= 278
-    wide_lines = re.findall(r'use extras_folio_case_card\("[^"]+", _\("[^"]+"\), _\("([^"]+)"\).*, wide=True\)$', folio, re.M)
-    if _pc16_present():
-        assert wide_lines == []
-        wide_lines = re.findall(r'use extras_folio_case_card\("[^"]+", _\("推理笔记复盘本"\), _\("([^"]+)"\)', folio)
-        assert len(wide_lines) == 1 and _w(f[11], wide_lines[0]) <= 278
-    else:
-        assert len(wide_lines) == 1 and _w(f[11], wide_lines[0]) <= 648 and "六桩" in wide_lines[0]
-    sec_h = round(12 * CJK_LINE)
-    head_h = max(44, round(22 * CJK_LINE) + 2 + round(12 * CJK_LINE))
-    if _pc16_present():  # (2 x 4 grid, no wide card: the same height as PC-15's 2 x 3 grid + wide card)
-        g_rows = 5 if _pc17_present() else 4  # (PC-17: one more grid row, still <= 672px -- verify_pc17)
-        f_h = (2 * panel_pad[1] + head_h + 8 + 1 + 8 + sec_h + 8 + fcard_h + 8 + sec_h + 8
-               + (g_rows * fcard_h + (g_rows - 1) * 8) + 8 + 34)
-    else:
-        f_h = (2 * panel_pad[1] + head_h + 8 + 1 + 8 + sec_h + 8 + fcard_h + 8 + sec_h + 8 + (3 * fcard_h + 2 * 8) + 8
-               + fcard_h + 8 + 34)
-    assert f_h <= 720 - 2 * 24, f"Folio modal taller than the window: {f_h}px"
-    f_head = (44 + 12 + max(_w(sf[22], "番外卷宗"), _w(f[12], pc14.folio_header_sub(folio)))
-              + 10 + max(96, _w(f[12], "已完成 9/9") + 20) + 6 + max(96, _w(f[12], "火漆 · 已通关解封") + 20))
-    assert f_head <= panel_inner
-    report["FolioCardTitle"] = widest_title
-    report["FolioWideLine"] = _w(f[11], wide_lines[0])
-    report["FolioHeight"] = f"{f_h} (PC-14 444)"
+    # ---------------- case file modal (PC-G2: ten big cards, one legend; replaces the folio) ----------------
+    cf.check_layout(env, report)
 
     # ---------------- main menu: 4 rows kept, re-flowed 4 + 3 + 3 + 4, zero horizontal overlap with the nav column ----------------
     mm = pc14.measure_main_menu(env)
@@ -723,11 +644,11 @@ def check_pc15_runtime():
     for k in links:
         assert star_col[k["star"]] == k["color"] and re.fullmatch(r"#[0-9a-f]{6}", k["color"]), k["id"]
     assert len({k["color"] for k in links}) == 4, "Each star gets its own colour"
-    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["一等星", "二等星", "三等星"]
+    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金牌", "银牌", "铜牌"]
     older_tiers = set()
     for var in ("LIBRARY_RATING_TIERS", "THEATER_RATING_TIERS", "ATELIER_RATING_TIERS", "SPORTS_RATING_TIERS", "HAUNTED_RATING_TIERS"):
         older_tiers |= {t["name"] for t in env[var]}
-    assert not older_tiers & {t["name"] for t in tiers}, "Magnitude rating must not reuse bookmarks / stubs / frames / stopwatches / lanterns"
+    assert [t["name"] for t in tiers] == cf.GRADE_NAMES  # (PC-G2: one set of rating names for all eight cases)
     assert len(case["solution_pub"]) >= 120 and case["mo_note_pub"] and case["alice_note_pub"]
     for word in ("卸镜", "软包", "南门", "魏师傅", "土星"):
         assert word in case["solution_pub"], f"Solution does not name `{word}`"
@@ -872,7 +793,7 @@ def check_pc15_runtime():
     assert r["new_record"] and r["best_tier"] == "gold" and mock_ach.has("ach_first_magnitude")
     r = env["astro_record_solve"](3)
     assert not r["new_record"] and r["replays"] == 4 and r["best_tier"] == "gold" and r["last_tier"] == "bronze"
-    assert env["astro_gold_count"]() == 1 and env["astro_best_short"]() == "一等星"
+    assert env["astro_gold_count"]() == 1 and env["astro_best_short"]() == "金牌"
     v = env["astro_render_view"]()
     assert v["solved"] and v["display_solution"] == case["solution_pub"] and v["star_shorts"] == [k["short"] for k in links]
     env["astro_open_report_modal"]()
@@ -883,13 +804,7 @@ def check_pc15_runtime():
         assert env[fn]() == 0, f"Older case store touched ({fn})"
 
     # ---- F. accordion sub-bar helpers (18 tabs / 5 groups) ----
-    for g in env["EXTRAS_SALON_GROUPS"]:
-        for t in g[3]:
-            assert env["salon_group_of"](t) == g[0] and env["salon_open_group"](t) == g[0]
-            if env["_SALON_TAB_PILLS"][t][1] in env:  # (later milestones' counters are not in this sandbox)
-                assert re.fullmatch(r"\S+ \d+/\d+", env["salon_tab_pill_text"](t)), t
-    assert env["salon_open_group"]("astro") == ("starlit" if _pc16_present() else "closedlib")
-    assert env["salon_tab_pill_text"]("astro") == "天文 1/1"
+    cf.check_pill_texts(env)
     assert env["salon_tab_icon"]("astro").endswith("icon_astro_club.png")
     assert env["salon_tab_pill_text"]("notebook") == "复盘 0/6"
 
@@ -971,8 +886,8 @@ def check_pc15_runtime():
     assert _persistent_snapshot(mp) == snap, "Casebook rendering wrote persistent state"
     ph = env["notebook_render_page"]("haunted")
     pa = env["notebook_render_page"]("astro")
-    assert ph["solved"] and ph["best_name"] == "金灯笼" and ph["status"] == "ready" and ph["unit"] == "四盏灯"
-    assert pa["solved"] and pa["best_name"] == "二等星" and pa["inspected_count"] == 2 and pa["hotspot_total"] == 6
+    assert ph["solved"] and ph["best_name"] == "金牌" and ph["status"] == "ready" and ph["unit"] == "四盏灯"
+    assert pa["solved"] and pa["best_name"] == "银牌" and pa["inspected_count"] == 2 and pa["hotspot_total"] == 6
     assert [r[3] for r in pa["evidence_rows"]] == [False, True, False, False, True, False]
     assert [r[2] for r in pa["evidence_rows"] if not r[3]] == ["", "", "", ""], "Uninspected evidence must stay blank"
     assert pa["chain"] == [(k["step"], k["name"], k["short"]) for k in links]
@@ -1039,44 +954,15 @@ def check_pc15_runtime():
         assert env["notebook_render_page"](key)["display_secret"] == saved
         mp.te_cleared = False
 
-    # ---- I. folio: six cases + the six-page casebook, counts, graceful degradation, wiring ----
-    for fld in CASE_STORES:
-        setattr(mp, fld, {})
-    mp.dlc_alice_done = False
-    mp.dlc_mo_done = False
-    n_total = 9 + len(_later_present())  # (PC-16's 7th case counts as "not done" here: its counter is not in this sandbox)
-    assert env["folio_done_count"]() == 0 and env["folio_total_count"]() == n_total
-    for solve in ("library_record_solve", "theater_record_solve", "atelier_record_solve", "sports_record_solve",
-                  "haunted_record_solve", "astro_record_solve"):
-        env[solve](1)
-    mp.dlc_alice_done = mp.dlc_mo_done = True
-    assert env["folio_done_count"]() == 8, "Casebook not fully stamped yet"
-    for key in NOTEBOOK_KEYS:
-        env["casebook_stamp"](key)
-    assert env["folio_done_count"]() == 9 and env["folio_total_count"]() == n_total
-    saved_counter = env.pop("astro_case_solved_count")
-    assert env["folio_done_count"]() == 8, "A missing counter must count as not done, never crash"
-    env["astro_case_solved_count"] = saved_counter
-    line = env["folio_case_line"]("ASTRO_CASE", "四颗星")
-    _clean(line, "folio astro line")
-    assert line == "MN-01 《流星夜的空三脚架》 · 四颗星"
+    # ---- I. case file (PC-G2): gate, conversion, actions, counts, read-only, wiring ----
+    cf.check_runtime(env, mp, ["library", "theater", "atelier", "sportsday", "haunted", "astro"],
+                     _persistent_snapshot, _strings, SECRET_KEYWORDS)
+    cf.check_grades(env, ["library", "theater", "atelier", "sportsday", "haunted", "astro"])
+    cf.check_entries()
     scr_src = _read("game/screens.rpy")
     extra_src = _read("game/extra.rpy")
-    folio = pc14._folio_block(scr_src)
     mm = pc14.measure_main_menu(env)
-    assert mm["folio_tabs"] == FOLIO_CASE_TABS[:-1] + (["pool"] if _pc16_present() else []) + (["bake"] if _pc17_present() else []) + FOLIO_CASE_TABS[-1:], mm["folio_tabs"]
-    assert re.search(r'astro_best_short\(\), astro_case_solved_count\(\) > 0, SetField\(persistent, "extras_tab", "astro"\), from_extras\)', folio)
-    card = scr_src.split("screen extras_folio_case_card(", 1)[1].split("\nscreen ", 1)[0]
-    assert 'action ([Hide("extras_folio_modal"), tab_action] + ([] if from_extras else [ShowMenu("extras")]))' in card
-    if _pc16_present():  # (PC-16: the casebook card is an ordinary card again; the wide variant is removed)
-        assert re.search(r'notebook_stamped_count\(\) >= len\(NOTEBOOK_CASES\), SetField\(persistent, "extras_tab", "notebook"\), from_extras\)$', folio, re.M)
-        assert card.startswith("icon, title, line, status, done, tab_action, from_extras=False):")
-    else:
-        assert re.search(r'notebook_stamped_count\(\) >= len\(NOTEBOOK_CASES\), SetField\(persistent, "extras_tab", "notebook"\), from_extras, wide=True\)', folio)
-        assert card.startswith("icon, title, line, status, done, tab_action, from_extras=False, wide=False):")
-        assert 'style ("folio_wide_card" if wide else "folio_card")' in card
-    assert "Start(" not in folio and "Replay(" not in folio and not re.findall(r"SetField\(persistent, \"(?!extras_tab)", folio)
-    assert "astro_case_solved_count" in extra_src.split("FOLIO_CASE_COUNTERS = ", 1)[1].split(")", 1)[0]
+    assert mm["folio_tabs"] == cf.CASE_TABS, mm["folio_tabs"]
 
     # ---- J. main menu: no new chip, the case only in the folio ----
     main_blk = scr_src.split("screen main_menu():", 1)[1].split("\nstyle ", 1)[0]
@@ -1127,22 +1013,22 @@ def check_zero_intrusion_and_icons():
     # byte-exact, every occurrence, nothing else); main-story files never qualify
     swapped = glyphs.glyph_swap_only_files()
     assert not swapped & set(MAIN_STORY_FILES)
-    older = [m for m in OLDER_EXTRAS_MODULES if m not in swapped]
+    older = cf.unchanged_modules(m for m in OLDER_EXTRAS_MODULES if m not in swapped)
     if _pc16_present():
         # PC-16 deletes PC-13's four-tab casebook page (unused since PC-15) from zephyr_relay_casebook.rpy: that one older
         # module may differ from HEAD only by removed lines and added `##` comment lines (line-exact check: verify_pc16)
-        older.remove("game/zephyr_relay_casebook.rpy")
         zd = subprocess.run(["git", "diff", "-U0", "--", "game/zephyr_relay_casebook.rpy"],
                             cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", check=True)
         for ln in zd.stdout.splitlines():
             if ln.startswith("+") and not ln.startswith("+++"):
-                assert not ln[1:].strip() or ln[1:].lstrip().startswith("##"), f"PC-13 module gained code: {ln}"
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES, *older],
+                assert cf.pc13_line_ok(ln), f"PC-13 module gained code: {ln}"
+    res = subprocess.run(["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES), *older],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay / older extras modules were modified!\n{res.stdout}"
-    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES, *older],
+    diff = subprocess.run(["git", "diff", "--numstat", "--", *rs.strict_files(MAIN_STORY_FILES), *older],
                           cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert diff.stdout.strip() == "", "Main story / older module files have a diff"
+    cf.check_story_frozen()  # (the modules the release touches keep their stories)
     # whole-project guard: among *tracked* files only the PC-15 targets and the forward-compatible verifier edits may
     # differ from HEAD (untracked new files are not flagged; on a clean committed checkout nothing differs at all)
     allowed = set(PC15_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc15.py"]) | swapped
@@ -1153,7 +1039,7 @@ def check_zero_intrusion_and_icons():
     stray = []
     for line in st.stdout.splitlines():
         rel = line[3:].strip().strip('"').split("paper-crane-detective/", 1)[-1]
-        if rel not in allowed:
+        if rel not in allowed and not cf.release_touched(rel):
             stray.append(rel)
     assert not stray, f"Unexpected modified tracked files: {stray}"
     for bad in ("game/cache", "dists", "tests/__pycache__"):
@@ -1271,9 +1157,7 @@ def check_balanced_delimiters_and_references():
     tint_re = r"background Transform\(Frame\(\"(gui/[a-z_]+\.png)\", \d+, \d+\), matrixcolor=TintMatrix\(\"#[0-9a-f]{6}\"\) \* SaturationMatrix\(0\.0\)\)"
     tinted = re.findall(tint_re, new_src)
     assert len(tinted) == 2 and all((GAME_DIR / g).is_file() for g in tinted), tinted
-    blk = re.search(r"^style salon_sext_pill is bookstreet_subtab_pill:\n((?:    .*\n)+)", new_src, re.M).group(1)
-    assert sorted(ln.split()[0] for ln in blk.strip().splitlines()) == ["padding", "xminimum"]
-    assert re.search(r"^style salon_sext_pill_text is bookstreet_subtab_pill_text$", new_src, re.M)
+    assert "salon_sext_pill" not in new_src, "PC-G2 removed the one-icon sext state (no group of six pills left)"
     # the casebook reuses PC-13's own styles for everything but the wider index tab
     exp = new_src.split("screen extras_casebook_expanded():", 1)[1].split("\n####", 1)[0]
     used_styles = set(re.findall(r'style "(\w+)"', exp))
@@ -1335,8 +1219,8 @@ def check_balanced_delimiters_and_references():
     assert not missing, "Missing assets:\n  " + "\n  ".join(sorted(set(missing)))
     for icon in PC15_UI_ICONS:
         assert icon in refs, f"PC-15 icon {icon} is not wired into any .rpy"
-    folio = pc14._folio_block(scr_src)
-    assert '"images/ui/icon_astro_club.png"' in folio, "The folio card uses the astronomy-club entry icon"
+    env_icons = re.search(r"_SALON_TAB_ICONS = \{(.*?)\n    \}", _read("game/extra.rpy"), re.S).group(1)  # (PC-G2: case file icons)
+    assert "images/ui/icon_astro_club.png" in env_icons, "The case file card uses the astronomy-club entry icon"
     audio_src = _read("game/audio.rpy")
     for se in set(re.findall(r"play sound (se_\w+)", new_src)):
         assert re.search(rf"define audio\.{se}\s*=", audio_src), f"Undefined sound {se}"

@@ -108,7 +108,7 @@ label chapter1:
             hide lvfu with dissolve
             show alice angry at right
             alice "听见没？粉丝只认书，不认牛皮纸包裹。乱指认委托人可是要扣万事屋信誉分的，重来！"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong
             jump chapter1_retry1
         "Joker 是怪盗，一定是他偷的":
             mc "那个自称怪盗的家伙最可疑！"
@@ -123,11 +123,11 @@ label chapter1:
             show mo neutral at center
             mo_note "中二病不是作案证据。"
             narrator "墨墨面无表情地把这八个字推到我眼皮底下。我感觉后脑勺被无形地敲了一下。"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_1
             jump chapter1_retry1
 
 label chapter1_retry1:
-    call alice_hint("别盯着“谁可疑”。想想监控里那 15 分钟，还有你自己进办公室时对柜子做了什么。")
+    call alice_hint("别盯着“谁可疑”。想想监控里那 15 分钟，还有你自己进办公室时对柜子做了什么。") from _call_alice_hint
     menu:
         "再想想，哪条线索最关键？"
         "监控里我“进办公室 15 分钟”，正是拖地耗时——时间能对上拖地路线":
@@ -136,7 +136,7 @@ label chapter1_retry1:
             jump ch1_reason1_ok2
 
 label ch1_reason1_ok:
-    call reason_correct
+    call reason_correct from _call_reason_correct
     mc "等等——监控里我进办公室待了 15 分钟，那正是我拖整间办公室的时间！如果是去偷东西，根本用不了这么久！"
     hide wang with dissolve
     show lin neutral at left with moveinleft
@@ -151,7 +151,7 @@ label ch1_reason1_ok:
     jump ch1_reason1_join
 
 label ch1_reason1_ok2:
-    call reason_correct
+    call reason_correct from _call_reason_correct_1
     mc "我进去时柜子是“半掩没锁”的，我出于好心把它“关上”了。可如果我是贼，我应该是把柜子“打开”才对！"
     show wang shock at left with dissolve
     wang "关上……"

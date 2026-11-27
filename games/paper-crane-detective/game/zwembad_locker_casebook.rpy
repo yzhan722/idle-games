@@ -10,16 +10,13 @@
 ##      管理员葛阿姨用总钥匙开柜，明天要戴着上场的旧队帽不见了，葛阿姨要报学校、停掉课外开放。
 ##      六处勘查点（错位的 23 号钥匙、计时台的手环篮、开线的旧队帽、打满孔的入场卡、看台上的深蓝线头、备用泳帽箱），
 ##      推理链是一场「混合泳四段」：手法 → 时机 → 去向 → 戴帽人。每段三选一、各配一种泳道浮标的颜色，选错只给温柔提示、
-##      只计入本地 _lk_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜浪花并保存历史最佳纪录，
+##      只计入本地 _lk_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，
 ##      可无限重玩刷新纪录，持久化于 persistent.pool_locker_record。
 ##      真相完全写实（1～20 号柜蓝手环 / 21～40 号柜橙手环、钥匙柄上的刻号、被掰开过的号码牌小铁环、计时赛手环篮的计数、
 ##      剪齐的旧线头与新缝的深蓝针脚、补测提前与「不戴泳帽不许下水」的规矩），没有任何超自然要素。
 ##   3. 防剧透联动：墨墨在本案页边的续批、复盘本新增一页的页边续批，都严格经 truth_spoiler_unlocked() 零侧信道遮罩，
-##      与复盘本、合照相册、番外卷宗等共用同一个「解锁剧透 / 恢复遮罩」开关。
-##   4. 入口只进「番外卷宗」：主菜单不新增胶囊；卷宗改为 2 × 4 网格（七桩短案 + 复盘本），高度与 PC-15 相同；
-##      复盘本由六页扩为七页（只往 PC-13 的页目登记表里再追加一页，PC-15 的 3 列索引签网格自动排成三行）；
-##      侦探社沙龙子栏把天文社流星夜移入「电波与星空」组（与钟楼星象馆、铜章手账册同属星空主题），本案接入「放学后短案」组，
-##      两组展开态都不超过 702px 内宽。
+##      与复盘本、合照相册、案卷等共用同一个「解锁剧透 / 恢复遮罩」开关。
+##   4. 入口只在「案卷」：主菜单不新增胶囊；复盘本扩为七页（只往 PC-13 的页目登记表里再追加一页）。
 ##   5. 本文件按文件名排在 zubenelgenubi_meteor_casebook.rpy 之后初始化，双成就追加在 PC-15 之后，成就页扩展为 2×19 = 38 枚。
 
 # —— PC-16 游泳馆 UI 图标命名别名（128x128 RGBA 透明底）——
@@ -46,12 +43,12 @@ init python:
         register_extra_achievement(
             "ach_golden_wave",
             "金浪花的泳池侦探",
-            "零失误游完混合泳四段，摘得金浪花。",
+            "零失误游完混合泳四段，拿下金牌。",
             False,
         )
 
     ############################################################################
-    ## 一、游泳池更衣柜的错位钥匙（1 桩可重玩短案 · 6 处勘查点 · 混合泳四段 · 金银铜浪花评级）
+    ## 一、游泳池更衣柜的错位钥匙（1 桩可重玩短案 · 6 处勘查点 · 混合泳四段 · 金银铜牌评级）
     ############################################################################
 
     POOL_CASE = {
@@ -249,9 +246,9 @@ init python:
     ]
 
     POOL_RATING_TIERS = [
-        {"key": "gold",   "name": "金浪花", "title": "泳池名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "银浪花", "title": "泳道推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "铜浪花", "title": "初学换气", "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "泳池名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "泳道推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "初学换气", "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _POOL_TIER_BY_KEY = {t["key"]: t for t in POOL_RATING_TIERS}
@@ -266,7 +263,7 @@ init python:
         return _POOL_TIER_BY_KEY.get(tier_key, POOL_RATING_TIERS[-1])
 
     def pool_rate(mistakes_count=0):
-        """按本局失误数评定浪花：0 次金浪花，1～2 次银浪花，3 次及以上铜浪花。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in POOL_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -283,17 +280,14 @@ init python:
 
     def pool_get_record():
         raw = _ensure_pool_store()
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _POOL_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _POOL_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _POOL_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [s for s in (raw.get("inspected") or []) if s in _POOL_SPOT_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -311,7 +305,7 @@ init python:
         return 1 if pool_get_record()["best_tier"] == "gold" else 0
 
     def pool_best_short():
-        """番外卷宗与鉴赏页使用：历史最佳浪花，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级，未结案时显示「待结案」。"""
         rec = pool_get_record()
         return pool_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -336,8 +330,8 @@ init python:
         return True
 
     def pool_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局浪花、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
-        只写更衣柜案自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加金浪花成就。"""
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        只写更衣柜案自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加金牌成就。"""
         m = max(0, int(mistakes_count or 0))
         tier = pool_rate(m)
         prev = pool_get_record()
@@ -475,7 +469,7 @@ screen extras_pool_locker():
                         xsize 398
                         text _("游泳池更衣柜的错位钥匙") font gui.name_text_font size 19 color "#ecfcff"
                         if _pv["solved"]:
-                            text _("已结案 · 混合泳四段已全部游完 · 可随时重回泳池冲击金浪花") size 12 color "#9fe3b0"
+                            text _("已结案 · 混合泳四段已全部游完 · 可随时重回泳池冲击金牌") size 12 color "#9fe3b0"
                         else:
                             text _("区赛前一天，队长的钥匙开不了自己的柜子 · 队帽去了哪") size 12 color "#c0e6ee"
                 hbox:
@@ -493,7 +487,7 @@ screen extras_pool_locker():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _pv["replays"]) size 12 color "#bfeaf2" align (0.5, 0.5) substitute False
 
-        ## 2. 卷宗详情：游泳馆缩略图（底部四段泳姿色带，结案后点亮）、案情、六处勘查点、混合泳四段、浪花评级与页边续批
+        ## 2. 卷宗详情：游泳馆缩略图（底部四段泳姿色带，结案后点亮）、案情、六处勘查点、混合泳四段、评级与页边续批
         frame:
             style "pool_console_card"
             vbox:
@@ -599,7 +593,7 @@ screen extras_pool_locker():
                                 text ("%s · %s" % (l_obj["step"], l_obj["name"])) size 11 color ("#9fe3b0" if _pv["solved"] else "#b4dce6") bold True substitute False
                                 text (_pv["lap_shorts"][_ki] if _pv["solved"] else _("？ 待游完")) size 12 color ("#f1fafc" if _pv["solved"] else "#7ea4ae") substitute False
 
-                ## 2C. 浪花评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "pool_rating_card"
                     vbox:
@@ -612,7 +606,7 @@ screen extras_pool_locker():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_locker_key.png" xysize (16, 16) yalign 0.5
-                                text _("浪花评级 · 重玩挑战") font gui.name_text_font size 13 color "#f1fafc" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#f1fafc" yalign 0.5
                             text ("历史最佳：%s" % _pv["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -625,7 +619,7 @@ screen extras_pool_locker():
                                         text ("%s「%s」" % (w_obj["name"], w_obj["title"])) size 12 color ("#f4d98a" if _pv["best_tier"] == w_obj["key"] else "#e2f2f6") yalign 0.5 substitute False
                                         text w_obj["rule"] size 11 color "#a6cad4" xalign 1.0 yalign 0.5 substitute False
                         if _pv["solved"]:
-                            add Solid("#9fd8e433") xfill True ysize 1
+                            add Solid("#9fd8e433") ysize 1
                             text _pv["display_solution"] size 12 color "#9fe3b0" line_spacing 2 substitute False
                             text _pv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _pv["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -673,7 +667,7 @@ screen extras_pool_locker():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误游完混合泳四段可获金浪花 · 已结案 %d 次" % _pv["replays"]) size 12 color "#a6cad4" yalign 0.5 substitute False
+                    text ("零失误游完混合泳四段可获金牌 · 已结案 %d 次" % _pv["replays"]) size 12 color "#a6cad4" yalign 0.5 substitute False
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -763,7 +757,7 @@ screen pool_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#9fd8e4" bold True
                     text _qv["summary"] size 13 color "#eef9fc" line_spacing 4 substitute False
-                    add Solid("#b4dce633") xfill True ysize 1
+                    add Solid("#b4dce633") ysize 1
                     if _qv["solved"]:
                         text _("混合泳四段：") size 12 color "#9fd8e4" bold True
                         for _ri, q_obj in enumerate(POOL_LAP_LINKS):
@@ -771,12 +765,12 @@ screen pool_report_modal():
                                 spacing 8
                                 add Solid(q_obj["color"]) xysize (6, 18) yalign 0.0
                                 text ("%s · %s（%s）：%s" % (q_obj["step"], q_obj["name"], q_obj["stroke"], _qv["lap_fulls"][_ri])) size 13 color "#e2f2f6" line_spacing 3 xsize 658 substitute False
-                        add Solid("#9fd8e433") xfill True ysize 1
+                        add Solid("#9fd8e433") ysize 1
                         text _qv["display_solution"] size 13 color "#9fe3b0" line_spacing 4 substitute False
                         text _qv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _qv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
                         if _qv["display_secret"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _qv["display_secret"] size 13 color "#f4d98a" line_spacing 4 substitute False
                     else:
                         text _("这桩案子还没有结案。回到游泳馆、查完六处线索并游完混合泳四段后，完整的结案报告会显影在这里。") size 13 color "#a6cad4" line_spacing 4
@@ -818,7 +812,7 @@ screen pool_lap_banner(laps_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_swim_cap.png" xysize (22, 22) yalign 0.5
                 text _("游泳馆 · 混合泳四段") size 12 color "#9fd8e4" bold True yalign 0.5
-                text ("已游完 %d/%d · 失误只计入本案浪花评级，不影响主线" % (laps_done, len(POOL_LAP_LINKS))) size 11 color "#b4dce6" yalign 0.5
+                text ("已游完 %d/%d · 失误只计入本案评级，不影响主线" % (laps_done, len(POOL_LAP_LINKS))) size 11 color "#b4dce6" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(POOL_LAP_LINKS):
@@ -832,7 +826,7 @@ screen pool_lap_banner(laps_done, prompt_line):
             text prompt_line size 14 color "#f1fafc" substitute False
 
 
-## 游泳馆结案结算卡：本局浪花评级 + 历史最佳纪录 + 重玩挑战提示
+## 游泳馆结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen pool_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -881,16 +875,16 @@ screen pool_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, n
                     spacing 4
                     text _wv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _wv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入更衣柜浪花评级，不影响主线）" % mistakes) size 12 color "#b4dce6"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#b4dce6"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_wbest["name"], _wbest["title"], best_mistakes, replays)) size 12 color "#b4dce6" substitute False
                     if is_first:
                         text _("首次结案 · 混合泳四段已写入鉴赏室「游泳池更衣柜」分页，复盘本扩容到了七页") size 12 color "#9fe3b0"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一次的四段比以往任何一次都游得更顺") size 12 color "#f4d98a"
                     elif _is_gold:
-                        text _("重玩挑战 · 再次摘下金浪花，泳池名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，泳池名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误游完混合泳四段，就能把金浪花挂上游泳馆的白板") size 12 color "#b4dce6"
+                        text _("重玩挑战 · 零失误游完混合泳四段，就能拿下金牌") size 12 color "#b4dce6"
 
             textbutton _("收好号码牌并返回鉴赏室"):
                 style "pill_button"
@@ -992,7 +986,7 @@ label _pool_finish_case(local_mistakes=0):
 ################################################################################
 
 label pool_locker_case:
-    call _pool_init_sandbox("游泳馆更衣柜 · SW-01 错位的二十三号钥匙")
+    call _pool_init_sandbox("游泳馆更衣柜 · SW-01 错位的二十三号钥匙") from _call__pool_init_sandbox
     $ _lk_mistakes = 0
     $ _lk_laps = 0
     $ _lk_s1 = False
@@ -1200,9 +1194,9 @@ label pool_case_review_intro:
     mo_note "像混合泳一样。四段游完，才算到岸。"
     alice "那就一段一段游！钥匙是怎么错的、什么时候错的、帽子去了哪、是谁戴着它——四段游完，真相就靠岸了！"
     if _lk_replays > 0:
-        sysmsg "【更衣柜 · 重玩挑战】当前历史最佳：[_lk_best_text]。零失误游完混合泳四段，就能摘下金浪花。"
+        sysmsg "【更衣柜 · 重玩挑战】当前历史最佳：[_lk_best_text]。零失误游完混合泳四段，就能拿下金牌。"
     else:
-        sysmsg "【更衣柜 · 混合泳四段】依次选出「手法 → 时机 → 去向 → 戴帽人」。零失误可获金浪花评级，失误只计入本案评级，不影响主线。"
+        sysmsg "【更衣柜 · 混合泳四段】依次选出「手法 → 时机 → 去向 → 戴帽人」。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label pool_lap_k1:
     show screen pool_lap_banner(0, "蝶泳段 · 手法：蓝手环、钥匙柄上的 07、被掰开过的小铁环——钥匙是怎么错位的？")
@@ -1419,5 +1413,5 @@ label pool_case_resolution:
     show alice smile at left
     alice "好！万事屋推理笔记复盘本，今天正式扩容到七页！"
 
-    call _pool_finish_case(_lk_mistakes)
+    call _pool_finish_case(_lk_mistakes) from _call__pool_finish_case
     return

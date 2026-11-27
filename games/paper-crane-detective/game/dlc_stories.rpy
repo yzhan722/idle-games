@@ -1,7 +1,7 @@
 ## 《沉默侦探：千纸鹤的约定》—— 双女主番外短篇（DLC）
 ## dlc_stories.rpy
 ##
-## 收录两篇独立番外短篇（从「章节选择 -> 番外短篇（DLC）」直接进入，零侵入主线数值与分支）：
+## 收录两篇独立番外短篇（从「案卷」直接进入，零侵入主线数值与分支）：
 ##   1. label dlc_alice_ledger  —— 《艾丽丝的代价账本》（艾丽丝视角 · 万事屋第 129 号委托，含证物翻面勘验 + 双线索逻辑拼合）
 ##   2. label dlc_mo_bookstreet —— 《旧书街与第三只千纸鹤》（TRUE END 后日谈 · 重新发声后的墨墨周末旧书街约会）
 
@@ -268,7 +268,7 @@ label dlc_alice_deduction_stage:
         conclusion_title="破局推论一：钥匙与黄铜尺压痕锁定小林",
         conclusion_body="陈列柜锁芯完好，昨晚唯一借走过钥匙的外人只有小林；而借据边缘残留的黄铜压尺痕迹与第47页存根缺口完全吻合，证实正是小林留下了借据。",
         wrong_hints=DLC_ALICE_HINTS_1
-    )
+    ) from _call_run_deduction_combine_3
 
     show alice happy at left
     alice "漂亮！第一扣稳稳锁上啦！那么接下来就是最关键的第二问——"
@@ -279,7 +279,7 @@ label dlc_alice_deduction_stage:
         conclusion_title="破局推论二：用保密人情换一夜静悄悄的修补",
         conclusion_body="棋子底座原本就已老化松脱，小林无意碰裂后怕连累桌游社评优，便连夜托小卖部阿姨找老钳工焊接抛光，并用两个月前替墨墨补书攒下的第47页保密券请艾丽丝替她打掩护！",
         wrong_hints=DLC_ALICE_HINTS_2
-    )
+    ) from _call_run_deduction_combine_4
 
     $ play_bgm(bgm_warm, fadein=1.5, fadeout=1.0)
     scene bg clubroom

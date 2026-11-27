@@ -3,7 +3,7 @@
 """
 PC-14 Static, Behavioral, Pixel-Budget, Culture-Festival Haunted House "Seventh Shadow" Case (replayable,
 rated, realistic: four lamps light -> silhouette -> timing -> lamp-holder), Main-Menu Extra-Story Chip Merge
-into one grouped "番外卷宗" folio entry (6 rows -> 4 rows, wider gap to the progress badge), Folio Spoiler-Gate
+into one grouped folio entry (PC-G2: the 「案卷」) (6 rows -> 4 rows, wider gap to the progress badge), Folio Spoiler-Gate
 & Unlock-Condition Parity (side-channel proof), Salon Accordion Sub-Bar (17 tabs / 5 groups, one-icon quint
 pills for the 5-tab group), Asset & Zero-Intrusion Verifier for 《沉默侦探：千纸鹤的约定》
 (games/paper-crane-detective).
@@ -32,10 +32,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verify_pc8 as pc8  # noqa: E402
 import verify_pc9 as pc9  # noqa: E402
 import verify_pc10 as pc10  # noqa: E402
+import casefile_checks as cf  # noqa: E402
 import verify_pc11 as pc11  # noqa: E402
 import verify_pc12 as pc12  # noqa: E402
 import verify_pc13 as pc13  # noqa: E402
 import verify_glyphs as glyphs  # noqa: E402
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -184,21 +186,6 @@ def _folio_block(scr_src):
     return scr_src.split("screen extras_folio_modal(", 1)[1].split("\nscreen ", 1)[0]
 
 
-def folio_header_sub(folio):
-    """The folio's one-line header subtitle (12px, under the 22px serif title), parsed from the screen -- never assumed
-    (shared with verify_pc15 / verify_pc16, so a copy edit is measured as written)."""
-    m = re.search(r'text _\("番外卷宗"\) font gui\.name_text_font size 22 color "#fff1d6"\n +text _\("([^"]+)"\) size 12 ', folio)
-    assert m, "Folio header subtitle not found"
-    return m.group(1)
-
-
-def folio_footer_hint(folio):
-    """The folio's footer hint left of the 「合上卷宗」 pill (must still name the Esc key), parsed from the screen."""
-    m = re.search(r'text _\("([^"]+)"\) size 12 color "#b39d7a" yalign 0\.5\n +textbutton _\("合上卷宗"\):', folio)
-    assert m and "Esc" in m.group(1), "Folio footer hint (Esc key) not found"
-    return m.group(1)
-
-
 def measure_main_menu(env=None):
     """Parse screen main_menu's title column from screens.rpy and measure it at 1280x720 (shared with verify_pc10..13, 15).
 
@@ -273,11 +260,10 @@ def measure_main_menu(env=None):
     badge_top = 720 - 14 - (2 * 5 + max(_line_h(f[15]), round(22 * 0.78)))
     top, bottom = column(len(rows), sum(nulls))
     base_top, base_bottom = column(len(PC13_MAIN_MENU_ROWS), sum(head_nulls) + 8 * (len(PC13_MAIN_MENU_ROWS) - 1))
-    folio = _folio_block(scr_src)
     return {
         "rows": rows, "row_w": row_w, "styles": styles, "chip_w": chip_w, "left": left, "right": right, "centers": centers,
-        "chips": [k for r in rows for k in r], "folio_tabs": re.findall(r'SetField\(persistent, "extras_tab", "(\w+)"\)', folio),
-        "folio_dlc": re.findall(r'use extras_folio_dlc_card\("(\w+)"\)', folio),
+        "chips": [k for r in rows for k in r], "folio_tabs": [c[0] for c in env["CASEFILE_CASES"]],
+        "folio_dlc": [d[0] for d in env["DLC_LIST"]],
         "top": top, "bottom": bottom, "badge_top": badge_top, "gap": badge_top - bottom,
         "base": {"top": base_top, "bottom": base_bottom, "gap": badge_top - base_bottom},
         "separators": nulls[len(head_nulls):],
@@ -385,46 +371,7 @@ def check_layout_and_pixel_bounds():
     #     Group 4 now holds 5 tabs: one leading icon (the current tab's) + five 56px compact pills (salon_quint_pill).
     #     With PC-13's "icon per tab + 60px pill" rule that state would overflow (measured below: the reason for the change).
     sb = pc10.measure_salon_subbar()
-    if _later_present():
-        # PC-15+ may append tabs to a group (each PC-14 group keeps its tabs first, in order; widths re-measured)
-        assert [g[0] for g in sb["groups"]] == [g for g, _t in SALON_GROUPS_EXPECTED], sb["groups"]
-        for (gkey, gtabs), g in zip(SALON_GROUPS_EXPECTED, sb["groups"]):
-            assert tuple(g[3])[:len(gtabs)] == gtabs, (gkey, g[3])
-        assert len(sb["keys"]) == len(set(sb["keys"])) and set(SALON_KEYS) <= set(sb["keys"]), sb["keys"]
-    else:
-        assert [(g[0], tuple(g[3])) for g in sb["groups"]] == SALON_GROUPS_EXPECTED, sb["groups"]
-        assert len(sb["keys"]) == len(set(sb["keys"])) == 17
-    assert sb["inner"] == 702
-    for gkey, px in sb["per_group"].items():
-        assert px <= sb["inner"], f"Sub-bar with `{gkey}` open overflows 702px: {px}px"
-    labels = {g[0]: g[1] for g in sb["groups"]}
-    assert labels == {"salon": "侦探社沙龙", "bookstreet": "旧书街与四季", "starlit": "电波与星空",
-                      "closedlib": "放学后短案", "keepsake": "纪念与寄语"}, labels
-    assert sb["quad"] == (4, 60, 4), f"Compact pill rule changed: {sb['quad']}"
-    assert sb["quint"] == (5, 56, 4), f"Quint pill rule changed: {sb['quint']}"
-    for k in SALON_KEYS:
-        assert f'elif cur == "{k}":' in extra_src, f"extras() viewport does not route `{k}`"
-    assert sb["totals"]["haunted"] == 1
-    pill = lambda t, mn, pad: max(mn, _w(f[11], t) + 2 * pad)  # noqa: E731
-    grp = lambda lbl: max(66, _w(f[11], lbl) + 12)  # noqa: E731
-    quint_tabs = [g for g in sb["groups"] if len(g[3]) >= 5]
-    assert [g[0] for g in quint_tabs] == ["closedlib"]
-    legacy = 0
-    for gkey, glabel, _gi, gtabs in sb["groups"]:
-        if gkey == "closedlib":
-            legacy += sum(14 + 4 + pill(f"{sb['pills'][t][0]} 1/1", 60, 4) + 4 for t in gtabs)
-        else:
-            legacy += 14 + 4 + grp(glabel) + 4
-    legacy -= 4
-    assert legacy > 702, "If per-tab icons + 60px pills fit, the quint style would be unnecessary"
-    widths = {pill(f"{sb['pills'][t][0]} {sb['totals'][t]}/{sb['totals'][t]}", 56, 4) for t in quint_tabs[0][3]}
-    assert widths == {56}, f"Quint pills are not equal-width: {widths}"
-    blk = re.search(r'style "salon_subbar_frame"\n(.*?)\n\s+viewport:', extra_src, re.S).group(1)
-    assert "add salon_tab_icon(cur if cur in _gtabs else _gtabs[0]) xysize (14, 14) yalign 0.5" in blk
-    assert 'style ("salon_quad_pill" if len(_gtabs) >= 4 else "bookstreet_subtab_pill")' in blk, "PC-13 quad rule must stay"
-    report["SubBarWorst"] = sb["worst"]
-    report["SubBarClosedlib"] = sb["per_group"]["closedlib"]
-    report["SubBarIfPerTabIcons"] = legacy
+    cf.check_subbar(sb, SALON_KEYS, extra_src, report)  # (PC-G2: the short cases are one 「案卷」 pill)
 
     # 2.3 subtitle & vertical budget unchanged
     sub = re.search(r'use game_menu\(_\("鉴赏"\), subtitle=_\("([^"]+)"\)\)', extra_src).group(1)
@@ -477,13 +424,13 @@ def check_layout_and_pixel_bounds():
         assert chip <= tier_w - 16, f"Tier chip `{t['name']}` overflows: {chip}px"
     report["LanternTierChip"] = widest_tier
     best_lines = [f"{t['name']}「{t['title']}」 · 最少失误 99 次" for t in tiers]
-    rate_row = 16 + 6 + _w(sf[13], "灯笼评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
+    rate_row = 16 + 6 + _w(sf[13], "评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
     assert rate_row <= scroll_inner, f"Rating header row overflows: {rate_row}px"
     hdr_right = (max(96, 14 + 4 + _w(f[12], "最佳 待结案") + 20) + 6 + max(96, _w(f[12], "结案 99 次") + 20))
     hdr = 36 + 10 + 398 + hdr_right
     assert hdr <= console_inner, f"Haunted header overflows: {hdr}px"
     assert _w(sf[19], "文化祭鬼屋的第七个影子") <= 398
-    for s in ("已结案 · 四盏灯已全部点亮 · 可随时重新走进鬼屋冲击金灯笼", "文化祭第一天，幕布后只站着六个人 · 第七个影子从哪来"):
+    for s in ("已结案 · 四盏灯已全部点亮 · 可随时重新走进鬼屋冲击金牌", "文化祭第一天，幕布后只站着六个人 · 第七个影子从哪来"):
         assert _w(f[12], s) <= 398, f"Haunted header line wraps ({_w(f[12], s)}px): {s}"
     thumb_w = int(_style_prop(extra_src, "mailbox_thumb_frame", "xsize"))
     assert thumb_w + 14 + 492 <= console_inner
@@ -506,14 +453,11 @@ def check_layout_and_pixel_bounds():
     assert notice <= margin_inner, f"Mask notice wraps ({notice}px > {margin_inner}px)"
     assert _lines(f[12], case["margin_secret"], margin_inner) <= 3
     report["MaskNotice"] = notice
-    footer = (_w(f[12], "零失误点亮四盏灯可获金灯笼 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
+    footer = (_w(f[12], "零失误点亮四盏灯可获金牌 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
               + 8 + max(146, _w(f[15], "重新走进鬼屋") + 36, _w(f[15], "走进影子回廊") + 36))
     assert footer <= console_inner, f"Haunted footer overflows: {footer}px"
     report["HauntedFooter"] = footer
-    quick = (20 + 10 + _w(sf[14], "番外卷宗 · 番外与短案合订本") + 10 + _w(f[12], "（已完成 8/8）")
-             + 8 + max(84, _w(f[13], "翻开番外卷宗") + 22))
-    assert quick <= 722 - 24, f"Folio quick row overflows: {quick}px"
-    report["FolioQuickRow"] = quick
+    assert "mailbox_quick_row" not in new_src, "PC-G2 dropped the page's own case-file row (the sub-bar pill opens it)"
 
     # in-scene lamp banner (760 - 2 x 16 = 728 inner) and prompt lines parsed from the script
     banner_slot = int(_style_prop(new_src, "haunted_banner_slot", "xsize"))
@@ -523,7 +467,7 @@ def check_layout_and_pixel_bounds():
     assert 3 + round(10 * CJK_LINE) + round(11 * CJK_LINE) <= banner_h - 8, "Banner slot content too tall"
     for k in links:
         assert _wb(f[10], f"{k['step']} · {k['name']}") <= banner_slot - 16 and _w(f[11], k["short"]) <= banner_slot - 16
-    head = 22 + 8 + _wb(f[12], "影子回廊 · 点亮四盏灯") + 8 + _w(f[11], "已点亮 4/4 · 失误只计入本案灯笼评级，不影响主线")
+    head = 22 + 8 + _wb(f[12], "影子回廊 · 点亮四盏灯") + 8 + _w(f[11], "已点亮 4/4 · 失误只计入本案评级，不影响主线")
     assert head <= 728, f"Banner header overflows: {head}px"
     prompts = re.findall(r'show screen haunted_lamp_banner\((\d), "([^"]+)"\)', new_src)
     assert [int(p[0]) for p in prompts] == [0, 1, 2, 3]
@@ -540,11 +484,11 @@ def check_layout_and_pixel_bounds():
     assert title_row <= 608
     assert len(lanterns) * 152 <= 608 and "xysize (152, 3)" in new_src
     widest_result = 0
-    for s in ["本局失误 99 次（只计入鬼屋灯笼评级，不影响主线）",
-              "首次结案 · 四盏灯已写入鉴赏室「文化祭鬼屋」分页，番外卷宗添上了第五桩短案",
+    for s in ["本局失误 99 次（只计入本案评级，不影响主线）",
+              "首次结案 · 四盏灯已写入鉴赏室「文化祭鬼屋」分页",
               "重玩挑战 · 刷新个人纪录！这一次的四盏灯比以往任何一次都点得更稳",
-              "重玩挑战 · 再次摘下金灯笼，鬼屋名侦探实至名归",
-              "重玩挑战 · 零失误点亮四盏灯，就能把金灯笼挂上鬼屋出口"] + \
+              "重玩挑战 · 再次拿下金牌，鬼屋名侦探实至名归",
+              "重玩挑战 · 零失误点亮四盏灯，就能拿下金牌"] + \
              [f"历史最佳：{t['name']}「{t['title']}」 · 最少失误 99 次 · 累计结案 99 次" for t in tiers]:
         widest_result = max(widest_result, _w(f[12], s))
         assert _w(f[12], s) <= 580, f"Result-card line wraps ({_w(f[12], s)}px): {s}"
@@ -558,79 +502,8 @@ def check_layout_and_pixel_bounds():
                + 10 + max(116, _w(f[14], "合上报告") + 36))
     assert rm_foot <= 692, f"Report modal footer overflows: {rm_foot}px"
 
-    # ---------------- folio modal (screens.rpy): 760 - 2 x 24 = 712 = 2 x 350 + 12 ----------------
-    panel_w = int(_style_prop(scr_src, "folio_panel", "xsize"))
-    panel_pad = [int(x) for x in _style_prop(scr_src, "folio_panel", "padding").strip("()").split(",")]
-    fcard_w = int(_style_prop(scr_src, "folio_card", "xsize"))
-    fcard_h = int(_style_prop(scr_src, "folio_card", "ysize"))
-    fcard_pad = [int(x) for x in _style_prop(scr_src, "folio_card", "padding").strip("()").split(",")]
-    folio = _folio_block(scr_src)
-    panel_inner = panel_w - 2 * panel_pad[0]
-    # (PC-16 puts the seven cases and the casebook into one 2 x 4 grid; PC-14 / PC-15 use a 2 x 3 grid)
-    grid_rows = int(re.search(r"^            grid 2 (\d+):$", folio, re.M).group(1))
-    assert panel_inner == 2 * fcard_w + 12 == 712 and grid_rows == (5 if _pc17_present() else 4 if _pc16_present() else 3) and "xspacing 12" in folio
-    assert fcard_w - 2 * fcard_pad[0] >= 34 + 10 + 278, "Folio card content wider than the card"
-    text_w = 278
-    assert round(15 * CJK_LINE) + 2 + round(11 * CJK_LINE) <= fcard_h - 2 * fcard_pad[1], "Folio card content too tall"
-    statuses = ["待结案"] + [t["name"] for t in env["LIBRARY_RATING_TIERS"] + env["THEATER_RATING_TIERS"]
-                             + env["ATELIER_RATING_TIERS"] + env["SPORTS_RATING_TIERS"] + tiers]
-    case_titles = re.findall(r'use extras_folio_case_card\("[^"]+", _\("([^"]+)"\)', folio)
-    assert len(case_titles) == 6 + len(_later_present()), case_titles
-    widest_card_title = 0
-    for t in case_titles:
-        for st in statuses + ["复盘章 4/4"]:
-            row = _w(sf[15], t) + 6 + _wb(f[12], st)
-            widest_card_title = max(widest_card_title, row)
-            assert row <= text_w, f"Folio card `{t}` + `{st}` overflows {text_w}px: {row}px"
-    # (cards of later milestones are measured by their own verifier: their case data is not in this sandbox)
-    case_lines = [env["folio_case_line"](v, u) for v, u in re.findall(r'folio_case_line\("(\w+)", "([^"]+)"\)', folio)
-                  if v in env]
-    # a full-width card (PC-15's expanded casebook, `wide=True`) is measured against its own 648px text column
-    wide_lines = re.findall(r'use extras_folio_case_card\("[^"]+", _\("[^"]+"\), _\("([^"]+)"\).*, wide=True\)$', folio, re.M)
-    case_lines += [ln for ln in re.findall(r'use extras_folio_case_card\("[^"]+", _\("[^"]+"\), _\("([^"]+)"\)', folio)
-                   if ln not in wide_lines]
-    assert len(case_lines) + len(wide_lines) == 6, (case_lines, wide_lines)
-    assert len(wide_lines) == (0 if _pc16_present() else len(_later_present())), wide_lines
-    for ln in wide_lines:
-        assert int(_style_prop(scr_src, "folio_wide_card", "xsize")) == panel_inner
-        assert _w(f[11], ln) <= panel_inner - 2 * fcard_pad[0] - 34 - 10, f"Wide folio card line overflows: {ln}"
-    widest_line = max(_w(f[11], s) for s in case_lines)
-    assert widest_line <= text_w, f"Folio card sub-line overflows: {widest_line}px"
-    mp = env["persistent"]
-    dlc_rows = []
-    for cr in (0, 6):
-        for te, conf in ((False, False), (False, True), (True, False)):
-            mp.chapter_reached, mp.te_cleared, mp.truth_spoiler_confirmed = cr, te, conf
-            for d in env["DLC_LIST"]:
-                dlc_rows.append(env["folio_dlc_view"](d[0]))
-    mp.chapter_reached, mp.te_cleared, mp.truth_spoiler_confirmed = 0, False, False
-    widest_dlc = 0
-    for v in dlc_rows:
-        row = _w(sf[15], f"{v['badge']} · {v['title']}") + 6 + _wb(f[12], v["status"])
-        widest_dlc = max(widest_dlc, row, _w(f[11], v["note"]))
-        assert row <= text_w and _w(f[11], v["note"]) <= text_w, f"Folio DLC card overflows: {row}px / {v['note']}"
-    report["FolioCardTitle"] = max(widest_card_title, widest_dlc)
-    report["FolioCardLine"] = widest_line
-    seal_w = max(max(96, _w(f[12], s) + 20) for s in ("火漆 · 已通关解封", "火漆 · 手动解封", "火漆 · 封存中"))
-    f_head = (44 + 12 + max(_w(sf[22], "番外卷宗"), _w(f[12], folio_header_sub(folio)))
-              + 10 + max(96, _w(f[12], "已完成 8/8") + 20) + 6 + seal_w)
-    assert f_head <= panel_inner, f"Folio header overflows: {f_head}px"
-    sections = re.findall(r'^            text _\("([^"]+)"\) size 12 color "#e8c88a" bold True$', folio, re.M)
-    assert len(sections) == 2, sections
-    for s in sections:
-        assert _wb(f[12], s) <= panel_inner, s
-    f_foot = (_w(f[12], folio_footer_hint(folio)) + 10
-              + max(128, _w(f[14], "合上卷宗") + 36))
-    assert f_foot <= panel_inner, f"Folio footer overflows: {f_foot}px"
-    head_h = max(44, round(22 * CJK_LINE) + 2 + round(12 * CJK_LINE))
-    sec_h = round(12 * CJK_LINE)
-    f_h = (2 * panel_pad[1] + head_h + 8 + 1 + 8 + sec_h + 8 + fcard_h + 8 + sec_h + 8
-           + (grid_rows * fcard_h + (grid_rows - 1) * 8) + 8 + 34
-           + len(wide_lines) * (fcard_h + 8))  # PC-15: the casebook's full-width card below the 2 x 3 case grid (PC-16: 2 x 4, no wide card)
-    assert f_h <= 720 - 2 * 24, f"Folio modal taller than the window: {f_h}px"
-    report["FolioHeader"] = f_head
-    report["FolioFooter"] = f_foot
-    report["FolioHeight"] = f_h
+    # ---------------- case file modal (PC-G2: ten big cards, one legend; replaces the PC-14..17 folio) ----------------
+    cf.check_layout(env, report)
 
     # ---------------- main menu: 6 rows -> 4 rows, folio entry, gap to the progress badge widened ----------------
     mm = measure_main_menu(env)
@@ -731,11 +604,11 @@ def check_pc14_runtime():
     for k in links:
         assert lant[k["lantern"]] == k["color"] and re.fullmatch(r"#[0-9a-f]{6}", k["color"]), k["id"]
     assert len({k["color"] for k in links}) == 4, "Each lamp gets its own lantern colour"
-    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金灯笼", "银灯笼", "铜灯笼"]
+    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金牌", "银牌", "铜牌"]
     older_tiers = set()
     for var in ("LIBRARY_RATING_TIERS", "THEATER_RATING_TIERS", "ATELIER_RATING_TIERS", "SPORTS_RATING_TIERS"):
         older_tiers |= {t["name"] for t in env[var]}
-    assert not older_tiers & {t["name"] for t in tiers}, "Lantern rating must not reuse bookmarks / stubs / frames / stopwatches"
+    assert [t["name"] for t in tiers] == cf.GRADE_NAMES  # (PC-G2: one set of rating names for all eight cases)
     assert len(case["solution_pub"]) >= 120 and case["mo_note_pub"] and case["alice_note_pub"]
     # realistic, traceable explanation: the report names the physical means, every lamp cites its clues,
     # and every clue is used by at least one lamp
@@ -878,7 +751,7 @@ def check_pc14_runtime():
     assert r["new_record"] and r["best_tier"] == "gold" and mock_ach.has("ach_seventh_shadow")
     r = env["haunted_record_solve"](3)
     assert not r["new_record"] and r["replays"] == 4 and r["best_tier"] == "gold" and r["last_tier"] == "bronze"
-    assert env["haunted_gold_count"]() == 1 and env["haunted_best_short"]() == "金灯笼"
+    assert env["haunted_gold_count"]() == 1 and env["haunted_best_short"]() == "金牌"
     v = env["haunted_render_view"]()
     assert v["solved"] and v["display_solution"] == case["solution_pub"] and v["lamp_shorts"] == [k["short"] for k in links]
     env["haunted_open_report_modal"]()
@@ -888,18 +761,9 @@ def check_pc14_runtime():
             and env["atelier_case_solved_count"]() == 0 and env["sports_case_solved_count"]() == 0), "Older cases keep their stores"
 
     # ---- F. accordion sub-bar helpers (17 tabs / 5 groups) ----
-    for g in env["EXTRAS_SALON_GROUPS"]:
-        for t in g[3]:
-            assert env["salon_group_of"](t) == g[0] and env["salon_open_group"](t) == g[0]
-            if t not in SALON_KEYS:
-                continue  # PC-15+ tab: its counter lives in a later module (pill text verified by that milestone)
-            txt = env["salon_tab_pill_text"](t)
-            assert re.fullmatch(r"\S+ \d+/\d+", txt), f"pill text `{txt}`"
-    assert env["salon_open_group"]("haunted") == "closedlib" and env["salon_tab_pill_text"]("haunted") == "鬼屋 1/1"
+    cf.check_pill_texts(env)
+    assert env["salon_open_group"]("haunted") == "closedlib"
     assert env["salon_tab_icon"]("haunted").endswith("icon_haunted_house.png")
-    saved_fn = env.pop("haunted_case_solved_count")
-    assert env["salon_tab_pill_text"]("haunted") == "鬼屋", "Pill text must degrade gracefully"
-    env["haunted_case_solved_count"] = saved_fn
 
     # ---- G. zero-side-channel spoiler gate on the page margin (strongest state: solved, gold) ----
     mp.te_cleared = False
@@ -934,94 +798,20 @@ def check_pc14_runtime():
     mp.truth_spoiler_confirmed = False
     assert env["haunted_render_view"]()["display_secret"] == ""
 
-    # ---- H. folio: unlock conditions mirror the original entries, spoiler-gated titles, read-only, counts ----
+    # ---- H. case file (PC-G2): bonus-story gate, masked title, old-save conversion, actions, counts, read-only ----
     scr_src = _read("game/screens.rpy")
     extra_src = _read("game/extra.rpy")
     nav = scr_src.split("screen navigation(", 1)[1].split("\nstyle ", 1)[0]
     assert re.search(r'if persistent\.chapter_reached and persistent\.chapter_reached >= 1:\n\s+textbutton _\("章节选择"\) action ShowMenu\("chapter_select"\)', nav), \
         "Navigation unlock condition for chapter select changed"
-    assert "if (dlc_need_te and not persistent.te_cleared)" in extra_src, "Chapter-select DLC spoiler prompt changed"
-    dlcs = env["DLC_LIST"]
-    assert [d[0] for d in dlcs] == ["dlc_alice_ledger", "dlc_mo_bookstreet"] and [d[6] for d in dlcs] == [False, True]
-    n_states = 0
-    for cr in (None, 0, 1, 3, 6):
-        for te in (False, True):
-            for conf in (False, True):
-                mp.chapter_reached, mp.te_cleared, mp.truth_spoiler_confirmed = cr, te, conf
-                is_open = bool(cr and cr >= 1)
-                assert env["folio_chapter_select_open"]() is is_open
-                unlocked = bool(te or conf)
-                for d in dlcs:
-                    fv = env["folio_dlc_view"](d[0])
-                    n_states += 1
-                    assert fv["open"] is is_open and fv["badge"] == d[1]
-                    assert fv["masked"] is (d[6] and not unlocked)
-                    assert fv["title"] == (env["FOLIO_DLC_MASKED_TITLE"] if fv["masked"] else d[2])
-                    assert ("建议通关真结局后体验" in fv["note"]) is (is_open and d[6] and not te), (cr, te, conf, d[0], fv["note"])
-                    if not is_open:
-                        assert fv["status"] == "未开放" and "序章" in fv["note"]
-                    if fv["masked"]:
-                        _clean(fv, f"folio {d[0]}")
-                        assert d[3] not in str(fv) and d[2] not in str(fv)
-                    assert d[3] not in str(fv), "The folio never shows a DLC blurb"
-                _clean(env["folio_seal_view"](), "folio seal")
-    # side-channel: the locked view of a TRUE-END epilogue does not depend on its title or blurb
-    mp.chapter_reached, mp.te_cleared, mp.truth_spoiler_confirmed = 6, False, False
-    before = env["folio_dlc_view"]("dlc_mo_bookstreet")
-    for filler in ("Y" * 200, "", "周可与小雪的第三只千纸鹤"):
-        env["DLC_LIST"] = [d if not d[6] else (d[0], d[1], filler, filler, d[4], d[5], d[6]) for d in dlcs]
-        assert env["folio_dlc_view"]("dlc_mo_bookstreet") == before, "Masked folio row depends on the epilogue title"
-        proofs += 1
-    env["DLC_LIST"] = dlcs
-    assert env["folio_dlc_view"]("bogus")["title"] == "缺卷" and not env["folio_dlc_view"]("bogus")["open"]
-    for v_, u_ in (("LIBRARY_CASE", "四环推理链"), ("THEATER_CASE", ""), ("HAUNTED_CASE", "四盏灯")):
-        line = env["folio_case_line"](v_, u_)
-        _clean(line, "folio case line")
-        assert line.startswith(env[v_]["code"] + " 《" + env[v_]["short_title"] + "》")
-    assert env["folio_case_line"]("NO_SUCH_CASE") == "----"
-    # done count: two DLC flags + five solved cases + a full notebook = 8 = total; degrades gracefully
-    for fld in CASE_STORES:
-        setattr(mp, fld, {})
-    mp.dlc_alice_done = False
-    mp.dlc_mo_done = False
-    # PC-15 adds a 6th short case to the folio; its counter lives in the later module (absent from this sandbox), so here it
-    # can only count as "not done" -- exactly the graceful degradation checked below
-    n_total = 8 + len(_later_present())
-    assert env["folio_done_count"]() == 0 and env["folio_total_count"]() == n_total
-    mp.dlc_alice_done = True
-    assert env["folio_done_count"]() == 1
-    for solve in ("library_record_solve", "theater_record_solve", "atelier_record_solve", "sports_record_solve", "haunted_record_solve"):
-        env[solve](1)
-    assert env["folio_done_count"]() == 6
-    for key in ("library", "theater", "atelier"):
-        env["notebook_stamp"](key)
-    assert env["folio_done_count"]() == 6, "A partly stamped notebook is not done"
-    env["notebook_stamp"]("sportsday")
-    mp.dlc_mo_done = True
-    assert env["folio_done_count"]() == 8 and env["folio_total_count"]() == n_total
-    saved_counter = env.pop("haunted_case_solved_count")
-    assert env["folio_done_count"]() == 7, "A missing counter must count as not done, never crash"
-    env["haunted_case_solved_count"] = saved_counter
-    # read-only proof: every folio helper leaves every persistent field byte-identical
-    snap_before = _persistent_snapshot(mp)
+    n_states, cf_proofs = cf.check_runtime(env, mp, ["library", "theater", "atelier", "sportsday", "haunted"],
+                                           _persistent_snapshot, _strings, SECRET_KEYWORDS)
+    proofs += cf_proofs
     n_ops = 0
-    for _round in range(3):
-        for d in dlcs + [("bogus",)]:
-            env["folio_dlc_view"](d[0])
-            n_ops += 1
-        for v_ in ("LIBRARY_CASE", "THEATER_CASE", "ATELIER_CASE", "SPORTS_CASE", "HAUNTED_CASE", "NOPE"):
-            env["folio_case_line"](v_, "x")
-            n_ops += 1
-        env["folio_done_count"]()
-        env["folio_total_count"]()
-        env["folio_seal_view"]()
-        env["folio_chapter_select_open"]()
-        n_ops += 4
-    assert _persistent_snapshot(mp) == snap_before, "Folio helpers wrote persistent state"
     init_code = "\n".join(code for _l, code, is_init in extract_python_blocks(GAME_DIR / "extra.rpy") if is_init)
     n_folio_fn = 0
     for node in ast.walk(ast.parse(init_code)):
-        if isinstance(node, ast.FunctionDef) and node.name.startswith("folio_"):
+        if isinstance(node, ast.FunctionDef) and node.name.startswith(("folio_", "casefile_", "case_grade")):
             n_folio_fn += 1
             for sub in ast.walk(node):
                 if isinstance(sub, (ast.Assign, ast.AugAssign)):
@@ -1030,36 +820,21 @@ def check_pc14_runtime():
                             f"{node.name} writes persistent.{t.attr}"
                         assert not isinstance(t, ast.Subscript), f"{node.name} mutates a container in place"
                 if isinstance(sub, ast.Call) and isinstance(sub.func, ast.Attribute):
-                    assert sub.func.attr not in ("update", "append", "pop", "clear", "setdefault", "extend", "remove", "insert",
+                    n_ops += 1
+                    assert sub.func.attr not in ("update", "pop", "clear", "setdefault", "extend", "remove", "insert",
                                                  "save_persistent"), f"{node.name} calls .{sub.func.attr}()"
-    assert n_folio_fn == 7, n_folio_fn
+    assert n_folio_fn == 11, n_folio_fn  # + casefile_after_replay (reopens the case file after a replay, read-only)
 
-    # ---- I. folio screen & main menu wiring (static): the merged chips keep their exact old actions ----
-    folio = _folio_block(scr_src)
+    # ---- I. case file screen & main menu wiring (static) ----
+    cf.check_entries()
     mm = measure_main_menu(env)
-    assert mm["folio_dlc"] == [d[0] for d in dlcs], mm["folio_dlc"]
-    expected_tabs = (FOLIO_CASE_TABS[:-1] + (["astro"] if _pc15_present() else []) + (["pool"] if _pc16_present() else [])
-                     + (["bake"] if _pc17_present() else []) + FOLIO_CASE_TABS[-1:])
-    assert mm["folio_tabs"] == expected_tabs, mm["folio_tabs"]
+    assert mm["folio_dlc"] == cf.DLC_LABELS and mm["folio_tabs"] == cf.CASE_TABS, mm["folio_tabs"]
     for t in mm["folio_tabs"]:
-        assert f'elif cur == "{t}":' in extra_src, f"extras() does not route folio tab `{t}`"
-    for t, (status_fn, count_fn) in FOLIO_CASE_FUNCS.items():
-        assert re.search(rf'{status_fn}\(\), {count_fn}\(\) > 0, SetField\(persistent, "extras_tab", "{t}"\), from_extras\)', folio), t
-    assert re.search(r'notebook_stamped_count\(\) >= len\(NOTEBOOK_CASES\), SetField\(persistent, "extras_tab", "notebook"\), from_extras(?:, wide=True)?\)', folio)
-    card = scr_src.split("screen extras_folio_case_card(", 1)[1].split("\nscreen ", 1)[0]
-    assert 'action ([Hide("extras_folio_modal"), tab_action] + ([] if from_extras else [ShowMenu("extras")]))' in card
-    dcard = scr_src.split("screen extras_folio_dlc_card(", 1)[1].split("\nstyle ", 1)[0]
-    assert 'action ([Hide("extras_folio_modal"), ShowMenu("chapter_select")] if _dv["open"] else None)' in dcard
-    for blk_ in (folio, card, dcard):
-        assert not re.search(r"\$ persistent\.\w+\s*=", blk_) and "SetField(persistent, \"extras_tab\"" not in blk_.replace(
-            'SetField(persistent, "extras_tab", "', ""), "Folio screens may only navigate"
-        assert "Start(" not in blk_ and "Replay(" not in blk_, "The folio never launches a story directly"
-        assert not re.findall(r"SetField\(persistent, \"(?!extras_tab)", blk_), "Folio screens may only set extras_tab"
-    assert 'action Show("extras_folio_modal", from_extras=True)' in src
+        assert f'elif cur == "{t}":' in extra_src, f"extras() does not route case `{t}`"
     pc13_keys = [k for r in PC13_MAIN_MENU_ROWS for k in r]
     for k in pc13_keys:
-        assert (k in mm["chips"]) != (k in mm["folio_tabs"]), f"PC-13 chip `{k}` must be reachable exactly one way"
-    assert [k for k in pc13_keys if k in mm["folio_tabs"]] == MERGED_INTO_FOLIO
+        assert (k in mm["chips"]) != (k in mm["folio_tabs"]) or k == "notebook", f"PC-13 chip `{k}` must be reachable exactly one way"
+    assert [k for k in pc13_keys if k in mm["folio_tabs"]] == [k for k in MERGED_INTO_FOLIO if k != "notebook"]
     assert mm["chips"].count("folio") == 1 and "haunted" not in mm["chips"]
     main_blk = scr_src.split("screen main_menu():", 1)[1].split("\nstyle ", 1)[0]
     assert main_blk.count('Show("extras_folio_modal")') == 1
@@ -1094,22 +869,22 @@ def check_zero_intrusion_and_icons():
     # byte-exact, every occurrence, nothing else); main-story files never qualify
     swapped = glyphs.glyph_swap_only_files()
     assert not swapped & set(MAIN_STORY_FILES)
-    older = [m for m in OLDER_EXTRAS_MODULES if m not in swapped]
+    older = cf.unchanged_modules(m for m in OLDER_EXTRAS_MODULES if m not in swapped)
     if _pc16_present():
         # PC-16 deletes PC-13's four-tab casebook page (unused since PC-15) from zephyr_relay_casebook.rpy: that one older
         # module may differ from HEAD only by removed lines and added `##` comment lines (line-exact check: verify_pc16)
-        older.remove("game/zephyr_relay_casebook.rpy")
         zd = subprocess.run(["git", "diff", "-U0", "--", "game/zephyr_relay_casebook.rpy"],
                             cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", check=True)
         for ln in zd.stdout.splitlines():
             if ln.startswith("+") and not ln.startswith("+++"):
-                assert not ln[1:].strip() or ln[1:].lstrip().startswith("##"), f"PC-13 module gained code: {ln}"
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES, *older],
+                assert cf.pc13_line_ok(ln), f"PC-13 module gained code: {ln}"
+    res = subprocess.run(["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES), *older],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay / older extras modules were modified!\n{res.stdout}"
-    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES, *older],
+    diff = subprocess.run(["git", "diff", "--numstat", "--", *rs.strict_files(MAIN_STORY_FILES), *older],
                           cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert diff.stdout.strip() == "", "Main story / older module files have a diff"
+    cf.check_story_frozen()  # (the modules the release touches keep their stories)
     # whole-project guard: among *tracked* files only the PC-14 targets and the forward-compatible verifier edits may
     # differ from HEAD (untracked new files are not flagged; on a clean committed checkout nothing differs at all)
     allowed = set(PC14_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc14.py"]) | swapped
@@ -1122,7 +897,7 @@ def check_zero_intrusion_and_icons():
     stray = []
     for line in st.stdout.splitlines():
         rel = line[3:].strip().strip('"').split("paper-crane-detective/", 1)[-1]
-        if rel not in allowed:
+        if rel not in allowed and not cf.release_touched(rel):
             stray.append(rel)
     assert not stray, f"Unexpected modified tracked files: {stray}"
     for bad in ("game/cache", "dists", "tests/__pycache__"):
@@ -1222,7 +997,7 @@ def check_balanced_delimiters_and_references():
                 "ui_icon_extras_folio"):
         assert img in images, f"Missing image alias {img}"
     for scr in ("extras_haunted_house", "haunted_report_modal", "haunted_lamp_banner", "haunted_result_card",
-                "extras_folio_modal", "extras_folio_case_card", "extras_folio_dlc_card", "extras_achievements",
+                "extras_folio_modal", "extras_folio_case_card", "extras_achievements",
                 "deduction_cutin", "evidence_book", "confirm", "chapter_select",
                 *(() if _pc16_present() else ("extras_case_notebook",)),  # (PC-16 deletes PC-13's unused four-tab page)
                 "extras_sports_lostfound"):
@@ -1242,9 +1017,7 @@ def check_balanced_delimiters_and_references():
     assert len(tinted) == 2 and all((GAME_DIR / g).is_file() for g in tinted), tinted
     tinted_scr = re.findall(r"(?:hover_)?" + tint_re, scr_src)
     assert len(tinted_scr) >= 2 and all((GAME_DIR / g).is_file() for g in tinted_scr), tinted_scr
-    blk = re.search(r"^style salon_quint_pill is bookstreet_subtab_pill:\n((?:    .*\n)+)", new_src, re.M).group(1)
-    assert sorted(ln.split()[0] for ln in blk.strip().splitlines()) == ["padding", "xminimum"]
-    assert re.search(r"^style salon_quint_pill_text is bookstreet_subtab_pill_text$", new_src, re.M)
+    assert "salon_quint_pill" not in new_src + scr_src, "PC-G2 removed the one-icon quint state (no group of five pills left)"
 
     style_prop_re = re.compile(r'^\s*style\s+"([A-Za-z_]\w*)"\s*$')
     for rel in PC14_TOUCHED_FILES:

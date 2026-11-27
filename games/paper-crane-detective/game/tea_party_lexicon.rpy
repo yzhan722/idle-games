@@ -895,7 +895,7 @@ screen extras_lexicon():
     $ _query = persistent.lexicon_search_query or ""
     $ _vis_list = lexicon_visible_entries(_cat, _query)
     $ _sel_id = persistent.lexicon_selected_id or "lex_c01"
-    if _vis_list and all(e["id"] != _sel_id for e in _vis_list):
+    if _vis_list and _sel_id not in [e["id"] for e in _vis_list]:
         $ _sel_id = _vis_list[0]["id"]
     $ _view = lexicon_render_entry_view(_sel_id)
     $ _read_n = lexicon_read_count()
@@ -971,7 +971,7 @@ screen extras_lexicon():
                             textbutton _("清空"):
                                 style "lexicon_tag_chip"
                                 action Function(lexicon_set_search, "")
-                        textbutton (_("检索：%s" % _query[:4]) if _query else _("输入检索")):
+                        textbutton (("检索：%s" % _query[:4].replace("[", "[[").replace("{", "{{")) if _query else _("输入检索")):
                             style "lexicon_cat_pill"
                             selected bool(_query)
                             action Show("lexicon_search_modal")
@@ -1065,7 +1065,7 @@ screen extras_lexicon():
                                     style "lexicon_tag_chip"
                                     xalign 1.0
                                     yalign 0.5
-                                    action Function(lexicon_toggle_read, _view["id"])
+                                    action Function(do_quietly, lexicon_toggle_read, _view["id"])
                                     hbox:
                                         spacing 4
                                         align (0.5, 0.5)
@@ -1093,7 +1093,7 @@ screen extras_lexicon():
                                             yalign 0.5
                                             action Show("confirm",
                                                         message=_("确定提前揭晓「推理社批注辞典」中的旧案剧透批注吗？"),
-                                                        yes_action=[Hide("confirm"), SetField(persistent, "truth_spoiler_confirmed", True), Function(lexicon_mark_read, _view["id"]), Function(renpy.save_persistent)],
+                                                        yes_action=[Hide("confirm"), SetField(persistent, "truth_spoiler_confirmed", True), Function(do_quietly, lexicon_mark_read, _view["id"]), Function(renpy.save_persistent)],
                                                         no_action=Hide("confirm"))
 
                         ## 艾丽丝（毒舌逻辑派批注）
@@ -1151,6 +1151,7 @@ screen lexicon_search_modal():
                 background Frame("gui/panel_card.png", 16, 16)
                 input:
                     value FieldInputValue(persistent, "lexicon_search_query")
+                    exclude "[]{}"
                     length 20
                     size 16
                     color "#f6eeff"
@@ -1313,7 +1314,7 @@ label _tea_party_finish_session(tid, local_mistakes=0):
 ################################################################################
 
 label tea_party_t1:
-    call _tea_party_init_sandbox("午后茶话会 · T-01 伯爵红茶里的方糖不在场证明")
+    call _tea_party_init_sandbox("午后茶话会 · T-01 伯爵红茶里的方糖不在场证明") from _call__tea_party_init_sandbox
     $ _tp_mistakes = 0
 
     scene bg black with fade
@@ -1472,7 +1473,7 @@ label tea_t1_q3_loop:
     alice "唔……你、你们两个居然联手在红茶桌搞统一战线！哼，谁说本社长要笑话你们啦……其实伯爵红茶配一片黄柠檬再加一块半琥珀方糖，本来就是最好喝的黄金配方嘛！"
     "说着，艾丽丝红着耳根拿起银糖夹，飞快地往她自己杯子里连丢了两块琥珀冰糖，清脆的瓷勺碰撞声与暖融融的茶香一道漫满了整个午后。"
 
-    call _tea_party_finish_session("t1", _tp_mistakes)
+    call _tea_party_finish_session("t1", _tp_mistakes) from _call__tea_party_finish_session
     return
 
 
@@ -1481,7 +1482,7 @@ label tea_t1_q3_loop:
 ################################################################################
 
 label tea_party_t2:
-    call _tea_party_init_sandbox("午后茶话会 · T-02 艾丽丝的零花钱密室之谜")
+    call _tea_party_init_sandbox("午后茶话会 · T-02 艾丽丝的零花钱密室之谜") from _call__tea_party_init_sandbox_1
     $ _tp_mistakes = 0
 
     scene bg black with fade
@@ -1613,7 +1614,7 @@ label tea_t2_q3_loop:
     show alice happy at left
     alice "哼……本、本社长只是觉得一个人吃三块热量超标，勉为其难分你们两个搭档一起销毁罪证而已！还不快拿起叉子趁冰吃！"
 
-    call _tea_party_finish_session("t2", _tp_mistakes)
+    call _tea_party_finish_session("t2", _tp_mistakes) from _call__tea_party_finish_session_1
     return
 
 
@@ -1622,7 +1623,7 @@ label tea_t2_q3_loop:
 ################################################################################
 
 label tea_party_t3:
-    call _tea_party_init_sandbox("午后茶话会 · T-03 墨墨速写本最后一页的暗号")
+    call _tea_party_init_sandbox("午后茶话会 · T-03 墨墨速写本最后一页的暗号") from _call__tea_party_init_sandbox_2
     $ _tp_mistakes = 0
 
     scene bg black with fade
@@ -1772,5 +1773,5 @@ label tea_t3_q3_loop:
     alice "……真是拿你没办法。来吧，趁夕阳还没落山，为万事屋独一无二的『两杯半糖』干杯！下周的点心单就勉为其难交给大功臣陈默钦点咯！"
     "三只温热的白瓷茶杯在橘金色的晚霞里轻轻相碰，发出一声清脆而绵长的回响。"
 
-    call _tea_party_finish_session("t3", _tp_mistakes)
+    call _tea_party_finish_session("t3", _tp_mistakes) from _call__tea_party_finish_session_2
     return

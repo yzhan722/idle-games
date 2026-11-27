@@ -604,8 +604,7 @@ init python:
 
 screen evidence_list():
     $ _dossiers = get_dossier_list()
-    $ _uninspected = uninspected_evidence_count()
-    use popup_panel(_("调查手册"), _("已收集证物 [len(evidence)] 条（待翻面查验 [_uninspected] 条） · 思维拼合 [len(unlocked_deductions)]/[len(CASE_DEDUCTION_PUZZLES)]"), Hide("evidence_list"), width=860, height=600):
+    use popup_panel(_("调查手册"), _("已收集证物 [len(evidence)] 条（待翻面查验 [uninspected_evidence_count()] 条） · 思维拼合 [len(unlocked_deductions)]/[len(CASE_DEDUCTION_PUZZLES)]"), Hide("evidence_list"), width=860, height=600):
         vbox:
             spacing 12
             hbox:
@@ -684,7 +683,7 @@ screen evidence_list():
                                                         xfill True
                                                         text ("※ " + _obs) size 14 color "#6b4c2a" bold True
                                                         text _("REVERSE INSPECTION · 物证背面细节") size 12 color "#8c6d46" xalign 1.0 yalign 0.5
-                                                    add Solid("#a6845855") xfill True ysize 1
+                                                    add Solid("#a6845855") ysize 1
                                                     text _detail size 16 color "#2b1d12" line_spacing 4
                 else:
                     vbox:
@@ -803,7 +802,7 @@ screen evidence_list():
                                         yalign 0.5
                                         hbox:
                                             xfill True
-                                            text (player_name if ch_key == "mc" else ch_name) style "bond_name" size 20 color "#f2e6ff"
+                                            text (player_name if ch_key == "mc" else ch_name) style "bond_name" size 20 color "#f2e6ff" substitute False
                                             frame:
                                                 style "bond_stage_pill"
                                                 xalign 1.0

@@ -375,7 +375,7 @@ init python:
             Function(stop_all_gramophone_ambience, True),
             SetField(persistent, "extras_tab", "planetarium"),
             SetField(persistent, "planetarium_selected_cipher", cdef["id"]),
-            Replay(cdef["label"], locked=False),
+            Replay(cdef["label"], scope={"player_name": persistent.last_player_name or "陈默"}, locked=False),
         ]
 
     ############################################################################
@@ -696,7 +696,7 @@ screen extras_planetarium():
     $ _solved_n = planetarium_solved_count()
     $ _first_n = planetarium_first_try_count()
     $ _cur_clue_id = _crec["active_clue"] or _cdef["star_clues"][0]["id"]
-    $ _cur_clue = ([c for c in _cdef["star_clues"] if c["id"] == _cur_clue_id] or _cdef["star_clues"])[0]
+    $ _cur_clue = dict((c["id"], c) for c in _cdef["star_clues"]).get(_cur_clue_id, _cdef["star_clues"][0])
 
     vbox:
         spacing 9
@@ -832,7 +832,7 @@ screen extras_planetarium():
                         button:
                             style "restoration_clue_card"
                             selected _c_active
-                            action Function(planetarium_observe_clue, _cdef["id"], c_obj["id"])
+                            action Function(do_quietly, planetarium_observe_clue, _cdef["id"], c_obj["id"])
                             vbox:
                                 spacing 2
                                 xfill True
@@ -870,17 +870,17 @@ screen extras_planetarium():
                             text ("一次破译 %d/3" % _first_n) size 11 color "#f4d98a" xalign 1.0 yalign 0.5
                         text ("「%s」" % _pv["cipher_text"]) font gui.name_text_font size 14 color "#ebe2f8" line_spacing 3 substitute False
                         if _pv["solved"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _pv["display_annotation"] size 12 color "#86efac" line_spacing 2 substitute False
                             text _pv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _pv["display_alice_note"] size 12 color "#f0c060" substitute False
                             if _pv["display_annotation_secret"]:
-                                add Solid("#f4d98a44") xfill True ysize 1
+                                add Solid("#f4d98a44") ysize 1
                                 text _pv["display_annotation_secret"] size 12 color "#fff1d0" line_spacing 3 substitute False
                         else:
                             text _("星图批注：破译本笺暗号后，墨墨会把考据批注写在星图边上。") size 12 color "#8a7aa0"
                         if _pv["display_masked_prompt"]:
-                            add Solid("#6a5c8044") xfill True ysize 1
+                            add Solid("#6a5c8044") ysize 1
                             text _pv["display_masked_prompt"] size 11 color "#f0a4b8" substitute False
 
                 ## 3C. 底部操作栏
@@ -963,7 +963,7 @@ screen planetarium_annotation_modal(cipher_id="s1"):
                     add "images/ui/icon_clocktower_planetarium.png" xysize (32, 32) yalign 0.5
                     text (_mv["best_badge"] if _mv["solved"] else _("待观测")) size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             viewport:
                 xfill True
@@ -976,18 +976,18 @@ screen planetarium_annotation_modal(cipher_id="s1"):
                     xsize 672
                     text _("老天文社 · 寻星暗号原笺：") size 12 color "#f4d98a" bold True
                     text ("「%s」" % _mv["cipher_text"]) font gui.name_text_font size 18 color "#fff1d0" line_spacing 5 substitute False
-                    add Solid("#cbb0e633") xfill True ysize 1
+                    add Solid("#cbb0e633") ysize 1
                     if _mv["solved"]:
                         text _mv["display_annotation"] size 13 color "#86efac" line_spacing 4 substitute False
                         text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
                         if _mv["display_annotation_secret"]:
-                            add Solid("#f4d98a44") xfill True ysize 1
+                            add Solid("#f4d98a44") ysize 1
                             text _mv["display_annotation_secret"] size 13 color "#fff1d0" line_spacing 4 substitute False
                     else:
                         text _("这一笺还没有破译。推开星象馆的铜门、在穹顶下找出答案后，墨墨的星图批注会在这里显影。") size 13 color "#9a86b8" line_spacing 4
                     if _mv["display_masked_prompt"]:
-                        add Solid("#6a5c8055") xfill True ysize 1
+                        add Solid("#6a5c8055") ysize 1
                         text _mv["display_masked_prompt"] size 12 color "#f0a4b8" substitute False
 
             hbox:
@@ -1062,7 +1062,7 @@ screen planetarium_result_card(cipher_id, cur_badge, best_badge, mistakes, repla
                     text ("《%s》" % _cdef["title"]) font gui.name_text_font size 21 color "#f6e7c0"
                     text ("本笺观测评级：【%s】" % cur_badge) size 14 color ("#f4d98a" if _is_gold else "#86efac")
 
-            add Solid("#f4d98a33") xfill True ysize 1
+            add Solid("#f4d98a33") ysize 1
 
             frame:
                 xfill True
@@ -1157,7 +1157,8 @@ screen extras_badge_journal():
                 text _("集齐九枚解锁成就「铜章手账收藏家」") size 11 color "#cbb0e6" xalign 1.0 yalign 0.5
 
         ## 3. 九宫格铜章展页（3 × 234 + 2 × 10 = 722px 严丝合缝）
-        grid 3 ((len(BADGE_DEFS) + 2) // 3):
+        $ _badge_rows = (len(BADGE_DEFS) + 2) // 3
+        grid 3 _badge_rows:
             spacing 10
             for bitem in BADGE_DEFS:
                 $ _bst = badge_status(bitem["id"])
@@ -1298,7 +1299,7 @@ screen extras_badge_journal():
                                 xminimum 146
                                 ysize 36
                                 text_size 15
-                                action (Function(badge_stamp, _bv["id"], True) if _bv["status"] == "earned" else None)
+                                action (Function(do_quietly, badge_stamp, _bv["id"], True) if _bv["status"] == "earned" else None)
 
 
 ## 铜章手账页特写弹窗（拓印完成 / 重新展阅）
@@ -1339,7 +1340,7 @@ screen badge_journal_page_modal(badge_id="bd01"):
                     add "images/ui/icon_badge_journal.png" xysize (28, 28) yalign 0.5
                     text ("已拓印 %d/9" % badge_stamped_count()) size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             if _jv["stamped"]:
                 frame:
@@ -1485,7 +1486,7 @@ label _planetarium_finish_cipher(cipher_id, local_mistakes=0):
 ################################################################################
 
 label planetarium_cipher_s1:
-    call _planetarium_init_sandbox("钟楼星象馆 · S-01 斗柄西指的铜钥匙", "dusk")
+    call _planetarium_init_sandbox("钟楼星象馆 · S-01 斗柄西指的铜钥匙", "dusk") from _call__planetarium_init_sandbox
     $ _pl_mistakes = 0
     $ _s1_c1 = False
     $ _s1_c2 = False
@@ -1608,7 +1609,7 @@ label planetarium_s1_q_loop:
     play sound se_crane
     "墨墨把那张写着暗号的卡片夹进笔记本，又在页角画了一颗小小的北极星。钟楼的机芯继续咔哒作响，星象仪投下的光，安安静静地落在我们三个人的肩膀上。"
 
-    call _planetarium_finish_cipher("s1", _pl_mistakes)
+    call _planetarium_finish_cipher("s1", _pl_mistakes) from _call__planetarium_finish_cipher
     return
 
 
@@ -1617,7 +1618,7 @@ label planetarium_s1_q_loop:
 ################################################################################
 
 label planetarium_cipher_s2:
-    call _planetarium_init_sandbox("钟楼星象馆 · S-02 四象星柜与南斗的抽屉", "night")
+    call _planetarium_init_sandbox("钟楼星象馆 · S-02 四象星柜与南斗的抽屉", "night") from _call__planetarium_init_sandbox_1
     $ _pl_mistakes = 0
     $ _s2_c1 = False
     $ _s2_c2 = False
@@ -1730,7 +1731,7 @@ label planetarium_s2_q_loop:
     play sound se_crane
     "墨墨笑着把拓片卷好，用红绳系上，又在笔记本的四方格表旁画了四只小小的守护神兽。苍龙的尾巴，被她悄悄画成了一只千纸鹤的翅膀。"
 
-    call _planetarium_finish_cipher("s2", _pl_mistakes)
+    call _planetarium_finish_cipher("s2", _pl_mistakes) from _call__planetarium_finish_cipher_1
     return
 
 
@@ -1739,7 +1740,7 @@ label planetarium_s2_q_loop:
 ################################################################################
 
 label planetarium_cipher_s3:
-    call _planetarium_init_sandbox("钟楼星象馆 · S-03 鹤喙双星与天河上的渡口", "night")
+    call _planetarium_init_sandbox("钟楼星象馆 · S-03 鹤喙双星与天河上的渡口", "night") from _call__planetarium_init_sandbox_2
     $ _pl_mistakes = 0
     $ _s3_c1 = False
     $ _s3_c2 = False
@@ -1866,5 +1867,5 @@ label planetarium_s3_q_loop:
     play sound se_bell
     "钟楼在脚下敲响了九点的钟声。墨墨从口袋里掏出一张深靛蓝的和纸，用针尖在左翼挑出七个小孔，折成一只能映出星光的纸鹤，轻轻放在望远镜的镜筒上。"
 
-    call _planetarium_finish_cipher("s3", _pl_mistakes)
+    call _planetarium_finish_cipher("s3", _pl_mistakes) from _call__planetarium_finish_cipher_2
     return

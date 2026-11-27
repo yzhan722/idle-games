@@ -23,6 +23,22 @@ define audio.bgm_ne          = "audio/normal_ending.ogg"   # 普通结局
 define audio.bgm_be          = "audio/bad_ending.ogg"      # 坏结局
 define audio.bgm_hidden      = "audio/hidden_ending.ogg"   # 隐藏结局
 
+## `play music bgm_xxx` 会到 audio 命名空间里找；`$ play_bgm(bgm_xxx)` 是 python 语句，只认全局名字，
+## 所以同名再登记一份（缺了它，番外、短案与各小玩法一进场就是 NameError）。
+define bgm_theme    = audio.bgm_theme
+define bgm_prologue = audio.bgm_prologue
+define bgm_suspense = audio.bgm_suspense
+define bgm_mystery  = audio.bgm_mystery
+define bgm_daily    = audio.bgm_daily
+define bgm_warm     = audio.bgm_warm
+define bgm_storm    = audio.bgm_storm
+define bgm_confront = audio.bgm_confront
+define bgm_te       = audio.bgm_te
+define bgm_he       = audio.bgm_he
+define bgm_ne       = audio.bgm_ne
+define bgm_be       = audio.bgm_be
+define bgm_hidden   = audio.bgm_hidden
+
 ################################################################################
 ## 音效（SFX）
 ################################################################################

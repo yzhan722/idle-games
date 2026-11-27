@@ -26,6 +26,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verify_pc8 as pc8  # noqa: E402
 import verify_pc9 as pc9  # noqa: E402
 import verify_pc10 as pc10  # noqa: E402
+import casefile_checks as cf  # noqa: E402
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -227,27 +229,7 @@ def check_layout_and_pixel_bounds():
     #     (PC-12+ regroups the 4th group into two once it would overflow: the 12 PC-11 tabs must all stay, each once,
     #      the first three groups untouched, library + theater still together in "closedlib")
     sb = pc10.measure_salon_subbar()
-    if _later_present():
-        assert len(sb["keys"]) == len(set(sb["keys"])) and set(SALON_KEYS) <= set(sb["keys"]), sb["keys"]
-        # (PC-16 appends the meteor-night tab to the 3rd group "starlit": each of the first three PC-11 groups keeps its
-        #  key and its PC-11 tabs first, in order)
-        for (gk, gt), g in zip(SALON_GROUPS_EXPECTED[:3], sb["groups"][:3]):
-            assert g[0] == gk and tuple(g[3])[:len(gt)] == gt, sb["groups"]
-        closedlib_tabs = [tuple(g[3]) for g in sb["groups"] if g[0] == "closedlib"][0]
-        assert closedlib_tabs[:2] == ("library", "theater"), closedlib_tabs
-    else:
-        assert [(g[0], tuple(g[3])) for g in sb["groups"]] == SALON_GROUPS_EXPECTED, sb["groups"]
-        assert len(sb["keys"]) == len(set(sb["keys"])) == 12
-    assert sb["inner"] == 702
-    for gkey, px in sb["per_group"].items():
-        assert px <= sb["inner"], f"Sub-bar with `{gkey}` open overflows 702px: {px}px"
-    if not _later_present():
-        closedlib_label = [g[1] for g in sb["groups"] if g[0] == "closedlib"][0]
-        assert closedlib_label == "雨夜与纪念", closedlib_label
-    report["SubBarWorst"] = sb["worst"]
-    for k in SALON_KEYS:
-        assert f'elif cur == "{k}":' in extra_src, f"extras() viewport does not route `{k}`"
-    assert sb["totals"]["theater"] == 1 and sb["totals"]["capsule"] == 12
+    cf.check_subbar(sb, SALON_KEYS, extra_src, report)  # (PC-G2: the short cases are one 「案卷」 pill)
 
     # 2.3 subtitle & vertical budget unchanged
     sub = re.search(r'use game_menu\(_\("鉴赏"\), subtitle=_\("([^"]+)"\)\)', extra_src).group(1)
@@ -285,14 +267,14 @@ def check_layout_and_pixel_bounds():
         chip = _w(f[12], f"{t['name']}「{t['title']}」") + 8 + _w(f[11], t["rule"])
         assert chip <= tier_w - 16, f"Tier chip `{t['name']}` overflows: {chip}px"
     best_lines = [f"{t['name']}「{t['title']}」 · 最少失误 99 次" for t in tiers]
-    rate_row = 16 + 6 + _w(sf[13], "票根评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
+    rate_row = 16 + 6 + _w(sf[13], "评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
     assert rate_row <= scroll_inner, f"Rating header row overflows: {rate_row}px"
 
     hdr_right = (max(96, 14 + 4 + _w(f[12], "最佳 待结案") + 20) + 6 + max(96, _w(f[12], "结案 99 次") + 20))
     hdr = 36 + 10 + 398 + hdr_right
     assert hdr <= console_inner, f"Theater header overflows: {hdr}px"
     assert _w(sf[19], "雨夜剧场后台的失踪剧本") <= 398
-    for s in ("已结案 · 推理四幕全部演完 · 可随时重返后台冲击金票根", "彩排前四十分钟，全社唯一的导演本不见了 · 六处后台等你勘查"):
+    for s in ("已结案 · 推理四幕全部演完 · 可随时重返后台冲击金牌", "彩排前四十分钟，全社唯一的导演本不见了 · 六处后台等你勘查"):
         assert _w(f[12], s) <= 398, f"Theater header line wraps ({_w(f[12], s)}px): {s}"
     thumb_w = int(_style_prop(extra_src, "mailbox_thumb_frame", "xsize"))
     assert thumb_w + 14 + 492 <= console_inner
@@ -306,7 +288,7 @@ def check_layout_and_pixel_bounds():
     assert arch_solved <= 492 and arch_open <= 492, f"Theater archive line overflows: {arch_solved}/{arch_open}px"
     report["TheaterTagLine"] = tag_line
     report["TheaterArchive"] = max(arch_solved, arch_open)
-    th_footer = (_w(f[12], "零失误演完推理四幕可获金票根 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
+    th_footer = (_w(f[12], "零失误演完推理四幕可获金牌 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
                  + 8 + max(146, _w(f[15], "重返雨夜后台") + 36, _w(f[15], "推开礼堂侧门") + 36))
     assert th_footer <= console_inner, f"Theater footer overflows: {th_footer}px"
     report["TheaterFooter"] = th_footer
@@ -320,7 +302,7 @@ def check_layout_and_pixel_bounds():
     assert 4 * banner_slot + 3 * 6 <= 728
     for k in acts:
         assert _wb(f[10], f"{k['step']} · {k['name']}") <= banner_slot - 16 and _w(f[11], k["short"]) <= banner_slot - 16
-    head = 22 + 8 + _wb(f[12], "雨夜剧场 · 推理四幕") + 8 + _w(f[11], "已演完 4/4 幕 · 失误只计入本案票根评级，不影响主线")
+    head = 22 + 8 + _wb(f[12], "雨夜剧场 · 推理四幕") + 8 + _w(f[11], "已演完 4/4 幕 · 失误只计入本案评级，不影响主线")
     assert head <= 728, f"Banner header overflows: {head}px"
     prompts = re.findall(r'show screen theater_act_banner\((\d), "([^"]+)"\)', new_src)
     assert [int(p[0]) for p in prompts] == [0, 1, 2, 3]
@@ -333,11 +315,11 @@ def check_layout_and_pixel_bounds():
                               max(_w(f[14], f"本局评级：【{t['name']} · {t['title']}】") for t in tiers))
     assert title_row <= 608
     widest_result = 0
-    for s in ["本局失误 99 次（只计入雨夜剧场评级，不影响主线）",
+    for s in ["本局失误 99 次（只计入本案评级，不影响主线）",
               "首次结案 · 推理四幕已写入鉴赏室「雨夜剧场」分页，C-11 纪念物可以放进胶囊了",
               "重玩挑战 · 刷新个人纪录！这一场比以往任何一次都更少走错台位",
-              "重玩挑战 · 再次以金票根谢幕，雨夜剧场名侦探实至名归",
-              "重玩挑战 · 零失误演完推理四幕，就能把金票根夹进笔记本"] + \
+              "重玩挑战 · 再次拿下金牌，雨夜剧场名侦探实至名归",
+              "重玩挑战 · 零失误演完推理四幕，就能拿下金牌"] + \
              [f"历史最佳：{t['name']}「{t['title']}」 · 最少失误 99 次 · 累计结案 99 次" for t in tiers]:
         widest_result = max(widest_result, _w(f[12], s))
         assert _w(f[12], s) <= 580, f"Result-card line wraps ({_w(f[12], s)}px): {s}"
@@ -355,7 +337,7 @@ def check_layout_and_pixel_bounds():
     card_h = int(_style_prop(new_src, "capsule_item_card", "ysize"))
     card_pad = int(_style_prop(new_src, "capsule_item_card", "padding").strip("()").split(",")[0])
     well = int(_style_prop(new_src, "capsule_icon_well", "xsize"))
-    assert "grid 3 ((len(CAPSULE_ITEMS) + 2) // 3):" in new_src and len(items) == 12
+    assert "$ _capsule_rows = (len(CAPSULE_ITEMS) + 2) // 3\n        grid 3 _capsule_rows:" in new_src and len(items) == 12
     assert 3 * card_w + 2 * 10 == 722, "Capsule 3-column grid must equal 722px"
     text_col = card_w - 2 * card_pad - well - 8
     assert "xsize 166" in new_src and text_col >= 166, f"Capsule card text column {text_col}px"
@@ -513,9 +495,9 @@ def check_pc11_runtime():
     assert [h["id"] for h in hotspots] == [f"h{i}" for i in range(1, 7)]
     assert [k["name"] for k in acts] == ["时刻", "去向", "动机", "执行人"]
     assert [k["step"] for k in acts] == ["第一幕", "第二幕", "第三幕", "第四幕"]
-    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金票根", "银票根", "铜票根"]
+    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金牌", "银牌", "铜牌"]
     lib_tiers = [t["name"] for t in env["LIBRARY_RATING_TIERS"]]
-    assert not set(lib_tiers) & {t["name"] for t in tiers}, "Theater rating must not reuse the library bookmarks"
+    assert [t["name"] for t in tiers] == cf.GRADE_NAMES  # (PC-G2: one set of rating names for all eight cases)
     for h in hotspots:
         assert h["scene"] in env["BG_LIGHT"] and len(h["detail"]) >= 70 and h["evidence"] and h["surface"]
         assert env["EVIDENCE_DETAILS"][h["evidence"]] == (h["observer"], h["detail"]), f"{h['id']} flip detail not registered"
@@ -638,7 +620,7 @@ def check_pc11_runtime():
     assert r["new_record"] and r["best_tier"] == "gold" and r["best_mistakes"] == 0
     r = env["theater_record_solve"](4)
     assert r["last_tier"] == "bronze" and r["best_tier"] == "gold" and r["best_mistakes"] == 0 and r["replays"] == 5
-    assert env["theater_best_short"]() == "金票根" and env["theater_gold_count"]() == 1
+    assert env["theater_best_short"]() == "金牌" and env["theater_gold_count"]() == 1
     v = env["theater_render_view"]()
     assert v["solved"] and v["display_solution"] == case["solution_pub"] and v["act_shorts"] == [k["short"] for k in acts]
     env["theater_open_report_modal"]()
@@ -651,11 +633,10 @@ def check_pc11_runtime():
     for g in env["EXTRAS_SALON_GROUPS"]:
         for t in g[3]:
             assert env["salon_group_of"](t) == g[0] and env["salon_open_group"](t) == g[0]
-            if t not in SALON_KEYS:
-                continue  # PC-12+ tab: its counter lives in a later module (pill text verified by that milestone)
+            if t not in SALON_KEYS or t in cf.CASE_TABS:
+                continue  # later milestone's tab, or a short case (PC-G2: no pill of its own, it lives in the case file)
             txt = env["salon_tab_pill_text"](t)
             assert re.fullmatch(r"\S+ \d+/\d+", txt), f"pill text `{txt}`"
-    assert env["salon_tab_pill_text"]("theater") == "剧场 1/1"
     assert env["salon_tab_icon"]("theater").endswith("icon_theater_backstage.png")
     assert env["salon_tab_icon"]("capsule").endswith("icon_time_capsule.png")
     saved_fn = env.pop("capsule_placed_count")
@@ -886,10 +867,10 @@ def check_pc11_runtime():
 ################################################################################
 
 def check_zero_intrusion_and_icons():
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES],
+    res = subprocess.run(["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES)],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay files were modified!\n{res.stdout}"
-    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES],
+    diff = subprocess.run(["git", "diff", "--numstat", "--", *rs.strict_files(MAIN_STORY_FILES)],
                           cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert diff.stdout.strip() == "", "Main story files have a diff"
 
@@ -1055,8 +1036,10 @@ def check_balanced_delimiters_and_references():
     for fld in ("theater_script_record", "theater_selected_hotspot", "time_capsule_record", "capsule_selected_item"):
         assert f"default persistent.{fld} =" in extra_src and f"persistent.{fld} =" in reset_src, fld
     scr_src = _read("game/screens.rpy")
-    assert 'SetField(persistent, "extras_tab", "theater")' in scr_src and 'SetField(persistent, "extras_tab", "capsule")' in scr_src
-    assert "theater_best_short()" in scr_src and "capsule_placed_count()" in scr_src
+    # (PC-G2: the case opens from the data-driven case file)
+    assert '("theater",' in extra_src.split("CASEFILE_CASES = [", 1)[1].split("\n    ]", 1)[0]
+    assert 'SetField(persistent, "extras_tab", "capsule")' in scr_src
+    assert "capsule_placed_count()" in scr_src
 
     for rel in PC11_TOUCHED_FILES:
         src = _read(rel)

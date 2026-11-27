@@ -9,16 +9,13 @@
 ##      桌上却摆着九块——第六组的组号旗插着两块。家政课褚老师认定第六组从店里买了一块保底，要取消第六组的成绩。
 ##      六处勘查点（第二块蛋糕、冷藏柜第六格、3 号烤箱登记表、后门的蛋壳桶、走廊公告栏、第六组分工表），
 ##      推理链是「蛋糕四层」：手法 → 时机 → 来历 → 烘焙人。每层三选一、各配一种蛋糕层的颜色，选错只给温柔提示、
-##      只计入本地 _bk_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜烤盘并保存历史最佳纪录，
+##      只计入本地 _bk_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，
 ##      可无限重玩刷新纪录，持久化于 persistent.bake_cake_record。
 ##      真相完全写实（家政教室的蓝格烘焙纸与面包房的金色纸托、冷藏柜一格一组的规矩与掉落的便签、烤箱登记表上的第三炉与绿笔、
 ##      没有红戳的四个蛋壳与赤藓糖醇不上色、公告栏上「控糖，只看不尝」的客座评委），没有任何超自然要素。
 ##   3. 防剧透联动：墨墨在本案页边的续批、复盘本新增一页的页边续批，都严格经 truth_spoiler_unlocked() 零侧信道遮罩，
-##      与复盘本、合照相册、番外卷宗等共用同一个「解锁剧透 / 恢复遮罩」开关。
-##   4. 入口只进「番外卷宗」：主菜单不新增胶囊；卷宗改为 2 × 5 网格（八桩短案 + 复盘本 + 一格留白），高度 508 → 572px（<= 672px）；
-##      复盘本由七页扩为八页（只往 PC-13 的页目登记表里再追加一页，PC-15 的 3 列索引签网格仍为三行）；
-##      侦探社沙龙子栏把本案接入「侦探社沙龙」组（与茶话会、批注辞典同属下午茶主题，三签组按每签一枚图标 + 66px 短签），
-##      五组展开态都不超过 702px 内宽。
+##      与复盘本、合照相册、案卷等共用同一个「解锁剧透 / 恢复遮罩」开关。
+##   4. 入口只在「案卷」：主菜单不新增胶囊；复盘本扩为八页（只往 PC-13 的页目登记表里再追加一页）。
 ##   5. 本文件按文件名排在 zwembad_locker_casebook.rpy 之后初始化（最后一个顶层模块），双成就追加在 PC-16 之后，
 ##      成就页扩展为 2×20 = 40 枚。
 
@@ -47,12 +44,12 @@ init python:
         register_extra_achievement(
             "ach_golden_tray",
             "金烤盘的烘焙侦探",
-            "零失误切完蛋糕四层，摘得金烤盘。",
+            "零失误切完蛋糕四层，拿下金牌。",
             False,
         )
 
     ############################################################################
-    ## 一、家政课烘焙赛的第二块蛋糕（1 桩可重玩短案 · 6 处勘查点 · 蛋糕四层 · 金银铜烤盘评级）
+    ## 一、家政课烘焙赛的第二块蛋糕（1 桩可重玩短案 · 6 处勘查点 · 蛋糕四层 · 金银铜牌评级）
     ############################################################################
 
     BAKE_CASE = {
@@ -248,9 +245,9 @@ init python:
     ]
 
     BAKE_RATING_TIERS = [
-        {"key": "gold",   "name": "金烤盘", "title": "烘焙名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "银烤盘", "title": "裱花推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "铜烤盘", "title": "初学打发", "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "烘焙名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "裱花推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "初学打发", "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _BAKE_TIER_BY_KEY = {t["key"]: t for t in BAKE_RATING_TIERS}
@@ -265,7 +262,7 @@ init python:
         return _BAKE_TIER_BY_KEY.get(tier_key, BAKE_RATING_TIERS[-1])
 
     def bake_rate(mistakes_count=0):
-        """按本局失误数评定烤盘：0 次金烤盘，1～2 次银烤盘，3 次及以上铜烤盘。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in BAKE_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -283,17 +280,14 @@ init python:
     def bake_get_record():
         raw = getattr(persistent, "bake_cake_record", None)
         raw = raw if isinstance(raw, dict) else {}
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _BAKE_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _BAKE_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _BAKE_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [s for s in (raw.get("inspected") or []) if s in _BAKE_SPOT_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -311,7 +305,7 @@ init python:
         return 1 if bake_get_record()["best_tier"] == "gold" else 0
 
     def bake_best_short():
-        """番外卷宗与鉴赏页使用：历史最佳烤盘，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级，未结案时显示「待结案」。"""
         rec = bake_get_record()
         return bake_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -336,8 +330,8 @@ init python:
         return True
 
     def bake_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局烤盘、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
-        只写烘焙赛案自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加金烤盘成就。"""
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        只写烘焙赛案自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加金牌成就。"""
         m = max(0, int(mistakes_count or 0))
         tier = bake_rate(m)
         prev = bake_get_record()
@@ -475,7 +469,7 @@ screen extras_bake_contest():
                         xsize 398
                         text _("家政课烘焙赛的第二块蛋糕") font gui.name_text_font size 19 color "#fff4e6"
                         if _kv["solved"]:
-                            text _("已结案 · 蛋糕四层已全部切开 · 可随时重回家政教室冲击金烤盘") size 12 color "#9fe3b0"
+                            text _("已结案 · 蛋糕四层已全部切开 · 可随时重回家政教室冲击金牌") size 12 color "#9fe3b0"
                         else:
                             text _("评审桌上多出一块蛋糕，插着第六组的旗 · 它是谁烤的") size 12 color "#f0d6bc"
                 hbox:
@@ -493,7 +487,7 @@ screen extras_bake_contest():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _kv["replays"]) size 12 color "#f6dccb" align (0.5, 0.5) substitute False
 
-        ## 2. 卷宗详情：家政教室缩略图（底部四层蛋糕色带，结案后点亮）、案情、六处勘查点、蛋糕四层、烤盘评级与页边续批
+        ## 2. 卷宗详情：家政教室缩略图（底部四层蛋糕色带，结案后点亮）、案情、六处勘查点、蛋糕四层、评级与页边续批
         frame:
             style "bake_console_card"
             vbox:
@@ -599,7 +593,7 @@ screen extras_bake_contest():
                                 text ("%s · %s" % (l_obj["step"], l_obj["name"])) size 11 color ("#9fe3b0" if _kv["solved"] else "#ecd2bc") bold True substitute False
                                 text (_kv["layer_shorts"][_ki] if _kv["solved"] else _("？ 待切开")) size 12 color ("#fdf3ea" if _kv["solved"] else "#a88a76") substitute False
 
-                ## 2C. 烤盘评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "bake_rating_card"
                     vbox:
@@ -612,7 +606,7 @@ screen extras_bake_contest():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_second_cake.png" xysize (16, 16) yalign 0.5
-                                text _("烤盘评级 · 重玩挑战") font gui.name_text_font size 13 color "#fdf3ea" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#fdf3ea" yalign 0.5
                             text ("历史最佳：%s" % _kv["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -625,7 +619,7 @@ screen extras_bake_contest():
                                         text ("%s「%s」" % (w_obj["name"], w_obj["title"])) size 12 color ("#f4d98a" if _kv["best_tier"] == w_obj["key"] else "#f6e8dc") yalign 0.5 substitute False
                                         text w_obj["rule"] size 11 color "#d6b8a0" xalign 1.0 yalign 0.5 substitute False
                         if _kv["solved"]:
-                            add Solid("#f2c4a833") xfill True ysize 1
+                            add Solid("#f2c4a833") ysize 1
                             text _kv["display_solution"] size 12 color "#9fe3b0" line_spacing 2 substitute False
                             text _kv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _kv["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -673,7 +667,7 @@ screen extras_bake_contest():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误切完蛋糕四层可获金烤盘 · 已结案 %d 次" % _kv["replays"]) size 12 color "#d6b8a0" yalign 0.5 substitute False
+                    text ("零失误切完蛋糕四层可获金牌 · 已结案 %d 次" % _kv["replays"]) size 12 color "#d6b8a0" yalign 0.5 substitute False
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -763,7 +757,7 @@ screen bake_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#f2c4a8" bold True
                     text _rv["summary"] size 13 color "#fdf3ea" line_spacing 4 substitute False
-                    add Solid("#ecd2bc33") xfill True ysize 1
+                    add Solid("#ecd2bc33") ysize 1
                     if _rv["solved"]:
                         text _("蛋糕四层：") size 12 color "#f2c4a8" bold True
                         for _ri, r_obj in enumerate(BAKE_LAYER_LINKS):
@@ -771,12 +765,12 @@ screen bake_report_modal():
                                 spacing 8
                                 add Solid(r_obj["color"]) xysize (6, 18) yalign 0.0
                                 text ("%s · %s（%s）：%s" % (r_obj["step"], r_obj["name"], r_obj["layer"], _rv["layer_fulls"][_ri])) size 13 color "#f6e8dc" line_spacing 3 xsize 658 substitute False
-                        add Solid("#f2c4a833") xfill True ysize 1
+                        add Solid("#f2c4a833") ysize 1
                         text _rv["display_solution"] size 13 color "#9fe3b0" line_spacing 4 substitute False
                         text _rv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _rv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
                         if _rv["display_secret"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _rv["display_secret"] size 13 color "#f4d98a" line_spacing 4 substitute False
                     else:
                         text _("这桩案子还没有结案。回到家政教室、查完六处线索并切完蛋糕四层后，完整的结案报告会显影在这里。") size 13 color "#d6b8a0" line_spacing 4
@@ -818,7 +812,7 @@ screen bake_layer_banner(layers_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_rolling_pin.png" xysize (22, 22) yalign 0.5
                 text _("家政教室 · 蛋糕四层") size 12 color "#f2c4a8" bold True yalign 0.5
-                text ("已切开 %d/%d · 失误只计入本案烤盘评级，不影响主线" % (layers_done, len(BAKE_LAYER_LINKS))) size 11 color "#ecd2bc" yalign 0.5
+                text ("已切开 %d/%d · 失误只计入本案评级，不影响主线" % (layers_done, len(BAKE_LAYER_LINKS))) size 11 color "#ecd2bc" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(BAKE_LAYER_LINKS):
@@ -832,7 +826,7 @@ screen bake_layer_banner(layers_done, prompt_line):
             text prompt_line size 14 color "#fdf3ea" substitute False
 
 
-## 烘焙赛结案结算卡：本局烤盘评级 + 历史最佳纪录 + 重玩挑战提示
+## 烘焙赛结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen bake_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -881,16 +875,16 @@ screen bake_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, n
                     spacing 4
                     text _cv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _cv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入烘焙赛烤盘评级，不影响主线）" % mistakes) size 12 color "#ecd2bc"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#ecd2bc"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_cbest["name"], _cbest["title"], best_mistakes, replays)) size 12 color "#ecd2bc" substitute False
                     if is_first:
                         text _("首次结案 · 蛋糕四层已写入鉴赏室「家政课烘焙赛」分页，复盘本扩容到了八页") size 12 color "#9fe3b0"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一次的四层比以往任何一次都切得更齐") size 12 color "#f4d98a"
                     elif _c_gold:
-                        text _("重玩挑战 · 再次摘下金烤盘，烘焙名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，烘焙名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误切完蛋糕四层，就能把金烤盘摆上家政教室的评审桌") size 12 color "#ecd2bc"
+                        text _("重玩挑战 · 零失误切完蛋糕四层，就能拿下金牌") size 12 color "#ecd2bc"
 
             textbutton _("收好组号旗并返回鉴赏室"):
                 style "pill_button"
@@ -992,7 +986,7 @@ label _bake_finish_case(local_mistakes=0):
 ################################################################################
 
 label bake_cake_case:
-    call _bake_init_sandbox("家政课烘焙赛 · BK-01 第六组的第二块蛋糕")
+    call _bake_init_sandbox("家政课烘焙赛 · BK-01 第六组的第二块蛋糕") from _call__bake_init_sandbox
     $ _bk_mistakes = 0
     $ _bk_layers = 0
     $ _bk_s1 = False
@@ -1177,7 +1171,7 @@ label bake_case_investigate:
             "只有「烤箱计时」那一栏不一样。签名是「乔穗」，下面记着：「14:25 进炉，15:05 出炉。」——字是绿色的。"
             alice "乔穗是……刚才那个一直低着头的女生？"
             muzhen "嗯。她话不多，手可稳了，计时从来没出过错。今天她一直守在烤箱边上，我在装饰台裱花，从三点多一直裱到三点半。"
-    "小林在一旁翻了翻相机：三点零五分到三点半，穆蓁蓁一直站在装饰台前裱花，照片拍了十几张，张张都在。"
+            "小林在一旁翻了翻相机：三点零五分到三点半，穆蓁蓁一直站在装饰台前裱花，照片拍了十几张，张张都在。"
             "我看了一眼料理台下的笔袋。笔袋拉链开着，里面只有一支笔，绿色的。"
             show alice shock at left
             alice "绿笔……"
@@ -1201,9 +1195,9 @@ label bake_case_review_intro:
     mo_note "像切蛋糕一样。一层一层切开，才看得见里面。"
     alice "那就一层一层切！蛋糕是怎么上桌的、什么时候烤的、是给谁烤的、是谁烤的——四层切开，真相就摆上桌了！"
     if _bk_replays > 0:
-        sysmsg "【烘焙赛 · 重玩挑战】当前历史最佳：[_bk_best_text]。零失误切完蛋糕四层，就能摘下金烤盘。"
+        sysmsg "【烘焙赛 · 重玩挑战】当前历史最佳：[_bk_best_text]。零失误切完蛋糕四层，就能拿下金牌。"
     else:
-        sysmsg "【烘焙赛 · 蛋糕四层】依次选出「手法 → 时机 → 来历 → 烘焙人」。零失误可获金烤盘评级，失误只计入本案评级，不影响主线。"
+        sysmsg "【烘焙赛 · 蛋糕四层】依次选出「手法 → 时机 → 来历 → 烘焙人」。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label bake_layer_k1:
     show screen bake_layer_banner(0, "胚底层 · 手法：蓝格烘焙纸、第六格里的两只盒子、掉进缝里的便签——它是怎么上桌的？")
@@ -1425,5 +1419,5 @@ label bake_case_resolution:
     show alice smile at left
     alice "好！万事屋推理笔记复盘本，今天正式扩容到八页！"
 
-    call _bake_finish_case(_bk_mistakes)
+    call _bake_finish_case(_bk_mistakes) from _call__bake_finish_case
     return

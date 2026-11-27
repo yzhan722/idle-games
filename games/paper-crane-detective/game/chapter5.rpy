@@ -1001,7 +1001,7 @@ label ch5_reason_true:
             show alice neutral at left
             alice "而且你想想，周可大费周章在学校里“还原现场”，就是要那个“地点”本身。她要的是仪式感。"
             alice "如果只是想把墨墨带去老房子说话，她何必在旧楼搬一屋子桌椅？"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_10
             jump ch5_retry_true
         "墨墨自己家":
             mc "会不会墨墨只是回了自己家……"
@@ -1010,13 +1010,13 @@ label ch5_reason_true:
             zhang "而且咱们二十分钟前刚从外婆楼下回来，外婆连鞋盒都搬出来了，她怎么可能在家？"
             show alice sad at left
             alice "冷静点，[player_name]。深呼吸。想想刘师傅刚才说的那间“一块砖都没动”的屋子。"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_11
             jump ch5_retry_true
 
 
 ## —— 真相线重试 ——
 label ch5_retry_true:
-    call alice_hint("奖牌、恐吓信、相册，每一件都在把墨墨往“四年前”拽。那么最后一步，她当然也要一个“四年前的地方”。")
+    call alice_hint("奖牌、恐吓信、相册，每一件都在把墨墨往“四年前”拽。那么最后一步，她当然也要一个“四年前的地方”。") from _call_alice_hint_4
     menu:
         "再想，地点的关键是什么？"
         "还原“四年前现场”的旧楼仓库——周可要的是“场景重现”，地点必须一致":
@@ -1026,14 +1026,14 @@ label ch5_retry_true:
             show alice sad at left
             alice "[player_name]。周可想要的不是“回到好的时候”。她想要的是“回到最坏的那一刻”。"
             alice "河堤是好的时候。储物间才是最坏的。她还原的，是储物间。"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_12
             narrator "我闭上眼睛。艾丽丝说得对。周可花了一个月铺的路，终点只可能是一个地方。"
             jump ch5_solve_true
 
 
 ## —— 真相线破局（通向 TE）——
 label ch5_solve_true:
-    call reason_correct
+    call reason_correct from _call_reason_correct_5
     mc "答案只有一个——旧楼的旧仓库。"
     mc "四年前，那间储物间属于江那边的老小区活动室。后来小区拆了一半，活动室划给了云溪高中，变成了旧楼的仓库。"
     mc "周可回来的不是“学校”。她回来的是那间屋子。她转学到这里，就是因为那间屋子在这里。"

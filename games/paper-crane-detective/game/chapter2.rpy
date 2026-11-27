@@ -550,7 +550,7 @@ label ch2_reason:
             narrator "墨墨把眉头拧起一点，在本子上画了一颗带翅膀的桃心，又在旁边画了一页残缺的旧报纸，中间重重画了个叉。"
             mo_note "他的预告函会画心，用的是时尚杂志铜版纸。这封用的是四年前的《城市晚报》，背面有社会版铅字。不是同一个人。"
             narrator "她的笔尖在“不是同一个人”下面连划了两道横线，力道大得差点划破纸背。"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_2
             jump ch2_reason_retry
         "是班长自导自演博同情":
             mc "会不会是班长自己写来博同情的？"
@@ -562,18 +562,18 @@ label ch2_reason:
             mo_note "她的指甲修得很齐，手指上没有胶水残留。而且她根本没去过图书馆三楼的合订本书架。"
             show alice sad at right
             alice "你看你，把人家气跑了。这句失言，记在“嘴”的账上，回头得用两顿食堂二楼的小炒肉来赔。"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_3
             jump ch2_reason_retry
 
 label ch2_reason_retry:
-    call alice_hint("你想想，一个只想吓唬班长的人，为什么非得翻出四年前的旧报纸来剪？“谁写的”不重要，“用什么写的”才重要。")
+    call alice_hint("你想想，一个只想吓唬班长的人，为什么非得翻出四年前的旧报纸来剪？“谁写的”不重要，“用什么写的”才重要。") from _call_alice_hint_1
     menu:
         "再想想，真正的疑点是？"
         "重点不是“谁吓班长”，而是“为什么用四年前的旧报纸”":
             jump ch2_reason_ok
         "旧报纸只是凑巧，没什么意义":
             mc "旧报纸可能只是随手拿的吧……"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_4
             show mo sad at center
             narrator "墨墨的手指按在笔记本边缘，指节一点点泛白。她没有写字，只是把那页剪报的背面朝我推近了一寸。"
             show alice sad at right
@@ -582,7 +582,7 @@ label ch2_reason_retry:
             jump ch2_reason_ok_forced
 
 label ch2_reason_ok:
-    call reason_correct
+    call reason_correct from _call_reason_correct_2
 label ch2_reason_ok_forced:
     mc "真正诡异的，不是这封信吓了谁——而是它用的是四年前的旧报纸。一个普通的校园恶作剧，犯得着专门找四年前的报纸来剪吗？"
     mc "而且不是随便的旧报纸。是《城市晚报》，是合订本里被人用刀剪掉的那两页。剪的人，要的就是“那两页”上的字。"

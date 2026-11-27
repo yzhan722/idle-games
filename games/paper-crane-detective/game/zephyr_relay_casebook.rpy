@@ -9,7 +9,7 @@
 ##      六处勘查点就是箱子里的六件失物，每件都系着学生会的失物登记签（拾获时间 · 地点 · 拾获人）。
 ##      推理链是一场「倒跑四棒」：从失物最后停下的地方出发，终点 → 交接 → 起点 → 跑者，一棒一棒往回交，
 ##      交回到那天没有出现在检录处的高一(4)班第四棒手里。每棒三选一、各配一种接力棒颜色，选错只给温柔提示、
-##      只计入本地 _sd_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜秒表并保存历史最佳纪录，
+##      只计入本地 _sd_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，
 ##      可无限重玩刷新纪录，持久化于 persistent.sports_lostfound_record。
 ##      真相完全写实（借用登记、检录表、草莓贴纸、系成蝴蝶结的钉鞋与看台的横梁高度），无任何超自然要素。
 ##   3. 「侦探社推理笔记复盘本」（只读渲染函数 + 整页展开弹窗；四签页面已在 PC-16 删除，改由 PC-15 的扩容页面承载）：
@@ -42,12 +42,12 @@ init python:
         register_extra_achievement(
             "ach_case_notebook",
             "推理笔记的复盘人",
-            "在推理笔记复盘本上盖满四枚复盘章。",
+            "盖满推理笔记复盘本前四页的复盘章。",
             False,
         )
 
     ############################################################################
-    ## 一、运动会失物招领箱的秘密（1 桩可重玩短案 · 6 件失物 · 倒跑四棒 · 金银铜秒表评级）
+    ## 一、运动会失物招领箱的秘密（1 桩可重玩短案 · 6 件失物 · 倒跑四棒 · 金银铜牌评级）
     ############################################################################
 
     SPORTS_CASE = {
@@ -232,9 +232,9 @@ init python:
     ]
 
     SPORTS_RATING_TIERS = [
-        {"key": "gold",   "name": "金秒表", "title": "操场名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "银秒表", "title": "跑道推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "铜秒表", "title": "见习裁判",   "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "操场名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "跑道推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "见习裁判",   "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _SPORTS_TIER_BY_KEY = {t["key"]: t for t in SPORTS_RATING_TIERS}
@@ -249,7 +249,7 @@ init python:
         return _SPORTS_TIER_BY_KEY.get(tier_key, SPORTS_RATING_TIERS[-1])
 
     def sports_rate(mistakes_count=0):
-        """按本局失误数评定秒表：0 次金秒表，1～2 次银秒表，3 次及以上铜秒表。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in SPORTS_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -266,17 +266,14 @@ init python:
 
     def sports_get_record():
         raw = _ensure_sports_store()
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _SPORTS_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _SPORTS_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _SPORTS_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [h for h in (raw.get("inspected") or []) if h in _SPORTS_ITEM_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -294,7 +291,7 @@ init python:
         return 1 if sports_get_record()["best_tier"] == "gold" else 0
 
     def sports_best_short():
-        """主菜单小胶囊与鉴赏页使用：历史最佳秒表名，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级名，未结案时显示「待结案」。"""
         rec = sports_get_record()
         return sports_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -319,7 +316,7 @@ init python:
         return True
 
     def sports_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局秒表、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
         只写失物箱自己的存档，绝不触碰主线 fail_count / 好感。"""
         m = max(0, int(mistakes_count or 0))
         tier = sports_rate(m)
@@ -468,24 +465,15 @@ init python:
             raw = {}
         tier_keys = [t.get("key") for t in tiers]
         hot_ids = [h.get("id") for h in hotspots]
-        best_tier = raw.get("best_tier")
-        try:
-            best_m = raw.get("best_mistakes", None)
-            best_m = None if best_m is None else max(0, int(best_m))
-        except Exception:
-            best_m = None
-        try:
-            replays = max(0, int(raw.get("replays", 0) or 0))
-        except Exception:
-            replays = 0
+        best_tier = casefile_best_key(raw)
         seen = raw.get("inspected") or []
         if not isinstance(seen, (list, tuple)):
             seen = []
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": replays,
+            "replays": save_int(raw.get("replays"), 0),
             "best_tier": best_tier if best_tier in tier_keys else None,
-            "best_mistakes": best_m,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
             "inspected": [h for h in hot_ids if h in seen],
         }
 
@@ -670,7 +658,7 @@ screen extras_sports_lostfound():
                         xsize 398
                         text _("运动会失物招领箱的秘密") font gui.name_text_font size 19 color "#fff1ea"
                         if _sv["solved"]:
-                            text _("已结案 · 四棒已倒着跑完 · 可随时重新打开失物箱冲击金秒表") size 12 color "#9fe3b0"
+                            text _("已结案 · 四棒已倒着跑完 · 可随时重新打开失物箱冲击金牌") size 12 color "#9fe3b0"
                         else:
                             text _("运动会后的第二天，六件没人认领的失物 · 一件一件读下去") size 12 color "#f0bfae"
                 hbox:
@@ -688,7 +676,7 @@ screen extras_sports_lostfound():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _sv["replays"]) size 12 color "#ffb59e" align (0.5, 0.5) substitute False
 
-        ## 2. 卷宗详情：小卖部缩略图（底部四色接力棒跑道带）、案情、六件失物、倒跑四棒与秒表评级
+        ## 2. 卷宗详情：小卖部缩略图（底部四色接力棒跑道带）、案情、六件失物、倒跑四棒与评级
         frame:
             style "sports_console_card"
             vbox:
@@ -793,7 +781,7 @@ screen extras_sports_lostfound():
                                 text ("%s · %s" % (k_obj["step"], k_obj["name"])) size 11 color ("#9fe3b0" if _sv["solved"] else "#e8b9a8") bold True substitute False
                                 text (_sv["leg_shorts"][_ki] if _sv["solved"] else _("？ 待交棒")) size 12 color ("#fff6f2" if _sv["solved"] else "#a98378") substitute False
 
-                ## 2C. 秒表评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "sports_rating_card"
                     vbox:
@@ -806,7 +794,7 @@ screen extras_sports_lostfound():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_relay_baton.png" xysize (16, 16) yalign 0.5
-                                text _("秒表评级 · 重玩挑战") font gui.name_text_font size 13 color "#fff6f2" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#fff6f2" yalign 0.5
                             text ("历史最佳：%s" % _sv["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -819,7 +807,7 @@ screen extras_sports_lostfound():
                                         text ("%s「%s」" % (t_obj["name"], t_obj["title"])) size 12 color ("#f4d98a" if _sv["best_tier"] == t_obj["key"] else "#f7e4dc") yalign 0.5 substitute False
                                         text t_obj["rule"] size 11 color "#d2a99c" xalign 1.0 yalign 0.5 substitute False
                         if _sv["solved"]:
-                            add Solid("#ffb59e33") xfill True ysize 1
+                            add Solid("#ffb59e33") ysize 1
                             text _sv["display_solution"] size 12 color "#9fe3b0" line_spacing 2 substitute False
                             text _sv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _sv["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -830,7 +818,7 @@ screen extras_sports_lostfound():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误倒跑完四棒可获金秒表 · 已结案 %d 次" % _sv["replays"]) size 12 color "#d2a99c" yalign 0.5 substitute False
+                    text ("零失误倒跑完四棒可获金牌 · 已结案 %d 次" % _sv["replays"]) size 12 color "#d2a99c" yalign 0.5 substitute False
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -920,7 +908,7 @@ screen sports_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#ffb59e" bold True
                     text _mv["summary"] size 13 color "#fdf3ee" line_spacing 4 substitute False
-                    add Solid("#e8b9a833") xfill True ysize 1
+                    add Solid("#e8b9a833") ysize 1
                     if _mv["solved"]:
                         text _("倒跑四棒：") size 12 color "#ffb59e" bold True
                         for _ri, r_obj in enumerate(SPORTS_RELAY_LEGS):
@@ -928,7 +916,7 @@ screen sports_report_modal():
                                 spacing 8
                                 add Solid(r_obj["color"]) xysize (6, 18) yalign 0.0
                                 text ("%s · %s（%s）：%s" % (r_obj["step"], r_obj["name"], r_obj["baton"], _mv["leg_fulls"][_ri])) size 13 color "#f7e4dc" line_spacing 3 xsize 658 substitute False
-                        add Solid("#ffb59e33") xfill True ysize 1
+                        add Solid("#ffb59e33") ysize 1
                         text _mv["display_solution"] size 13 color "#9fe3b0" line_spacing 4 substitute False
                         text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
@@ -970,7 +958,7 @@ screen sports_relay_banner(legs_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_relay_baton.png" xysize (22, 22) yalign 0.5
                 text _("失物招领 · 倒跑四棒") size 12 color "#ffb59e" bold True yalign 0.5
-                text ("已交接 %d/%d · 失误只计入本案秒表评级，不影响主线" % (legs_done, len(SPORTS_RELAY_LEGS))) size 11 color "#e8b9a8" yalign 0.5
+                text ("已交接 %d/%d · 失误只计入本案评级，不影响主线" % (legs_done, len(SPORTS_RELAY_LEGS))) size 11 color "#e8b9a8" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(SPORTS_RELAY_LEGS):
@@ -984,7 +972,7 @@ screen sports_relay_banner(legs_done, prompt_line):
             text prompt_line size 14 color "#fff6f2" substitute False
 
 
-## 失物箱结案结算卡：本局秒表评级 + 历史最佳纪录 + 重玩挑战提示
+## 失物箱结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen sports_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -1033,16 +1021,16 @@ screen sports_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays,
                     spacing 4
                     text _rv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _rv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入失物箱评级，不影响主线）" % mistakes) size 12 color "#e8b9a8"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#e8b9a8"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_bt["name"], _bt["title"], best_mistakes, replays)) size 12 color "#e8b9a8" substitute False
                     if is_first:
                         text _("首次结案 · 倒跑四棒已写入鉴赏室「运动会失物」分页，复盘本添上了第四页") size 12 color "#9fe3b0"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一次的交接比以往任何一次都更稳") size 12 color "#f4d98a"
                     elif _is_gold:
-                        text _("重玩挑战 · 再次按停金秒表，操场名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，操场名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误倒着跑完四棒，就能把金秒表挂上终点线") size 12 color "#e8b9a8"
+                        text _("重玩挑战 · 零失误倒着跑完四棒，就能拿下金牌") size 12 color "#e8b9a8"
 
             textbutton _("收好秒表并返回鉴赏室"):
                 style "pill_button"
@@ -1099,7 +1087,7 @@ screen notebook_page_modal(case_key="library"):
                     add "images/ui/icon_evidence_tag.png" xysize (28, 28) yalign 0.5
                     text (_("已盖复盘章") if _pm["stamped"] else _pm["best_name"]) size 13 color "#f4d98a" bold True yalign 0.5 substitute False
 
-            add Solid(_pm["ink"]) xfill True ysize 3
+            add Solid(_pm["ink"]) ysize 3
 
             viewport:
                 xfill True
@@ -1113,7 +1101,7 @@ screen notebook_page_modal(case_key="library"):
                     text _pm["best_line"] size 13 color "#f4d98a" substitute False
                     if _pm["summary"]:
                         text _pm["summary"] size 13 color "#fbf1df" line_spacing 4 substitute False
-                    add Solid("#e8c88a33") xfill True ysize 1
+                    add Solid("#e8c88a33") ysize 1
                     if _pm["solved"]:
                         text ("%s：" % _pm["unit"]) size 12 color "#e8c88a" bold True substitute False
                         for _fi, _fc in enumerate(_pm["chain"]):
@@ -1121,12 +1109,12 @@ screen notebook_page_modal(case_key="library"):
                                 spacing 8
                                 add Solid(_pm["ink"]) xysize (6, 18) yalign 0.0
                                 text ("%s · %s：%s" % (_fc[0], _fc[1], _pm["chain_fulls"][_fi])) size 13 color "#f3e6cc" line_spacing 3 xsize 658 substitute False
-                        add Solid("#e8c88a33") xfill True ysize 1
+                        add Solid("#e8c88a33") ysize 1
                         text _pm["display_solution"] size 13 color "#86efac" line_spacing 4 substitute False
                         text _pm["display_lesson"] size 13 color "#fbf1df" line_spacing 4 substitute False
                         text _pm["display_mo_margin"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         if _pm["display_secret"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _pm["display_secret"] size 13 color "#f4d98a" line_spacing 4 substitute False
                     else:
                         text _("这一页还空着。等这一案结案之后，推理链全文、结案报告和墨墨的页边批注会一起抄进来。") size 13 color "#b39d7a" line_spacing 4
@@ -1292,7 +1280,7 @@ label _sports_finish_case(local_mistakes=0):
 ################################################################################
 
 label sports_lostfound_case:
-    call _sports_init_sandbox("失物招领 · SD-01 没有跑的第四棒")
+    call _sports_init_sandbox("失物招领 · SD-01 没有跑的第四棒") from _call__sports_init_sandbox
     $ _sd_mistakes = 0
     $ _sd_legs = 0
     $ _sd_h1 = False
@@ -1521,9 +1509,9 @@ label sports_case_review_intro:
     mo_note "倒着跑。从失物最后停下的地方开始。"
     alice "接力是一棒交给下一棒。那我们就倒过来——从终点出发，一棒一棒往回交，一直交回到起跑的那个人手里！"
     if _sd_replays > 0:
-        sysmsg "【失物招领 · 重玩挑战】当前历史最佳：[_sd_best_text]。零失误倒着跑完四棒，就能把金秒表挂上终点线。"
+        sysmsg "【失物招领 · 重玩挑战】当前历史最佳：[_sd_best_text]。零失误倒着跑完四棒，就能拿下金牌。"
     else:
-        sysmsg "【失物招领 · 倒跑四棒】依次选出「终点 → 交接 → 起点 → 跑者」四棒。零失误可获金秒表，失误只计入本案评级，不影响主线。"
+        sysmsg "【失物招领 · 倒跑四棒】依次选出「终点 → 交接 → 起点 → 跑者」四棒。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label sports_relay_k1:
     show screen sports_relay_banner(0, "第一棒 · 终点：帐篷后的接力棒、帐篷前的检录卡、阿姨递出去的汽水——事情在哪里结束？")
@@ -1758,5 +1746,5 @@ label sports_case_resolution:
     show alice smile at left
     alice "好！侦探社推理笔记复盘本，今天正式开张！"
 
-    call _sports_finish_case(_sd_mistakes)
+    call _sports_finish_case(_sd_mistakes) from _call__sports_finish_case
     return

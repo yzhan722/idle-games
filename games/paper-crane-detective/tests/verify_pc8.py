@@ -12,6 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 from PIL import Image, ImageFont
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 ROOT = Path(__file__).resolve().parent.parent
 GAME_DIR = ROOT / "game"
@@ -794,7 +795,7 @@ def check_pc8_radio_and_origami_runtime():
 
 def check_zero_intrusion_and_icons():
     res = subprocess.run(
-        ["git", "status", "--porcelain", "--", *MAIN_STORY_FILES],
+        ["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES)],
         cwd=str(ROOT),
         capture_output=True,
         text=True,

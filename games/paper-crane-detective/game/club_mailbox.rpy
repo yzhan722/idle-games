@@ -6,7 +6,9 @@
 ##   2. label mailbox_case_m2 —— 《美术室未干的群青颜料》（物理痕迹 · 夕照色温视觉诡计与缓干甘油）
 ##   3. label mailbox_case_m3 —— 《钟楼午休的第七声回响》（声学延迟 · 380米声速差与广播重影时刻表）
 
-init python:
+## init 1：同一优先级按文件名排序，本文件排在 definitions.rpy 之前，默认优先级下 register_evidence_detail 还不存在，
+## 游戏一启动就是 NameError。
+init 1 python:
     # —— M-01《图书馆消失的借书卡》证物翻面细节 ——
     register_evidence_detail(
         "书袋内侧蹭印：盖着昨日11.14紫印油的未干蹭痕",
@@ -188,7 +190,7 @@ label _mailbox_finish_case(case_id, local_mistakes=0):
 ################################################################################
 
 label mailbox_case_m1:
-    call _mailbox_init_sandbox("委托信箱 · M-01 图书馆消失的借书卡")
+    call _mailbox_init_sandbox("委托信箱 · M-01 图书馆消失的借书卡") from _call__mailbox_init_sandbox
     $ _mb_mistakes = 0
 
     scene bg black with fade
@@ -299,7 +301,7 @@ label mailbox_m1_deduction_stage:
         conclusion_title="时间锁链闭环：隐瞒的十一分钟与五点前的旧印面",
         conclusion_body="门禁流水证实第二名访客早在 16:54 就已入馆，并非手写登记的 17:05；而书袋内侧残留的『11.14』新鲜紫印油只可能在小林 17:00 调拨印章前盖下，精准锁死在被刻意抹去的十一分钟里！",
         wrong_hints=MB_M1_HINTS
-    )
+    ) from _call_run_deduction_combine
 
     scene bg library
     $ set_ambient("dusk")
@@ -350,7 +352,7 @@ label mailbox_m1_showdown:
     show banzhang happy at right
     banzhang "呜……谢谢小林，也谢谢你们替我留了面子！"
 
-    call _mailbox_finish_case("m1", _mb_mistakes)
+    call _mailbox_finish_case("m1", _mb_mistakes) from _call__mailbox_finish_case
     return
 
 
@@ -359,7 +361,7 @@ label mailbox_m1_showdown:
 ################################################################################
 
 label mailbox_case_m2:
-    call _mailbox_init_sandbox("委托信箱 · M-02 美术室未干的群青颜料")
+    call _mailbox_init_sandbox("委托信箱 · M-02 美术室未干的群青颜料") from _call__mailbox_init_sandbox_1
     $ _mb_mistakes = 0
 
     scene bg black with fade
@@ -475,7 +477,7 @@ label mailbox_m2_deduction_stage:
         conclusion_title="色温障眼法告破：夕照吞没蓝光后的群青水粉",
         conclusion_body="袖口织物被胶质粘结无掉灰，证明是水性颜料而非干木炭粉；而在缺乏短波蓝光的浓重橙红夕照下，纯正群青会因吸收红橙光而呈现暗紫灰色，进屋照冷白光便原形毕露！",
         wrong_hints=MB_M2_HINTS
-    )
+    ) from _call_run_deduction_combine_1
 
     show joker shock at right
     "被我们请进冷白日光灯下的美术准备室后，Joker 低头看了一眼自己袖口瞬间还原成鲜亮群青蓝的擦痕，夸张地叹了口气，却还不忘抛出最后一道难题："
@@ -517,7 +519,7 @@ label mailbox_m2_showdown:
     play sound se_write
     mo_note "加了一朵白色浪花边角之后，比原来的构图更有呼吸感了。"
 
-    call _mailbox_finish_case("m2", _mb_mistakes)
+    call _mailbox_finish_case("m2", _mb_mistakes) from _call__mailbox_finish_case_1
     return
 
 
@@ -526,7 +528,7 @@ label mailbox_m2_showdown:
 ################################################################################
 
 label mailbox_case_m3:
-    call _mailbox_init_sandbox("委托信箱 · M-03 钟楼午休的第七声回响")
+    call _mailbox_init_sandbox("委托信箱 · M-03 钟楼午休的第七声回响") from _call__mailbox_init_sandbox_2
     $ _mb_mistakes = 0
 
     scene bg black with fade
@@ -631,7 +633,7 @@ label mailbox_m3_deduction_stage:
         conclusion_title="声学坐标锁定：一楼礼堂东廊茶水间与储物柜旁",
         conclusion_body="全校唯有距钟楼 380 米的礼堂一楼东廊同时具备『真钟声传播延迟 1.12 秒』『老广播中继延迟 2.25 秒切入尾音』以及『开水炉铜阀沸腾声』三重声学指纹——录音时他正站在储物柜旁！",
         wrong_hints=MB_M3_HINTS
-    )
+    ) from _call_run_deduction_combine_2
 
     show shezhang shock at right
     "听我们指出录音地点就在一楼礼堂东廊储物柜旁，高社长惊讶得张大了嘴，随即挠着头追问道："
@@ -673,5 +675,5 @@ label mailbox_m3_showdown:
     "午后的阳光透过万事屋的百叶窗落在摊开的卷宗簿上。墨墨将一只刚折好的小小白色千纸鹤立在胡桃木委托信箱的右上角，低头写下结案附言。"
     mo_note "第七声回响替他泄露了秘密，也替那位休学的前辈留住了名字。三桩信箱委托，全部圆满结清。"
 
-    call _mailbox_finish_case("m3", _mb_mistakes)
+    call _mailbox_finish_case("m3", _mb_mistakes) from _call__mailbox_finish_case_2
     return

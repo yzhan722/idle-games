@@ -30,9 +30,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verify_pc8 as pc8  # noqa: E402
 import verify_pc9 as pc9  # noqa: E402
 import verify_pc10 as pc10  # noqa: E402
+import casefile_checks as cf  # noqa: E402
 import verify_pc11 as pc11  # noqa: E402
 import verify_pc12 as pc12  # noqa: E402
 import verify_glyphs as glyphs  # noqa: E402
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -288,46 +290,7 @@ def check_layout_and_pixel_bounds():
     #     Groups 4 / 5 now hold 4 tabs each and open with compact equal-width pills (salon_quad_pill);
     #     with PC-12's 66px pills those two states would overflow (measured below: the reason for the compact style).
     sb = pc10.measure_salon_subbar()
-    if _later_present():
-        # PC-14+ may append tabs to a group (each PC-13 group keeps its tabs first, in order; widths re-measured)
-        assert [g[0] for g in sb["groups"]] == [g for g, _t in SALON_GROUPS_EXPECTED], sb["groups"]
-        for (gkey, gtabs), g in zip(SALON_GROUPS_EXPECTED, sb["groups"]):
-            assert tuple(g[3])[:len(gtabs)] == gtabs, (gkey, g[3])
-        assert len(sb["keys"]) == len(set(sb["keys"])) and set(SALON_KEYS) <= set(sb["keys"]), sb["keys"]
-    else:
-        assert [(g[0], tuple(g[3])) for g in sb["groups"]] == SALON_GROUPS_EXPECTED, sb["groups"]
-        assert len(sb["keys"]) == len(set(sb["keys"])) == 16
-    assert sb["inner"] == 702
-    for gkey, px in sb["per_group"].items():
-        assert px <= sb["inner"], f"Sub-bar with `{gkey}` open overflows 702px: {px}px"
-    labels = {g[0]: g[1] for g in sb["groups"]}
-    assert labels == {"salon": "侦探社沙龙", "bookstreet": "旧书街与四季", "starlit": "电波与星空",
-                      "closedlib": "放学后短案", "keepsake": "纪念与寄语"}, labels
-    assert sb["quad"] == (4, 60, 4), f"Compact pill rule changed: {sb['quad']}"
-    for k in SALON_KEYS:
-        assert f'elif cur == "{k}":' in extra_src, f"extras() viewport does not route `{k}`"
-    # (PC-15 expands the notebook to six pages: haunted house + meteor night appended after the four PC-13 pages)
-    # (PC-16 appends the pool-locker page: seven pages)
-    assert sb["totals"]["sportsday"] == 1 and sb["totals"]["notebook"] == (8 if _pc17_present() else 7 if _pc16_present() else 6 if _rows_reflowed() else 4)
-    pill66 = lambda t: max(66, _w(f[11], t) + 12)  # noqa: E731
-    pill60 = lambda t: max(60, _w(f[11], t) + 8)  # noqa: E731
-    legacy = {}
-    for okey, _ol, _oi, otabs in sb["groups"]:
-        if len(otabs) < 4:
-            continue
-        w = 0
-        for gkey, glabel, _gi, gtabs in sb["groups"]:
-            if gkey == okey:
-                for t in gtabs:
-                    w += 14 + 4 + pill66(f"{sb['pills'][t][0]} {sb['totals'][t]}/{sb['totals'][t]}") + 4
-            else:
-                w += 14 + 4 + max(66, _w(f[11], glabel) + 12) + 4
-        legacy[okey] = w - 4
-        assert legacy[okey] > 702, "If 66px pills fit, the compact style would be unnecessary"
-        widths = {pill60(f"{sb['pills'][t][0]} {sb['totals'][t]}/{sb['totals'][t]}") for t in otabs}
-        assert widths == {60}, f"Compact pills in `{okey}` are not equal-width: {widths}"
-    report["SubBarWorst"] = sb["worst"]
-    report["SubBarIf66pxPills"] = max(legacy.values())
+    cf.check_subbar(sb, SALON_KEYS, extra_src, report)  # (PC-G2: the short cases are one 「案卷」 pill)
 
     # 2.3 subtitle & vertical budget unchanged
     sub = re.search(r'use game_menu\(_\("鉴赏"\), subtitle=_\("([^"]+)"\)\)', extra_src).group(1)
@@ -382,14 +345,14 @@ def check_layout_and_pixel_bounds():
         assert chip <= tier_w - 16, f"Tier chip `{t['name']}` overflows: {chip}px"
     report["StopwatchTierChip"] = widest_tier
     best_lines = [f"{t['name']}「{t['title']}」 · 最少失误 99 次" for t in tiers]
-    rate_row = 16 + 6 + _w(sf[13], "秒表评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
+    rate_row = 16 + 6 + _w(sf[13], "评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
     assert rate_row <= scroll_inner, f"Rating header row overflows: {rate_row}px"
 
     hdr_right = (max(96, 14 + 4 + _w(f[12], "最佳 待结案") + 20) + 6 + max(96, _w(f[12], "结案 99 次") + 20))
     hdr = 36 + 10 + 398 + hdr_right
     assert hdr <= console_inner, f"Sports header overflows: {hdr}px"
     assert _w(sf[19], "运动会失物招领箱的秘密") <= 398
-    for s in ("已结案 · 四棒已倒着跑完 · 可随时重新打开失物箱冲击金秒表", "运动会后的第二天，六件没人认领的失物 · 一件一件读下去"):
+    for s in ("已结案 · 四棒已倒着跑完 · 可随时重新打开失物箱冲击金牌", "运动会后的第二天，六件没人认领的失物 · 一件一件读下去"):
         assert _w(f[12], s) <= 398, f"Sports header line wraps ({_w(f[12], s)}px): {s}"
     thumb_w = int(_style_prop(extra_src, "mailbox_thumb_frame", "xsize"))
     assert thumb_w + 14 + 492 <= console_inner
@@ -406,7 +369,7 @@ def check_layout_and_pixel_bounds():
     report["SportsTagLine"] = tag_line
     report["SportsLighting"] = lamp
     report["SportsArchive"] = max(arch_solved, arch_open)
-    sd_footer = (_w(f[12], "零失误倒跑完四棒可获金秒表 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
+    sd_footer = (_w(f[12], "零失误倒跑完四棒可获金牌 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
                  + 8 + max(146, _w(f[15], "重新打开失物箱") + 36, _w(f[15], "打开失物招领箱") + 36))
     assert sd_footer <= console_inner, f"Sports footer overflows: {sd_footer}px"
     report["SportsFooter"] = sd_footer
@@ -423,7 +386,7 @@ def check_layout_and_pixel_bounds():
     assert 3 + round(10 * CJK_LINE) + round(11 * CJK_LINE) <= banner_h - 8, "Banner slot content too tall"
     for k in legs:
         assert _wb(f[10], f"{k['step']} · {k['name']}") <= banner_slot - 16 and _w(f[11], k["short"]) <= banner_slot - 16
-    head = 22 + 8 + _wb(f[12], "失物招领 · 倒跑四棒") + 8 + _w(f[11], "已交接 4/4 · 失误只计入本案秒表评级，不影响主线")
+    head = 22 + 8 + _wb(f[12], "失物招领 · 倒跑四棒") + 8 + _w(f[11], "已交接 4/4 · 失误只计入本案评级，不影响主线")
     assert head <= 728, f"Banner header overflows: {head}px"
     prompts = re.findall(r'show screen sports_relay_banner\((\d), "([^"]+)"\)', new_src)
     assert [int(p[0]) for p in prompts] == [0, 1, 2, 3]
@@ -440,11 +403,11 @@ def check_layout_and_pixel_bounds():
     assert title_row <= 608
     assert len(batons) * 152 <= 608 and "xysize (152, 3)" in new_src
     widest_result = 0
-    for s in ["本局失误 99 次（只计入失物箱评级，不影响主线）",
+    for s in ["本局失误 99 次（只计入本案评级，不影响主线）",
               "首次结案 · 倒跑四棒已写入鉴赏室「运动会失物」分页，复盘本添上了第四页",
               "重玩挑战 · 刷新个人纪录！这一次的交接比以往任何一次都更稳",
-              "重玩挑战 · 再次按停金秒表，操场名侦探实至名归",
-              "重玩挑战 · 零失误倒着跑完四棒，就能把金秒表挂上终点线"] + \
+              "重玩挑战 · 再次拿下金牌，操场名侦探实至名归",
+              "重玩挑战 · 零失误倒着跑完四棒，就能拿下金牌"] + \
              [f"历史最佳：{t['name']}「{t['title']}」 · 最少失误 99 次 · 累计结案 99 次" for t in tiers]:
         widest_result = max(widest_result, _w(f[12], s))
         assert _w(f[12], s) <= 580, f"Result-card line wraps ({_w(f[12], s)}px): {s}"
@@ -558,7 +521,10 @@ def check_layout_and_pixel_bounds():
         import verify_pc14 as pc14
         mmm = pc14.measure_main_menu()
         assert scr_src.count('style "main_menu_cozy_chip"') == 13 and scr_src.count('style "main_menu_folio_chip"') == 1
-        assert {"sportsday", "notebook"} <= set(mmm["folio_tabs"]) and not {"sportsday", "notebook"} & set(mmm["chips"])
+        # (PC-G2: the case file holds stories only; the casebook stays in the keepsake group)
+        assert "sportsday" in mmm["folio_tabs"] and "notebook" not in mmm["folio_tabs"]
+        assert ("keepsake", ("album", "capsule", "wall", "notebook")) in cf.SALON_GROUPS
+        assert not {"sportsday", "notebook"} & set(mmm["chips"])
         assert len(mmm["rows"]) < 6 and mmm["gap"] > mmm["base"]["gap"] == 26, mmm
         # (PC-15 re-flows the chips into 4 + 3 + 3 + 4 rows: the reference becomes the wider of rows 1-2 and EVERY row,
         #  not only the 2-chip ones, must clear the navigation column -- measured at the rows' real offset)
@@ -662,10 +628,10 @@ def check_pc13_runtime():
     for k in legs:
         assert bat[k["baton"]] == k["color"] and re.fullmatch(r"#[0-9a-f]{6}", k["color"]), k["id"]
     assert len({k["color"] for k in legs}) == 4, "Each leg gets its own baton colour"
-    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金秒表", "银秒表", "铜秒表"]
+    assert [t["key"] for t in tiers] == ["gold", "silver", "bronze"] and [t["name"] for t in tiers] == ["金牌", "银牌", "铜牌"]
     older_tiers = ({t["name"] for t in env["LIBRARY_RATING_TIERS"]} | {t["name"] for t in env["THEATER_RATING_TIERS"]}
                    | {t["name"] for t in env["ATELIER_RATING_TIERS"]})
-    assert not older_tiers & {t["name"] for t in tiers}, "Sports rating must not reuse bookmarks / ticket stubs / frames"
+    assert [t["name"] for t in tiers] == cf.GRADE_NAMES  # (PC-G2: one set of rating names for all eight cases)
     for h in items:
         assert h["scene"] in env["BG_LIGHT"] and len(h["detail"]) >= 70 and h["evidence"] and h["surface"]
         assert env["EVIDENCE_DETAILS"][h["evidence"]] == (h["observer"], h["detail"]), f"{h['id']} flip detail not registered"
@@ -809,13 +775,13 @@ def check_pc13_runtime():
     for g in env["EXTRAS_SALON_GROUPS"]:
         for t in g[3]:
             assert env["salon_group_of"](t) == g[0] and env["salon_open_group"](t) == g[0]
-            if t not in SALON_KEYS:
-                continue  # PC-14+ tab: its counter lives in a later module (pill text verified by that milestone)
+            if t not in SALON_KEYS or t in cf.CASE_TABS:
+                continue  # later milestone's tab, or a short case (PC-G2: no pill of its own, it lives in the case file)
             txt = env["salon_tab_pill_text"](t)
             assert re.fullmatch(r"\S+ \d+/\d+", txt), f"pill text `{txt}`"
     assert env["salon_open_group"]("sportsday") == "closedlib" and env["salon_open_group"]("notebook") == "keepsake"
     # UI audit: the lost-and-found pill reads 「失物」 (was 「操场」) to match its folio card / icon (same 2-char width)
-    assert env["salon_tab_pill_text"]("sportsday") == "失物 1/1" and env["salon_tab_pill_text"]("notebook") == "复盘 0/4"
+    assert env["salon_tab_pill_text"]("notebook") == "复盘 0/4"
     assert env["salon_tab_icon"]("sportsday").endswith("icon_lost_found_box.png")
     assert env["salon_tab_icon"]("notebook").endswith("icon_case_notebook.png")
     saved_fn = env.pop("notebook_stamped_count")
@@ -932,7 +898,8 @@ def check_pc13_runtime():
     mp.closed_library_record = {"solved": "yes", "replays": "x", "best_tier": "platinum", "best_mistakes": "?", "inspected": "h1"}
     garbage = copy.deepcopy(mp.closed_library_record)
     pg = env["notebook_render_page"]("library")
-    assert pg["replays"] == 0 and pg["best_tier"] is None and pg["best_mistakes"] is None and pg["inspected_count"] == 0
+    # (a solved record whose rating cannot be read counts as bronze, exactly like on the case page and in the case file)
+    assert pg["replays"] == 0 and pg["best_tier"] == "bronze" and pg["best_mistakes"] is None and pg["inspected_count"] == 0
     assert mp.closed_library_record == garbage, "Garbage store must be read, never normalised in place"
     mp.closed_library_record = lib_rec
     assert env["notebook_render_page"]("bogus")["key"] == "library"
@@ -1063,13 +1030,14 @@ def check_zero_intrusion_and_icons():
     # byte-exact, every occurrence, nothing else); main-story files never qualify
     swapped = glyphs.glyph_swap_only_files()
     assert not swapped & set(MAIN_STORY_FILES)
-    older = [m for m in OLDER_EXTRAS_MODULES if m not in swapped]
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES, *older],
+    older = cf.unchanged_modules(m for m in OLDER_EXTRAS_MODULES if m not in swapped)
+    res = subprocess.run(["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES), *older],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay / older extras modules were modified!\n{res.stdout}"
-    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES, *older],
+    diff = subprocess.run(["git", "diff", "--numstat", "--", *rs.strict_files(MAIN_STORY_FILES), *older],
                           cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert diff.stdout.strip() == "", "Main story / older module files have a diff"
+    cf.check_story_frozen()  # (the modules the release touches keep their stories)
     # whole-project guard: among *tracked* files only the PC-13 targets and the forward-compatible verifier edits may
     # differ from HEAD (new untracked files — the PC-13 module, its icons, later milestones' modules — are not flagged)
     allowed = set(PC13_TOUCHED_FILES + FORWARD_COMPAT_TESTS + ["tests/verify_pc13.py"]) | swapped
@@ -1084,7 +1052,7 @@ def check_zero_intrusion_and_icons():
     stray = []
     for line in st.stdout.splitlines():
         rel = line[3:].strip().strip('"').split("paper-crane-detective/", 1)[-1]
-        if rel not in allowed:
+        if rel not in allowed and not cf.release_touched(rel):
             stray.append(rel)
     assert not stray, f"Unexpected modified tracked files: {stray}"
     for bad in ("game/cache", "dists", "tests/__pycache__"):
@@ -1272,8 +1240,9 @@ def check_balanced_delimiters_and_references():
     for fld in ("sports_lostfound_record", "sports_selected_item", "case_notebook_record", "notebook_selected_case"):
         assert f"default persistent.{fld} =" in extra_src and f"persistent.{fld} =" in reset_src, fld
     scr_src = _read("game/screens.rpy")
-    assert 'SetField(persistent, "extras_tab", "sportsday")' in scr_src and 'SetField(persistent, "extras_tab", "notebook")' in scr_src
-    assert "sports_best_short()" in scr_src and "notebook_stamped_count()" in scr_src
+    # (PC-G2: the case opens from the data-driven case file)
+    assert '("sportsday",' in extra_src.split("CASEFILE_CASES = [", 1)[1].split("\n    ]", 1)[0]
+    assert "notebook_stamped_count()" in _read("game/zubenelgenubi_meteor_casebook.rpy")
 
     for rel in PC13_TOUCHED_FILES:
         src = _read(rel)

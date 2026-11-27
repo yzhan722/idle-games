@@ -7,7 +7,7 @@
 ##      周五闭馆后，图书馆一楼东墙的 E-7 校友文集专架六层一百八十册书凭空消失。
 ##      玩法三段式：六处现场勘查点（入证物簿、可翻面批注）→ 四环推理链复盘（去向 → 路径 → 动机 → 执行人，
 ##      按顺序选出正确环节）→ 三楼书库结案。选错只给温柔提示、只计入本地 _lb_mistakes，绝不触碰主线
-##      fail_count / 好感；结案按失误数评定金 / 银 / 铜书签并保存历史最佳纪录，可无限重玩刷新纪录，
+##      fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，可无限重玩刷新纪录，
 ##      持久化于 persistent.closed_library_record。真相完全写实（漏雨、还书车、传书梯与计次器），无任何超自然要素。
 ##   3. 「侦探社合照回忆相册」（screen extras_photo_album + 相片特写弹窗）：
 ##      收录鉴赏室每项玩法的十二张侦探社合照（信箱 / 茶会 / 辞典 / 古籍 / 信笺 / 鹤谱 / 电台 / 星象 / 铜章 /
@@ -39,7 +39,7 @@ init python:
         )
 
     ############################################################################
-    ## 一、闭馆图书馆消失书架之谜（1 桩可重玩短案 · 6 处勘查点 · 4 环推理链 · 金银铜书签评级）
+    ## 一、闭馆图书馆消失书架之谜（1 桩可重玩短案 · 6 处勘查点 · 4 环推理链 · 金银铜牌评级）
     ############################################################################
 
     LIBRARY_CASE = {
@@ -198,9 +198,9 @@ init python:
     ]
 
     LIBRARY_RATING_TIERS = [
-        {"key": "gold",   "name": "金书签", "title": "闭馆夜名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "银书签", "title": "巡架推理员",   "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "铜书签", "title": "见习馆员",     "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "闭馆夜名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "巡架推理员",   "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "见习馆员",     "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _LIBRARY_TIER_BY_KEY = {t["key"]: t for t in LIBRARY_RATING_TIERS}
@@ -215,7 +215,7 @@ init python:
         return _LIBRARY_TIER_BY_KEY.get(tier_key, LIBRARY_RATING_TIERS[-1])
 
     def library_rate(mistakes_count=0):
-        """按本局失误数评定书签：0 次金书签，1～2 次银书签，3 次及以上铜书签。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in LIBRARY_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -232,17 +232,14 @@ init python:
 
     def library_get_record():
         raw = _ensure_library_store()
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _LIBRARY_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _LIBRARY_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _LIBRARY_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [h for h in (raw.get("inspected") or []) if h in _LIBRARY_HOTSPOT_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -260,7 +257,7 @@ init python:
         return 1 if library_get_record()["best_tier"] == "gold" else 0
 
     def library_best_short():
-        """主菜单小胶囊与鉴赏页使用：历史最佳书签名，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级名，未结案时显示「待结案」。"""
         rec = library_get_record()
         return library_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -285,7 +282,7 @@ init python:
         return True
 
     def library_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局书签、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
         只写闭馆夜自己的存档，绝不触碰主线 fail_count / 好感。"""
         m = max(0, int(mistakes_count or 0))
         tier = library_rate(m)
@@ -469,7 +466,7 @@ init python:
             "source": "闭馆图书馆", "tab": "library", "progress_key": "library_gold", "need": 1,
             "place": "图书馆一楼 · 重新站满的 E-7 专架", "cast": "艾丽丝 · 墨墨 · 陈默 · 小林",
             "bg_thumb": "images/bg_library.png",
-            "condition": "零失误复盘闭馆夜，获得金书签评级",
+            "condition": "零失误复盘闭馆夜，获得金牌",
             "spoiler": False,
             "mo_caption": "这一次复盘闭馆夜，我们一个环节都没有选错。照片里我把金书签夹在笔记本封面上，露出小小的一角。",
             "alice_caption": "零失误！金书签！这张照片要冲两份，一份贴相册，一份贴在图书馆的布告栏上，让全校都看见！",
@@ -681,7 +678,7 @@ screen extras_closed_library():
                         xsize 398
                         text _("闭馆图书馆消失书架之谜") font gui.name_text_font size 19 color "#f6e7c0"
                         if _lv["solved"]:
-                            text _("已结案 · 四环推理链全部闭合 · 可随时重返闭馆夜冲击金书签") size 12 color "#d8c8ee"
+                            text _("已结案 · 四环推理链全部闭合 · 可随时重返闭馆夜冲击金牌") size 12 color "#d8c8ee"
                         else:
                             text _("周五闭馆后，一整架校友文集凭空消失 · 六处现场等你勘查") size 12 color "#b9a6d4"
                 hbox:
@@ -699,7 +696,7 @@ screen extras_closed_library():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _lv["replays"]) size 12 color "#cbb0e6" align (0.5, 0.5)
 
-        ## 2. 卷宗详情：现场缩略图、案情、六处勘查点、四环推理链与书签评级
+        ## 2. 卷宗详情：现场缩略图、案情、六处勘查点、四环推理链与评级
         frame:
             style "library_console_card"
             vbox:
@@ -793,7 +790,7 @@ screen extras_closed_library():
                                 text ("%s · %s" % (k_obj["step"], k_obj["name"])) size 11 color ("#86efac" if _lv["solved"] else "#cbb0e6") bold True
                                 text (_lv["chain_shorts"][_ki] if _lv["solved"] else _("？ 待复盘")) size 12 color ("#fff1d0" if _lv["solved"] else "#7e6d99") substitute False
 
-                ## 2C. 书签评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "library_scroll_card"
                     vbox:
@@ -806,7 +803,7 @@ screen extras_closed_library():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_library_key.png" xysize (16, 16) yalign 0.5
-                                text _("书签评级 · 重玩挑战") font gui.name_text_font size 13 color "#fff1d0" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#fff1d0" yalign 0.5
                             text ("历史最佳：%s" % _lv["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -819,7 +816,7 @@ screen extras_closed_library():
                                         text ("%s「%s」" % (t_obj["name"], t_obj["title"])) size 12 color ("#f4d98a" if _lv["best_tier"] == t_obj["key"] else "#e2d4f4") yalign 0.5
                                         text t_obj["rule"] size 11 color "#a8c6b0" xalign 1.0 yalign 0.5
                         if _lv["solved"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _lv["display_solution"] size 12 color "#86efac" line_spacing 2 substitute False
                             text _lv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _lv["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -830,7 +827,7 @@ screen extras_closed_library():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误复盘四环推理链可获金书签 · 已结案 %d 次" % _lv["replays"]) size 12 color "#9a86b8" yalign 0.5
+                    text ("零失误复盘四环推理链可获金牌 · 已结案 %d 次" % _lv["replays"]) size 12 color "#9a86b8" yalign 0.5
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -905,7 +902,7 @@ screen library_report_modal():
                     add "images/ui/icon_library_key.png" xysize (30, 30) yalign 0.5 at library_key_glint
                     text _mv["best_name"] size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             viewport:
                 xfill True
@@ -918,12 +915,12 @@ screen library_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#f4d98a" bold True
                     text _mv["summary"] size 13 color "#ebe2f8" line_spacing 4 substitute False
-                    add Solid("#cbb0e633") xfill True ysize 1
+                    add Solid("#cbb0e633") ysize 1
                     if _mv["solved"]:
                         text _("推理链四环：") size 12 color "#f4d98a" bold True
                         for _ri, r_obj in enumerate(LIBRARY_CHAIN_LINKS):
                             text ("%s · %s：%s" % (r_obj["step"], r_obj["name"], _mv["chain_fulls"][_ri])) size 13 color "#e2d4f4" line_spacing 3 substitute False
-                        add Solid("#f4d98a33") xfill True ysize 1
+                        add Solid("#f4d98a33") ysize 1
                         text _mv["display_solution"] size 13 color "#86efac" line_spacing 4 substitute False
                         text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
@@ -965,7 +962,7 @@ screen library_chain_banner(links_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_library_key.png" xysize (22, 22) yalign 0.5
                 text _("闭馆夜 · 推理链复盘") size 12 color "#f4d98a" bold True yalign 0.5
-                text ("已扣上 %d/%d 环 · 失误只计入本案书签评级，不影响主线" % (links_done, len(LIBRARY_CHAIN_LINKS))) size 11 color "#b9a6d4" yalign 0.5
+                text ("已扣上 %d/%d 环 · 失误只计入本案评级，不影响主线" % (links_done, len(LIBRARY_CHAIN_LINKS))) size 11 color "#b9a6d4" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(LIBRARY_CHAIN_LINKS):
@@ -978,7 +975,7 @@ screen library_chain_banner(links_done, prompt_line):
             text prompt_line size 14 color "#f6eeff" substitute False
 
 
-## 闭馆夜结案结算卡：本局书签评级 + 历史最佳纪录 + 重玩挑战提示
+## 闭馆夜结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen library_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -1013,7 +1010,7 @@ screen library_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays
                     text ("《%s》" % LIBRARY_CASE["short_title"]) font gui.name_text_font size 21 color "#f6e7c0"
                     text ("本局评级：【%s · %s】" % (_ct["name"], _ct["title"])) size 14 color ("#f4d98a" if _is_gold else "#86efac")
 
-            add Solid("#f4d98a33") xfill True ysize 1
+            add Solid("#f4d98a33") ysize 1
 
             frame:
                 xfill True
@@ -1023,16 +1020,16 @@ screen library_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays
                     spacing 4
                     text _rv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _rv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入闭馆夜评级，不影响主线）" % mistakes) size 12 color "#b9a6d4"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#b9a6d4"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_bt["name"], _bt["title"], best_mistakes, replays)) size 12 color "#b9a6d4"
                     if is_first:
                         text _("首次结案 · 推理链与结案报告已写入鉴赏室「闭馆图书馆」分页，P-10 合照可以冲洗了") size 12 color "#86efac"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一局比以往任何一次都更少走弯路") size 12 color "#f4d98a"
                     elif _is_gold:
-                        text _("重玩挑战 · 再次以金书签结案，闭馆夜名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，闭馆夜名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误复盘四环推理链，就能把金书签夹进笔记本") size 12 color "#cbb0e6"
+                        text _("重玩挑战 · 零失误复盘四环推理链，就能拿下金牌") size 12 color "#cbb0e6"
 
             textbutton _("收好书签并返回闭馆图书馆"):
                 style "pill_button"
@@ -1116,7 +1113,8 @@ screen extras_photo_album():
                 text _("集齐十二张解锁成就「侦探社合照收藏家」") size 11 color "#cbb0e6" xalign 1.0 yalign 0.5
 
         ## 3. 拍立得照片墙（4 × 173 + 3 × 10 = 722px 严丝合缝）
-        grid 4 ((len(ALBUM_PHOTOS) + 3) // 4):
+        $ _album_rows = (len(ALBUM_PHOTOS) + 3) // 4
+        grid 4 _album_rows:
             spacing 10
             for p_obj in ALBUM_PHOTOS:
                 $ _pst = album_status(p_obj["id"])
@@ -1266,7 +1264,7 @@ screen extras_photo_album():
                                 xminimum 146
                                 ysize 36
                                 text_size 15
-                                action (Function(album_develop, _av["id"], True) if _av["status"] == "earned" else None)
+                                action (Function(do_quietly, album_develop, _av["id"], True) if _av["status"] == "earned" else None)
 
 
 ## 合照特写弹窗（冲洗完成 / 重新展开）
@@ -1307,7 +1305,7 @@ screen album_photo_modal(photo_id="ph01"):
                     add "images/ui/icon_photo_album.png" xysize (28, 28) yalign 0.5
                     text ("已冲洗 %d/%d" % (album_developed_count(), len(ALBUM_PHOTOS))) size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             hbox:
                 spacing 16
@@ -1494,7 +1492,7 @@ label _library_finish_case(local_mistakes=0):
 ################################################################################
 
 label closed_library_case:
-    call _library_init_sandbox("闭馆图书馆 · L-01 消失的校友文集专架")
+    call _library_init_sandbox("闭馆图书馆 · L-01 消失的校友文集专架") from _call__library_init_sandbox
     $ _lb_mistakes = 0
     $ _lb_links = 0
     $ _lb_h1 = False
@@ -1689,9 +1687,9 @@ label library_case_review_intro:
     "六处现场全部勘查完毕。我们回到空荡荡的 E-7 前，雨点一阵紧过一阵地敲着高窗。"
     alice "六块拼图都在手里了！去找那一百八十册书之前，先把推理链从头到尾扣一遍——一环扣错，满盘皆输！"
     if _lb_replays > 0:
-        sysmsg "【闭馆夜 · 重玩挑战】当前历史最佳：[_lb_best_text]。零失误扣上四环推理链，就能把金书签夹进笔记本。"
+        sysmsg "【闭馆夜 · 重玩挑战】当前历史最佳：[_lb_best_text]。零失误扣上四环推理链，就能拿下金牌。"
     else:
-        sysmsg "【闭馆夜 · 推理链复盘】依次选出「去向 → 路径 → 动机 → 执行人」四个环节。零失误可获金书签，失误只计入本案评级，不影响主线。"
+        sysmsg "【闭馆夜 · 推理链复盘】依次选出「去向 → 路径 → 动机 → 执行人」四个环节。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label library_chain_k1:
     show screen library_chain_banner(0, "第一环 · 去向：正门没开过、防盗门没响——一百八十册书，现在在哪里？")
@@ -1882,5 +1880,5 @@ label library_case_resolution:
     play sound se_crane
     "墨墨把那张还带着一点潮气的合照夹进了笔记本。照片的角落里，王老师的头发还在滴水，却笑得比谁都开心。"
 
-    call _library_finish_case(_lb_mistakes)
+    call _library_finish_case(_lb_mistakes) from _call__library_finish_case
     return

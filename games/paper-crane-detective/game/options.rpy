@@ -20,6 +20,8 @@ init 10 python:
     ## 鉴赏页"重温结局"用的是回放模式；回放结束后把主菜单主题曲接回来
     def _after_replay():
         renpy.music.play(config.main_menu_music, fadein=1.0, if_changed=True)
+        ## 从「案卷」点进的短案打完后回到案卷（extra.rpy 的 casefile_after_replay）
+        casefile_after_replay()
     config.after_replay_callback = _after_replay
 
 ## 存档缩略图尺寸（与 screens.rpy 里存档位卡片的缩略图框一致）
@@ -349,7 +351,7 @@ define config.end_game_transition = Fade(0.5, 0.5, 0.5)
 define config.main_game_transition = Dissolve(0.4)
 
 define gui.about = _p("""
-校园推理 × 恋爱 AVG。序章至终章共九段剧情、五种结局与一段隐藏后日谈，约 15 万字。
+校园推理 × 恋爱 AVG。序章至终章共九段剧情、五种结局（含一段隐藏后日谈），约 15 万字；另有两篇番外与八桩可重玩短案。
 
 不说一句话的她（墨墨），与成为她「嘴」的你。她负责看见真相，你负责说出真相。
 
@@ -409,15 +411,23 @@ init python:
     build.classify('**/thumbs.db', None)
 
     ## 项目目录里与游戏运行无关的内容，一律不打进发行包：
-    ## 引擎 SDK、历史发行包、素材源文件、工具脚本、设计文档、一键脚本、存档备份
+    ## 引擎 SDK、历史发行包、素材源文件、工具脚本、文档、一键脚本、存档备份、调试输出
     build.classify('.tmp/**', None)
-    build.classify('renpy-8.5.3-sdk/**', None)
+    build.classify('.gitignore', None)
+    build.classify('renpy-*/**', None)
     build.classify('dists/**', None)
     build.classify('素材/**', None)
     build.classify('tools/**', None)
     build.classify('设计文档/**', None)
+    build.classify('docs/**', None)
     build.classify('*.md', None)
     build.classify('*.bat', None)
+    build.classify('*.ps1', None)
+    build.classify('**.log', None)
+    build.classify('lint*.txt', None)
+    build.classify('log.txt', None)
+    build.classify('errors.txt', None)
+    build.classify('traceback.txt', None)
     build.classify('game/_saves_backup/**', None)
     build.classify('game/saves/**', None)
     build.classify('game/cache/**', None)
@@ -425,6 +435,10 @@ init python:
     build.classify('tests/**', None)
     build.classify('steam_kit/**', None)
     build.classify('steam_appid.txt', None)
+
+    ## 必须留在包里的散文件：启动图（引擎在读取封包之前就要显示它）与字体许可（OFL 1.1 要求随字体分发）
+    build.classify('game/presplash.png', 'all')
+    build.classify('game/fonts/*.txt', 'all')
 
     ## 将编译后的脚本、图片、音频与字体封入 archive.rpa，保护明文 .rpy 剧本与未解锁 CG 原图
     build.classify('game/**.rpy', None)

@@ -963,7 +963,7 @@ label ending_te:
     centered "{size=60}TRUE END{/size}\n\n{size=40}「重新发声」{/size}\n\n{size=24}—— 沉默的侦探，终于为自己开口 ——{/size}"
     with dissolve
     "（达成真结局！隐藏结局「第二只千纸鹤」已解锁，可从主菜单再次游玩查看。）"
-    call credits
+    call credits from _call_credits
     jump ending_hidden_prompt
 
 
@@ -1056,7 +1056,7 @@ label ending_he:
     centered "{size=60}GOOD END{/size}\n\n{size=40}「无言的心意」{/size}\n\n{size=24}—— 有些话，藏在千纸鹤里 ——{/size}"
     with dissolve
     "（好结局达成。若想看到墨墨与周可的和解、以及她重新开口，请尝试集齐过去线索并走真相路线，挑战 TRUE END。）"
-    call credits
+    call credits from _call_credits_1
     return
 
 
@@ -1167,7 +1167,7 @@ label ending_ne:
     centered "{size=60}NORMAL END{/size}\n\n{size=40}「洗清的冤屈」{/size}\n\n{size=24}—— 可靠的伙伴，刚刚好的距离 ——{/size}"
     with dissolve
     "（普通结局达成。多陪伴墨墨、提升好感度，可解锁更圆满的结局。）"
-    call credits
+    call credits from _call_credits_2
     return
 
 
@@ -1279,7 +1279,7 @@ label ending_be:
     centered "{size=60}BAD END{/size}\n\n{size=40}「迟来的真相」{/size}\n\n{size=24}—— 有些沉默，再也唤不回来 ——{/size}"
     with dissolve
     "（坏结局。请提升墨墨好感度、减少关键推理失误，重新挑战。）"
-    call credits
+    call credits from _call_credits_3
     return
 
 

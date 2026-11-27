@@ -551,11 +551,11 @@ label ch4_reason:
             narrator "窗边的墨墨轻轻摇了摇头，用手指在窗玻璃上比了一个“二”，提醒我刚才查过的“两本书”。"
             hide bianji with dissolve
             hide xiang with dissolve
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_8
             jump ch4_reason_retry
 
 label ch4_reason_retry:
-    call alice_hint("向老师签一本、收一本，中间不会出错。出错的只可能是排队的人——同样的书，两只手。")
+    call alice_hint("向老师签一本、收一本，中间不会出错。出错的只可能是排队的人——同样的书，两只手。") from _call_alice_hint_3
     menu:
         "再想想，调包手法是？"
         "排队时“前后两本书外观一样”，有人用空白书换走了刚签好的":
@@ -566,11 +566,11 @@ label ch4_reason_retry:
             bianji "那支笔是向老师用了十五年的万宝龙，墨水是我今天早上亲手从碳素墨水瓶里抽上来的。退一万步说，就算墨水褪色，纸面上也会留下一道钢笔尖划过的压痕。"
             lin "我对着灯光检查过受害者手里的扉页。纸面平整，纤维没有任何书写压痕。这是一本从未被签过字的新书。"
             hide bianji with dissolve
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_9
             jump ch4_reason_ok_forced
 
 label ch4_reason_ok:
-    call reason_correct
+    call reason_correct from _call_reason_correct_4
 label ch4_reason_ok_forced:
     mc "破绽在排队。这本书是限量版，人手一本、外观完全相同。编号在腰封上，腰封可以拆。"
     mc "调包者排在受害者后面，手里拿着一本自己的、没签名的纪念版。受害者签完名，转身——被他“撞”了一下。"

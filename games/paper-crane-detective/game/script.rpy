@@ -19,7 +19,7 @@ define CH0_CLUES = [
 label start:
 
     # 开场玩法说明
-    call gameplay_intro
+    call gameplay_intro from _call_gameplay_intro
 
     # 玩家输入名字
     scene bg black with fade

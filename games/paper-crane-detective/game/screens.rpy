@@ -105,7 +105,7 @@ screen say(who, what):
                     text "※" style "mo_note_card_kicker" xalign 1.0
                 add Solid("#a6845866") xsize 476 ysize 1
                 null height 2
-                text what.strip("「」") style "mo_note_card_text"
+                text what.strip("「」") style "mo_note_card_text" substitute False
                 null height 2
                 add Solid("#a6845838") xsize 476 ysize 1
 
@@ -176,7 +176,7 @@ init python:
         带尺寸标签的文本拆成若干段（去掉 size 标签），由屏幕按段落数决定版式。"""
         parts = []
         for p in what.split("\n\n"):
-            p = _re.sub(r"\{/?size(=\d+)?\}", "", p).strip()
+            p = _re.sub(r"\{/?size(=[^{}]*)?\}", "", p).strip()
             if p:
                 parts.append(p)
         return parts or [what]
@@ -233,7 +233,7 @@ screen centered_say(who, what):
                 yalign 0.5
                 spacing 22
                 add Solid("#cbb0e6") xsize 56 ysize 1 yalign 0.5 alpha 0.7
-                text parts[0] style "caption_text"
+                text parts[0] style "caption_text" substitute False
                 add Solid("#cbb0e6") xsize 56 ysize 1 yalign 0.5 alpha 0.7
     else:
         add "#0a0714" alpha 0.68
@@ -248,38 +248,38 @@ screen centered_say(who, what):
                 ## 「间章」+「标题」：顶部纸鹤徽记 + 小的章序在上，大的标题在下
                 add "gui/crane_particle.png" xalign 0.5 zoom 0.52 alpha 0.85 at card_in(0.0)
                 null height 8
-                text parts[0] style "tcard_kicker" at card_in(0.05)
+                text parts[0] style "tcard_kicker" substitute False at card_in(0.05)
                 null height 14
                 add "gui/rule_fade.png" xalign 0.5 at rule_in(0.15)
                 null height 22
-                text parts[1] style "tcard_title" at card_in(0.25)
+                text parts[1] style "tcard_title" substitute False at card_in(0.25)
                 for extra in parts[2:]:
                     null height 18
-                    text extra style "tcard_sub" at card_in(0.4)
+                    text extra style "tcard_sub" substitute False at card_in(0.4)
             elif kind == "chapter_end":
                 ## 「第一章 · 完」+ 下一章预告
                 add "gui/crane_particle.png" xalign 0.5 zoom 0.7 alpha 0.85 at card_in(0.0)
                 null height 10
-                text parts[0] style "tcard_title" at card_in(0.1)
+                text parts[0] style "tcard_title" substitute False at card_in(0.1)
                 null height 18
                 add "gui/rule_fade.png" xalign 0.5 at rule_in(0.25)
                 null height 26
                 text _("接下来") style "tcard_next" at card_in(0.4)
                 null height 6
-                text parts[1] style "tcard_sub" at card_in(0.45)
+                text parts[1] style "tcard_sub" substitute False at card_in(0.45)
             else:
                 ## 结局卡：纸鹤徽记 + 英文结局名（按结局着色）+ 中文标题 + 一句话
                 $ accent = _ENDING_ACCENT.get(parts[0], "#e6d8f5")
                 add "gui/crane_particle.png" xalign 0.5 zoom 0.58 alpha 0.88 at card_in(0.0)
                 null height 6
-                text parts[0] style "tcard_ending" color accent at card_in(0.05)
+                text parts[0] style "tcard_ending" substitute False color accent at card_in(0.05)
                 null height 8
                 add "gui/rule_fade.png" xalign 0.5 at rule_in(0.2)
                 null height 24
-                text parts[1] style "tcard_title" at card_in(0.3)
+                text parts[1] style "tcard_title" substitute False at card_in(0.3)
                 for extra in parts[2:]:
                     null height 20
-                    text extra style "tcard_sub" at card_in(0.5)
+                    text extra style "tcard_sub" substitute False at card_in(0.5)
 
 style tcard_hidden is text:
     size 8
@@ -635,6 +635,8 @@ screen navigation(in_menu=False):
                 textbutton _("退出") action Quit(confirm=False) at nav_btn_fx(0.28)
         else:
             textbutton _("历史") action ShowMenu("history") at nav_btn_fx(0.02)
+            ## 游戏内翻案卷只看评级（view_only）：在剧情里开番外 / 短案会打断当前剧情
+            textbutton _("案卷") action Show("extras_folio_modal", view_only=True) at nav_btn_fx(0.04)
             textbutton _("存档") action ShowMenu("save") at nav_btn_fx(0.06)
             textbutton _("读档") action ShowMenu("load") at nav_btn_fx(0.10)
             textbutton _("设置") action ShowMenu("preferences") at nav_btn_fx(0.14)
@@ -847,7 +849,7 @@ screen main_menu():
         null height 20
         ## PC-15：主菜单胶囊区修正与导航列（x 60..340）的横向重叠——PC-14 的第 1～3 行各 4 枚胶囊以 x=568 居中，
         ## 左端落在 x≈254～288，压进导航列右缘。本期行数不变（仍 4 行），按鉴赏页沙龙分组重排为 4 + 3 + 3 + 4：
-        ## 第一行侦探社沙龙与留声机，第二行旧书街与四季，第三行电波与星空，第四行纪念与寄语 + 番外卷宗；
+        ## 第一行侦探社沙龙与留声机，第二行旧书街与四季，第三行电波与星空，第四行纪念与寄语 + 案卷；
         ## 胶囊改为 9px 内边距 / 16px 图标 / 12 号字、行内间距 6。四行装进同一个不带变换的外层 vbox，由它整体 xoffset 52
         ## 落在导航列与主视觉人物之间（标题仍以 x=568 居中；各行自己的 main_title_in 入场动画不变——ATL 变换只继承子项的
         ## pos / anchor、不继承 offset，所以平移写在外层容器上）。verify_pc15 按最坏计数逐行实测：每行左缘与导航列右缘
@@ -955,9 +957,7 @@ screen main_menu():
                         yalign 0.5
                         add "images/ui/icon_badge_journal.png" xysize (16, 16) yalign 0.5
                         text ("铜章手账册 %d/9" % badge_stamped_count()) size 12 color "#f2e6ff" yalign 0.5
-            ## PC-14：番外类胶囊合并为分组入口——PC-10..PC-13 加上的闭馆图书馆 / 雨夜剧场 / 美术室油画 / 失物招领箱 / 复盘本五枚胶囊
-            ## （以及 PC-14 的文化祭鬼屋、两篇番外短篇）统一收进「番外卷宗」（screen extras_folio_modal），主菜单由 6 行减为 4 行。
-            ## 后续里程碑的新番外 / 短案只往卷宗里加卡片，不再给主菜单加胶囊行（PC-15 的天文社流星夜、PC-16 的游泳池更衣柜、PC-17 的家政课烘焙赛同样只进卷宗）。
+            ## PC-14：番外类胶囊合并为一枚分组入口；PC-G2：改名「案卷」（screen extras_folio_modal），后续不再给主菜单加胶囊。
             null height 8
             hbox:
                 xalign 0.5
@@ -994,7 +994,7 @@ screen main_menu():
                         spacing 5
                         yalign 0.5
                         add "images/ui/icon_extras_folio.png" xysize (16, 16) yalign 0.5
-                        text ("番外卷宗 %d/%d" % (folio_done_count(), folio_total_count())) size 12 color "#fbeec8" yalign 0.5
+                        text ("案卷 %d/%d" % (folio_done_count(), folio_total_count())) size 12 color "#fbeec8" yalign 0.5
 
     ## 进度徽记：精致胶囊徽章，让回访玩家一眼看到自己在哪
     if persistent.chapter_reached:
@@ -1066,25 +1066,20 @@ style main_menu_version is text:
     xoffset -20
     yoffset -16
 
-## PC-14：「番外卷宗」分组胶囊——与普通胶囊同高同内边距（不改变行高），皮面暖金底色示意「点开是一整夹」
+## PC-14：「案卷」分组胶囊——与普通胶囊同高同内边距（不改变行高），皮面暖金底色示意「点开是一整夹」
 style main_menu_folio_chip is main_menu_cozy_chip:
     background Transform(Frame("gui/hud_chip.png", 12, 12), matrixcolor=TintMatrix("#f4d98a") * SaturationMatrix(0.0))
     hover_background Transform(Frame("gui/hud_chip_hover.png", 12, 12), matrixcolor=TintMatrix("#ffeab0") * SaturationMatrix(0.0))
 
 
 ################################################################################
-## 番外卷宗 extras_folio_modal（PC-14：主菜单番外类胶囊合并后的分组入口）
-##   · 收录两篇番外短篇、五桩可重玩短案与推理笔记复盘本，两列卡片，760px 宽弹窗；
-##   · PC-15：天文社流星夜加入后为六桩短案（2 × 3 网格），扩容到六页的复盘本改为独占一行的 712px 宽卡，
-##     卷宗高度 444 → 508px（<= 672px），宽度不变；
-##   · PC-16：游泳池更衣柜加入后为七桩短案，与七页复盘本合成 2 × 4 网格（复盘本回到第八格的普通卡片），
-##     卷宗高度仍为 508px、宽度不变；PC-15 只为复盘本独占一行而加的宽卡样式与 wide 参数随之删除；
-##   · PC-17：家政课烘焙赛加入后为八桩短案，与八页复盘本合成 2 × 5 网格（末格以 null 留白），
-##     卷宗高度 508 → 572px（<= 672px）、宽度不变；
-##   · 番外短篇沿用原入口：只从「章节选择」开启（与导航列同一条件，序章之后开放），后日谈的标题受防剧透火漆封存；
-##   · 短案与复盘本的跳转动作与原主菜单胶囊逐字相同（SetField extras_tab + ShowMenu("extras")）；
-##     从鉴赏页里翻开时（from_extras=True）只切换分页，不重复打开菜单；
-##   · 只读：卷宗本身不写任何 persistent 字段（verify_pc14 快照比对）。
+## 案卷 extras_folio_modal（PC-G2：八桩可重玩短案与两篇番外的唯一选择界面，主菜单与鉴赏页共用）
+##   · 一屏十张卡（2 × 5），每张只有图标、标题和最好评级；番外显示已读 / 未读；
+##   · 难度与评级只在抬头说明一次（extra.rpy 的 CASE_GRADES），八案共用；
+##   · 番外在这里直接开启：解锁条件不变（序章之后），后日谈标题受防剧透火漆封存；
+##   · 短案点开后进各案原来的鉴赏分页；从鉴赏页里翻开时（from_extras=True）只切换分页，不重复打开菜单；
+##   · 只读：案卷本身只写 extras_tab（和记下「从案卷点进了哪一案」的 casefile_back_tab）；
+##   · 番外 / 短案从这里开启的，结束后回到案卷；游戏内（导航列「案卷」，view_only=True）只看评级，卡片都不可点。
 ################################################################################
 
 transform folio_cover_sway:
@@ -1094,11 +1089,9 @@ transform folio_cover_sway:
         ease 2.4 rotate 4
         repeat
 
-screen extras_folio_modal(from_extras=False):
+screen extras_folio_modal(from_extras=False, view_only=False):
     modal True
     zorder 210
-    $ _fdone = folio_done_count()
-    $ _fseal = folio_seal_view()
 
     add "#0c0814e0"
     key "K_ESCAPE" action Hide("extras_folio_modal")
@@ -1108,109 +1101,62 @@ screen extras_folio_modal(from_extras=False):
         xalign 0.5
         yalign 0.5
         vbox:
-            spacing 8
+            spacing 10
             xfill True
             hbox:
                 xfill True
-                yalign 0.5
                 hbox:
                     spacing 12
-                    yalign 0.5
                     add "images/ui/icon_extras_folio.png" xysize (44, 44) yalign 0.5 at folio_cover_sway
-                    vbox:
-                        spacing 2
-                        yalign 0.5
-                        text _("番外卷宗") font gui.name_text_font size 22 color "#fff1d6"
-                        text _("番外篇与放学后短案都收在这里") size 12 color "#dcc6a0"
+                    text _("案卷") font gui.name_text_font size 28 color "#fff1d6" yalign 0.5
+                text ("%d / %d" % (folio_done_count(), folio_total_count())) size 20 color "#f4d98a" xalign 1.0 yalign 0.5
+
+            add Solid("#f4d98a55") ysize 1
+
+            vbox:
+                spacing 4
+                text ("短案难度相同：%d 条线索 · %d 步推理 · 每步 %d 选 1，失误不影响主线" % (CASE_CLUES, CASE_STEPS, CASE_CHOICES)) size 16 color "#dcc6a0"
                 hbox:
-                    xalign 1.0
-                    yalign 0.5
-                    spacing 6
-                    frame:
-                        style "mailbox_stat_chip"
-                        text ("已完成 %d/%d" % (_fdone, folio_total_count())) size 12 color "#f4d98a" align (0.5, 0.5)
-                    frame:
-                        style "mailbox_stat_chip"
-                        text _fseal["text"] size 12 color _fseal["color"] align (0.5, 0.5) substitute False
+                    spacing 22
+                    for _g in CASE_GRADES:
+                        hbox:
+                            spacing 8
+                            text _g["name"] size 16 color _g["color"] bold True substitute False
+                            text _g["rule"] size 16 color "#dcc6a0" substitute False
 
-            add Solid("#f4d98a55") xfill True ysize 1
-
-            ## 一、番外短篇（2 卷）：解锁条件与原入口一致，点开去「章节选择」
-            text _("番外短篇") size 12 color "#e8c88a" bold True
-            hbox:
-                spacing 12
-                use extras_folio_dlc_card("dlc_alice_ledger")
-                use extras_folio_dlc_card("dlc_mo_bookstreet")
-
-            ## 二、放学后短案（8 桩）与推理笔记复盘本：2 × 5 网格（末格留白），2 × 350 + 12 = 712px 贴合内宽
-            text _("放学后短案与复盘本 · 可重玩，失误不影响主线") size 12 color "#e8c88a" bold True
+            ## 两篇番外 + 八桩短案：2 × 350 + 12 = 712px 贴合内宽
             grid 2 5:
                 xspacing 12
                 yspacing 8
-                use extras_folio_case_card("images/ui/icon_closed_library.png", _("闭馆图书馆"), folio_case_line("LIBRARY_CASE", "四环推理链"), library_best_short(), library_case_solved_count() > 0, SetField(persistent, "extras_tab", "library"), from_extras)
-                use extras_folio_case_card("images/ui/icon_theater_backstage.png", _("雨夜剧场"), folio_case_line("THEATER_CASE", "四幕推理"), theater_best_short(), theater_case_solved_count() > 0, SetField(persistent, "extras_tab", "theater"), from_extras)
-                use extras_folio_case_card("images/ui/icon_art_room.png", _("美术室油画"), folio_case_line("ATELIER_CASE", "四笔推理"), atelier_best_short(), atelier_case_solved_count() > 0, SetField(persistent, "extras_tab", "atelier"), from_extras)
-                use extras_folio_case_card("images/ui/icon_lost_found_box.png", _("失物招领箱"), folio_case_line("SPORTS_CASE", "倒跑四棒"), sports_best_short(), sports_case_solved_count() > 0, SetField(persistent, "extras_tab", "sportsday"), from_extras)
-                use extras_folio_case_card("images/ui/icon_haunted_house.png", _("文化祭鬼屋"), folio_case_line("HAUNTED_CASE", "四盏灯"), haunted_best_short(), haunted_case_solved_count() > 0, SetField(persistent, "extras_tab", "haunted"), from_extras)
-                use extras_folio_case_card("images/ui/icon_astro_club.png", _("天文社流星夜"), folio_case_line("ASTRO_CASE", "四颗星"), astro_best_short(), astro_case_solved_count() > 0, SetField(persistent, "extras_tab", "astro"), from_extras)
-                use extras_folio_case_card("images/ui/icon_pool_locker.png", _("游泳池更衣柜"), folio_case_line("POOL_CASE", "混合泳四段"), pool_best_short(), pool_case_solved_count() > 0, SetField(persistent, "extras_tab", "pool"), from_extras)
-                use extras_folio_case_card("images/ui/icon_bake_contest.png", _("家政课烘焙赛"), folio_case_line("BAKE_CASE", "蛋糕四层"), bake_best_short(), bake_case_solved_count() > 0, SetField(persistent, "extras_tab", "bake"), from_extras)
-                use extras_folio_case_card("images/ui/icon_case_notebook.png", _("推理笔记复盘本"), _("八桩短案的证物与推理汇总"), ("复盘章 %d/%d" % (notebook_stamped_count(), len(NOTEBOOK_CASES))), notebook_stamped_count() >= len(NOTEBOOK_CASES), SetField(persistent, "extras_tab", "notebook"), from_extras)
-                null
+                for _row in casefile_rows():
+                    use extras_folio_case_card(_row, from_extras, view_only)
 
             hbox:
                 xfill True
-                yalign 0.5
-                text _("按 Esc 合上卷宗") size 12 color "#b39d7a" yalign 0.5
-                textbutton _("合上卷宗"):
+                if view_only:
+                    text _("游戏中只看评级，回标题画面再开启") size 16 color "#b39d7a" yalign 0.5
+                textbutton _("合上案卷"):
                     style "pill_button"
                     xalign 1.0
-                    yalign 0.5
                     xminimum 128
                     ysize 34
-                    text_size 14
+                    text_size 16
                     action Hide("extras_folio_modal")
 
-## 卷宗里的一张短案 / 复盘本卡片：跳转动作由调用处逐字传入（与原主菜单胶囊相同）
-screen extras_folio_case_card(icon, title, line, status, done, tab_action, from_extras=False):
+## 案卷里的一张卡：图标、标题、最好评级（动作见 extra.rpy 的 casefile_action）
+screen extras_folio_case_card(row, from_extras=False, view_only=False):
     button:
         style "folio_card"
-        action ([Hide("extras_folio_modal"), tab_action] + ([] if from_extras else [ShowMenu("extras")]))
+        action casefile_action(row, from_extras, view_only)
         hbox:
-            spacing 10
+            spacing 14
             yalign 0.5
-            add icon xysize (34, 34) yalign 0.5
+            add row["icon"] xysize (52, 52) yalign 0.5
             vbox:
                 spacing 2
                 yalign 0.5
-                xsize 278
-                hbox:
-                    xfill True
-                    yalign 0.5
-                    text title font gui.name_text_font size 15 color "#fff1d6" yalign 0.5 substitute False
-                    text status size 12 color ("#f4d98a" if done else "#b39d7a") bold True xalign 1.0 yalign 0.5 substitute False
-                text line size 11 color "#dcc6a0" substitute False
-
-## 卷宗里的一张番外短篇卡片：未开放时不可点（与导航列「章节选择」同一条件），后日谈标题按防剧透火漆封存
-screen extras_folio_dlc_card(dlc_label):
-    $ _dv = folio_dlc_view(dlc_label)
-    button:
-        style "folio_card"
-        action ([Hide("extras_folio_modal"), ShowMenu("chapter_select")] if _dv["open"] else None)
-        hbox:
-            spacing 10
-            yalign 0.5
-            add _dv["icon"] xysize (34, 34) yalign 0.5
-            vbox:
-                spacing 2
-                yalign 0.5
-                xsize 278
-                hbox:
-                    xfill True
-                    yalign 0.5
-                    text ("%s · %s" % (_dv["badge"], _dv["title"])) font gui.name_text_font size 15 color ("#c9b48f" if _dv["masked"] else "#fff1d6") yalign 0.5 substitute False
-                    text _dv["status"] size 12 color ("#9fe3b0" if _dv["done"] else "#b39d7a") bold True xalign 1.0 yalign 0.5 substitute False
-                text _dv["note"] size 11 color ("#f0a4b8" if _dv["masked"] else "#dcc6a0") substitute False
+                text row["title"] font gui.name_text_font size 21 color "#fff1d6" substitute False
+                text row["grade"] size 18 color row["color"] bold True substitute False
 
 style folio_panel is default:
     xsize 760
@@ -1219,8 +1165,8 @@ style folio_panel is default:
 
 style folio_card is button:
     xsize 350
-    ysize 56
-    padding (10, 6)
+    ysize 80
+    padding (14, 8)
     background Frame("gui/hud_chip.png", 12, 12)
     hover_background Frame("gui/panel_card_hover.png", 16, 16)
     insensitive_background Transform(Frame("gui/hud_chip.png", 12, 12), alpha=0.55)
@@ -1777,7 +1723,7 @@ screen about():
                 vbox:
                     spacing 8
                     text "[config.name!t]" style "pref_card_title"
-                    text _("校园推理 × 恋爱 AVG。序章至终章共九段剧情、五种结局与一段隐藏后日谈，约 15 万字。") style "about_body_text"
+                    text _("校园推理 × 恋爱 AVG。序章至终章共九段剧情、五种结局（含一段隐藏后日谈），约 15 万字；另有两篇番外与八桩可重玩短案。") style "about_body_text"
                     text _("不说一句话的她（墨墨），与成为她「嘴」的你。她负责看见真相，你负责说出真相。") style "about_body_text"
                     text _("鉴赏页可重温结局、查看 CG、聆听乐曲与追踪成就；章节选择可从任意章节重玩。") style "about_body_text"
             frame:
@@ -1787,7 +1733,7 @@ screen about():
                     spacing 8
                     text _("制作 · 奇点游戏工作室") style "pref_card_title"
                     text _("剧本 · 高泽坤｜AI制作 · 张鹰南") style "about_body_text"
-                    text _("立绘、背景、CG、主视觉：AI 生成并逐张验收；BGM / 音效：程序化生成（可自由替换）") style "about_body_text"
+                    text _("立绘、背景、CG、主视觉：AI 生成；BGM / 音效：程序化生成；语音：AI 合成") style "about_body_text"
                     text _("字体：Noto Sans SC / Noto Serif SC（SIL Open Font License 1.1）") style "pref_hint"
             text _("Made with Ren'Py [renpy.version_only].") style "pref_hint" xalign 0.5
 

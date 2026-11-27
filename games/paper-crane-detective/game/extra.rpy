@@ -154,6 +154,10 @@ init python:
                 or name in _POOL_CASE_LABELS
                 or name in _BAKE_CASE_LABELS):
             store.current_chapter_label = name
+            # 章节选择 / 番外 / 书签直接进来的没有「输入名字」这一步：沿用上次取的名字
+            if (not getattr(store, "full_run", False) and getattr(store, "player_name", None) == "陈默"
+                    and persistent.last_player_name):
+                store.player_name = persistent.last_player_name
         # 记录已到达的最高章节
         if name in _LABEL_TO_CHAPTER:
             n = _LABEL_TO_CHAPTER[name]
@@ -236,7 +240,7 @@ init python:
 ################################################################################
 
 init python:
-    # 番外短篇 DLC：(跳转 label, 角标, 标题, 简介, 缩略图, 完成标记字段, 是否建议通关真结局后游玩)
+    # 番外短篇：(跳转 label, 角标, 标题, 简介, 缩略图, 完成标记字段, 是否建议通关真结局后游玩)；入口在「案卷」
     DLC_LIST = [
         (
             "dlc_alice_ledger",
@@ -295,52 +299,6 @@ screen chapter_select():
         vbox:
             xsize 722
             spacing 10
-
-            hbox:
-                spacing 10
-                yalign 0.5
-                text _("◆ 番外短篇（DLC）") style "extras_section_text" color "#f4d98a" yalign 0.5
-                text _("独立短篇剧本 · 不影响主线存档与好感") size 14 color "#a892c2" yalign 0.5
-
-            for dlc_lbl, dlc_badge, dlc_name, dlc_blurb, dlc_thumb, dlc_done_key, dlc_need_te in DLC_LIST:
-                $ _dlc_done = getattr(persistent, dlc_done_key, False)
-                $ _dlc_prompt = (
-                    "开启番外后日谈「%s」？\n（本篇包含 TRUE END 后续剧透，建议达成真结局后体验；亦可直接进入）" % dlc_name
-                    if (dlc_need_te and not persistent.te_cleared)
-                    else "开启独立番外短篇「%s」？\n（独立剧情，不会改动主线章节进度）" % dlc_name
-                )
-                button:
-                    style "chapter_card"
-                    at card_hover_fx
-                    action Show("confirm",
-                                message=_dlc_prompt,
-                                yes_action=[Hide("confirm"), Hide("chapter_select"), Start(dlc_lbl)],
-                                no_action=Hide("confirm"))
-                    hbox:
-                        spacing 16
-                        yalign 0.5
-                        frame:
-                            style "chapter_thumb"
-                            add dlc_thumb:
-                                crop_relative True
-                                crop (0.0, 0.056, 1.0, 0.888)
-                                xysize (152, 76)
-                                fit "contain"
-                        vbox:
-                            spacing 4
-                            yalign 0.5
-                            hbox:
-                                spacing 10
-                                frame:
-                                    style "chapter_badge"
-                                    text dlc_badge style "chapter_badge_text" xalign 0.5 yalign 0.5
-                                text dlc_name style "chapter_name_text" yalign 0.5
-                                if _dlc_done:
-                                    text _("✓ 已读完") size 14 color "#86efac" bold True yalign 0.5
-                            text dlc_blurb style "chapter_blurb_text"
-
-            null height 8
-            text _("◆ 本篇章节回溯") style "extras_section_text"
 
             for idx, (lbl, title, need) in enumerate(CHAPTER_LIST):
                 $ parts = title.split(" · ", 1)
@@ -450,6 +408,7 @@ style chapter_blurb_locked_text is text:
 ################################################################################
 
 default persistent.extras_tab = "endings"
+default persistent.last_player_name = None
 default persistent.truth_spoiler_confirmed = False
 default persistent.quote_bookmarks = []
 default persistent.dossier_selected_char = "mo"
@@ -590,36 +549,16 @@ init python:
         ("bake", "家政课烘焙赛"),
     ]
 
-    ## PC-10：「侦探社沙龙」子栏改为分组手风琴——当前分页所在的组展开成「图标 + 等宽短签」，
-    ## 其余组各收拢为一枚组签（点击即展开并直达该组第一项）。十项玩法分四组，与铜章手账册的分行一致。
-    ## PC-11：雨夜剧场（可重玩短案）与时间胶囊（纪念收藏）并入第四组，组名改为「雨夜与纪念」——
-    ## 两桩雨夜短案在前、两项纪念收藏在后；仍为四组，十二项玩法各出现一次。
-    ## PC-12：美术室油画与寄语墙加入后，第四组若继续展开六枚短签会达 802px（> 702px 内宽），
-    ## 因此按「可重玩短案 / 纪念收藏」拆成两组：第四组「放学后短案」（闭馆 · 剧场 · 画室，组键沿用 closedlib，
-    ## 旧存档记住的组仍有效），第五组「纪念与寄语」（相册 · 胶囊 · 寄语墙）。五组十四项各出现一次，
-    ## 五种展开状态由 verify_pc12 逐一实测均 <= 702px。
-    ## PC-13：运动会失物箱（第四桩可重玩短案）追加进「放学后短案」，推理笔记复盘本（只读汇总四案的纪念册）追加进「纪念与寄语」，
-    ## 两组恰好都是 PC-10..PC-13 各一项、按里程碑顺序排列。五组任一组装进四项时，展开态改用紧凑等宽短签
-    ## （style salon_quad_pill：xminimum 60 / 内边距 4，见 zephyr_relay_casebook.rpy）；若沿用 66px 短签，
-    ## 四签组展开会达 715px（> 702px），紧凑短签后五种展开状态由 verify_pc13 逐一实测均 <= 702px。
-    ## PC-14：文化祭鬼屋（第五桩可重玩短案）追加进「放学后短案」。五签组若沿用「每签一枚图标 + 60px 紧凑短签」会达 773px，
-    ## 因此装进五项的组展开时只在最前面放一枚当前分页的图标，后接五枚 56px 紧凑等宽短签（style salon_quint_pill，
-    ## 见 zoetrope_shadow_folio.rpy）；五种展开状态由 verify_pc14 逐一实测均 <= 702px。
-    ## PC-15：天文社流星夜（第六桩可重玩短案）追加进「放学后短案」。六签组若沿用五枚 56px 短签会达 741px，
-    ## 因此装进六项的组展开时仍只放一枚当前分页图标，短签改用 48px 紧凑等宽签（style salon_sext_pill，
-    ## 见 zubenelgenubi_meteor_casebook.rpy）；五种展开状态由 verify_pc15 逐一实测均 <= 702px。
-    ## PC-16：游泳池更衣柜（第七桩可重玩短案）加入后，「放学后短案」若装七签，即便沿用 48px 短签也会达 745px（> 702px），
-    ## 而七枚短签的文字本身就有 40px，再压短签只能删字。因此改分组：天文社流星夜移入「电波与星空」
-    ## （与钟楼星象馆、铜章手账册同属星空主题，四签组按 PC-13 的规则用每签一枚图标 + 60px 紧凑短签），
-    ## 游泳池更衣柜接入「放学后短案」（仍为六签组）。五组十九项各出现一次，五种展开状态由 verify_pc16 逐一实测均 <= 702px。
-    ## PC-17：家政课烘焙赛（第八桩可重玩短案）若接入「放学后短案」会成七签组（PC-16 已实测 > 702px），
-    ## 因此接入只有两项的「侦探社沙龙」（与茶话会、批注辞典同属下午茶主题；三签组沿用每签一枚图标 + 66px 短签）。
-    ## 五组二十项各出现一次，五种展开状态由 verify_pc17 逐一实测均 <= 702px。
+    ## 「侦探社沙龙」子栏（分组手风琴）：当前分页所在的组展开成「图标 + 等宽短签」，其余组各收拢为一枚组签
+    ## （点击即展开并直达该组第一项）；装进四项的组展开时改用紧凑等宽短签（style salon_quad_pill）。
+    ## PC-G2：八桩可重玩短案不再散在三个组里，统一收成一枚「案卷」签——点它打开 screen extras_folio_modal，
+    ## 选中一案后仍进各案原来的分页（组键沿用 closedlib，旧存档记住的组与分页都有效）。
+    CASEFILE_GROUP = "closedlib"
     EXTRAS_SALON_GROUPS = [
-        ("salon",      "侦探社沙龙",   "images/ui/icon_tea_party_cup.png",          ("teaparty", "lexicon", "bake")),
+        ("salon",      "侦探社沙龙",   "images/ui/icon_tea_party_cup.png",          ("teaparty", "lexicon")),
         ("bookstreet", "旧书街与四季", "images/ui/icon_book_restoration.png",       ("restoration", "letterbox", "origami")),
-        ("starlit",    "电波与星空",   "images/ui/icon_clocktower_planetarium.png", ("radio", "planetarium", "badges", "astro")),
-        ("closedlib",  "放学后短案",   "images/ui/icon_closed_library.png",         ("library", "theater", "atelier", "sportsday", "haunted", "pool")),
+        ("starlit",    "电波与星空",   "images/ui/icon_clocktower_planetarium.png", ("radio", "planetarium", "badges")),
+        ("closedlib",  "案卷",         "images/ui/icon_extras_folio.png",           ("library", "theater", "atelier", "sportsday", "haunted", "astro", "pool", "bake")),
         ("keepsake",   "纪念与寄语",   "images/ui/icon_graduation_card.png",        ("album", "capsule", "wall", "notebook")),
     ]
 
@@ -656,18 +595,10 @@ init python:
         "radio":       ("电台",   "radio_solved_count",          "RADIO_BROADCASTS"),
         "planetarium": ("星象馆", "planetarium_solved_count",    "PLANETARIUM_CIPHERS"),
         "badges":      ("铜章",   "badge_stamped_count",         "BADGE_DEFS"),
-        "library":     ("闭馆",   "library_case_solved_count",   1),
         "album":       ("相册",   "album_developed_count",       "ALBUM_PHOTOS"),
-        "theater":     ("剧场",   "theater_case_solved_count",   1),
         "capsule":     ("胶囊",   "capsule_placed_count",        "CAPSULE_ITEMS"),
-        "atelier":     ("画室",   "atelier_case_solved_count",   1),
         "wall":        ("寄语",   "wall_pinned_count",           "WALL_CARDS"),
-        "sportsday":   ("失物",   "sports_case_solved_count",    1),
         "notebook":    ("复盘",   "notebook_stamped_count",      "NOTEBOOK_CASES"),
-        "haunted":     ("鬼屋",   "haunted_case_solved_count",   1),
-        "astro":       ("天文",   "astro_case_solved_count",     1),
-        "pool":        ("泳池",   "pool_case_solved_count",      1),
-        "bake":        ("烘焙",   "bake_case_solved_count",      1),
     }
 
     def salon_tab_icon(tab_key):
@@ -699,31 +630,84 @@ init python:
             return remembered
         return EXTRAS_SALON_GROUPS[0][0]
 
-    ## PC-14：主菜单「番外卷宗」分组入口（screens.rpy 的 extras_folio_modal）用到的只读视图函数。
-    ## 卷宗里列出两篇番外短篇、五桩可重玩短案与推理笔记复盘本（PC-15 起六桩短案，PC-16 起七桩，PC-17 起八桩）；本组函数从不写任何 persistent 字段。
-    ## 番外短篇沿用原入口的解锁条件（只从「章节选择」开启，导航列同一条件：chapter_reached >= 1）与原提示条件
-    ## （后日谈在未通关 TRUE END 时建议先通关）；后日谈标题另受 truth_spoiler_unlocked() 防剧透火漆封存。
+    ############################################################################
+    ## PC-G2：「案卷」——八桩可重玩短案与两篇番外的唯一选择界面（screens.rpy 的 extras_folio_modal）。
+    ## 难度与评级只有这一套说明；本组函数只读，从不写任何 persistent 字段。
+    ############################################################################
+    # 评级：只看本局推理失误数，八案同一把尺（各案 *_RATING_TIERS 的 key / name / rule / max_mistakes 与此逐项相同）
+    CASE_GRADES = [
+        {"key": "gold",   "name": "金牌", "rule": "零失误",         "max_mistakes": 0,   "color": "#f4d98a"},
+        {"key": "silver", "name": "银牌", "rule": "失误 1～2 次",    "max_mistakes": 2,   "color": "#d5dcea"},
+        {"key": "bronze", "name": "铜牌", "rule": "失误 3 次及以上", "max_mistakes": 999, "color": "#e0a878"},
+    ]
+    _CASE_GRADE_BY_KEY = {g["key"]: g for g in CASE_GRADES}
+
+    # 八案难度相同：勘查点、推理步数、每步选项数（verify_release 逐案核对）
+    CASE_CLUES = 6
+    CASE_STEPS = 4
+    CASE_CHOICES = 3
+
+    # (分页键, 标题, 存档字段)，按里程碑顺序
+    CASEFILE_CASES = [
+        ("library",   "闭馆图书馆",   "closed_library_record"),
+        ("theater",   "雨夜剧场",     "theater_script_record"),
+        ("atelier",   "美术室油画",   "atelier_painting_record"),
+        ("sportsday", "失物招领箱",   "sports_lostfound_record"),
+        ("haunted",   "文化祭鬼屋",   "haunted_house_record"),
+        ("astro",     "天文社流星夜", "astro_telescope_record"),
+        ("pool",      "游泳池更衣柜", "pool_locker_record"),
+        ("bake",      "家政课烘焙赛", "bake_cake_record"),
+    ]
+
     FOLIO_DLC_MASKED_TITLE = "后日谈 · 标题已封存"
     FOLIO_DLC_ICONS = {
         "dlc_alice_ledger":  "images/ui/icon_dossier_stamp.png",
         "dlc_mo_bookstreet": "images/ui/icon_crane_bookmark.png",
     }
-    # 卷宗里八桩可重玩短案的结案计数函数（运行期按名取，模块加载顺序互不依赖；PC-15 追加天文社流星夜，PC-16 追加游泳池更衣柜，
-    # PC-17 追加家政课烘焙赛）
-    FOLIO_CASE_COUNTERS = ("library_case_solved_count", "theater_case_solved_count", "atelier_case_solved_count",
-                           "sports_case_solved_count", "haunted_case_solved_count", "astro_case_solved_count",
-                           "pool_case_solved_count", "bake_case_solved_count")
+
+    def case_grade_for(mistakes_count=0):
+        """按推理失误数换算评级（八案共用）。"""
+        m = max(0, int(mistakes_count or 0))
+        for g in CASE_GRADES:
+            if m <= g["max_mistakes"]:
+                return g
+        return CASE_GRADES[-1]
+
+    def save_int(value, default=None):
+        """把旧档里的次数读成非负整数；缺失、None、负数、认不出的文字都返回 default。"""
+        try:
+            n = int(value)
+        except Exception:
+            return default
+        return n if n >= 0 else default
+
+    def casefile_best_key(record):
+        """把一案的存档换算成最好评级：先认 best_tier；没有或认不出，就按最少失误算；
+        结过案但两项都缺（或失误数是 None / 负数）的旧档按铜牌算，绝不显示成未结案。未结案返回 None。"""
+        if not isinstance(record, dict):
+            return None
+        tier = record.get("best_tier")
+        if isinstance(tier, str) and tier in _CASE_GRADE_BY_KEY:
+            return tier
+        if not record.get("solved", False):
+            return None
+        m = save_int(record.get("best_mistakes"))
+        return case_grade_for(m)["key"] if m is not None else CASE_GRADES[-1]["key"]
+
+    def do_quietly(fn, *args, **kwargs):
+        """给界面动作用：Function(f) 的返回值只要不是 None（False 也算）就会立刻结束当前交互，玩家会被弹出鉴赏页、
+        回到标题画面。带返回值的函数在界面里一律写 Function(do_quietly, f, ...)。"""
+        fn(*args, **kwargs)
 
     def folio_chapter_select_open():
-        """与导航列「章节选择」按钮完全相同的解锁条件：番外短篇只从章节选择开启，序章之后开放。"""
+        """番外短篇的解锁条件：序章之后开放（与导航列「章节选择」按钮相同）。"""
         return bool((persistent.chapter_reached or 0) >= 1)
 
     def folio_spoiler_unlocked():
         return bool(truth_spoiler_unlocked()) if "truth_spoiler_unlocked" in globals() else False
 
     def folio_dlc_view(dlc_label):
-        """番外短篇一行的只读视图：未解封时，后日谈的标题一律不出现（返回值与原标题文本完全无关，零侧信道）；
-        卷宗里从不显示番外简介。"""
+        """番外短篇一张卡的只读视图：未解封时，后日谈的标题一律不出现（返回值与原标题文本完全无关，零侧信道）。"""
         unlocked = folio_spoiler_unlocked()
         is_open = folio_chapter_select_open()
         for (lbl, badge, name, _blurb, _thumb, done_key, need_te) in DLC_LIST:
@@ -731,14 +715,6 @@ init python:
                 continue
             masked = bool(need_te) and not unlocked
             done = bool(getattr(persistent, done_key, False))
-            if not is_open:
-                note = "通关序章后，在「章节选择」开启"
-            elif need_te and not persistent.te_cleared:
-                note = "TRUE END 后日谈 · 建议通关真结局后体验"
-            elif need_te:
-                note = "TRUE END 后日谈 · 在「章节选择」开启"
-            else:
-                note = "独立番外短篇 · 不改动主线章节进度"
             return {
                 "label": lbl,
                 "badge": badge,
@@ -747,46 +723,68 @@ init python:
                 "masked": masked,
                 "open": is_open,
                 "done": done,
-                "note": note,
-                "status": "已读完" if done else ("未读" if is_open else "未开放"),
+                "status": "已读" if done else ("未读" if is_open else "序章后开放"),
             }
         return {"label": dlc_label, "badge": "番外", "title": "缺卷", "icon": "images/ui/icon_extras_folio.png",
-                "masked": False, "open": False, "done": False, "note": "这一卷暂时不在卷宗里", "status": "缺卷"}
+                "masked": False, "open": False, "done": False, "status": "缺卷"}
 
-    def folio_case_line(case_var, unit=""):
-        """短案一行的副标题：「编号 《短标题》」+ 推理单元，按名字读取各案卷宗（缺卷时只显示编号占位）。"""
-        case = globals().get(case_var)
-        if not isinstance(case, dict):
-            return "----"
-        line = "%s 《%s》" % (case.get("code", "----"), case.get("short_title", ""))
-        return ("%s · %s" % (line, unit)) if unit else line
+    def folio_dlc_prompt(dlc_label):
+        """开启番外前的确认语：后日谈在未通关 TRUE END 时提示剧透，且标题未解封时不念出来。"""
+        dv = folio_dlc_view(dlc_label)
+        title = dv["title"] if dv["masked"] else "「%s」" % dv["title"]
+        for d in DLC_LIST:
+            if d[0] == dlc_label and d[6] and not persistent.te_cleared:
+                return "开启番外%s？\n（包含 TRUE END 后续剧透，建议达成真结局后再看）" % title
+        return "开启番外%s？\n（独立剧情，不会改动主线章节进度）" % title
+
+    def casefile_rows():
+        """案卷的十张卡：两篇番外在前，八桩短案在后；每张只有图标、标题和最好评级（番外是已读 / 未读）。"""
+        rows = []
+        for d in DLC_LIST:
+            dv = folio_dlc_view(d[0])
+            rows.append({"kind": "dlc", "key": dv["label"], "icon": dv["icon"], "title": dv["title"], "grade": dv["status"],
+                         "color": "#9fe3b0" if dv["done"] else "#b39d7a", "open": dv["open"], "done": dv["done"]})
+        for key, title, store_name in CASEFILE_CASES:
+            gkey = casefile_best_key(getattr(persistent, store_name, None))
+            g = _CASE_GRADE_BY_KEY.get(gkey)
+            rows.append({"kind": "case", "key": key, "icon": salon_tab_icon(key), "title": title,
+                         "grade": g["name"] if g else "未结案", "color": g["color"] if g else "#b39d7a",
+                         "open": True, "done": g is not None})
+        return rows
+
+    def casefile_action(row, from_extras=False, view_only=False):
+        """案卷里一张卡的动作：短案进鉴赏分页；番外先确认再开启（取消后回到案卷）；未开放时返回 None（不可点）。
+        view_only（游戏内从菜单翻开）：只看评级，任何卡都不可点——在剧情里开番外 / 短案会打断当前剧情。
+        番外用回放模式开启（与八桩短案相同）：回放在新的上下文里跑，自带一份存储备份和回退记录，
+        番外 return 或「结束回放」后整个上下文出栈、存储还原，主菜单 / 鉴赏页一点不留；随后同一串动作把案卷重新翻开。"""
+        if view_only:
+            return None
+        if row["kind"] == "case":
+            acts = [Hide("extras_folio_modal"), SetField(persistent, "extras_tab", row["key"]),
+                    SetField(store, "casefile_back_tab", row["key"])]
+            return acts if from_extras else acts + [ShowMenu("extras")]
+        if not row["open"]:
+            return None
+        return [Hide("extras_folio_modal"),
+                Show("confirm",
+                     message=folio_dlc_prompt(row["key"]),
+                     yes_action=[Hide("confirm"),
+                                 Replay(row["key"], scope={"player_name": persistent.last_player_name or "陈默"}, locked=False),
+                                 Show("extras_folio_modal", from_extras=from_extras)],
+                     no_action=[Hide("confirm"), Show("extras_folio_modal", from_extras=from_extras)])]
+
+    def casefile_after_replay():
+        """短案回放结束（打完或「结束回放」）后：这次是从案卷点进这一案的分页，就把案卷重新翻开；别的回放不动。
+        casefile_back_tab 只在案卷里点短案时写入，离开鉴赏页即清空（screen extras 的 on hide / replaced）。"""
+        key = getattr(store, "casefile_back_tab", None)
+        if key and key == persistent.extras_tab and renpy.get_screen("extras"):
+            renpy.show_screen("extras_folio_modal", from_extras=True)
 
     def folio_done_count():
-        """卷宗完成数：番外短篇读完、短案结案、复盘本盖满复盘章各记一卷；计数函数缺失时按未完成计，绝不让主菜单崩溃。"""
-        g = globals()
-        done = sum(1 for d in DLC_LIST if getattr(persistent, d[5], False))
-        for fn_name in FOLIO_CASE_COUNTERS:
-            try:
-                done += 1 if int(g[fn_name]()) > 0 else 0
-            except Exception:
-                pass
-        try:
-            if int(g["notebook_stamped_count"]()) >= len(g["NOTEBOOK_CASES"]):
-                done += 1
-        except Exception:
-            pass
-        return done
+        return sum(1 for r in casefile_rows() if r["done"])
 
     def folio_total_count():
-        return len(DLC_LIST) + len(FOLIO_CASE_COUNTERS) + 1
-
-    def folio_seal_view():
-        """卷宗抬头的防剧透火漆状态（只读）。"""
-        if persistent.te_cleared:
-            return {"text": "火漆 · 已通关解封", "color": "#9fe3b0"}
-        if persistent.truth_spoiler_confirmed:
-            return {"text": "火漆 · 手动解封", "color": "#f0a4b8"}
-        return {"text": "火漆 · 封存中", "color": "#d8c3a0"}
+        return len(DLC_LIST) + len(CASEFILE_CASES)
 
     def extras_count_text():
         """主菜单按钮上的总进度：结局 + CG + 成就 的已解锁数 / 总数"""
@@ -800,6 +798,8 @@ init python:
         persistent.chapter_reached = 0
         persistent.te_cleared = False
         persistent.truth_spoiler_confirmed = False
+        for d in DLC_LIST:
+            setattr(persistent, d[5], False)
         persistent.quote_bookmarks = []
         persistent.dossier_selected_char = "mo"
         persistent.dossier_case_filter = "all"
@@ -881,6 +881,9 @@ init python:
         renpy.save_persistent()
         renpy.notify("已恢复初始状态：存档、CG、结局、成就与书签已全部清空")
 
+## 从「案卷」点进的短案分页（短案回放结束后据此把案卷重新翻开；只在主菜单这一侧用，离开鉴赏页即清空）
+default casefile_back_tab = None
+
 screen extras():
     tag menu
 
@@ -888,8 +891,8 @@ screen extras():
     $ cur = persistent.extras_tab or "endings"
 
     ## 离开鉴赏页时按开关清理白噪音通道并把主菜单主题曲接回来
-    on "hide" action [Function(gramophone_on_leave_extras), Play("music", config.main_menu_music, fadein=1.0, if_changed=True)]
-    on "replaced" action [Function(gramophone_on_leave_extras), Play("music", config.main_menu_music, fadein=1.0, if_changed=True)]
+    on "hide" action [Function(gramophone_on_leave_extras), Play("music", config.main_menu_music, fadein=1.0, if_changed=True), SetVariable("casefile_back_tab", None)]
+    on "replaced" action [Function(gramophone_on_leave_extras), Play("music", config.main_menu_music, fadein=1.0, if_changed=True), SetVariable("casefile_back_tab", None)]
 
     ## 副标题收敛为一行（≤776px 可用宽度）：沙龙各玩法统一由下方「侦探社沙龙」子栏承载
     ## 界面审视：副标题不再逐个复述正下方的九枚分页签，只点明第二行子栏里收着什么
@@ -905,13 +908,7 @@ screen extras():
                         at pill_hover_fx
                         selected (cur == key)
                         action SetField(persistent, "extras_tab", key)
-            ## 侦探社沙龙子栏（PC-10 分组手风琴）：当前分页所在组展开为「图标 + 等宽短签」，其余组收拢为一枚组签；
-            ## PC-11 起十二项玩法分四组；PC-12 起十四项玩法分五组；PC-13 起十六项玩法分五组，装进四项的组展开时改用紧凑等宽短签，
-            ## 五种展开状态经 verify_pc13 逐一实测 <= 702px 内宽；PC-14 起十七项玩法分五组，装进五项的组展开时只放一枚当前分页图标 + 五枚 56px 短签，
-            ## 五种展开状态经 verify_pc14 逐一实测 <= 702px 内宽；PC-15 起十八项玩法分五组，装进六项的组展开时仍只放一枚当前分页图标，
-            ## 短签改用 48px 紧凑等宽签（salon_sext_pill），五种展开状态经 verify_pc15 逐一实测 <= 702px 内宽；PC-16 起十九项玩法分五组，
-            ## 天文社流星夜移入「电波与星空」、游泳池更衣柜接入「放学后短案」，五种展开状态经 verify_pc16 逐一实测 <= 702px 内宽；
-            ## PC-17 起二十项玩法分五组，家政课烘焙赛接入「侦探社沙龙」，五种展开状态经 verify_pc17 逐一实测 <= 702px 内宽
+            ## 侦探社沙龙子栏：当前分页所在组展开为「图标 + 等宽短签」，其余组收拢为一枚组签；「案卷」签直接打开案卷
             $ _salon_open = salon_open_group(cur)
             frame:
                 style "salon_subbar_frame"
@@ -922,13 +919,12 @@ screen extras():
                         spacing 4
                         yalign 0.5
                         for _gkey, _glabel, _gicon, _gtabs in EXTRAS_SALON_GROUPS:
-                            if _gkey == _salon_open and len(_gtabs) >= 5:
-                                add salon_tab_icon(cur if cur in _gtabs else _gtabs[0]) xysize (14, 14) yalign 0.5
-                                for _tkey in _gtabs:
-                                    textbutton salon_tab_pill_text(_tkey):
-                                        style ("salon_sext_pill" if len(_gtabs) >= 6 else "salon_quint_pill")
-                                        selected (cur == _tkey)
-                                        action [SetField(persistent, "extras_salon_group", _gkey), SetField(persistent, "extras_tab", _tkey)]
+                            if _gkey == CASEFILE_GROUP:
+                                add _gicon xysize (14, 14) yalign 0.5
+                                textbutton _glabel:
+                                    style "salon_group_pill"
+                                    selected (cur in _gtabs)
+                                    action Show("extras_folio_modal", from_extras=True)
                             elif _gkey == _salon_open:
                                 for _tkey in _gtabs:
                                     add salon_tab_icon(_tkey) xysize (14, 14) yalign 0.5
@@ -1996,10 +1992,10 @@ screen extras_truth():
                                 text _("旧案轨 · 过去（墨雪 / 周家）") style "truth_track_label_old"
                                 text old_pub style "truth_body_text"
                                 if _unlocked:
-                                    add Solid("#f4d98a33") xfill True ysize 1
+                                    add Solid("#f4d98a33") ysize 1
                                     text old_deep style "truth_deep_text"
                                 else:
-                                    add Solid("#6a5c8044") xfill True ysize 1
+                                    add Solid("#6a5c8044") ysize 1
                                     text _("██ 核心内幕已加密") style "truth_masked_text"
                         frame:
                             style "truth_track_new"
@@ -2008,10 +2004,10 @@ screen extras_truth():
                                 text _("今案轨 · 云溪校园（万事屋）") style "truth_track_label_new"
                                 text new_pub style "truth_body_text"
                                 if _unlocked:
-                                    add Solid("#86d6a233") xfill True ysize 1
+                                    add Solid("#86d6a233") ysize 1
                                     text new_deep style "truth_deep_text"
                                 else:
-                                    add Solid("#6a5c8044") xfill True ysize 1
+                                    add Solid("#6a5c8044") ysize 1
                                     text _("██ 幕后关联已加密") style "truth_masked_text"
 
                     if _unlocked:
@@ -2791,7 +2787,7 @@ screen extras_dossier():
                         xpos _nx
                         ypos _ny
                         anchor (0.5, 0.5)
-                        alpha (1.0 if (_in_case or _is_sel) else 0.42)
+                        at Transform(alpha=(1.0 if (_in_case or _is_sel) else 0.42))
                         action SetField(persistent, "dossier_selected_char", _cid)
                         fixed:
                             xfill True
@@ -3066,7 +3062,7 @@ screen dossier_fullboard():
                         xpos _fx
                         ypos _fy
                         anchor (0.5, 0.5)
-                        alpha (1.0 if (_in_case or _is_sel) else 0.42)
+                        at Transform(alpha=(1.0 if (_in_case or _is_sel) else 0.42))
                         action SetField(persistent, "dossier_selected_char", _cid)
                         fixed:
                             xfill True
@@ -3109,7 +3105,7 @@ screen dossier_fullboard():
                             xsize 326
                             text _sel_char["name"] font gui.name_text_font size 24 color _sel_char["color"] substitute False
                             text (_sel_char["secret_title"] if _unlocked else _sel_char["full_title"]) size 14 color "#f4d98a" substitute False
-                    add Solid("#6a5c8055") xfill True ysize 1
+                    add Solid("#6a5c8055") ysize 1
 
                     hbox:
                         spacing 6
@@ -3399,6 +3395,7 @@ init python:
         raw_line = (persistent.studio_custom_line or "").strip()
         if not raw_line:
             raw_line = STUDIO_PRESET_LINES[0][1]
+        raw_line = raw_line.replace("{", "{{")  # 玩家自己输入的花括号不是文本标签
 
         if spk == "slot1_note":
             name1, col1 = _STUDIO_CHARA_MAP.get(s1, ("墨墨", "#cfa6f0"))

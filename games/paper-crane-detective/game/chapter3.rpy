@@ -570,7 +570,7 @@ label ch3_reason:
             hide shezhang with dissolve
             show alice neutral at right
             alice "要是有人能隔空拓印钥匙，那他直接去当魔术师就好了，何必来偷桌游。换个方向想，[player_name]。"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_5
             jump ch3_reason_retry
         "其实是吕芙监守自盗":
             mc "该不会是吕芙自己……"
@@ -581,11 +581,11 @@ label ch3_reason:
             mo_note "她去小卖部是和所有人一起走的，回来时两手拎着六瓶汽水，根本没有藏匿那盒大桌游的空间。"
             narrator "墨墨在笔记本上画了一个摇摇晃晃拎着塑料袋的小人，塑料袋比小人的脑袋还大。"
             hide lvfu with dissolve
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_6
             jump ch3_reason_retry
 
 label ch3_reason_retry:
-    call alice_hint("门和钥匙都没问题，那进出口就只剩一个。再把“两分钟”和“瘦小的身影”放在一起想想。")
+    call alice_hint("门和钥匙都没问题，那进出口就只剩一个。再把“两分钟”和“瘦小的身影”放在一起想想。") from _call_alice_hint_2
     menu:
         "再想想，密室如何被打破？"
         "全员买饮料的 2 分钟里，有人从换气窗潜入作案":
@@ -597,11 +597,11 @@ label ch3_reason_retry:
             narrator "她在图上那个戴帽子的小人手里，添了一根顶端弯成问号形状的长杆，正好够到画在窗边的方盒子。"
             show alice neutral at right
             alice "对呀，谁规定小偷非得像圣诞老人一样钻烟囱？手够不着的地方，加一根杆子不就够着了？"
-            call reason_wrong
+            call reason_wrong from _call_reason_wrong_7
             jump ch3_reason_ok_forced
 
 label ch3_reason_ok:
-    call reason_correct
+    call reason_correct from _call_reason_correct_3
 label ch3_reason_ok_forced:
     mc "破绽就在那扇换气窗。全员下楼买饮料的两分钟，房间短暂无人。"
     mc "凶手早就守在窗外——小卖部阿姨看见的那个人，在窗下来回走了好几趟，不是找人，是在等这个空档。"

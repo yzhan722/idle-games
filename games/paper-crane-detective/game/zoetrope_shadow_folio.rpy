@@ -1,4 +1,4 @@
-## 《沉默侦探：千纸鹤的约定》—— PC-14 文化祭鬼屋的第七个影子与鉴赏室「番外卷宗」入口整合
+## 《沉默侦探：千纸鹤的约定》—— PC-14 文化祭鬼屋的第七个影子与鉴赏室「案卷」入口整合
 ## zoetrope_shadow_folio.rpy
 ##
 ## 设计要点：
@@ -9,18 +9,16 @@
 ##      被游客报告幕布尽头多出了第七个影子；德育处黄老师限时四点前讲清楚，否则关门。
 ##      六处勘查点（影子排班表、粉色儿童票根、后门窗上的黑卡纸、走廊红纸屑、出口留言卡、游客照片），
 ##      推理链是「四盏灯」：光源 → 投影 → 时机 → 掌灯人。每盏三选一、各配一种灯色，选错只给温柔提示、
-##      只计入本地 _hh_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜灯笼并保存历史最佳纪录，
+##      只计入本地 _hh_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，
 ##      可无限重玩刷新纪录，持久化于 persistent.haunted_house_record。
 ##      真相完全写实（冷白小手电、竹签剪纸、只能从走廊掀开的小窗、只给带孩子的游客亮起），没有任何超自然要素。
 ##   3. 防剧透联动：墨墨在本案页边的续批涉终章旧约，严格经 truth_spoiler_unlocked() 零侧信道遮罩，
-##      与复盘本、合照相册等共用同一个「解锁剧透 / 恢复遮罩」开关；主菜单「番外卷宗」里的后日谈标题受同一开关封存。
-##   4. 鉴赏室入口整合（screens.rpy 的 extras_folio_modal + extra.rpy 的 folio_* 只读函数）：
-##      主菜单原先六行胶囊里的五枚番外类胶囊（闭馆图书馆 / 雨夜剧场 / 美术室油画 / 失物招领箱 / 复盘本）
-##      合并为一枚「番外卷宗」分组入口，卷宗里列出两篇番外短篇、五桩可重玩短案（含本案）与复盘本，主菜单由 6 行减为 4 行。
-##      鉴赏页「放学后短案」组装进五项，展开态改用「当前分页图标 + 五枚 56px 紧凑等宽短签」（style salon_quint_pill）。
+##      与复盘本、合照相册等共用同一个「解锁剧透 / 恢复遮罩」开关；「案卷」里的后日谈标题受同一开关封存。
+##   4. 鉴赏室入口整合（screens.rpy 的 extras_folio_modal + extra.rpy 的 folio_* / casefile_* 只读函数）：
+##      主菜单的番外类胶囊合并为一枚分组入口；PC-G2 起这个入口改名「案卷」，收齐八桩可重玩短案与两篇番外。
 ##   5. 本文件按文件名排在 zephyr_relay_casebook.rpy 之后初始化，双成就追加在 PC-13 之后，成就页扩展为 2×17 = 34 枚。
 
-# —— PC-14 文化祭鬼屋与番外卷宗 UI 图标命名别名（128x128 RGBA 透明底）——
+# —— PC-14 文化祭鬼屋与案卷 UI 图标命名别名（128x128 RGBA 透明底）——
 image ui_icon_haunted_house  = "images/ui/icon_haunted_house.png"
 image ui_icon_seventh_shadow = "images/ui/icon_seventh_shadow.png"
 image ui_icon_flashlight     = "images/ui/icon_flashlight.png"
@@ -44,12 +42,12 @@ init python:
         register_extra_achievement(
             "ach_seventh_shadow",
             "金灯笼的影子侦探",
-            "零失误点亮四盏灯，摘得金灯笼。",
+            "零失误点亮四盏灯，拿下金牌。",
             False,
         )
 
     ############################################################################
-    ## 一、文化祭鬼屋的第七个影子（1 桩可重玩短案 · 6 处勘查点 · 四盏灯 · 金银铜灯笼评级）
+    ## 一、文化祭鬼屋的第七个影子（1 桩可重玩短案 · 6 处勘查点 · 四盏灯 · 金银铜牌评级）
     ############################################################################
 
     HAUNTED_CASE = {
@@ -241,9 +239,9 @@ init python:
     ]
 
     HAUNTED_RATING_TIERS = [
-        {"key": "gold",   "name": "金灯笼", "title": "鬼屋名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "银灯笼", "title": "提灯推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "铜灯笼", "title": "见习掌灯",   "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "鬼屋名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "提灯推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "见习掌灯",   "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _HAUNTED_TIER_BY_KEY = {t["key"]: t for t in HAUNTED_RATING_TIERS}
@@ -258,7 +256,7 @@ init python:
         return _HAUNTED_TIER_BY_KEY.get(tier_key, HAUNTED_RATING_TIERS[-1])
 
     def haunted_rate(mistakes_count=0):
-        """按本局失误数评定灯笼：0 次金灯笼，1～2 次银灯笼，3 次及以上铜灯笼。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in HAUNTED_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -275,17 +273,14 @@ init python:
 
     def haunted_get_record():
         raw = _ensure_haunted_store()
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _HAUNTED_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _HAUNTED_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _HAUNTED_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [h for h in (raw.get("inspected") or []) if h in _HAUNTED_SPOT_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -303,7 +298,7 @@ init python:
         return 1 if haunted_get_record()["best_tier"] == "gold" else 0
 
     def haunted_best_short():
-        """番外卷宗与鉴赏页使用：历史最佳灯笼名，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级名，未结案时显示「待结案」。"""
         rec = haunted_get_record()
         return haunted_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -328,8 +323,8 @@ init python:
         return True
 
     def haunted_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局灯笼、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
-        只写鬼屋自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加金灯笼成就。"""
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        只写鬼屋自己的存档，绝不触碰主线 fail_count / 好感。本局零失误时追加金牌成就。"""
         m = max(0, int(mistakes_count or 0))
         tier = haunted_rate(m)
         prev = haunted_get_record()
@@ -443,7 +438,7 @@ screen extras_haunted_house():
                         xsize 398
                         text _("文化祭鬼屋的第七个影子") font gui.name_text_font size 19 color "#f6efff"
                         if _hv["solved"]:
-                            text _("已结案 · 四盏灯已全部点亮 · 可随时重新走进鬼屋冲击金灯笼") size 12 color "#9fe3b0"
+                            text _("已结案 · 四盏灯已全部点亮 · 可随时重新走进鬼屋冲击金牌") size 12 color "#9fe3b0"
                         else:
                             text _("文化祭第一天，幕布后只站着六个人 · 第七个影子从哪来") size 12 color "#d9c8f5"
                 hbox:
@@ -461,7 +456,7 @@ screen extras_haunted_house():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _hv["replays"]) size 12 color "#d6c2ff" align (0.5, 0.5) substitute False
 
-        ## 2. 卷宗详情：暗场缩略图（底部七格幕布带，第七格亮着）、案情、六处勘查点、四盏灯、灯笼评级与页边续批
+        ## 2. 卷宗详情：暗场缩略图（底部七格幕布带，第七格亮着）、案情、六处勘查点、四盏灯、评级与页边续批
         frame:
             style "haunted_console_card"
             vbox:
@@ -567,7 +562,7 @@ screen extras_haunted_house():
                                 text ("%s · %s" % (k_obj["step"], k_obj["name"])) size 11 color ("#9fe3b0" if _hv["solved"] else "#cbb8ec") bold True substitute False
                                 text (_hv["lamp_shorts"][_ki] if _hv["solved"] else _("？ 待点亮")) size 12 color ("#f6f1ff" if _hv["solved"] else "#8f7fae") substitute False
 
-                ## 2C. 灯笼评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "haunted_rating_card"
                     vbox:
@@ -580,7 +575,7 @@ screen extras_haunted_house():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_seventh_shadow.png" xysize (16, 16) yalign 0.5
-                                text _("灯笼评级 · 重玩挑战") font gui.name_text_font size 13 color "#f6f1ff" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#f6f1ff" yalign 0.5
                             text ("历史最佳：%s" % _hv["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -593,7 +588,7 @@ screen extras_haunted_house():
                                         text ("%s「%s」" % (t_obj["name"], t_obj["title"])) size 12 color ("#f4d98a" if _hv["best_tier"] == t_obj["key"] else "#ece4fa") yalign 0.5 substitute False
                                         text t_obj["rule"] size 11 color "#b9a6dc" xalign 1.0 yalign 0.5 substitute False
                         if _hv["solved"]:
-                            add Solid("#c9b6ff33") xfill True ysize 1
+                            add Solid("#c9b6ff33") ysize 1
                             text _hv["display_solution"] size 12 color "#9fe3b0" line_spacing 2 substitute False
                             text _hv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _hv["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -641,7 +636,7 @@ screen extras_haunted_house():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误点亮四盏灯可获金灯笼 · 已结案 %d 次" % _hv["replays"]) size 12 color "#b9a6dc" yalign 0.5 substitute False
+                    text ("零失误点亮四盏灯可获金牌 · 已结案 %d 次" % _hv["replays"]) size 12 color "#b9a6dc" yalign 0.5 substitute False
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -657,24 +652,6 @@ screen extras_haunted_house():
                             ysize 36
                             text_size 15
                             action haunted_launch_action()
-
-        ## 3. 番外卷宗直达条（主菜单的番外分组入口在鉴赏页里也能翻开）
-        frame:
-            style "mailbox_quick_row"
-            hbox:
-                xfill True
-                yalign 0.5
-                hbox:
-                    spacing 10
-                    yalign 0.5
-                    add "images/ui/icon_extras_folio.png" xysize (20, 20) yalign 0.5
-                    text _("番外卷宗 · 番外与短案合订本") font gui.name_text_font size 14 color "#fff3dc" yalign 0.5
-                    text ("（已完成 %d/%d）" % (folio_done_count(), folio_total_count())) size 12 color "#f4d98a" yalign 0.5 substitute False
-                textbutton _("翻开番外卷宗"):
-                    style "gramophone_mini_pill"
-                    xalign 1.0
-                    yalign 0.5
-                    action Show("extras_folio_modal", from_extras=True)
 
 
 ## 鬼屋结案报告独立展阅弹窗
@@ -731,7 +708,7 @@ screen haunted_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#c9b6ff" bold True
                     text _mv["summary"] size 13 color "#f3eefc" line_spacing 4 substitute False
-                    add Solid("#cbb8ec33") xfill True ysize 1
+                    add Solid("#cbb8ec33") ysize 1
                     if _mv["solved"]:
                         text _("四盏灯：") size 12 color "#c9b6ff" bold True
                         for _ri, r_obj in enumerate(HAUNTED_LAMP_LINKS):
@@ -739,12 +716,12 @@ screen haunted_report_modal():
                                 spacing 8
                                 add Solid(r_obj["color"]) xysize (6, 18) yalign 0.0
                                 text ("%s · %s（%s）：%s" % (r_obj["step"], r_obj["name"], r_obj["lantern"], _mv["lamp_fulls"][_ri])) size 13 color "#ece4fa" line_spacing 3 xsize 658 substitute False
-                        add Solid("#c9b6ff33") xfill True ysize 1
+                        add Solid("#c9b6ff33") ysize 1
                         text _mv["display_solution"] size 13 color "#9fe3b0" line_spacing 4 substitute False
                         text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
                         if _mv["display_secret"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _mv["display_secret"] size 13 color "#f4d98a" line_spacing 4 substitute False
                     else:
                         text _("这桩案子还没有结案。走进影子回廊、查完六处线索并点亮四盏灯后，完整的结案报告会显影在这里。") size 13 color "#b9a6dc" line_spacing 4
@@ -786,7 +763,7 @@ screen haunted_lamp_banner(lamps_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_flashlight.png" xysize (22, 22) yalign 0.5
                 text _("影子回廊 · 点亮四盏灯") size 12 color "#c9b6ff" bold True yalign 0.5
-                text ("已点亮 %d/%d · 失误只计入本案灯笼评级，不影响主线" % (lamps_done, len(HAUNTED_LAMP_LINKS))) size 11 color "#cbb8ec" yalign 0.5
+                text ("已点亮 %d/%d · 失误只计入本案评级，不影响主线" % (lamps_done, len(HAUNTED_LAMP_LINKS))) size 11 color "#cbb8ec" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(HAUNTED_LAMP_LINKS):
@@ -800,7 +777,7 @@ screen haunted_lamp_banner(lamps_done, prompt_line):
             text prompt_line size 14 color "#f6f1ff" substitute False
 
 
-## 鬼屋结案结算卡：本局灯笼评级 + 历史最佳纪录 + 重玩挑战提示
+## 鬼屋结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen haunted_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -849,16 +826,16 @@ screen haunted_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays
                     spacing 4
                     text _rv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _rv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入鬼屋灯笼评级，不影响主线）" % mistakes) size 12 color "#cbb8ec"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#cbb8ec"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_bt["name"], _bt["title"], best_mistakes, replays)) size 12 color "#cbb8ec" substitute False
                     if is_first:
-                        text _("首次结案 · 四盏灯已写入鉴赏室「文化祭鬼屋」分页，番外卷宗添上了第五桩短案") size 12 color "#9fe3b0"
+                        text _("首次结案 · 四盏灯已写入鉴赏室「文化祭鬼屋」分页") size 12 color "#9fe3b0"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一次的四盏灯比以往任何一次都点得更稳") size 12 color "#f4d98a"
                     elif _is_gold:
-                        text _("重玩挑战 · 再次摘下金灯笼，鬼屋名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，鬼屋名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误点亮四盏灯，就能把金灯笼挂上鬼屋出口") size 12 color "#cbb8ec"
+                        text _("重玩挑战 · 零失误点亮四盏灯，就能拿下金牌") size 12 color "#cbb8ec"
 
             textbutton _("收好灯笼并返回鉴赏室"):
                 style "pill_button"
@@ -921,14 +898,6 @@ style haunted_margin_box is default:
     padding (12, 9)
     background Frame("gui/hud_chip.png", 12, 12)
 
-## 侦探社沙龙子栏：某组装进五项玩法时，展开态只在最前面放一枚当前分页的图标，后接五枚紧凑等宽短签
-## （xminimum 56 / 左右内边距 4），由 extra.rpy 的子栏按组内项数选择；五签组展开态由 verify_pc10 的共享测宽函数与 verify_pc14 逐一实测 <= 702px
-style salon_quint_pill is bookstreet_subtab_pill:
-    xminimum 56
-    padding (4, 0)
-
-style salon_quint_pill_text is bookstreet_subtab_pill_text
-
 
 ################################################################################
 ## 四、鬼屋独立沙盒初始化与结案出口（零侵入主线好感/失误/存档）
@@ -968,7 +937,7 @@ label _haunted_finish_case(local_mistakes=0):
 ################################################################################
 
 label haunted_house_case:
-    call _haunted_init_sandbox("文化祭鬼屋 · HH-01 提灯笼的第七个影子")
+    call _haunted_init_sandbox("文化祭鬼屋 · HH-01 提灯笼的第七个影子") from _call__haunted_init_sandbox
     $ _hh_mistakes = 0
     $ _hh_lamps = 0
     $ _hh_h1 = False
@@ -1191,9 +1160,9 @@ label haunted_case_review_intro:
     mo_note "一个影子，要四样东西：一盏灯，一样挡光的东西，一个时机，一只举灯的手。"
     alice "那就一盏一盏点亮！光从哪来、照出来的是什么、它什么时候出现、举灯的人是谁——四盏灯全亮了，第七个影子就无处可藏！"
     if _hh_replays > 0:
-        sysmsg "【影子回廊 · 重玩挑战】当前历史最佳：[_hh_best_text]。零失误点亮四盏灯，就能把金灯笼挂上鬼屋出口。"
+        sysmsg "【影子回廊 · 重玩挑战】当前历史最佳：[_hh_best_text]。零失误点亮四盏灯，就能拿下金牌。"
     else:
-        sysmsg "【影子回廊 · 点亮四盏灯】依次选出「光源 → 投影 → 时机 → 掌灯人」。零失误可获金灯笼，失误只计入本案评级，不影响主线。"
+        sysmsg "【影子回廊 · 点亮四盏灯】依次选出「光源 → 投影 → 时机 → 掌灯人」。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label haunted_lamp_k1:
     show screen haunted_lamp_banner(0, "第一盏 · 光源：台灯都放在地上、全是暖黄的，第七个影子却镶着冷白光边——光从哪里来？")
@@ -1420,5 +1389,5 @@ label haunted_case_resolution:
     show alice smile at left
     alice "好！万事屋番外卷宗，今天正式合订！"
 
-    call _haunted_finish_case(_hh_mistakes)
+    call _haunted_finish_case(_hh_mistakes) from _call__haunted_finish_case
     return

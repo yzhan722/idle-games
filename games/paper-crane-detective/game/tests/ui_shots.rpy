@@ -368,7 +368,7 @@ testsuite uiaudit:
         screenshot "ui_10a_library_unsolved.png"
         $ persistent.closed_library_record = {"solved": True, "replays": 3, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
         pause 0.5
-        assert eval (library_render_view()["solved"] and library_best_short() == "金书签")
+        assert eval (library_render_view()["solved"] and library_best_short() == "金牌")
         screenshot "ui_10b_library_gold.png"
         run Show("library_report_modal")
         pause 0.5
@@ -423,7 +423,7 @@ testsuite uiaudit:
         screenshot "ui_11a_theater_unsolved.png"
         $ persistent.theater_script_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 2, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
         pause 0.5
-        assert eval (theater_render_view()["solved"] and theater_best_short() == "金票根")
+        assert eval (theater_render_view()["solved"] and theater_best_short() == "金牌")
         screenshot "ui_11b_theater_gold.png"
         run Show("theater_report_modal")
         pause 0.5
@@ -480,7 +480,7 @@ testsuite uiaudit:
         screenshot "ui_12a_atelier_unsolved.png"
         $ persistent.atelier_painting_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
         pause 0.5
-        assert eval (atelier_render_view()["solved"] and atelier_best_short() == "金画框")
+        assert eval (atelier_render_view()["solved"] and atelier_best_short() == "金牌")
         screenshot "ui_12b_atelier_gold.png"
         run Show("atelier_report_modal")
         pause 0.5
@@ -541,7 +541,7 @@ testsuite uiaudit:
         screenshot "ui_13a_sports_unsolved.png"
         $ persistent.sports_lostfound_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
         pause 0.5
-        assert eval (sports_render_view()["solved"] and sports_best_short() == "金秒表")
+        assert eval (sports_render_view()["solved"] and sports_best_short() == "金牌")
         screenshot "ui_13b_sports_gold.png"
         run Show("sports_report_modal")
         pause 0.5
@@ -605,7 +605,7 @@ testsuite uiaudit:
         screenshot "ui_14a_haunted_unsolved.png"
         $ persistent.haunted_house_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["h1", "h2", "h3", "h4", "h5", "h6"]}
         pause 0.5
-        assert eval (haunted_render_view()["solved"] and haunted_best_short() == "金灯笼" and haunted_render_view()["display_secret"] == "")
+        assert eval (haunted_render_view()["solved"] and haunted_best_short() == "金牌" and haunted_render_view()["display_secret"] == "")
         screenshot "ui_14b_haunted_gold_masked.png"
         $ persistent.te_cleared = True
         pause 0.5
@@ -647,11 +647,11 @@ testsuite uiaudit:
         $ persistent.truth_spoiler_confirmed = False
         run SetField(persistent, "extras_tab", "astro")
         pause 0.5
-        assert eval (astro_case_solved_count() == 0 and salon_open_group("astro") == "starlit" and astro_render_view()["display_masked_notice"] != "")
+        assert eval (astro_case_solved_count() == 0 and salon_open_group("astro") == "closedlib" and astro_render_view()["display_masked_notice"] != "")
         screenshot "ui_15a_astro_unsolved.png"
         $ persistent.astro_telescope_record = {"solved": True, "replays": 3, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 2, "inspected": ["s1", "s2", "s3", "s4", "s5", "s6"]}
         pause 0.5
-        assert eval (astro_render_view()["solved"] and astro_best_short() == "一等星" and astro_render_view()["display_secret"] == "")
+        assert eval (astro_render_view()["solved"] and astro_best_short() == "金牌" and astro_render_view()["display_secret"] == "")
         screenshot "ui_15b_astro_gold_masked.png"
         $ persistent.te_cleared = True
         pause 0.5
@@ -687,7 +687,7 @@ testsuite uiaudit:
         run Hide("notebook_page_modal")
         run Show("extras_folio_modal", from_extras=True)
         pause 0.5
-        assert eval (folio_total_count() == 11 and astro_case_solved_count() == 1)
+        assert eval (folio_total_count() == 10 and astro_case_solved_count() == 1)
         screenshot "ui_15j_folio_six_cases.png"
         run Hide("extras_folio_modal")
         $ persistent.astro_telescope_record = _saved_mn_rec
@@ -715,7 +715,7 @@ testsuite uiaudit:
         screenshot "ui_16a_pool_unsolved.png"
         $ persistent.pool_locker_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["s1", "s2", "s3", "s4", "s5", "s6"]}
         pause 0.5
-        assert eval (pool_render_view()["solved"] and pool_best_short() == "金浪花" and pool_render_view()["display_secret"] == "")
+        assert eval (pool_render_view()["solved"] and pool_best_short() == "金牌" and pool_render_view()["display_secret"] == "")
         screenshot "ui_16b_pool_gold_masked.png"
         $ persistent.te_cleared = True
         pause 0.5
@@ -735,7 +735,7 @@ testsuite uiaudit:
         run Hide("pool_result_card")
         run SetField(persistent, "extras_tab", "astro")
         pause 0.5
-        assert eval (salon_open_group("astro") == "starlit" and salon_open_group("pool") == "closedlib")
+        assert eval (salon_open_group("astro") == "closedlib" and salon_open_group("pool") == "closedlib")
         screenshot "ui_16g_subbar_starlit_astro.png"
         $ persistent.te_cleared = False
         $ persistent.case_notebook_record = {"stamped": ["library"], "read": []}
@@ -750,7 +750,7 @@ testsuite uiaudit:
         run Hide("notebook_page_modal")
         run Show("extras_folio_modal", from_extras=True)
         pause 0.5
-        assert eval (folio_total_count() == 11 and pool_case_solved_count() == 1)
+        assert eval (folio_total_count() == 10 and pool_case_solved_count() == 1)
         screenshot "ui_16j_folio_seven_cases.png"
         run Hide("extras_folio_modal")
         $ persistent.pool_locker_record = _saved_sw_rec
@@ -773,11 +773,11 @@ testsuite uiaudit:
         $ persistent.truth_spoiler_confirmed = False
         run SetField(persistent, "extras_tab", "bake")
         pause 0.5
-        assert eval (bake_case_solved_count() == 0 and salon_open_group("bake") == "salon" and bake_render_view()["display_masked_notice"] != "")
+        assert eval (bake_case_solved_count() == 0 and salon_open_group("bake") == "closedlib" and bake_render_view()["display_masked_notice"] != "")
         screenshot "ui_17a_bake_unsolved.png"
         $ persistent.bake_cake_record = {"solved": True, "replays": 2, "best_tier": "gold", "last_tier": "silver", "best_mistakes": 0, "last_mistakes": 1, "inspected": ["s1", "s2", "s3", "s4", "s5", "s6"]}
         pause 0.5
-        assert eval (bake_render_view()["solved"] and bake_best_short() == "金烤盘" and bake_render_view()["display_secret"] == "")
+        assert eval (bake_render_view()["solved"] and bake_best_short() == "金牌" and bake_render_view()["display_secret"] == "")
         screenshot "ui_17b_bake_gold_masked.png"
         $ persistent.te_cleared = True
         pause 0.5
@@ -797,7 +797,7 @@ testsuite uiaudit:
         run Hide("bake_result_card")
         run SetField(persistent, "extras_tab", "teaparty")
         pause 0.5
-        assert eval (salon_open_group("teaparty") == "salon" and salon_open_group("bake") == "salon" and salon_open_group("pool") == "closedlib")
+        assert eval (salon_open_group("teaparty") == "salon" and salon_open_group("bake") == "closedlib" and salon_open_group("pool") == "closedlib")
         screenshot "ui_17g_subbar_salon_bake.png"
         $ persistent.te_cleared = False
         $ persistent.case_notebook_record = {"stamped": ["library"], "read": []}
@@ -812,7 +812,7 @@ testsuite uiaudit:
         run Hide("notebook_page_modal")
         run Show("extras_folio_modal", from_extras=True)
         pause 0.5
-        assert eval (folio_total_count() == 11 and bake_case_solved_count() == 1)
+        assert eval (folio_total_count() == 10 and bake_case_solved_count() == 1)
         screenshot "ui_17j_folio_eight_cases.png"
         run Hide("extras_folio_modal")
         $ persistent.bake_cake_record = _saved_bc_rec
@@ -846,11 +846,11 @@ testsuite uiaudit:
         $ persistent.chapter_reached = 6
         $ persistent.te_cleared = True
         pause 0.8
-        assert eval (folio_chapter_select_open() and folio_total_count() == 11)
+        assert eval (folio_chapter_select_open() and folio_total_count() == 10)
         screenshot "ui_15k_main_menu_reflowed.png"
-        assert eval (folio_total_count() == 11 and folio_chapter_select_open())
+        assert eval (folio_total_count() == 10 and folio_chapter_select_open())
         screenshot "ui_16k_main_menu_no_new_chip.png"
-        assert eval (folio_total_count() == 11 and bake_case_solved_count() >= 0)
+        assert eval (folio_total_count() == 10 and bake_case_solved_count() >= 0)
         screenshot "ui_17k_main_menu_no_new_chip.png"
         $ persistent.chapter_reached = _saved_pc15_chap
         $ persistent.te_cleared = _saved_pc15_te

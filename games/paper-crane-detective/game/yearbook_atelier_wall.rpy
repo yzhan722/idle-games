@@ -8,7 +8,7 @@
 ##      从旧社团楼三楼美术室的主画架上消失。
 ##      玩法三段式：六处画室勘查点（入证物簿、可翻面批注）→ 四笔推理（去向 → 藏法 → 动机 → 执行人，
 ##      每笔三选一、各配一种颜料色标，按顺序画完）→ 掀开衬布结案。选错只给温柔提示、只计入本地
-##      _at_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜画框并保存历史最佳纪录，
+##      _at_mistakes，绝不触碰主线 fail_count / 好感；结案按失误数评定金 / 银 / 铜牌并保存历史最佳纪录，
 ##      可无限重玩刷新纪录，持久化于 persistent.atelier_painting_record。
 ##      与 PC-10（为躲雨把书搬上楼）、PC-11（闯祸后躲进服装间抢救）都不同：这幅画从未离开房间——它画面朝下、
 ##      四角垫着软木塞，平躺在静物台的白衬布底下；一年级学妹们想赶在开展前，在画布背面写满送给学姐的毕业寄语。
@@ -49,7 +49,7 @@ init python:
         )
 
     ############################################################################
-    ## 一、美术室消失的油画（1 桩可重玩短案 · 6 处勘查点 · 四笔推理 · 金银铜画框评级）
+    ## 一、美术室消失的油画（1 桩可重玩短案 · 6 处勘查点 · 四笔推理 · 金银铜牌评级）
     ############################################################################
 
     ATELIER_CASE = {
@@ -224,9 +224,9 @@ init python:
     ]
 
     ATELIER_RATING_TIERS = [
-        {"key": "gold",   "name": "金画框", "title": "画室名侦探", "rule": "零失误",         "max_mistakes": 0},
-        {"key": "silver", "name": "银画框", "title": "北窗推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
-        {"key": "bronze", "name": "铜画框", "title": "见习布展",   "rule": "失误 3 次及以上", "max_mistakes": 999},
+        {"key": "gold",   "name": "金牌", "title": "画室名侦探", "rule": "零失误",         "max_mistakes": 0},
+        {"key": "silver", "name": "银牌", "title": "北窗推理员", "rule": "失误 1～2 次",    "max_mistakes": 2},
+        {"key": "bronze", "name": "铜牌", "title": "见习布展",   "rule": "失误 3 次及以上", "max_mistakes": 999},
     ]
 
     _ATELIER_TIER_BY_KEY = {t["key"]: t for t in ATELIER_RATING_TIERS}
@@ -241,7 +241,7 @@ init python:
         return _ATELIER_TIER_BY_KEY.get(tier_key, ATELIER_RATING_TIERS[-1])
 
     def atelier_rate(mistakes_count=0):
-        """按本局失误数评定画框：0 次金画框，1～2 次银画框，3 次及以上铜画框。"""
+        """按本局失误数评定评级：0 次金牌，1～2 次银牌，3 次及以上铜牌。"""
         m = max(0, int(mistakes_count or 0))
         for tier in ATELIER_RATING_TIERS:
             if m <= tier["max_mistakes"]:
@@ -258,17 +258,14 @@ init python:
 
     def atelier_get_record():
         raw = _ensure_atelier_store()
-        best_tier = raw.get("best_tier")
         last_tier = raw.get("last_tier")
-        best_m = raw.get("best_mistakes", None)
-        last_m = raw.get("last_mistakes", None)
         return {
             "solved": bool(raw.get("solved", False)),
-            "replays": int(raw.get("replays", 0) or 0),
-            "best_tier": best_tier if best_tier in _ATELIER_TIER_RANK else None,
-            "last_tier": last_tier if last_tier in _ATELIER_TIER_RANK else None,
-            "best_mistakes": (None if best_m is None else int(best_m)),
-            "last_mistakes": (None if last_m is None else int(last_m)),
+            "replays": save_int(raw.get("replays"), 0),
+            "best_tier": casefile_best_key(raw),
+            "last_tier": last_tier if isinstance(last_tier, str) and last_tier in _ATELIER_TIER_RANK else None,
+            "best_mistakes": save_int(raw.get("best_mistakes")),
+            "last_mistakes": save_int(raw.get("last_mistakes")),
             "inspected": [h for h in (raw.get("inspected") or []) if h in _ATELIER_HOTSPOT_BY_ID],
             "report_viewed": bool(raw.get("report_viewed", False)),
         }
@@ -286,7 +283,7 @@ init python:
         return 1 if atelier_get_record()["best_tier"] == "gold" else 0
 
     def atelier_best_short():
-        """主菜单小胶囊与鉴赏页使用：历史最佳画框名，未结案时显示「待结案」。"""
+        """案卷与鉴赏页使用：历史最佳评级名，未结案时显示「待结案」。"""
         rec = atelier_get_record()
         return atelier_tier_def(rec["best_tier"])["name"] if rec["best_tier"] else "待结案"
 
@@ -311,7 +308,7 @@ init python:
         return True
 
     def atelier_record_solve(mistakes_count=0):
-        """记录一次结案：评定本局画框、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
+        """记录一次结案：评定本局评级、刷新历史最佳（最高评级 + 最少失误）与累计结案次数。
         只写美术室自己的存档，绝不触碰主线 fail_count / 好感。"""
         m = max(0, int(mistakes_count or 0))
         tier = atelier_rate(m)
@@ -510,7 +507,7 @@ init python:
         {
             "id": "w10", "code": "W-10", "writer": "班长", "recipient": "艾丽丝", "title": "导演本旁的便利贴",
             "source": "雨夜剧场", "tab": "theater", "progress_key": "theater_gold", "need": 1,
-            "condition": "零失误复盘雨夜剧场，获得金票根",
+            "condition": "零失误复盘雨夜剧场，获得金牌",
             "pin": "#5b8de0",
             "spoiler": False,
             "body": (
@@ -522,7 +519,7 @@ init python:
         {
             "id": "w11", "code": "W-11", "writer": "苏棠", "recipient": "万事屋", "title": "北窗下的回礼",
             "source": "美术室油画", "tab": "atelier", "progress_key": "atelier_gold", "need": 1,
-            "condition": "零失误复盘美术室油画，获得金画框",
+            "condition": "零失误复盘美术室油画，获得金牌",
             "pin": "#e8c04a",
             "spoiler": False,
             "body": (
@@ -815,7 +812,7 @@ screen extras_atelier_painting():
                         xsize 398
                         text _("美术室消失的油画") font gui.name_text_font size 19 color "#e4f5ee"
                         if _atv["solved"]:
-                            text _("已结案 · 四笔推理全部画完 · 可随时重返北窗画室冲击金画框") size 12 color "#9fe0c8"
+                            text _("已结案 · 四笔推理全部画完 · 可随时重返北窗画室冲击金牌") size 12 color "#9fe0c8"
                         else:
                             text _("开展前一天，画了三年的压轴油画不见了 · 六处痕迹等你勘查") size 12 color "#a8c9bd"
                 hbox:
@@ -833,7 +830,7 @@ screen extras_atelier_painting():
                         style "mailbox_stat_chip"
                         text ("结案 %d 次" % _atv["replays"]) size 12 color "#7fd1b9" align (0.5, 0.5) substitute False
 
-        ## 2. 卷宗详情：画室缩略图（底部六色颜料带）、案情、六处勘查点、四笔推理与画框评级
+        ## 2. 卷宗详情：画室缩略图（底部六色颜料带）、案情、六处勘查点、四笔推理与评级
         frame:
             style "atelier_console_card"
             vbox:
@@ -934,7 +931,7 @@ screen extras_atelier_painting():
                                 text ("%s · %s" % (k_obj["step"], k_obj["name"])) size 11 color ("#86efac" if _atv["solved"] else "#a8c9bd") bold True substitute False
                                 text (_atv["stroke_shorts"][_ki] if _atv["solved"] else _("？ 待落笔")) size 12 color ("#f2fbf7" if _atv["solved"] else "#6f8c82") substitute False
 
-                ## 2C. 画框评级与结案报告预览匣
+                ## 2C. 评级与结案报告预览匣
                 frame:
                     style "atelier_rating_card"
                     vbox:
@@ -947,7 +944,7 @@ screen extras_atelier_painting():
                                 spacing 6
                                 yalign 0.5
                                 add "images/ui/icon_missing_painting.png" xysize (16, 16) yalign 0.5
-                                text _("画框评级 · 重玩挑战") font gui.name_text_font size 13 color "#f2fbf7" yalign 0.5
+                                text _("评级 · 重玩挑战") font gui.name_text_font size 13 color "#f2fbf7" yalign 0.5
                             text ("历史最佳：%s" % _atv["best_line"]) size 11 color "#f4d98a" xalign 1.0 yalign 0.5 substitute False
                         hbox:
                             spacing 8
@@ -960,7 +957,7 @@ screen extras_atelier_painting():
                                         text ("%s「%s」" % (t_obj["name"], t_obj["title"])) size 12 color ("#f4d98a" if _atv["best_tier"] == t_obj["key"] else "#dcefe7") yalign 0.5 substitute False
                                         text t_obj["rule"] size 11 color "#9fbfb3" xalign 1.0 yalign 0.5 substitute False
                         if _atv["solved"]:
-                            add Solid("#7fd1b933") xfill True ysize 1
+                            add Solid("#7fd1b933") ysize 1
                             text _atv["display_solution"] size 12 color "#86efac" line_spacing 2 substitute False
                             text _atv["display_mo_note"] size 12 color "#cfa6f0" substitute False
                             text _atv["display_alice_note"] size 12 color "#f0c060" substitute False
@@ -971,7 +968,7 @@ screen extras_atelier_painting():
                 hbox:
                     xfill True
                     yalign 0.5
-                    text ("零失误画完四笔推理可获金画框 · 已结案 %d 次" % _atv["replays"]) size 12 color "#8fb3a6" yalign 0.5 substitute False
+                    text ("零失误画完四笔推理可获金牌 · 已结案 %d 次" % _atv["replays"]) size 12 color "#8fb3a6" yalign 0.5 substitute False
                     hbox:
                         xalign 1.0
                         yalign 0.5
@@ -1062,7 +1059,7 @@ screen atelier_report_modal():
                     xsize 672
                     text _("案情：") size 12 color "#7fd1b9" bold True
                     text _mv["summary"] size 13 color "#eef7f2" line_spacing 4 substitute False
-                    add Solid("#a8c9bd33") xfill True ysize 1
+                    add Solid("#a8c9bd33") ysize 1
                     if _mv["solved"]:
                         text _("四笔推理：") size 12 color "#7fd1b9" bold True
                         for _ri, r_obj in enumerate(ATELIER_STROKE_LINKS):
@@ -1070,7 +1067,7 @@ screen atelier_report_modal():
                                 spacing 8
                                 add Solid(r_obj["color"]) xysize (6, 18) yalign 0.0
                                 text ("%s · %s（%s）：%s" % (r_obj["step"], r_obj["name"], r_obj["pigment"], _mv["stroke_fulls"][_ri])) size 13 color "#dcefe7" line_spacing 3 xsize 658 substitute False
-                        add Solid("#7fd1b933") xfill True ysize 1
+                        add Solid("#7fd1b933") ysize 1
                         text _mv["display_solution"] size 13 color "#86efac" line_spacing 4 substitute False
                         text _mv["display_mo_note"] size 13 color "#cfa6f0" line_spacing 4 substitute False
                         text _mv["display_alice_note"] size 13 color "#f0c060" line_spacing 4 substitute False
@@ -1112,7 +1109,7 @@ screen atelier_stroke_banner(strokes_done, prompt_line):
                 yalign 0.5
                 add "images/ui/icon_art_room.png" xysize (22, 22) yalign 0.5
                 text _("美术室 · 四笔推理") size 12 color "#7fd1b9" bold True yalign 0.5
-                text ("已落笔 %d/%d · 失误只计入本案画框评级，不影响主线" % (strokes_done, len(ATELIER_STROKE_LINKS))) size 11 color "#a8c9bd" yalign 0.5
+                text ("已落笔 %d/%d · 失误只计入本案评级，不影响主线" % (strokes_done, len(ATELIER_STROKE_LINKS))) size 11 color "#a8c9bd" yalign 0.5
             hbox:
                 spacing 6
                 for _bi, b_obj in enumerate(ATELIER_STROKE_LINKS):
@@ -1126,7 +1123,7 @@ screen atelier_stroke_banner(strokes_done, prompt_line):
             text prompt_line size 14 color "#f2fbf7" substitute False
 
 
-## 美术室结案结算卡：本局画框评级 + 历史最佳纪录 + 重玩挑战提示
+## 美术室结案结算卡：本局评级 + 历史最佳纪录 + 重玩挑战提示
 screen atelier_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays, new_record=False, is_first=True):
     modal True
     zorder 220
@@ -1175,16 +1172,16 @@ screen atelier_result_card(cur_tier, best_tier, mistakes, best_mistakes, replays
                     spacing 4
                     text _rv["display_mo_note"] size 13 color "#cfa6f0" substitute False
                     text _rv["display_alice_note"] size 13 color "#f0c060" substitute False
-                    text ("本局失误 %d 次（只计入美术室评级，不影响主线）" % mistakes) size 12 color "#a8c9bd"
+                    text ("本局失误 %d 次（只计入本案评级，不影响主线）" % mistakes) size 12 color "#a8c9bd"
                     text ("历史最佳：%s「%s」 · 最少失误 %d 次 · 累计结案 %d 次" % (_bt["name"], _bt["title"], best_mistakes, replays)) size 12 color "#a8c9bd" substitute False
                     if is_first:
                         text _("首次结案 · 四笔推理已写入鉴赏室「美术室油画」分页，寄语墙的前两张寄语卡写好了") size 12 color "#86efac"
                     elif new_record:
                         text _("重玩挑战 · 刷新个人纪录！这一次落笔比以往任何一次都更稳") size 12 color "#f4d98a"
                     elif _is_gold:
-                        text _("重玩挑战 · 再次挂上金画框，北窗画室名侦探实至名归") size 12 color "#f4d98a"
+                        text _("重玩挑战 · 再次拿下金牌，北窗画室名侦探实至名归") size 12 color "#f4d98a"
                     else:
-                        text _("重玩挑战 · 零失误画完四笔推理，就能把金画框挂上北窗") size 12 color "#a8c9bd"
+                        text _("重玩挑战 · 零失误画完四笔推理，就能拿下金牌") size 12 color "#a8c9bd"
 
             textbutton _("收好画框并返回美术室"):
                 style "pill_button"
@@ -1271,7 +1268,8 @@ screen extras_message_wall():
                 text _("钉满十二张解锁成就「毕业寄语墙的执笔人」") size 11 color "#e7b98a" xalign 1.0 yalign 0.5
 
         ## 3. 软木公告板（4 × 173 + 3 × 10 = 722px 严丝合缝，三行；每张卡左上角一枚彩色图钉）
-        grid 4 ((len(WALL_CARDS) + 3) // 4):
+        $ _wall_rows = (len(WALL_CARDS) + 3) // 4
+        grid 4 _wall_rows:
             spacing 10
             for c_obj in WALL_CARDS:
                 $ _cst = wall_card_status(c_obj["id"])
@@ -1351,7 +1349,7 @@ screen extras_message_wall():
                             text _wv["display_body"] size 13 color "#fff6e6" line_spacing 3 substitute False
                             text _wv["display_sign"] size 12 color "#e7b98a" xalign 1.0 substitute False
                             if _wv["display_secret"]:
-                                add Solid("#e7b98a44") xfill True ysize 1
+                                add Solid("#e7b98a44") ysize 1
                                 text ("续笔：%s" % _wv["display_secret"]) size 12 color "#f4d98a" line_spacing 3 substitute False
                 else:
                     frame:
@@ -1379,14 +1377,14 @@ screen extras_message_wall():
                         textbutton _("展开卡片"):
                             style "gramophone_mini_pill"
                             yalign 0.5
-                            action (Function(wall_open_card, _wv["id"]) if _wv["pinned"] else None)
+                            action (Function(do_quietly, wall_open_card, _wv["id"]) if _wv["pinned"] else None)
                         textbutton (_("已钉上") if _wv["pinned"] else _("钉上寄语墙")):
                             style "pill_button"
                             yalign 0.5
                             xminimum 146
                             ysize 36
                             text_size 15
-                            action (Function(wall_pin, _wv["id"]) if _wv["status"] == "ready" else None)
+                            action (Function(do_quietly, wall_pin, _wv["id"]) if _wv["status"] == "ready" else None)
 
         ## 5. 合影标签（读取 PC-10 合照相册冲洗状态与 PC-11 时间胶囊放入状态；3 × 226 + 2 × 8 = 694px 贴合内宽）
         frame:
@@ -1513,7 +1511,7 @@ screen wall_card_modal(card_id="w01"):
                     add "images/ui/icon_message_wall.png" xysize (28, 28) yalign 0.5
                     text ("已钉上 %d/%d" % (wall_pinned_count(), len(WALL_CARDS))) size 13 color "#f4d98a" bold True yalign 0.5 substitute False
 
-            add Solid("#e7b98a44") xfill True ysize 1
+            add Solid("#e7b98a44") ysize 1
 
             viewport:
                 xfill True
@@ -1528,7 +1526,7 @@ screen wall_card_modal(card_id="w01"):
                         text _cm["display_body"] font gui.name_text_font size 14 color "#fff6e6" line_spacing 6 substitute False
                         text _cm["display_sign"] size 13 color "#e7b98a" xalign 1.0 substitute False
                         if _cm["display_secret"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text ("续笔：%s" % _cm["display_secret"]) size 13 color "#f4d98a" line_spacing 4 substitute False
                     else:
                         text _("这张寄语卡还没有钉上寄语墙。写好之后钉上去，就可以在这里展开来读。") size 13 color "#a38d75" line_spacing 4
@@ -1683,7 +1681,7 @@ label _atelier_finish_case(local_mistakes=0):
 ################################################################################
 
 label atelier_painting_case:
-    call _atelier_init_sandbox("美术室 · AT-01 北窗下的三年")
+    call _atelier_init_sandbox("美术室 · AT-01 北窗下的三年") from _call__atelier_init_sandbox
     $ _at_mistakes = 0
     $ _at_strokes = 0
     $ _at_h1 = False
@@ -1911,9 +1909,9 @@ label atelier_case_review_intro:
     "苏棠学姐还在楼下展廊一遍遍地找。美术室里，那七个一年级的学妹，谁也没有离开。"
     alice "掀开任何东西之前，先把推理一笔一笔画完——就像画油画一样，四笔，一笔都不能画错！"
     if _at_replays > 0:
-        sysmsg "【美术室 · 重玩挑战】当前历史最佳：[_at_best_text]。零失误画完四笔推理，就能把金画框挂上北窗。"
+        sysmsg "【美术室 · 重玩挑战】当前历史最佳：[_at_best_text]。零失误画完四笔推理，就能拿下金牌。"
     else:
-        sysmsg "【美术室 · 四笔推理】依次选出「去向 → 藏法 → 动机 → 执行人」四笔。零失误可获金画框，失误只计入本案评级，不影响主线。"
+        sysmsg "【美术室 · 四笔推理】依次选出「去向 → 藏法 → 动机 → 执行人」四笔。零失误可获金牌，失误只计入本案评级，不影响主线。"
 
 label atelier_stroke_k1:
     show screen atelier_stroke_banner(0, "第一笔 · 去向：清单上的「不搬」、没开过的北窗、楼梯口的看守——画去了哪里？")
@@ -2145,5 +2143,5 @@ label atelier_case_resolution:
     show alice smile at left
     alice "好！万事屋毕业纪念寄语墙，今天正式开张！"
 
-    call _atelier_finish_case(_at_mistakes)
+    call _atelier_finish_case(_at_mistakes) from _call__atelier_finish_case
     return

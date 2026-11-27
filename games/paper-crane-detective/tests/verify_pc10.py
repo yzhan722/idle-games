@@ -24,6 +24,8 @@ NEW_MODULE = "game/vanished_shelf_album.rpy"
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verify_pc8 as pc8  # noqa: E402
 import verify_pc9 as pc9  # noqa: E402
+import casefile_checks as cf  # noqa: E402
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -228,16 +230,18 @@ def measure_salon_subbar():
             return max(quad_min, _w(f[pill_size], text) + 2 * quad_pad)
         return max(pill_min, _w(f[pill_size], text) + 2 * pill_pad)
 
+    # PC-G2: the case-file group never expands (its pill opens the 「案卷」), so it has no pills of its own
+    launcher = re.search(r'CASEFILE_GROUP = "(\w+)"', extra_src).group(1)
     per_group = {}
     for gkey, glabel, gicon, gtabs in groups:
         assert (GAME_DIR / gicon).is_file(), gicon
         widths = []
         for okey, olabel, _oicon, otabs in groups:
-            if okey == gkey and len(otabs) >= quint_n:
+            if okey == gkey and okey != launcher and len(otabs) >= quint_n:
                 is_sext = len(otabs) >= sext_n
                 widths += [14] + [pill_w(f"{pills[t][0]} {totals[t]}/{totals[t]}", quint_style=not is_sext, sext_style=is_sext)
                                   for t in otabs]
-            elif okey == gkey:
+            elif okey == gkey and okey != launcher:
                 for t in otabs:
                     name = pills[t][0]
                     widths += [14, pill_w(f"{name} {totals[t]}/{totals[t]}", len(otabs) >= quad_n)]
@@ -381,13 +385,13 @@ def check_layout_and_pixel_bounds():
         chip = _w(f[12], f"{t['name']}「{t['title']}」") + 8 + _w(f[11], t["rule"])
         assert chip <= tier_w - 16, f"Tier chip `{t['name']}` overflows: {chip}px"
     best_lines = [f"{t['name']}「{t['title']}」 · 最少失误 99 次" for t in tiers]
-    rate_row = 16 + 6 + _w(sf[13], "书签评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
+    rate_row = 16 + 6 + _w(sf[13], "评级 · 重玩挑战") + 10 + max(_w(f[11], "历史最佳：" + b) for b in best_lines)
     assert rate_row <= scroll_inner, f"Rating header row overflows: {rate_row}px"
 
     hdr_right = (max(96, 14 + 4 + _w(f[12], "最佳 待结案") + 20) + 6 + max(96, _w(f[12], "结案 99 次") + 20))
     hdr = 36 + 10 + 398 + hdr_right
     assert hdr <= console_inner, f"Library header overflows: {hdr}px"
-    for s in ("已结案 · 四环推理链全部闭合 · 可随时重返闭馆夜冲击金书签", "周五闭馆后，一整架校友文集凭空消失 · 六处现场等你勘查"):
+    for s in ("已结案 · 四环推理链全部闭合 · 可随时重返闭馆夜冲击金牌", "周五闭馆后，一整架校友文集凭空消失 · 六处现场等你勘查"):
         assert _w(f[12], s) <= 398, f"Library header line wraps: {s}"
     thumb_w = int(_style_prop(extra_src, "mailbox_thumb_frame", "xsize"))
     assert thumb_w + 14 + 492 <= console_inner
@@ -401,7 +405,7 @@ def check_layout_and_pixel_bounds():
     assert arch_solved <= 492 and arch_open <= 492, f"Library archive line overflows: {arch_solved}/{arch_open}px"
     report["LibArchive"] = max(arch_solved, arch_open)
 
-    lib_footer = (_w(f[12], "零失误复盘四环推理链可获金书签 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
+    lib_footer = (_w(f[12], "零失误复盘四环推理链可获金牌 · 已结案 99 次") + 10 + max(84, _w(f[13], "展阅结案报告") + 22)
                   + 8 + max(146, _w(f[15], "推开图书馆的门") + 36))
     assert lib_footer <= console_inner, f"Library footer overflows: {lib_footer}px"
     report["LibFooter"] = lib_footer
@@ -414,7 +418,7 @@ def check_layout_and_pixel_bounds():
     assert 4 * banner_slot + 3 * 6 <= 728
     for k in links:
         assert _wb(f[10], f"{k['step']} · {k['name']}") <= banner_slot - 16 and _w(f[11], k["short"]) <= banner_slot - 16
-    head = 22 + 8 + _wb(f[12], "闭馆夜 · 推理链复盘") + 8 + _w(f[11], "已扣上 4/4 环 · 失误只计入本案书签评级，不影响主线")
+    head = 22 + 8 + _wb(f[12], "闭馆夜 · 推理链复盘") + 8 + _w(f[11], "已扣上 4/4 环 · 失误只计入本案评级，不影响主线")
     assert head <= 728, f"Banner header overflows: {head}px"
     prompts = re.findall(r'show screen library_chain_banner\((\d), "([^"]+)"\)', new_src)
     assert [int(p[0]) for p in prompts] == [0, 1, 2, 3]
@@ -426,11 +430,11 @@ def check_layout_and_pixel_bounds():
     title_row = 54 + 14 + max(_wb(f[13], "闭馆夜结案 · L-01"), _w(sf[21], f"《{case['short_title']}》"),
                               max(_w(f[14], f"本局评级：【{t['name']} · {t['title']}】") for t in tiers))
     assert title_row <= 608
-    for s in ["本局失误 99 次（只计入闭馆夜评级，不影响主线）",
+    for s in ["本局失误 99 次（只计入本案评级，不影响主线）",
               "首次结案 · 推理链与结案报告已写入鉴赏室「闭馆图书馆」分页，P-10 合照可以冲洗了",
               "重玩挑战 · 刷新个人纪录！这一局比以往任何一次都更少走弯路",
-              "重玩挑战 · 再次以金书签结案，闭馆夜名侦探实至名归",
-              "重玩挑战 · 零失误复盘四环推理链，就能把金书签夹进笔记本"] + \
+              "重玩挑战 · 再次拿下金牌，闭馆夜名侦探实至名归",
+              "重玩挑战 · 零失误复盘四环推理链，就能拿下金牌"] + \
              [f"历史最佳：{t['name']}「{t['title']}」 · 最少失误 99 次 · 累计结案 99 次" for t in tiers]:
         assert _w(f[12], s) <= 580, f"Result-card line wraps ({_w(f[12], s)}px): {s}"
     rm_head = 40 + 12 + _w(sf[20], f"L-01 · 《{case['short_title']}》") + 10 + 30 + 6 + _wb(f[13], "待结案")
@@ -445,7 +449,7 @@ def check_layout_and_pixel_bounds():
     card_h = int(_style_prop(new_src, "album_photo_card", "ysize"))
     thumb_fw = int(_style_prop(new_src, "album_thumb_frame", "xsize"))
     thumb_fh = int(_style_prop(new_src, "album_thumb_frame", "ysize"))
-    assert "grid 4 ((len(ALBUM_PHOTOS) + 3) // 4):" in new_src and len(photos) == 12
+    assert "$ _album_rows = (len(ALBUM_PHOTOS) + 3) // 4\n        grid 4 _album_rows:" in new_src and len(photos) == 12
     assert 4 * card_w + 3 * 10 == 722, "Album 4-column wall must equal 722px"
     assert thumb_fw == card_w - 18 and "xysize (151, 54)" in new_src and (thumb_fw - 4, thumb_fh - 4) == (151, 54)
     card_stack = thumb_fh + 3 + round(11 * CJK_LINE) + 3 + round(13 * CJK_LINE)
@@ -501,7 +505,7 @@ def check_layout_and_pixel_bounds():
     assert 'SetField(persistent, "extras_tab", "album"), ShowMenu("extras")' in scr_src
     if _pc14_present():
         folio = scr_src.split("screen extras_folio_modal(", 1)[1].split("\nscreen ", 1)[0]
-        assert 'SetField(persistent, "extras_tab", "library")' in folio and "library_best_short()" in folio
+        assert "for _row in casefile_rows():" in folio and "library" in cf.CASE_TABS  # (PC-G2: the case file is data-driven)
         row3 = [18 + 6 + _w(f[13], "钟楼星象馆 (3/3)") + 24, 18 + 6 + _w(f[13], "铜章手账册 (9/9)") + 24,
                 18 + 6 + _w(f[13], "合照相册 (12/12)") + 24, 18 + 6 + _w(f[13], "时间胶囊 (12/12)") + 24]
     else:
@@ -700,7 +704,7 @@ def check_pc10_runtime():
     assert r["new_record"] and r["best_tier"] == "gold" and r["best_mistakes"] == 0
     r = env["library_record_solve"](3)
     assert r["last_tier"] == "bronze" and r["best_tier"] == "gold" and r["best_mistakes"] == 0 and r["replays"] == 5
-    assert env["library_best_short"]() == "金书签" and env["library_gold_count"]() == 1
+    assert env["library_best_short"]() == "金牌" and env["library_gold_count"]() == 1
     v = env["library_render_view"]()
     assert v["solved"] and v["display_solution"] == case["solution_pub"] and v["chain_shorts"] == [k["short"] for k in links]
     env["library_open_report_modal"]()
@@ -711,8 +715,8 @@ def check_pc10_runtime():
     for g in env["EXTRAS_SALON_GROUPS"]:
         for t in g[3]:
             assert env["salon_group_of"](t) == g[0] and env["salon_open_group"](t) == g[0]
-            if t not in SALON_KEYS:
-                continue  # PC-11+ tab: its counter lives in a later module (pill text verified by that milestone)
+            if t not in SALON_KEYS or t in cf.CASE_TABS:
+                continue  # later milestone's tab, or a short case (PC-G2: no pill of its own, it lives in the case file)
             txt = env["salon_tab_pill_text"](t)
             assert re.fullmatch(r"\S+ \d+/\d+", txt), f"pill text `{txt}`"
     mp.extras_salon_group = "starlit"
@@ -877,10 +881,10 @@ def check_pc10_runtime():
 ################################################################################
 
 def check_zero_intrusion_and_icons():
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES],
+    res = subprocess.run(["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES)],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay files were modified!\n{res.stdout}"
-    diff = subprocess.run(["git", "diff", "--numstat", "--", *MAIN_STORY_FILES],
+    diff = subprocess.run(["git", "diff", "--numstat", "--", *rs.strict_files(MAIN_STORY_FILES)],
                           cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert diff.stdout.strip() == "", "Main story files have a diff"
 

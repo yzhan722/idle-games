@@ -1,3 +1,10 @@
+Fonts in this folder (copyright lines as recorded in each font's own name table):
+
+NotoSansSC-Regular.otf, NotoSansSC-Bold.otf
+    (c) 2014-2021 Adobe (http://www.adobe.com/). Version 2.004
+NotoSerifSC-Bold.otf
+    (c) 2017-2024 Adobe (http://www.adobe.com/). Version 2.003
+
 This Font Software is licensed under the SIL Open Font License,
 Version 1.1.
 

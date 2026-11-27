@@ -1024,7 +1024,7 @@ init python:
         return [
             Function(stop_all_gramophone_ambience, True),
             SetField(persistent, "letterbox_selected_season", sdef["id"]),
-            Replay(sdef["label"], locked=False),
+            Replay(sdef["label"], scope={"player_name": persistent.last_player_name or "陈默"}, locked=False),
         ]
 
 
@@ -1050,7 +1050,7 @@ screen extras_restoration():
     $ _cur_slot_idx = max(0, min(2, int(_wb.get("active_slot", 0))))
     $ _cur_slot = _tdef["slots"][_cur_slot_idx]
     $ _cur_clue_id = _wb.get("active_clue") or _tdef["folio_clues"][0]["id"]
-    $ _cur_clue = [c for c in _tdef["folio_clues"] if c["id"] == _cur_clue_id][0]
+    $ _cur_clue = dict((c["id"], c) for c in _tdef["folio_clues"]).get(_cur_clue_id, _tdef["folio_clues"][0])
 
     vbox:
         spacing 9
@@ -1174,7 +1174,7 @@ screen extras_restoration():
                         button:
                             style "restoration_clue_card"
                             selected _c_active
-                            action Function(restoration_inspect_clue, _tdef["id"], c_obj["id"])
+                            action Function(do_quietly, restoration_inspect_clue, _tdef["id"], c_obj["id"])
                             vbox:
                                 spacing 2
                                 xfill True
@@ -1218,7 +1218,7 @@ screen extras_restoration():
                             button:
                                 style "restoration_candidate_btn"
                                 selected (_slot_already and cand["correct"])
-                                action Function(restoration_attempt_candidate, _tdef["id"], _cur_slot_idx, cand["id"])
+                                action Function(do_quietly, restoration_attempt_candidate, _tdef["id"], _cur_slot_idx, cand["id"])
                                 hbox:
                                     spacing 8
                                     xfill True
@@ -1475,10 +1475,10 @@ screen extras_letterbox():
                         text _lview["display_mo_ps"] size 12 color "#cfa6f0"
                         text _lview["display_alice_ps"] size 12 color "#f0c060"
                         if _lview["display_deep_paragraph"]:
-                            add Solid("#f4d98a33") xfill True ysize 1
+                            add Solid("#f4d98a33") ysize 1
                             text _lview["display_deep_paragraph"] size 12 color "#86efac" line_spacing 3
                         elif _lview["display_masked_prompt"]:
-                            add Solid("#6a5c8044") xfill True ysize 1
+                            add Solid("#6a5c8044") ysize 1
                             text _lview["display_masked_prompt"] size 11 color "#f0a4b8"
 
                 ## 底部操作栏
@@ -1565,7 +1565,7 @@ screen seasonal_letter_paper_modal(season_id="spring"):
                     add "images/ui/icon_wax_seal_seasons.png" xysize (34, 34) yalign 0.5
                     text _mv["wax_seal_name"] size 13 color "#f4d98a" bold True yalign 0.5
 
-            add Solid("#f4d98a44") xfill True ysize 1
+            add Solid("#f4d98a44") ysize 1
 
             viewport:
                 xfill True
@@ -1578,14 +1578,14 @@ screen seasonal_letter_paper_modal(season_id="spring"):
                     xsize 672
                     text _mv["salutation"] font gui.name_text_font size 17 color "#fff1d0"
                     text _mv["display_body"] size 14 color "#f2e6ff" line_spacing 5
-                    add Solid("#cbb0e633") xfill True ysize 1
+                    add Solid("#cbb0e633") ysize 1
                     text _mv["display_mo_ps"] size 13 color "#cfa6f0" line_spacing 4
                     text _mv["display_alice_ps"] size 13 color "#f0c060" line_spacing 4
                     if _mv["display_deep_paragraph"]:
-                        add Solid("#f4d98a44") xfill True ysize 1
+                        add Solid("#f4d98a44") ysize 1
                         text _mv["display_deep_paragraph"] size 13 color "#86efac" line_spacing 4
                     elif _mv["display_masked_prompt"]:
-                        add Solid("#6a5c8055") xfill True ysize 1
+                        add Solid("#6a5c8055") ysize 1
                         text _mv["display_masked_prompt"] size 12 color "#f0a4b8"
 
             hbox:
@@ -1659,7 +1659,7 @@ screen seasonal_letter_result_card(season_id, cur_badge, best_badge, mistakes, r
                     text ("《%s》" % _sdef["title"]) font gui.name_text_font size 21 color "#f6e7c0"
                     text ("获授印鉴：【%s】 · %s" % (_sdef["wax_seal_name"], cur_badge)) size 14 color ("#f4d98a" if _is_gold else "#86efac")
 
-            add Solid("#f4d98a33") xfill True ysize 1
+            add Solid("#f4d98a33") ysize 1
 
             frame:
                 xfill True
@@ -1791,7 +1791,7 @@ label _season_letter_finish_vignette(season_id, local_mistakes=0):
 ################################################################################
 
 label season_letter_spring:
-    call _season_letter_init_sandbox("四季信笺 · SL-01 春樱坡道与万事屋第一枚招新章", "warm")
+    call _season_letter_init_sandbox("四季信笺 · SL-01 春樱坡道与万事屋第一枚招新章", "warm") from _call__season_letter_init_sandbox
     $ _sl_mistakes = 0
 
     scene bg black with fade
@@ -1908,7 +1908,7 @@ label season_spring_q_loop:
     play sound se_crane
     "暗红色的温热火漆在棉浆信封口缓缓凝结，浮现出一只展翅欲飞的纤巧纸鹤纹章。春风拂过半开的木窗，带着坡道上尚未散尽的早樱清香，将属于我们的第一个春天稳稳收进了木匣深处。"
 
-    call _season_letter_finish_vignette("spring", _sl_mistakes)
+    call _season_letter_finish_vignette("spring", _sl_mistakes) from _call__season_letter_finish_vignette
     return
 
 
@@ -1917,7 +1917,7 @@ label season_spring_q_loop:
 ################################################################################
 
 label season_letter_summer:
-    call _season_letter_init_sandbox("四季信笺 · SL-02 骤雨屋檐下的弹珠汽水签之谜", "rain")
+    call _season_letter_init_sandbox("四季信笺 · SL-02 骤雨屋檐下的弹珠汽水签之谜", "rain") from _call__season_letter_init_sandbox_1
     $ _sl_mistakes = 0
 
     scene bg black with fade
@@ -2032,7 +2032,7 @@ label season_summer_q_loop:
     play sound se_crane
     "回到活动室后，墨墨把那枚印着红金五角星的瓶颈圆纸签平整夹进第二封手写钢笔信笺，再由艾丽丝融化琥珀金混绯红的火漆，端端正正盖下『夏雨晴檐火漆印』。玻璃瓶里滚动的透明弹珠声，连同屋檐滴落的雨后晴光，一并锁进了信笺匣中。"
 
-    call _season_letter_finish_vignette("summer", _sl_mistakes)
+    call _season_letter_finish_vignette("summer", _sl_mistakes) from _call__season_letter_finish_vignette_1
     return
 
 
@@ -2041,7 +2041,7 @@ label season_summer_q_loop:
 ################################################################################
 
 label season_letter_autumn:
-    call _season_letter_init_sandbox("四季信笺 · SL-03 银杏旧书街的夹页荐书单", "dusk")
+    call _season_letter_init_sandbox("四季信笺 · SL-03 银杏旧书街的夹页荐书单", "dusk") from _call__season_letter_init_sandbox_2
     $ _sl_mistakes = 0
 
     scene bg black with fade
@@ -2160,7 +2160,7 @@ label season_autumn_q_loop:
     play sound se_crane
     "古铜色与枫叶红交融的火漆落在第三封信笺封口，凝成清晰的纸鹤与秋叶印纹。旧书街翻动毛边书页的沙沙轻响，就此化作了信笺匣里永不褪色的十月黄昏。"
 
-    call _season_letter_finish_vignette("autumn", _sl_mistakes)
+    call _season_letter_finish_vignette("autumn", _sl_mistakes) from _call__season_letter_finish_vignette_2
     return
 
 
@@ -2169,7 +2169,7 @@ label season_autumn_q_loop:
 ################################################################################
 
 label season_letter_winter:
-    call _season_letter_init_sandbox("四季信笺 · SL-04 初雪万事屋的围炉跨年信", "cool")
+    call _season_letter_init_sandbox("四季信笺 · SL-04 初雪万事屋的围炉跨年信", "cool") from _call__season_letter_init_sandbox_3
     $ _sl_mistakes = 0
 
     scene bg black with fade
@@ -2284,5 +2284,5 @@ label season_winter_q_loop:
     play sound se_crane
     "深绯色的热火漆稳稳落在第四封联名手写信笺封口，铜章抬起时，『冬雪围炉火漆印』在炉火映照下泛着温润的光泽。春夏秋冬四封手写信笺至此在胡桃木匣中圆满齐聚，而属于万事屋的故事，仍在温暖的明日里继续书写。"
 
-    call _season_letter_finish_vignette("winter", _sl_mistakes)
+    call _season_letter_finish_vignette("winter", _sl_mistakes) from _call__season_letter_finish_vignette_3
     return

@@ -23,6 +23,7 @@ NEW_MODULE = "game/stargazer_badges.rpy"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import verify_pc8 as pc8  # noqa: E402  (reuse the PC-8 parser helpers verbatim)
+import rpy_syntax as rs  # noqa: E402  (strict_files: the save-compatibility `from` pass is not a story change)
 
 extract_python_blocks = pc8.extract_python_blocks
 _paren_delta = pc8._paren_delta
@@ -247,7 +248,7 @@ def check_layout_and_pixel_bounds():
     thumb_w = int(_style_prop(extra_src, "mailbox_thumb_frame", "xsize"))
     assert thumb_w + 14 + 492 <= 694, "Planetarium console header row overflows 694px"
     assert 64 + 12 + 440 + max(96, _w(f[11], "已拓印 99 次") + 20) <= 694, "Badge detail header overflows 694px"
-    assert "grid 3 ((len(BADGE_DEFS) + 2) // 3):" in sg_src
+    assert "$ _badge_rows = (len(BADGE_DEFS) + 2) // 3\n        grid 3 _badge_rows:" in sg_src
 
     # 2.6 Text that lives inside fixed-size cards
     data = _load_new_module_data()
@@ -837,7 +838,7 @@ def check_pc9_planetarium_and_badges_runtime():
 ################################################################################
 
 def check_zero_intrusion_and_icons():
-    res = subprocess.run(["git", "status", "--porcelain", "--", *MAIN_STORY_FILES],
+    res = subprocess.run(["git", "status", "--porcelain", "--", *rs.strict_files(MAIN_STORY_FILES)],
                          cwd=str(ROOT), capture_output=True, text=True, check=True)
     assert res.stdout.strip() == "", f"Main story / definitions / autoplay files were modified!\n{res.stdout}"
 
