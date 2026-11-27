@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#071a22" />
+    <link rel="icon" href="data:," />
+    <title>长明山（小样）</title>
+  </head>
+  <body>
+    <div id="app">
+      <main id="stage">
+        <canvas id="scene" aria-label="山门剖面图：点灯位选中，按住灯或弟子可以拖动"></canvas>
+        <div id="hud"></div>
+        <div id="log" role="status" aria-live="polite"></div>
+      </main>
+      <aside id="panel"></aside>
+    </div>
+    <div id="modal"></div>
+    <script type="module" src="/src/ui/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "changming-mountain",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5186 --strictPort",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test \"tests/*.test.ts\"",
+    "simulate": "node scripts/simulate.ts",
+    "guard": "node scripts/check-licenses.mjs && node scripts/guard.mjs",
+    "verify": "npm run guard && tsc --noEmit && npm test && npm run simulate"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "typescript": "5.9.3",
+    "vite": "6.4.4"
+  }
+}
