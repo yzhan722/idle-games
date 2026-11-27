@@ -1,0 +1,673 @@
+{
+  "note": "game.js 拆分（2026-11-26，AR-COM5）。baseline 是搬移前的 game.js（换行统一成 LF）；edits 是搬移之后登记的小修（count = 同一句出现几次），split_check 比对前会先撤掉；tryReads 是已人工确认过的 try 块读取。之后再改这些文件，拼回比对会报不一致：把改动登记进 edits，或者确认不再需要这份证明后把 baseline 改成 null（其余检查照常）。",
+  "baseline": {
+    "lines": 28055,
+    "bytesLF": 1113235,
+    "sha256LF": "ced7711937f16b0c85996b2aaa0a1c38688e481dc055ef668152f8131f4dc50c"
+  },
+  "modules": [
+    "data-room.js",
+    "mode-survivor.js",
+    "drawer.js",
+    "room-ar04-06.js",
+    "room-ar07-09.js",
+    "room-ar10-11.js",
+    "room-ar12-13.js",
+    "room-ar14-15.js",
+    "room-ar16-17.js",
+    "pet-chat.js",
+    "debug-hooks.js"
+  ],
+  "tryReads": [],
+  "edits": [
+    {
+      "file": "game.js",
+      "why": "跑鞋的连跳次数读档后没补回来，要再买一次升级或吃到星星才恢复",
+      "before": "  maxJumps: 3,\n  coyoteTimer: 0,",
+      "after": "  maxJumps: 3 + (savedPet.weapons && savedPet.weapons.boots > 0 ? 1 : 0),\n  coyoteTimer: 0,"
+    },
+    {
+      "file": "game.js",
+      "why": "按住方向键时窗口失焦收不到 keyup，角色会一直跑",
+      "before": "  if (e.code === 'KeyS' || e.code === 'ArrowDown') input.down = false;\n});\n",
+      "after": "  if (e.code === 'KeyS' || e.code === 'ArrowDown') input.down = false;\n});\n// 切走窗口时收不到 keyup：松开所有方向键，免得她回来后一直跑\nwindow.addEventListener('blur', () => {\n  input.left = false;\n  input.right = false;\n  input.down = false;\n});\n"
+    },
+    {
+      "file": "game.js",
+      "why": "手机点按后补发的 click 会点到刚换上来的按钮；鼠标按住超过 0.4 秒再松会触发两次",
+      "before": "function bindHudTap(el, callback) {\n  if (!el) return;",
+      "after": "// 手机点按之后会在同一位置补发一次 click：界面可能已经换了，别让它点到刚出现的按钮；按住再松也只算一次\n// 代码里的 el.click()、键盘回车 detail 为 0，不受影响\nlet lastPointerUpAt = -1e9;\nwindow.addEventListener('pointerup', () => {\n  lastPointerUpAt = performance.now();\n}, true);\nfunction isTapEcho(e) {\n  return e.detail > 0 && performance.now() - lastPointerUpAt < 400;\n}\n\nfunction bindHudTap(el, callback) {\n  if (!el) return;"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：HUD 按钮",
+      "before": "    if (performance.now() - lastTriggerAt < 400) return;\n    lastTriggerAt = performance.now();",
+      "after": "    if (performance.now() - lastTriggerAt < 400 || isTapEcho(e)) return;\n    lastTriggerAt = performance.now();"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：抽屉卡片（重绘后的新卡片会再收到一次 click，升级会连买两次）",
+      "before": "    if (performance.now() - lastFireAt < 400) return;\n    lastFireAt = performance.now();",
+      "after": "    if (performance.now() - lastFireAt < 400 || isTapEcho(e)) return;\n    lastFireAt = performance.now();"
+    },
+    {
+      "file": "mode-survivor.js",
+      "why": "同上：打工三选一排队时，上一张的补发 click 会把下一张也选掉",
+      "before": "        ev.stopPropagation();\n      }\n      applySurvivorSkillChoice(ch.id);",
+      "after": "        ev.stopPropagation();\n        if (ev.type === 'click' && isTapEcho(ev)) return;\n      }\n      applySurvivorSkillChoice(ch.id);"
+    },
+    {
+      "file": "game.js",
+      "why": "猜拳出完之后面板还留 2.4 秒，这段时间再点选项会反复结算奖励",
+      "before": "    if (!chosen) return;\n    rpsGame.lockedMove = chosen;",
+      "after": "    if (!chosen || !rpsGame.active) return;\n    rpsGame.lockedMove = chosen;"
+    },
+    {
+      "file": "pet-chat.js",
+      "why": "猜拳刚结束就开接美食：猜拳的收面板计时器没清，2.4 秒内会把接美食的计分条藏掉",
+      "before": "  palmCatchGame.active = true;\n  player.x = W * 0.5;",
+      "after": "  if (rpsGame.hideTimer) {\n    clearTimeout(rpsGame.hideTimer);\n    rpsGame.hideTimer = null;\n  }\n  palmCatchGame.active = true;\n  player.x = W * 0.5;"
+    },
+    {
+      "file": "game.js",
+      "why": "存档写不进去（本地存储满 / 被禁）以前悄悄丢掉：改走 save-core.js，整份写不进时保住要紧的，并提醒一次",
+      "before": "import { petAudio } from './audio.js?v=hd31';\nimport {\n  BOND_FINAL_LEVEL,",
+      "after": "import { petAudio } from './audio.js?v=hd31';\nimport { fitAlbum, isQuotaError, openPetStore } from './save-core.js?v=hd60';\nimport {\n  BOND_FINAL_LEVEL,"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：读档",
+      "before": "const savedPet = (() => {\n  try {\n    return JSON.parse(localStorage.getItem('ar_deepseek_pet_v2') || '{}');\n  } catch (e) {\n    return {};\n  }\n})();\n",
+      "after": "const petStore = openPetStore(() => localStorage);\nconst savedPet = petStore.read();\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：存档与提醒",
+      "before": "function savePetState() {\n  try {\n    localStorage.setItem(\n      'ar_deepseek_pet_v2',\n      JSON.stringify({\n        level: player.level,",
+      "after": "// 浏览器存不下 / 不让存：每次打开只提醒一回。晚一拍再弹，存档可能发生在界面还没初始化完的时候\nlet saveTroubleWarned = false;\nfunction warnSaveTrouble(quota) {\n  if (saveTroubleWarned) return;\n  saveTroubleWarned = true;\n  setTimeout(() => showSaveTroubleToast(quota), 600);\n}\n\nfunction showSaveTroubleToast(quota) {\n  if (isCameraNoticeOpen()) {\n    setTimeout(() => showSaveTroubleToast(quota), 1000);\n    return;\n  }\n  showMilestoneToast({\n    img: './assets/ui_btn_album.webp?v=hd17',\n    badge: '存档',\n    name: quota ? '快存不下了' : '进度存不住',\n    toastDesc: quota ? '去手账相册删几张照片吧' : '这个浏览器不让存档'\n  });\n}\n\nfunction savePetState() {\n  try {\n    const saved = petStore.write(\n      {\n        level: player.level,"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：存档收尾",
+      "before": "        topicsChatted: player.topicsChatted\n      })\n    );\n  } catch (e) {}\n}",
+      "after": "        topicsChatted: player.topicsChatted\n      }\n    );\n    if (saved.state !== 'full') warnSaveTrouble(saved.quota);\n  } catch (e) {}\n}"
+    },
+    {
+      "file": "game.js",
+      "why": "旧档的 weapons 缺字段（没有 boots 等）时跳跃力算成 NaN，她会消失：缺的补默认值",
+      "before": "  weapons: savedPet.weapons || {\n    blaster: 1,\n    teaBlade: 1,\n    magnet: 1,\n    boots: 0\n  },",
+      "after": "  weapons: {\n    blaster: 1,\n    teaBlade: 1,\n    magnet: 1,\n    boots: 0,\n    ...(savedPet.weapons || {})\n  },"
+    },
+    {
+      "file": "game.js",
+      "why": "讨伐首领的 45 亲密按陪伴全额计入，四只首领就占满当天 200：按文档归到打工慢速份额",
+      "before": "function addAffectionXp(amount, labelText) {",
+      "after": "function addAffectionXp(amount, labelText, source = 'care') {"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "pace: player.bond.pace, dayKey: formatLocalDateKey() });\n  player.bond.pace = bondRes.pace;",
+      "after": "pace: player.bond.pace, dayKey: formatLocalDateKey(), source });\n  player.bond.pace = bondRes.pace;"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "addAffectionXp(45, '讨伐班次首领 +45 亲密');",
+      "after": "addAffectionXp(45, '讨伐班次首领 +45 亲密', 'work');"
+    },
+    {
+      "file": "game.js",
+      "why": "抬起另一根手指（例如摇杆）会放下正拎着的她 / 食物 / 家具：只认按住它的那根；另一根手指点到拎着的她会让她卡在半空",
+      "before": "        draggedItem = it;\n        it.vx = 0;",
+      "after": "        draggedItem = it;\n        it.dragPointerId = e.pointerId;\n        it.vx = 0;"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "    if (Math.hypot(pt.x - player.x, pt.y - (player.y - 22)) < 64) {\n    const zone",
+      "after": "    if (Math.hypot(pt.x - player.x, pt.y - (player.y - 22)) < 64) {\n    // 正被另一根手指拎着：这一下不算\n    if (petTouch.active && player.isPickedUp) return;\n    const zone"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "  if (draggedItem) {\n    const pt = clientToStage(e.clientX, e.clientY);",
+      "after": "  if (draggedItem) {\n    if (draggedItem.dragPointerId != null && e.pointerId !== draggedItem.dragPointerId) return;\n    const pt = clientToStage(e.clientX, e.clientY);"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "function finishCanvasTouch(e) {\n  if (draggedFurniture) {",
+      "after": "function finishCanvasTouch(e) {\n  // 只认按住它的那根手指；不带事件调用（切走窗口）时全部放下\n  const pid = e && e.pointerId != null ? e.pointerId : null;\n  const isOwner = (id) => pid === null || id == null || id === pid;\n  if (draggedFurniture && isOwner(draggedFurniture.dragPointerId)) {"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "  if (draggedItem) {\n    draggedItem.squashTimer = 0.2;",
+      "after": "  if (draggedItem && isOwner(draggedItem.dragPointerId)) {\n    draggedItem.dragPointerId = null;\n    draggedItem.squashTimer = 0.2;"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "  if (petTouch.active) {\n    if (petTouch.mode === 'pickup' && player.isPickedUp) {",
+      "after": "  if (petTouch.active && isOwner(petTouch.pointerId)) {\n    if (player.isPickedUp) {"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：切走窗口收不到抬起",
+      "before": "window.addEventListener('pointercancel', finishCanvasTouch);\n",
+      "after": "window.addEventListener('pointercancel', finishCanvasTouch);\nwindow.addEventListener('blur', () => finishCanvasTouch());\n"
+    },
+    {
+      "file": "game.js",
+      "why": "打工中再点「打工」会重开一班并再发开局钱袋；上一层界面收起后补发的 click 也可能点到模式键",
+      "before": "    e.preventDefault();\n    e.stopPropagation();\n    switchMode(btn.dataset.mode);\n  });\n  btn.addEventListener('click', (e) => {\n    e.preventDefault();\n    e.stopPropagation();\n    if (gameMode",
+      "after": "    e.preventDefault();\n    e.stopPropagation();\n    if (gameMode === 'survivor' && btn.dataset.mode === 'survivor') return;\n    switchMode(btn.dataset.mode);\n  });\n  btn.addEventListener('click', (e) => {\n    e.preventDefault();\n    e.stopPropagation();\n    if (isTapEcho(e)) return;\n    if (gameMode"
+    },
+    {
+      "file": "game.js",
+      "why": "24 张全钉住时新照片被悄悄丢掉：要说一声",
+      "before": "  saveSnapshotToPolaroidAlbum(pCanvas, dateStr);\n",
+      "after": "  const keptInAlbum = saveSnapshotToPolaroidAlbum(pCanvas, dateStr);\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "  setPlayerEmote('咔嚓！拍得超可爱 ^w^ ', 2.4, 'cheer', true);\n",
+      "after": "  if (keptInAlbum) setPlayerEmote('咔嚓！拍得超可爱 ^w^ ', 2.4, 'cheer', true);\n  else setPlayerEmote(isAlbumAllPinned() ? '相册都钉满啦，这张没收进去~' : '这张没能存进相册~', 3.4, 'happy');\n"
+    },
+    {
+      "file": "game.js",
+      "why": "相册存不下时连钉住的也会删，而且没有提示：钉住的不动，提醒一次",
+      "before": "function persistPolaroidAlbum() {\n  while (polaroidAlbum.length > POLAROID_ALBUM_MAX) {\n    let dropIdx = -1;\n    for (let i = polaroidAlbum.length - 1; i >= 0; i--) {\n      if (!polaroidAlbum[i].pinned) {\n        dropIdx = i;\n        break;\n      }\n    }\n    if (dropIdx === -1) dropIdx = polaroidAlbum.length - 1;\n    polaroidAlbum.splice(dropIdx, 1);\n  }\n  for (let attempt = 0; attempt < 4; attempt++) {\n    try {\n      localStorage.setItem(POLAROID_ALBUM_KEY, JSON.stringify(polaroidAlbum));\n      break;\n    } catch (e) {\n      if (polaroidAlbum.length <= 1) break;\n      const unpinnedLast = polaroidAlbum.findLastIndex((it) => !it.pinned);\n      polaroidAlbum.splice(unpinnedLast >= 0 ? unpinnedLast : polaroidAlbum.length - 1, 1);\n    }\n  }\n  syncAlbumCountBadge();\n}\n",
+      "after": "function persistPolaroidAlbum() {\n  let failed = false;\n  let quota = false;\n  const fit = fitAlbum(polaroidAlbum, POLAROID_ALBUM_MAX, (list) => {\n    try {\n      localStorage.setItem(POLAROID_ALBUM_KEY, JSON.stringify(list));\n      return true;\n    } catch (e) {\n      failed = true;\n      quota = isQuotaError(e);\n      return false;\n    }\n  });\n  polaroidAlbum.splice(0, polaroidAlbum.length, ...fit.list);\n  syncAlbumCountBadge();\n  if (failed) warnSaveTrouble(quota);\n  return fit.saved;\n}\n\nfunction isAlbumAllPinned() {\n  return polaroidAlbum.length >= POLAROID_ALBUM_MAX && polaroidAlbum.every((p) => p.pinned);\n}\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：告诉调用方这张有没有留下",
+      "before": "    polaroidAlbum.unshift(entry);\n    persistPolaroidAlbum();\n",
+      "after": "    polaroidAlbum.unshift(entry);\n    const saved = persistPolaroidAlbum();\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "    recordJournalActivity('snaps', 1);\n    if (!drawerEl.classList.contains('hidden') && activeDrawerTab === 'album') {\n      renderDrawerItems();\n    }\n  } catch (e) {}\n}",
+      "after": "    recordJournalActivity('snaps', 1);\n    if (!drawerEl.classList.contains('hidden') && activeDrawerTab === 'album') {\n      renderDrawerItems();\n    }\n    return saved && polaroidAlbum.includes(entry);\n  } catch (e) {\n    return false;\n  }\n}"
+    },
+    {
+      "file": "game.js",
+      "why": "打工时点重扫会弹出摄像头说明卡，后面的怪还在打她：看说明时打工暂停",
+      "before": "  if (gameMode === 'survivor' && survivorRun.choosingSkill) {\n    syncSurvivorHud();",
+      "after": "  if (gameMode === 'survivor' && (survivorRun.choosingSkill || isCameraNoticeOpen())) {\n    syncSurvivorHud();"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "const cameraNoticeWaiters = [];\n\nfunction showCameraNotice() {",
+      "after": "const cameraNoticeWaiters = [];\n\nfunction isCameraNoticeOpen() {\n  const el = document.getElementById('camera-notice');\n  return Boolean(el && !el.classList.contains('hidden'));\n}\n\nfunction showCameraNotice() {"
+    },
+    {
+      "file": "game.js",
+      "why": "点了「开启」但没开成（拒绝 / 没有摄像头）也记成已选，以后每次打开都直接弹系统授权：开成了才记；没开成时进场也说一声；授权框还没点就改主意的旧请求不再提示",
+      "before": "async function applyCameraChoice(choice) {\n  saveCameraChoice(choice);\n  let opened = false;\n  if (choice === 'on') opened = await vision.startCamera('environment', W, H);\n  else vision.enableSimMode(W, H);\n  skipCameraOnlyWish();\n  syncMemoryBookUI();\n  return opened;\n}\n",
+      "after": "async function applyCameraChoice(choice) {\n  // opened：true 开成了 / false 没开成 / null 还没等到结果就改了主意\n  let opened = false;\n  if (choice === 'on') opened = await vision.startCamera('environment', W, H);\n  else vision.enableSimMode(W, H);\n  if (choice === 'off' || opened) saveCameraChoice(choice);\n  skipCameraOnlyWish();\n  syncMemoryBookUI();\n  if (choice === 'on' && opened === false) setPlayerEmote('摄像头没开成，先在小屋里玩吧~', 2.4, 'happy');\n  return opened;\n}\n\n// 用到一半断了（权限被收回、设备拔掉、被别的程序占走）：回到小屋，不改记住的选择\nvision.onCameraLost = () => {\n  skipCameraOnlyWish();\n  syncMemoryBookUI();\n  setPlayerEmote('摄像头断开了，先在小屋里玩吧~', 2.6, 'happy');\n};\n// 切到后台再回来：系统可能把摄像头停了，或者把画面定住了\ndocument.addEventListener('visibilitychange', () => {\n  if (!document.hidden) vision.resumeCamera(W, H);\n});\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "  const opened = await applyCameraChoice(choice);\n  if (choice === 'on' && !opened) setPlayerEmote('摄像头没开成，先在小屋里玩吧~', 2.4, 'happy');\n  for",
+      "after": "  await applyCameraChoice(choice);\n  for"
+    },
+    {
+      "file": "room-ar04-06.js",
+      "why": "切到后台画面停了，番茄钟 / 晚安也跟着停：按真实时间走，回来时补上",
+      "before": "function updatePomodoroCompanion(dt) {\n  if (pomodoroRun.status === 'running') {\n    advancePomodoroTime(dt);\n  }\n}\n",
+      "after": "// 切到后台时不再有帧：专注 / 伴眠按真实时间走，回来的第一帧把漏掉的补上；时钟被往回拨就退回按帧算\nfunction takeRealElapsed(run, dt, nowMs = Date.now()) {\n  const last = run.tickAt || 0;\n  run.tickAt = nowMs;\n  return last > 0 && nowMs >= last ? (nowMs - last) / 1000 : dt;\n}\n\nfunction updatePomodoroCompanion(dt) {\n  if (pomodoroRun.status === 'running') {\n    advancePomodoroTime(takeRealElapsed(pomodoroRun, dt));\n  } else {\n    pomodoroRun.tickAt = 0;\n  }\n}\n"
+    },
+    {
+      "file": "room-ar04-06.js",
+      "why": "晚安开始不到 30 秒叫醒会按计划的一半结算：按实际时间，最少仍算 5 分钟",
+      "before": "  const elapsedMins = Math.max(\n    fromEarlyWake ? 5 : plannedMins,\n    Math.min(plannedMins, Math.round(goodnightRun.elapsedSec / 60) || (fromEarlyWake ? Math.max(5, Math.round(plannedMins * 0.5)) : plannedMins))\n  );\n",
+      "after": "  const elapsedMins = Math.max(5, Math.min(plannedMins, Math.round(goodnightRun.elapsedSec / 60)));\n"
+    },
+    {
+      "file": "room-ar04-06.js",
+      "why": "切到后台画面停了，晚安也跟着停：按真实时间走",
+      "before": "  if (goodnightRun.status !== 'running') {\n    player.isGoodnightSleeping = false;\n    return;\n  }\n  if (gameMode !== 'pet') return;\n\n  advanceGoodnightTime(dt);\n",
+      "after": "  if (goodnightRun.status !== 'running') {\n    goodnightRun.tickAt = 0;\n    player.isGoodnightSleeping = false;\n    return;\n  }\n  if (gameMode !== 'pet') return;\n\n  advanceGoodnightTime(takeRealElapsed(goodnightRun, dt));\n"
+    },
+    {
+      "file": "room-ar04-06.js",
+      "why": "ui_stamp_focus.webp 在同一文件里有两个 ?v=，浏览器会下两遍：统一",
+      "before": "    html += `<span class=\"pomo-stamp-slot ${stamped ? 'stamped' : ''}\"><img src=\"./assets/ui_stamp_focus.webp?v=hd19\" alt=\"\" /></span>`;",
+      "after": "    html += `<span class=\"pomo-stamp-slot ${stamped ? 'stamped' : ''}\"><img src=\"./assets/ui_stamp_focus.webp?v=hd31\" alt=\"\" /></span>`;"
+    },
+    {
+      "file": "room-ar04-06.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=",
+      "after": "<img loading=\"lazy\" src=",
+      "count": 6
+    },
+    {
+      "file": "room-ar07-09.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=",
+      "after": "<img loading=\"lazy\" src=",
+      "count": 3
+    },
+    {
+      "file": "room-ar10-11.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=",
+      "after": "<img loading=\"lazy\" src=",
+      "count": 12
+    },
+    {
+      "file": "room-ar12-13.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=",
+      "after": "<img loading=\"lazy\" src=",
+      "count": 9
+    },
+    {
+      "file": "room-ar14-15.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=",
+      "after": "<img loading=\"lazy\" src=",
+      "count": 12
+    },
+    {
+      "file": "room-ar16-17.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=",
+      "after": "<img loading=\"lazy\" src=",
+      "count": 11
+    },
+    {
+      "file": "game.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=\"${m.img}\" alt=\"\" class=\"mb-page-ico\" />",
+      "after": "<img loading=\"lazy\" src=\"${m.img}\" alt=\"\" class=\"mb-page-ico\" />"
+    },
+    {
+      "file": "mode-survivor.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "\"><img src=\"${b.img}\" alt=\"\" /><i class=\"surv-strip-lv\">",
+      "after": "\"><img loading=\"lazy\" src=\"${b.img}\" alt=\"\" /><i class=\"surv-strip-lv\">"
+    },
+    {
+      "file": "pet-chat.js",
+      "why": "面板收起时不下里面的图（AR-COM5 首屏）",
+      "before": "<img src=\"./assets/ui_mood_blush.webp",
+      "after": "<img loading=\"lazy\" src=\"./assets/ui_mood_blush.webp"
+    },
+    {
+      "file": "game.js",
+      "why": "打工 / 摘星的贴图切过去时才下（AR-COM5 首屏）",
+      "before": "  images,\n  isReady\n} from './sprites.js?v=hd33';",
+      "after": "  images,\n  isReady,\n  preloadModeSprites\n} from './sprites.js?v=hd60';"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "  gameMode = newMode;\n  vision.activeGameMode = newMode;\n",
+      "after": "  gameMode = newMode;\n  preloadModeSprites(newMode);\n  vision.activeGameMode = newMode;\n"
+    },
+    {
+      "file": "game.js",
+      "why": "换了图的版本号，脚本号跟着加",
+      "before": "import { ARVisionEngine } from './vision.js?v=hd32';",
+      "after": "import { ARVisionEngine } from './vision.js?v=hd60';"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "} from './intimacy.js?v=hd58';",
+      "after": "} from './intimacy.js?v=hd60';"
+    },
+    {
+      "file": "room-ar10-11.js",
+      "why": "拼图的图一次没下到就一直停在「剪裁回忆中」：过 4 秒丢掉失败结果重来",
+      "before": "  entry.promise = renderMemorySourceCanvas(src)\n    .then((cv) => {\n",
+      "after": "  entry.promise = renderMemorySourceCanvas(src)\n    .catch(() => null)\n    .then((cv) => {\n"
+    },
+    {
+      "file": "room-ar10-11.js",
+      "why": "同上",
+      "before": "        entry.thumbUrl = '';\n      }\n      if (isAr11CardOpen('puzzle')) syncMemoryPuzzleUI();\n",
+      "after": "        entry.thumbUrl = '';\n      }\n      // 图没下到：过 4 秒丢掉这次的失败结果重来（原来一次失败就一直停在「剪裁回忆中」）\n      if (!cv) setTimeout(() => {\n        memorySourceCache.delete(src.cacheKey);\n        if (isAr11CardOpen('puzzle')) syncMemoryPuzzleUI();\n      }, 4000);\n      if (isAr11CardOpen('puzzle')) syncMemoryPuzzleUI();\n"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 切后台停摄像头、比耶自动拍选择：vision.js / save-core.js 改了，脚本号跟着加",
+      "before": "import { ARVisionEngine } from './vision.js?v=hd60';",
+      "after": "import { ARVisionEngine } from './vision.js?v=hd61';"
+    },
+    {
+      "file": "game.js",
+      "why": "同上",
+      "before": "import { fitAlbum, isQuotaError, openPetStore } from './save-core.js?v=hd60';",
+      "after": "import {\n  fitAlbum,\n  isQuotaError,\n  openPetStore,\n  peaceSnapAction,\n  readPeaceSnapChoice,\n  savePeaceSnapChoice\n} from './save-core.js?v=hd61';"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 切后台 / 锁屏 / 切走标签页时停掉摄像头（原来只在回来时重开，后台里一直开着）",
+      "before": "// 切到后台再回来：系统可能把摄像头停了，或者把画面定住了\ndocument.addEventListener('visibilitychange', () => {\n  if (!document.hidden) vision.resumeCamera(W, H);\n});\n",
+      "after": "// 切后台 / 锁屏 / 切走标签页：停掉摄像头（track.stop()）；回来时原来开着的再开，开不成留在小屋\nvision.bindPageLifecycle(document, window, () => [W, H]);\n"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 比耶自动拍先问、选择记住、手账里可改；摄像头在用时相机键挂「开」角标",
+      "before": "(async function autoBoot() {\n",
+      "after": "// ================= AR-COM3 比耶自动拍：第一次比耶先问，选过就记住；手账「比耶拍」可以改 =================\nlet peaceSnapChoice = readPeaceSnapChoice(() => localStorage);\n\nfunction isPeaceSnapNoticeOpen() {\n  const el = document.getElementById('peace-snap-notice');\n  return Boolean(el && !el.classList.contains('hidden'));\n}\n\nfunction syncPeaceSnapButton() {\n  const btn = document.getElementById('btn-peace-snap-toggle');\n  if (btn) btn.textContent = peaceSnapChoice === 'auto' ? '比耶拍 开' : '比耶拍 关';\n}\n\nfunction showPeaceSnapNotice() {\n  player.photoPoseTimer = 0;\n  document.getElementById('peace-snap-notice')?.classList.remove('hidden');\n}\n\nfunction setPeaceSnapChoice(choice) {\n  if (choice !== 'auto' && choice !== 'tap') return;\n  peaceSnapChoice = choice;\n  savePeaceSnapChoice(() => localStorage, choice);\n  document.getElementById('peace-snap-notice')?.classList.add('hidden');\n  syncPeaceSnapButton();\n  setPlayerEmote(choice === 'auto' ? '好，比耶就拍一张~' : '好，点相机键再拍~', 2.0, 'happy');\n}\n\ndocument.getElementById('peace-snap-notice')?.addEventListener('pointerdown', (e) => e.stopPropagation());\nbindHudTap(document.getElementById('btn-peace-snap-auto'), () => {\n  setPeaceSnapChoice('auto');\n});\nbindHudTap(document.getElementById('btn-peace-snap-tap'), () => {\n  setPeaceSnapChoice('tap');\n});\nbindHudTap(document.getElementById('btn-peace-snap-toggle'), () => {\n  // 关掉不用解释，直接关；要开先看说明\n  if (peaceSnapChoice === 'auto') {\n    setPeaceSnapChoice('tap');\n    return;\n  }\n  dismissMemoryBookCard();\n  showPeaceSnapNotice();\n});\nsyncPeaceSnapButton();\n\n// 摄像头在用时，右上角相机键挂「开」角标；每帧看一次，变了才改\nlet cameraLiveShown = null;\nfunction syncCameraLiveBadge() {\n  const live = vision.isCameraLive();\n  if (live === cameraLiveShown) return;\n  cameraLiveShown = live;\n  document.getElementById('cam-live-badge')?.classList.toggle('hidden', !live);\n  const camBtn = document.getElementById('btn-camera-toggle');\n  if (camBtn) camBtn.textContent = live ? '摄像头 开' : '摄像头 关';\n}\n\n(async function autoBoot() {\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：每帧同步摄像头角标",
+      "before": "  updateHUD();\n}\n\nfunction updateGameplay(dt, flow) {\n",
+      "after": "  updateHUD();\n  syncCameraLiveBadge();\n}\n\nfunction updateGameplay(dt, flow) {\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：打工时比耶说明卡开着也暂停",
+      "before": "  if (gameMode === 'survivor' && (survivorRun.choosingSkill || isCameraNoticeOpen())) {\n",
+      "after": "  if (gameMode === 'survivor' && (survivorRun.choosingSkill || isCameraNoticeOpen() || isPeaceSnapNoticeOpen())) {\n"
+    },
+    {
+      "file": "game.js",
+      "why": "同上：比耶按选择来（没问过先问，只在我点时拍就不拍）",
+      "before": "      gs.type === 'peace' &&\n      photoAutoCooldown <= 0 &&\n      pendingPhotoSnapTimer <= 0 &&\n      !rpsGame.active\n    ) {\n      // 镜头一识别到比耶，角色第一帧立刻转头摆出比耶眨眼 Pose 预备，消除等待延迟感！\n      player.photoPoseTimer = Math.max(player.photoPoseTimer, 0.28);\n      if (gs.holdDuration >= 0.42) {\n        triggerPolaroidSequence(true);\n      }\n",
+      "after": "      gs.type === 'peace' &&\n      peaceSnapAction(peaceSnapChoice) !== 'off' &&\n      !isPeaceSnapNoticeOpen() &&\n      photoAutoCooldown <= 0 &&\n      pendingPhotoSnapTimer <= 0 &&\n      !rpsGame.active\n    ) {\n      // 镜头一识别到比耶，角色第一帧立刻转头摆出比耶眨眼 Pose 预备，消除等待延迟感！\n      player.photoPoseTimer = Math.max(player.photoPoseTimer, 0.28);\n      if (gs.holdDuration >= 0.42) {\n        // 第一次先问（以后自动拍 / 只在我点时拍）；每次拍都闪一下、有快门声（captureArPolaroid）\n        if (peaceSnapAction(peaceSnapChoice) === 'snap') triggerPolaroidSequence(true);\n        else showPeaceSnapNotice();\n      }\n"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 手账里的摄像头字跟着真实画面（isCameraLive），和角标同一个来源",
+      "before": "  if (camBtn) camBtn.textContent = vision.mode === 'camera' ? '摄像头 开' : '摄像头 关';\n  syncMemoryBookBadge();",
+      "after": "  if (camBtn) camBtn.textContent = vision.isCameraLive() ? '摄像头 开' : '摄像头 关';\n  syncMemoryBookBadge();"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 在后台时另一个标签页里选了「先不用」：回前台不再重开，也不提示断开",
+      "before": "// 用到一半断了（权限被收回、设备拔掉、被别的程序占走）：回到小屋，不改记住的选择\nvision.onCameraLost = () => {\n  skipCameraOnlyWish();\n  syncMemoryBookUI();\n  setPlayerEmote('摄像头断开了，先在小屋里玩吧~', 2.6, 'happy');\n};\n// 切后台 / 锁屏 / 切走标签页：停掉摄像头（track.stop()）；回来时原来开着的再开，开不成留在小屋\nvision.bindPageLifecycle(document, window, () => [W, H]);",
+      "after": "// 用到一半断了（权限被收回、设备拔掉、被别的程序占走）：回到小屋，不改记住的选择\n// why === 'off'：在后台时别的标签页里选了「先不用」，回来照办，不用提示\nvision.onCameraLost = (why) => {\n  skipCameraOnlyWish();\n  syncMemoryBookUI();\n  if (why !== 'off') setPlayerEmote('摄像头断开了，先在小屋里玩吧~', 2.6, 'happy');\n};\n// 切后台 / 锁屏 / 切走标签页：停掉摄像头（track.stop()）；回来时原来开着的再开，开不成留在小屋\nvision.allowCameraResume = () => readCameraChoice() !== 'off';\nvision.bindPageLifecycle(document, window, () => [W, H]);"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 手账摄像头开关跟着角标走；切回前台正在重开时点它，先停下再问，免得说明卡开着时摄像头自己亮",
+      "before": "bindHudTap(document.getElementById('btn-camera-toggle'), () => {\n  if (vision.mode === 'camera') {\n    applyCameraChoice('off');\n    return;\n  }\n  dismissMemoryBookCard();\n  showCameraNotice();\n});",
+      "after": "// 手账里的摄像头开关跟着「开」角标走：在出画面就关；没在出画面（含切回前台还在重开的那次）先停下再问，\n// 免得说明卡还开着时摄像头自己亮了\nfunction toggleCameraFromBook() {\n  if (vision.isCameraLive()) {\n    applyCameraChoice('off');\n    return;\n  }\n  vision.enableSimMode(W, H);\n  dismissMemoryBookCard();\n  showCameraNotice();\n}\nbindHudTap(document.getElementById('btn-camera-toggle'), toggleCameraFromBook);"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 摘星时比耶 / 摄像头说明卡开着也暂停（原来只停打工，摘星连击会在看说明时断掉）",
+      "before": "  if (gameMode === 'survivor' && (survivorRun.choosingSkill || isCameraNoticeOpen() || isPeaceSnapNoticeOpen())) {\n",
+      "after": "  // 打工 / 摘星时说明卡开着：这一帧不推进（摘星的连击 9.5 秒会在看说明时断掉）\n  const noticeOpen = isCameraNoticeOpen() || isPeaceSnapNoticeOpen();\n  if ((gameMode === 'survivor' && (survivorRun.choosingSkill || noticeOpen)) || (gameMode === 'parkour' && noticeOpen)) {\n"
+    },
+    {
+      "file": "game.js",
+      "why": "AR-COM3 手势识别组件下载失败换地址重试（vision.js 改了，只升它自己的号，见 docs/PERF.md「版本号」第 2 条）",
+      "before": "import { ARVisionEngine } from './vision.js?v=hd61';",
+      "after": "import { ARVisionEngine } from './vision.js?v=hd62';"
+    }
+  ],
+  "assetVersions": {
+    "note": "换过图 / 统一过的 ?v=（AR-COM5 首屏）：比对前先按文件还原成搬移前的号，再撤 edits。to = 现在的号（默认 hd60，例外写在 except）",
+    "to": "hd60",
+    "except": {
+      "furn_musicbox.webp": "hd31"
+    },
+    "from": {
+      "data-room.js": {
+        "hd15": [
+          "ui_badge_shift.webp"
+        ],
+        "hd17": [
+          "ui_btn_chat.webp"
+        ],
+        "hd2": [
+          "food_rice.webp"
+        ],
+        "hd31": [
+          "aroma_bottle.webp",
+          "cocoa_marshmallow_topping.webp",
+          "constellation_card.webp",
+          "diary_sticker.webp",
+          "embroidery_patch.webp",
+          "handmade_card.webp",
+          "item_shell_clip.webp",
+          "item_star_wreath.webp",
+          "kitten_ginger.webp",
+          "kitten_tuxedo.webp",
+          "knit_cloud_pillow.webp",
+          "knit_star_coaster.webp",
+          "knit_whale_scarf.webp",
+          "letter_envelope.webp",
+          "onigiri_trio.webp",
+          "pastry_pudding_tart.webp",
+          "pastry_souffle.webp",
+          "pastry_whale_macaron.webp",
+          "picnic_sandwich.webp",
+          "plant_blue_hydrangea.webp",
+          "plant_peach_succulent.webp",
+          "pottery_cup.webp",
+          "pottery_vase.webp",
+          "pressed_babysbreath_bookmark.webp",
+          "pressed_ginkgo_bookmark.webp",
+          "pressed_sakura_bookmark.webp",
+          "puzzle_piece_memory.webp",
+          "rain_chime.webp",
+          "rain_cushion.webp",
+          "roasted_snack.webp",
+          "stamp_goodnight_moon.webp",
+          "stamp_whale.webp",
+          "star_chart_card.webp",
+          "sticker_lace_garland.webp",
+          "sticker_pressed_daisy.webp",
+          "sticker_whale_stamp.webp",
+          "tea_peach_oolong.webp",
+          "toy_whale.webp",
+          "ui_btn_cocoa_bar.webp",
+          "ui_btn_collage_frame.webp",
+          "ui_btn_cozy_radio.webp",
+          "ui_btn_crochet_basket.webp",
+          "ui_btn_picnic_basket.webp",
+          "ui_btn_pomodoro.webp",
+          "ui_btn_teatime.webp",
+          "ui_btn_terrarium.webp",
+          "ui_mood_blush.webp",
+          "ui_pin_star.webp",
+          "ui_stamp_focus.webp",
+          "vfx_season_autumn.webp",
+          "vfx_season_spring.webp",
+          "vfx_season_summer.webp",
+          "vfx_season_winter.webp",
+          "watercolor_palette.webp"
+        ],
+        "hd33": [
+          "story_bookmark.webp",
+          "ui_btn_wardrobe.webp"
+        ],
+        "hd6": [
+          "item_bow.webp",
+          "item_crown.webp",
+          "ui_btn_camera.webp",
+          "vfx_heart.webp",
+          "vfx_note.webp",
+          "vfx_sparkle.webp"
+        ]
+      },
+      "drawer.js": {
+        "hd15": [
+          "ui_badge_shift.webp"
+        ],
+        "hd19": [
+          "furn_musicbox.webp",
+          "item_shell_clip.webp",
+          "item_star_wreath.webp"
+        ],
+        "hd2": [
+          "food_bento.webp",
+          "food_cake.webp",
+          "food_rice.webp",
+          "food_tea.webp",
+          "prop_cushion.webp",
+          "toy_duck.webp",
+          "toy_yarn.webp"
+        ],
+        "hd31": [
+          "ui_btn_aroma_table.webp",
+          "ui_btn_bento_kitchen.webp",
+          "ui_btn_cocoa_bar.webp",
+          "ui_btn_cozy_radio.webp",
+          "ui_btn_crochet_basket.webp",
+          "ui_btn_embroidery.webp",
+          "ui_btn_greeting_card.webp",
+          "ui_btn_hearth_corner.webp",
+          "ui_btn_kitten_corner.webp",
+          "ui_btn_mailbox.webp",
+          "ui_btn_memory_puzzle.webp",
+          "ui_btn_musicbox.webp",
+          "ui_btn_picnic_basket.webp",
+          "ui_btn_pottery_wheel.webp",
+          "ui_btn_rain_corner.webp",
+          "ui_btn_star_projector.webp",
+          "ui_btn_teatime.webp",
+          "ui_btn_telescope.webp",
+          "ui_btn_terrarium.webp",
+          "ui_btn_watercolor_easel.webp"
+        ],
+        "hd33": [
+          "ui_btn_wardrobe.webp"
+        ],
+        "hd4": [
+          "furn_lamp.webp",
+          "furn_pc.webp"
+        ],
+        "hd6": [
+          "item_bow.webp",
+          "item_crown.webp",
+          "ui_coin.webp",
+          "upg_blade.webp",
+          "upg_blaster.webp",
+          "upg_boots.webp",
+          "upg_magnet.webp"
+        ]
+      },
+      "game.js": {
+        "hd17": [
+          "ui_btn_album.webp",
+          "ui_pin_star.webp"
+        ],
+        "hd19": [
+          "furn_musicbox.webp",
+          "item_shell_clip.webp",
+          "item_star_wreath.webp",
+          "vfx_season_autumn.webp",
+          "vfx_season_spring.webp",
+          "vfx_season_summer.webp",
+          "vfx_season_winter.webp"
+        ],
+        "hd2": [
+          "toy_duck.webp",
+          "toy_whale.webp",
+          "toy_yarn.webp"
+        ]
+      },
+      "mode-survivor.js": {
+        "hd15": [
+          "sk_cat_lightning.webp",
+          "sk_crit_charm.webp",
+          "sk_frost_bubble.webp",
+          "sk_onigiri_heal.webp",
+          "sk_star_phantom.webp",
+          "ui_badge_shift.webp",
+          "upg_super_teablade.webp",
+          "upg_super_whale.webp"
+        ],
+        "hd31": [
+          "puzzle_piece_memory.webp",
+          "tea_platter_signature.webp",
+          "ui_btn_cocoa_bar.webp",
+          "ui_btn_collage_frame.webp",
+          "ui_btn_crochet_basket.webp",
+          "ui_btn_greeting_card.webp",
+          "ui_btn_kitten_corner.webp",
+          "ui_btn_mailbox.webp",
+          "ui_btn_picnic_basket.webp",
+          "ui_btn_pottery_wheel.webp",
+          "ui_btn_pressed_flowers.webp",
+          "ui_btn_telescope.webp",
+          "ui_btn_terrarium.webp",
+          "ui_btn_watercolor_easel.webp"
+        ],
+        "hd6": [
+          "upg_blade.webp",
+          "upg_blaster.webp"
+        ]
+      },
+      "pet-chat.js": {
+        "hd17": [
+          "ui_mood_blush.webp"
+        ]
+      },
+      "room-ar04-06.js": {
+        "hd31": [
+          "pastry_pudding_tart.webp",
+          "pastry_souffle.webp",
+          "pastry_whale_macaron.webp",
+          "stamp_goodnight_moon.webp",
+          "tea_blueberry_foam.webp",
+          "tea_osmanthus_milk.webp",
+          "tea_peach_oolong.webp",
+          "tea_platter_signature.webp",
+          "ui_btn_bento_kitchen.webp",
+          "ui_btn_kitten_corner.webp",
+          "ui_btn_picnic_basket.webp",
+          "ui_btn_pottery_wheel.webp",
+          "ui_btn_teatime.webp",
+          "ui_btn_telescope.webp",
+          "ui_btn_watercolor_easel.webp",
+          "ui_mood_blush.webp",
+          "ui_pin_star.webp",
+          "ui_stamp_focus.webp"
+        ]
+      },
+      "room-ar07-09.js": {
+        "hd31": [
+          "cocoa_marshmallow_topping.webp",
+          "vfx_sparkle.webp"
+        ]
+      },
+      "room-ar10-11.js": {
+        "hd31": [
+          "letter_envelope.webp",
+          "onigiri_trio.webp",
+          "puzzle_piece_memory.webp"
+        ]
+      },
+      "room-ar12-13.js": {
+        "hd31": [
+          "handmade_card.webp"
+        ]
+      },
+      "room-ar14-15.js": {
+        "hd31": [
+          "constellation_card.webp",
+          "rain_chime.webp",
+          "vfx_sparkle.webp"
+        ]
+      },
+      "room-ar16-17.js": {
+        "hd31": [
+          "embroidery_patch.webp",
+          "roasted_snack.webp",
+          "vfx_sparkle.webp"
+        ],
+        "hd33": [
+          "story_bookmark.webp"
+        ]
+      }
+    }
+  }
+}

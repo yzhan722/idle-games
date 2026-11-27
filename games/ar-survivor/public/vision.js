@@ -3,6 +3,44 @@
 // 2. 21 关键点语义手势识别：张开手掌(open_palm) / 食指逗宠(point_finger) / 比耶比心合影(peace) / 握拳猜拳(fist)
 // 3. 帧间分时调度（Time-Sliced Vision）+ 60/120FPS 弹簧运动学插值
 
+// 房间背景 / 窗景 / 季节点缀：下载失败隔一会儿再试（没到之前照旧画渐变底或先不画）
+function loadSceneImage(src) {
+  const img = new Image();
+  let wait = 1500;
+  img.onerror = () => {
+    setTimeout(() => {
+      img.src = src;
+    }, wait);
+    wait = Math.min(30000, wait * 2);
+  };
+  img.src = src;
+  return img;
+}
+
+// 手势识别组件（MediaPipe，版本锁在路径里；外部地址见 docs/THIRD_PARTY.md）
+const MP_MODULE_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm';
+const MP_WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
+// 下载失败：隔 1.5 / 4 / 10 秒各重试一次（和 lazy-img.js 一样），三次用完等下次开摄像头再来一轮
+export const MP_RETRY_DELAYS = [1500, 4000, 10000];
+
+// 第 n 次下载识别组件用的地址。浏览器把下载失败的模块按地址记住，同一页里再 import 同一地址直接失败，
+// 所以第 2 次起换成 ?retry=n。jsDelivr 不看查询串（2026-11-27 核对：带不带 ?retry= 回同一个 ETag、
+// 同一份边缘缓存，x-jsd-version 都是 0.10.14），版本锁在路径里，不会拉到别的版本
+export function mediaPipeModuleUrl(n = 0) {
+  return n > 0 ? `${MP_MODULE_URL}?retry=${n}` : MP_MODULE_URL;
+}
+
+// MediaPipe 建识别器时用 <script> 标签下 wasm 加载脚本，失败的标签留在页面里：重试前拿掉，让它插新标签
+// （跑过的脚本拿掉标签不影响；MediaPipe 每建一个识别器都会重新插一个）
+export function removeStaleMediaPipeScripts(doc) {
+  if (!doc || typeof doc.querySelectorAll !== 'function') return 0;
+  const stale = [...doc.querySelectorAll('script[src]')].filter((s) =>
+    String(s.getAttribute('src') || '').startsWith(MP_WASM_URL)
+  );
+  for (const s of stale) s.remove();
+  return stale.length;
+}
+
 export class ARVisionEngine {
   constructor(videoEl) {
     this.video = videoEl;
@@ -110,7 +148,92 @@ export class ARVisionEngine {
       scale: 0.76 + (idx % 3) * 0.14
     }));
 
-    this.initMediaPipe();
+    // 手势识别组件只在摄像头开启后才下载（见 startCamera），不开摄像头就不联系任何外部地址
+    this.mediaPipeRequested = false;
+    // 识别组件下过几次（重试换地址用）；下成功的模块留着，之后不再下
+    this.mediaPipeLoads = 0;
+    this.visionModule = null;
+
+    // 每次开 / 关摄像头换一个号：授权框还没点就改了主意时，旧请求等到结果也不再生效
+    this.cameraReqId = 0;
+    this.onCameraLost = null;
+    // 切后台 / 锁屏 / 切走标签页时停掉的摄像头：回到前台按原来的「开启」重开（suspendCamera / resumeCamera）
+    this.cameraSuspended = false;
+    this.cameraResuming = null;
+    this.pageDoc = null;
+    // 回前台重开前再问一次（game.js 看记住的选择）：在后台时别的标签页里改成了「先不用」就不开
+    this.allowCameraResume = null;
+  }
+
+  // 摄像头停了（切后台 / 回小屋）：手和手势的识别结果一起清掉，免得回来时按走之前那次比耶自动拍
+  clearHandState() {
+    const p = this.palmTarget;
+    p.active = false;
+    p.inCenterZone = false;
+    p.ttl = 0;
+    p.holdTime = 0;
+    p.vx = 0;
+    p.vy = 0;
+    const g = this.gestureState;
+    g.type = 'none';
+    g.rpsMove = 'none';
+    g.holdDuration = 0;
+    g.candidateType = 'none';
+    g.candidateFrames = 0;
+    g.ttl = 0;
+  }
+
+  // 页面在不在后台（visibilityState 为准，老浏览器看 hidden）
+  pageHidden() {
+    const d = this.pageDoc || globalThis.document;
+    return Boolean(d && (d.visibilityState === 'hidden' || d.hidden === true));
+  }
+
+  // 摄像头真的在出画面：页面上的「开」角标跟着它走
+  isCameraLive() {
+    const s = this.video.srcObject;
+    return Boolean(s && typeof s.getVideoTracks === 'function' && s.getVideoTracks().some((t) => t.readyState === 'live'));
+  }
+
+  // 切后台 / 锁屏 / 切走标签页（visibilitychange、pagehide）就停摄像头；回来（visibilitychange、pageshow）再按原来的选择开
+  bindPageLifecycle(doc = globalThis.document, win = globalThis.window, size = () => [800, 450]) {
+    this.pageDoc = doc;
+    const sync = () => {
+      const [w, h] = size();
+      if (this.pageHidden()) this.suspendCamera(w, h);
+      else this.resumeCamera(w, h);
+    };
+    doc.addEventListener('visibilitychange', sync);
+    if (win && typeof win.addEventListener === 'function') {
+      win.addEventListener('pagehide', () => {
+        const [w, h] = size();
+        this.suspendCamera(w, h);
+      });
+      win.addEventListener('pageshow', sync);
+    }
+  }
+
+  // 停掉摄像头（track.stop()，系统的摄像头灯会灭），但记住要开：回到前台时 resumeCamera 重开
+  parkCamera(W = 800, H = 450) {
+    if (this.video.srcObject) {
+      this.video.srcObject.getTracks().forEach((t) => t.stop());
+      this.video.srcObject = null;
+    }
+    this.video.style.display = 'none';
+    this.mode = 'sim';
+    this.buildSimulatedDesk(W, H);
+    this.clearHandState();
+    this.cameraSuspended = true;
+  }
+
+  // 切到后台：开着的摄像头停掉（正在接画面的那次一起作废，回来重新申请）；
+  // 授权框还没点完的那次不动，等到结果时还在后台就停（见 startCamera），免得回来再弹一次授权框
+  suspendCamera(W = 800, H = 450) {
+    if (this.mode !== 'camera' && !this.isCameraLive()) return false;
+    this.cameraReqId += 1;
+    this.cameraResuming = null;
+    this.parkCamera(W, H);
+    return true;
   }
 
   setRoomTheme(themeKey = 'cream_study') {
@@ -121,9 +244,7 @@ export class ARVisionEngine {
       star_aquarium: './assets/bg_aquarium_room.webp?v=hd19'
     };
     if (!this.simBgImgs[validKey]) {
-      const img = new Image();
-      img.src = srcMap[validKey];
-      this.simBgImgs[validKey] = img;
+      this.simBgImgs[validKey] = loadSceneImage(srcMap[validKey]);
     }
     this.simBgImg = this.simBgImgs[validKey];
     return this.roomTheme;
@@ -141,25 +262,19 @@ export class ARVisionEngine {
       starry: './assets/win_starry.webp?v=hd19'
     };
     const seasonSrcMap = {
-      spring: './assets/vfx_season_spring.webp?v=hd19',
-      summer: './assets/vfx_season_summer.webp?v=hd19',
-      autumn: './assets/vfx_season_autumn.webp?v=hd19',
-      winter: './assets/vfx_season_winter.webp?v=hd19'
+      spring: './assets/vfx_season_spring.webp?v=hd60',
+      summer: './assets/vfx_season_summer.webp?v=hd60',
+      autumn: './assets/vfx_season_autumn.webp?v=hd60',
+      winter: './assets/vfx_season_winter.webp?v=hd60'
     };
     if (winSrcMap[periodKey] && !this.winImgs[periodKey]) {
-      const img = new Image();
-      img.src = winSrcMap[periodKey];
-      this.winImgs[periodKey] = img;
+      this.winImgs[periodKey] = loadSceneImage(winSrcMap[periodKey]);
     }
     if (seasonSrcMap[seasonKey] && !this.seasonImgs[seasonKey]) {
-      const sImg = new Image();
-      sImg.src = seasonSrcMap[seasonKey];
-      this.seasonImgs[seasonKey] = sImg;
+      this.seasonImgs[seasonKey] = loadSceneImage(seasonSrcMap[seasonKey]);
     }
     if (!this.sparkleImg) {
-      const sp = new Image();
-      sp.src = './assets/vfx_sparkle.webp?v=hd19';
-      this.sparkleImg = sp;
+      this.sparkleImg = loadSceneImage('./assets/vfx_sparkle.webp?v=hd60');
     }
   }
 
@@ -192,13 +307,37 @@ export class ARVisionEngine {
     return { ...this.windowAmbience };
   }
 
+  // 下载识别组件：失败最多重试 3 次，有退避；手的识别器建成就停。失败期间照旧用肤色识别，不提示
   async initMediaPipe() {
+    for (let retry = 0; ; retry++) {
+      await this.loadMediaPipeOnce();
+      if (this.handLandmarker) return;
+      // 摄像头关了 / 切了后台：不再连外部地址，等下次开摄像头
+      if (retry >= MP_RETRY_DELAYS.length || this.mode !== 'camera') break;
+      await this.waitMs(MP_RETRY_DELAYS[retry]);
+      if (this.mode !== 'camera') break;
+    }
+    // 没下完（断网、外部地址连不上）：先用肤色识别顶着，下次开摄像头再试
+    if (!this.handLandmarker) this.mediaPipeRequested = false;
+  }
+
+  importVisionModule(url) {
+    return import(url);
+  }
+
+  waitMs(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  // 下一次：模块下成功过就直接用，不再下；没成功过换新地址再下
+  async loadMediaPipeOnce() {
+    removeStaleMediaPipeScripts(this.pageDoc || globalThis.document);
     try {
-      const visionModule = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm');
-      const { HandLandmarker, ObjectDetector, FilesetResolver } = visionModule;
-      const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
-      );
+      if (!this.visionModule) {
+        this.visionModule = await this.importVisionModule(mediaPipeModuleUrl(this.mediaPipeLoads++));
+      }
+      const { HandLandmarker, ObjectDetector, FilesetResolver } = this.visionModule;
+      const vision = await FilesetResolver.forVisionTasks(MP_WASM_URL);
 
       try {
         this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
@@ -230,7 +369,7 @@ export class ARVisionEngine {
       }
 
       try {
-        this.detector = await ObjectDetector.createFromOptions(vision, {
+        if (!this.detector) this.detector = await ObjectDetector.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath:
               'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/latest/efficientdet_lite0.tflite',
@@ -276,11 +415,74 @@ export class ARVisionEngine {
 
   async startCamera(facing = 'environment', W = 800, H = 450) {
     this.facingMode = facing;
+    const reqId = ++this.cameraReqId;
     if (this.video.srcObject) {
       this.video.srcObject.getTracks().forEach((t) => t.stop());
     }
+    // 在后台不去申请：记下来，回到前台再开
+    if (this.pageHidden()) {
+      this.parkCamera(W, H);
+      return null;
+    }
+    this.cameraSuspended = false;
+    let stream = null;
+    const stopStream = () => {
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+    };
+    // 等授权时切到了后台：拿到的流马上停掉，回到前台再开（授权过了，算开成，选择照样记住）
+    const parked = () => {
+      if (!this.pageHidden()) return false;
+      stopStream();
+      this.parkCamera(W, H);
+      return true;
+    };
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await this.requestCameraStream(facing);
+      if (reqId !== this.cameraReqId) {
+        stopStream();
+        return null;
+      }
+      if (parked()) return true;
+      this.video.srcObject = stream;
+      this.video.style.display = 'block';
+      await this.video.play();
+      if (reqId !== this.cameraReqId) {
+        stopStream();
+        return null;
+      }
+      if (parked()) return true;
+      for (const track of stream.getVideoTracks()) {
+        track.addEventListener('ended', () => {
+          // 在后台断的等回来再重开（见 resumeCamera）；自己 stop() 的不会触发 ended
+          if (this.video.srcObject !== stream || this.pageHidden()) return;
+          this.enableSimMode(W, H);
+          if (this.onCameraLost) this.onCameraLost();
+        });
+      }
+      this.mode = 'camera';
+      this.prevLuma = null;
+      this.semanticObjects = [];
+      this.edgePlatforms = [];
+      if (!this.mediaPipeRequested) {
+        this.mediaPipeRequested = true;
+        this.initMediaPipe();
+      }
+      return true;
+    } catch (err) {
+      if (reqId !== this.cameraReqId) {
+        stopStream();
+        return null;
+      }
+      // 授权过了，只是放画面时切到了后台：回到前台再开
+      if (stream && parked()) return true;
+      this.enableSimMode(W, H);
+      return false;
+    }
+  }
+
+  async requestCameraStream(facing) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: facing },
           width: { ideal: 1280 },
@@ -289,21 +491,48 @@ export class ARVisionEngine {
         },
         audio: false
       });
-      this.video.srcObject = stream;
-      this.video.style.display = 'block';
-      await this.video.play();
-      this.mode = 'camera';
-      this.prevLuma = null;
-      this.semanticObjects = [];
-      this.edgePlatforms = [];
-      return true;
     } catch (err) {
-      this.enableSimMode(W, H);
-      return false;
+      // 摄像头到不了 30 帧：放宽条件再试一次
+      if (!err || err.name !== 'OverconstrainedError') throw err;
+      return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing } }, audio: false });
+    }
+  }
+
+  // 回到前台：切后台时停掉的按原来的「开启」重开；画面被定住就接着放；摄像头被系统停了就重开；
+  // 开不成（权限被收回、被占）回小屋并通知，之后不再自己申请。visibilitychange 和 pageshow 一起到时只申请一次
+  async resumeCamera(W = 800, H = 450) {
+    if (this.pageHidden()) return;
+    if (this.cameraResuming) return this.cameraResuming;
+    const stream = this.video.srcObject;
+    const track = stream && stream.getVideoTracks()[0];
+    const reopen = this.cameraSuspended || (this.mode === 'camera' && (!track || track.readyState === 'ended'));
+    if (reopen) {
+      // 在后台时选择被改成了「先不用」（另一个标签页的手账）：照现在的来，不申请，也不当成断开提示
+      if (this.allowCameraResume && !this.allowCameraResume()) {
+        this.enableSimMode(W, H);
+        if (this.onCameraLost) this.onCameraLost('off');
+        return null;
+      }
+      const p = this.startCamera(this.facingMode, W, H).then((opened) => {
+        if (this.cameraResuming === p) this.cameraResuming = null;
+        if (opened === false && this.onCameraLost) this.onCameraLost();
+        return opened;
+      });
+      this.cameraResuming = p;
+      return p;
+    }
+    if (this.mode !== 'camera') return;
+    if (this.video.paused) {
+      try {
+        await this.video.play();
+      } catch (err) {}
     }
   }
 
   enableSimMode(W = 800, H = 450) {
+    this.cameraReqId += 1;
+    this.cameraSuspended = false;
+    this.cameraResuming = null;
     if (this.video.srcObject) {
       this.video.srcObject.getTracks().forEach((t) => t.stop());
       this.video.srcObject = null;
@@ -311,6 +540,7 @@ export class ARVisionEngine {
     this.video.style.display = 'none';
     this.mode = 'sim';
     this.buildSimulatedDesk(W, H);
+    this.clearHandState();
   }
 
   buildSimulatedDesk(W, H) {

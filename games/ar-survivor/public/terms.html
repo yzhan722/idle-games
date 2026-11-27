@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!-- 草案开关：data-status="draft" 时显示草案横幅；主体、邮箱、管辖填好并经人审过后再改成 "final" -->
+<html lang="zh-CN" data-status="draft">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex" />
+  <title>用户协议</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+      background: #f5efe6;
+      color: #5c4338;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 17px;
+      line-height: 1.75;
+    }
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 24px 22px 28px;
+      border: 3px solid #ffffff;
+      border-radius: 24px;
+      background: #fffdf8;
+      box-shadow: 0 12px 28px rgba(180, 150, 110, 0.18);
+    }
+    h1 { font-size: 26px; color: #74583a; margin-bottom: 12px; }
+    h2 { font-size: 19px; color: #9c4a68; margin: 22px 0 6px; }
+    ul { padding-left: 1.2em; }
+    li { margin: 3px 0; }
+    .short { padding: 12px 16px; border-radius: 16px; background: #fff0f4; font-weight: 700; }
+    .draft { display: none; max-width: 680px; margin: 0 auto 14px; padding: 10px 16px; border-radius: 16px; background: #fde7c4; color: #85602e; font-weight: 800; text-align: center; }
+    [data-status="draft"] .draft { display: block; }
+    .todo { padding: 0 6px; border-radius: 6px; background: #fde7c4; }
+    a { color: #9c4a68; }
+  </style>
+</head>
+<body>
+  <p class="draft">草案，还没有生效</p>
+  <main>
+    <h1>用户协议</h1>
+    <p class="short">一个放在桌上的小伙伴。<br />玩的时候留意身边，拍照先问过别人。</p>
+
+    <h2>这是什么</h2>
+    <ul>
+      <li>网页上的桌宠小游戏，不用注册。</li>
+      <li>现在没有付费内容，也没有广告。</li>
+      <li>她说的话是写好的台词，不是真人，也不是医疗或心理建议。</li>
+    </ul>
+
+    <h2>玩的时候</h2>
+    <ul>
+      <li>开着摄像头时请坐好或站稳，走路、开车时不要玩。</li>
+      <li>画面里有别人时，拍照前先征得同意。</li>
+      <li>你拍的合影归你，怎么用由你决定和负责。</li>
+    </ul>
+
+    <h2>存档</h2>
+    <ul>
+      <li>进度和相册只在你的浏览器里，换设备、清数据会丢，我们没有备份，也没有导出功能（照片可以单张下载）。</li>
+      <li>游戏会更新，内容和数值可能调整；已有的进度尽量保留。</li>
+    </ul>
+
+    <h2>第三方</h2>
+    <ul>
+      <li>手势与物品识别用到第三方组件，说明见<a href="./privacy.html?v=hd2">隐私说明</a>。</li>
+    </ul>
+
+    <h2>联系</h2>
+    <p>运营主体：<span class="todo">待填</span></p>
+    <p>联系邮箱：<span class="todo">待填</span></p>
+    <p>适用地区与争议处理：<span class="todo">待填</span></p>
+    <p>生效日期：<span class="todo">待填</span></p>
+  </main>
+</body>
+</html>

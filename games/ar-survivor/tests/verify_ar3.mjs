@@ -5,6 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { prepareArContext } from './_ar_entry_helper.mjs';
+import { GAME_MODULES } from './_split_lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/project/idle-games/node_modules/playwright');
@@ -26,7 +28,7 @@ const MIME_TYPES = {
 };
 
 function runStaticChecks() {
-  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js'];
+  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js', ...GAME_MODULES];
   for (const file of jsFiles) {
     execFileSync(process.execPath, ['--check', path.join(PUBLIC_DIR, file)], { stdio: 'pipe' });
   }
@@ -80,6 +82,7 @@ async function runPlaywrightSuite() {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    await prepareArContext(context);
     const page = await context.newPage();
 
     const consoleErrors = [];

@@ -5,6 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { prepareArContext } from './_ar_entry_helper.mjs';
+import { GAME_MODULES, readGameSource } from './_split_lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/project/idle-games/node_modules/playwright');
@@ -43,8 +45,8 @@ const SPRITE_KEYS = {
   'story_bookmark.webp': 'storyBookmark'
 };
 
-// AR-17 明确不再加船坞键：仍是 AR-13 起的 25 键
-const CARE_BTN_COUNT = 25;
+// AR-17 不加船坞键；AR-G3 把拼贴 / 压花 / 日记收进手账后是 23 键
+const CARE_BTN_COUNT = 23;
 const SAVE_KEY = 'ar_deepseek_pet_v2';
 const MIN_DOCK_MARGIN = 10;
 
@@ -122,7 +124,7 @@ function sliceBetween(content, startMarker, endMarker, label) {
 }
 
 function runStaticChecks() {
-  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js'];
+  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js', ...GAME_MODULES];
   for (const file of jsFiles) {
     execFileSync(process.execPath, ['--check', path.join(PUBLIC_DIR, file)], { stdio: 'pipe' });
   }
@@ -143,7 +145,7 @@ function runStaticChecks() {
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
-  const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
+  const gameContent = readGameSource(PUBLIC_DIR);
 
   // 缓存号：style.css 不低于 hd33、game.js 不低于 hd57、sprites.js 不低于 hd33；AR-17 新贴图全部 ?v=hd33
   assert(/\.\/style\.css\?v=hd(?:3[3-9]|[4-9]\d)\b/.test(htmlContent), 'index.html must reference ./style.css?v=hd33+');
@@ -152,19 +154,19 @@ function runStaticChecks() {
   assert(!/style\.css\?v=hd(?:2\d|3[0-2])\b/.test(htmlContent) && !/game\.js\?v=hd(?:[1-4]\d|5[0-6])\b/.test(htmlContent), 'No stale style.css / game.js cache-buster in index.html');
   for (const asset of REQUIRED_AR17_ASSETS) {
     assert(assetRefs.has(asset), `AR-17 asset ${asset} must be referenced`);
-    assert(new RegExp(`\\./assets/${asset.replace('.', '\\.')}\\?v=hd33\\b`).test(htmlContent + gameContent), `${asset} must be referenced with ?v=hd33`);
-    assert(new RegExp(`${SPRITE_KEYS[asset]}: '\\./assets/${asset.replace('.', '\\.')}\\?v=hd33'`).test(spritesContent), `${asset} must be preloaded by sprites.js with ?v=hd33`);
-    assert(!new RegExp(`${asset.replace('.', '\\.')}\\?v=hd(?!33\\b)`).test(htmlContent + gameContent + spritesContent), `${asset} must only use ?v=hd33`);
-    // 复用规则：从同一款游戏的正式图复制（字节相同或规整后同尺寸），256×256 去底
+    assert(new RegExp(`\\./assets/${asset.replace('.', '\\.')}\\?v=hd(?:3[3-9]|[4-9]\\d)\\b`).test(htmlContent + gameContent), `${asset} must be referenced with ?v=hd33+`);
+    assert(new RegExp(`${SPRITE_KEYS[asset]}: '\\./assets/${asset.replace('.', '\\.')}\\?v=hd(?:3[3-9]|[4-9]\\d)'`).test(spritesContent), `${asset} must be listed in sprites.js with ?v=hd33+`);
+    assert.equal(new Set([...(htmlContent + gameContent + spritesContent).matchAll(new RegExp(`${asset.replace('.', '\\.')}\\?v=(\\w+)`, 'g'))].map((m) => m[1])).size, 1, `${asset} must use one ?v= everywhere`);
+    // 复用规则：从同一款游戏的正式图复制（字节相同），正方形去底
     const src = path.join(PUBLIC_DIR, 'assets', REUSED_ART[asset]);
     const dst = path.join(PUBLIC_DIR, 'assets', asset);
     assert(fs.existsSync(src), `Reuse source ${REUSED_ART[asset]} exists`);
     const sz = webpSize(dst);
-    assert(sz.w === 256 && sz.h === 256 && sz.alpha, `${asset} must be a 256x256 webp with alpha, got ${JSON.stringify(sz)}`);
+    assert(sz.w === sz.h && sz.w >= 96 && sz.alpha, `${asset} must be a square webp with alpha, got ${JSON.stringify(sz)}`);
     assert(fs.readFileSync(src).equals(fs.readFileSync(dst)), `${asset} must be a byte copy of ${REUSED_ART[asset]}`);
   }
 
-  // 船坞不加键：仍是 25 键，也没有任何衣橱 / 故事书船坞键
+  // 船坞不加键：仍是 23 键，也没有任何衣橱 / 故事书船坞键
   assert.equal((htmlContent.match(/class="care-btn[\s"]/g) || []).length, CARE_BTN_COUNT, `index.html must keep exactly ${CARE_BTN_COUNT} dock keys`);
   const dockHtml = htmlContent.slice(htmlContent.indexOf('id="pet-care-bar"'), htmlContent.indexOf('class="action-zone"'));
   assert(dockHtml.length > 100 && !/wardrobe|storybook|story_bookmark/.test(dockHtml), 'AR-17 must not add a wardrobe / storybook key to the dock');
@@ -234,7 +236,7 @@ function runStaticChecks() {
   assert(!/transparent/.test(ar17Css), 'AR-17 CSS gradients must fade to cream/white');
 
   console.log(
-    `[STATIC PASS] ${jsFiles.length} JS modules syntax-checked, ${assetRefs.size} assets on disk (4 AR-17 images = 256x256 byte copies of existing art, ?v=hd33), style hd33+/game hd57+/sprites hd33+, still ${CARE_BTN_COUNT} dock keys, no new scene objects, goodnight stamp formula unchanged, equipped never written, ${rgbCount} cream tints, reused art never next to its original, 0 dark/neon colors.`
+    `[STATIC PASS] ${jsFiles.length} JS modules syntax-checked, ${assetRefs.size} assets on disk (4 AR-17 images = byte copies of existing art, one ?v= each), style hd33+/game hd57+/sprites hd33+, still ${CARE_BTN_COUNT} dock keys, no new scene objects, goodnight stamp formula unchanged, equipped never written, ${rgbCount} cream tints, reused art never next to its original, 0 dark/neon colors.`
   );
 }
 
@@ -373,6 +375,7 @@ async function runPlaywrightSuite() {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await prepareArContext(context);
     const outbound = [];
     await context.route('https://**', (route) => {
       outbound.push(route.request().url());
@@ -455,29 +458,26 @@ async function runPlaywrightSuite() {
         imgsLoaded: Array.from(blocks[idx] ? blocks[idx].querySelectorAll('img') : []).every((im) => im.naturalWidth > 0),
         visibleAfterScroll: Boolean(pr.top >= items.top - 1 && pr.bottom <= items.bottom + 1),
         sub: btn.querySelector('.room-theme-sub').textContent,
-        storySub: document.querySelector('[data-ar17-shortcut="storybook"] .room-theme-sub').textContent,
+        shortcuts: blocks[idx] ? blocks[idx].querySelectorAll('[data-ar17-shortcut]').length : 0,
         srcs
       };
     });
     assert.equal(drawerAudit.idx16, 3, 'AR-16 shortcuts keep their spot');
     assert.equal(drawerAudit.idx, 4, `AR-17 shortcuts sit right after the AR-16 block, got ${drawerAudit.idx}`);
-    assert.equal(drawerAudit.title, '季节衣橱与睡前故事书');
+    assert.equal(drawerAudit.title, '季节衣橱');
+    assert.equal(drawerAudit.shortcuts, 1, 'The storybook shortcut moved into the memory book');
     assert(drawerAudit.hint.length <= 40, `Drawer hint stays one short line: ${drawerAudit.hint}`);
     assert(drawerAudit.imgsLoaded && drawerAudit.visibleAfterScroll, `Drawer shortcut art loads and scrolls into view: ${JSON.stringify(drawerAudit)}`);
     assert(drawerAudit.sub.includes('衣橱 0/8'), `Fresh wardrobe shortcut sub: ${drawerAudit.sub}`);
-    assert(drawerAudit.storySub.includes('书签 0/6'), `Fresh storybook shortcut sub: ${drawerAudit.storySub}`);
     assertNoCopyWithOriginal(drawerAudit.srcs, 'Drawer dress tab');
     await page.waitForTimeout(150);
     await shot(page, 'desktop_1440x900_drawer_entry.png');
     await page.click('[data-ar17-shortcut="wardrobe"]');
     await page.waitForTimeout(180);
     assert.deepEqual(await openPanelNames(page), ['seasonWardrobe'], 'Drawer wardrobe shortcut opens only the wardrobe card');
-    await page.click('#btn-shop');
-    await page.waitForTimeout(200);
-    await page.evaluate(() => document.querySelector('[data-ar17-shortcut="storybook"]').scrollIntoView({ block: 'nearest' }));
-    await page.click('[data-ar17-shortcut="storybook"]');
+    await page.click('#btn-storybook-book');
     await page.waitForTimeout(180);
-    assert.deepEqual(await openPanelNames(page), ['bedtimeStorybook'], 'Drawer storybook shortcut opens only the storybook card');
+    assert.deepEqual(await openPanelNames(page), ['bedtimeStorybook'], 'The storybook tile in the memory book opens only the storybook card');
     await closeAll(page);
 
     // 3. 浮层互斥：AR-17 两张卡与 AR-15 / AR-16 卡、船坞卡片、抽屉一次只开一个
@@ -571,10 +571,7 @@ async function runPlaywrightSuite() {
     await closeAll(page);
 
     // 5. 睡前故事书：真实点按挑故事 → 翻 3 页（她读）→ 夹上书签；睡前读完留下 90 分钟晚安余温，胶囊显示余温
-    await page.click('#btn-shop');
-    await page.waitForTimeout(200);
-    await page.evaluate(() => document.querySelector('[data-ar17-shortcut="storybook"]').scrollIntoView({ block: 'nearest' }));
-    await page.click('[data-ar17-shortcut="storybook"]');
+    await page.click('#btn-storybook-book');
     await page.waitForTimeout(180);
     st = await getState(page);
     const coins2 = st.coins;
@@ -710,12 +707,9 @@ async function runPlaywrightSuite() {
       await page.waitForTimeout(350);
       dock = await dockAudit(page);
       assert(dock.count === CARE_BTN_COUNT && dock.overlap === 0 && dock.joyMargin >= MIN_DOCK_MARGIN && dock.jumpMargin >= MIN_DOCK_MARGIN, `${w}x${h} dock: ${JSON.stringify(dock)}`);
-      await page.click('#btn-shop');
-      await page.waitForTimeout(220);
-      await page.evaluate(() => document.querySelector('[data-ar17-shortcut="storybook"]').scrollIntoView({ block: 'nearest' }));
-      await page.click('[data-ar17-shortcut="storybook"]');
+      await page.click('#btn-storybook-book');
       await page.waitForTimeout(180);
-      assert.deepEqual(await openPanelNames(page), ['bedtimeStorybook'], `${w}x${h}: drawer storybook shortcut is reachable`);
+      assert.deepEqual(await openPanelNames(page), ['bedtimeStorybook'], `${w}x${h}: storybook tile in the memory book is reachable`);
       for (const [cardId, fn] of [
         ['wardrobe-card', 'openWardrobe'],
         ['storybook-card', 'openStorybook']

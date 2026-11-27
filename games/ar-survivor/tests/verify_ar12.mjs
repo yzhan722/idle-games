@@ -5,6 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { prepareArContext } from './_ar_entry_helper.mjs';
+import { GAME_MODULES, readGameSource } from './_split_lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/project/idle-games/node_modules/playwright');
@@ -52,7 +54,7 @@ function localMs(y, m, d, hh = 10, mm = 0) {
 }
 
 function runStaticChecks() {
-  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js'];
+  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js', ...GAME_MODULES];
   for (const file of jsFiles) {
     execFileSync(process.execPath, ['--check', path.join(PUBLIC_DIR, file)], { stdio: 'pipe' });
   }
@@ -72,7 +74,7 @@ function runStaticChecks() {
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
-  const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
+  const gameContent = readGameSource(PUBLIC_DIR);
   const audioContent = fs.readFileSync(path.join(PUBLIC_DIR, 'audio.js'), 'utf8');
   // AR-13 起缓存号继续递增（hd28 / hd52），这里只要求不低于 AR-12 的 hd27 / hd51
   assert(/\.\/style\.css\?v=hd(?:2[7-9]|[3-9]\d)\b/.test(htmlContent), 'index.html must reference ./style.css?v=hd27+');
@@ -243,6 +245,7 @@ async function runPlaywrightSuite() {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await prepareArContext(context);
     await context.route('https://**', (route) => route.abort());
     const page = await context.newPage();
 

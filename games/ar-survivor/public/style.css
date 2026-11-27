@@ -32,6 +32,17 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* AR-COM5 图没下完或下载失败时也按样式里的宽高留着位置（行内 <img> 失败会塌成一条线） */
+img {
+  display: inline-block;
+}
+
+/* AR-COM5 还没打开过的面板：里面的图平移到很远，loading="lazy" 就不会下；打开（去掉 hidden）立刻回到原位，占位不变。
+   第一次打开之后 lazy-img.js 去掉 data-imgs-off，收起的淡出不受影响 */
+.hidden[data-imgs-off] img {
+  translate: 0 -99999px !important;
+}
+
 #camera-video {
   position: fixed;
   inset: 0;
@@ -745,7 +756,7 @@ html, body {
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: url('./assets/ui_joy_stick.webp?v=hd31') center / contain no-repeat;
+  background: url('./assets/ui_joy_stick.webp?v=hd60') center / contain no-repeat;
   filter: drop-shadow(0 4px 8px rgba(45, 110, 175, 0.35));
   pointer-events: none;
 }
@@ -16608,5 +16619,585 @@ html, body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+/* ================= AR-G3 手账 & AR-COM3 摄像头说明卡（#FFFDF8 奶油手账暖色调，字大少字） ================= */
+.memory-book-card {
+  position: absolute;
+  right: 14px;
+  top: 58px;
+  z-index: 29;
+  width: min(378px, calc(100% - 28px));
+  max-height: calc(100% - 134px);
+  overflow-y: auto;
+  background: linear-gradient(165deg, rgba(255, 253, 248, 0.98) 0%, rgba(255, 246, 232, 0.97) 100%);
+  border: 2.5px solid #ffffff;
+  outline: 2px solid rgba(232, 208, 176, 0.8);
+  border-radius: 22px;
+  padding: 10px 12px 11px;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 12px 28px rgba(180, 150, 110, 0.2),
+    inset 0 2px 0 rgba(255, 255, 255, 0.96);
+  pointer-events: auto;
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.memory-book-card.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-10px) scale(0.95);
+}
+
+.mb-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mb-title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 900;
+  color: #74583a;
+}
+
+.mb-card-back {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  background: linear-gradient(180deg, #fff6e4 0%, #fbe4c0 100%);
+  color: #9a6a34;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 0 2px;
+}
+
+.memory-book-card[data-view="shelf"] #btn-memory-book-back,
+.memory-book-card[data-view="shelf"] .mb-bond,
+.memory-book-card[data-view="bond"] .mb-shelf {
+  display: none;
+}
+
+.mb-bond-row {
+  font-family: inherit;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 12px 6px 8px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  border: 2px solid #ffffff;
+  outline: 1.5px solid rgba(244, 190, 206, 0.7);
+  background: linear-gradient(90deg, #fff4f7 0%, #ffe9ef 100%);
+  cursor: pointer;
+  text-align: left;
+}
+
+.mb-bond-ico {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.mb-bond-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mb-bond-lv {
+  font-size: 16px;
+  font-weight: 900;
+  color: #9c4a68;
+}
+
+.mb-bond-track {
+  display: block;
+  height: 9px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+}
+
+.mb-bond-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #ffb3cb 0%, #ff8fb2 100%);
+}
+
+.mb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mb-tile {
+  font-family: inherit;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px 7px;
+  border-radius: 16px;
+  border: 2px solid #ffffff;
+  outline: 1.5px solid rgba(232, 208, 176, 0.7);
+  background: linear-gradient(180deg, #fffdf8 0%, #fdf2de 100%);
+  cursor: pointer;
+}
+
+.mb-tile:active,
+.mb-bond-row:active,
+.mb-foot-btn:active,
+.mb-call-chip:active {
+  transform: scale(0.96);
+}
+
+.mb-tile.has-gift,
+.mb-tile.has-new {
+  outline-color: rgba(240, 150, 120, 0.85);
+}
+
+.mb-tile-ico {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+}
+
+.mb-tile-name {
+  font-size: 15px;
+  font-weight: 900;
+  color: #74583a;
+}
+
+.mb-dot {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 99px;
+  border: 1.5px solid #ffffff;
+  background: linear-gradient(180deg, #f7a98e 0%, #e57a62 100%);
+  color: #ffffff;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+  pointer-events: none;
+}
+
+.mb-dot.is-count {
+  background: rgba(255, 246, 228, 0.98);
+  outline: 1px solid rgba(232, 208, 176, 0.8);
+  color: #96693a;
+}
+
+.mb-dot.hidden {
+  display: none;
+}
+
+.mb-foot {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.mb-foot-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border-radius: 12px;
+  border: 1.5px solid #ffffff;
+  background: rgba(250, 240, 224, 0.95);
+  color: #8a6a48;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mb-call-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 9px;
+}
+
+.mb-call-row.hidden {
+  display: none;
+}
+
+.mb-call-chip {
+  padding: 6px 13px;
+  border-radius: 99px;
+  border: 2px solid #ffffff;
+  outline: 1.5px solid rgba(232, 208, 176, 0.7);
+  background: #fffaf0;
+  color: #8a6a48;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mb-call-chip.active {
+  background: linear-gradient(180deg, #ffe9ef 0%, #ffd3e0 100%);
+  outline-color: rgba(244, 150, 180, 0.8);
+  color: #9c4a68;
+}
+
+.mb-page-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mb-page {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: rgba(250, 244, 232, 0.75);
+}
+
+.mb-page.is-open {
+  background: rgba(255, 253, 248, 0.98);
+  outline: 1.5px solid rgba(232, 208, 176, 0.6);
+}
+
+.mb-page-ico {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.mb-page:not(.is-open) .mb-page-ico {
+  opacity: 0.2;
+  filter: grayscale(0.9);
+}
+
+.mb-page-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mb-page-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #74583a;
+}
+
+.mb-page:not(.is-open) .mb-page-title {
+  color: #b8a48c;
+}
+
+.mb-page-text {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #8a7460;
+}
+
+.mb-page-date {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  color: #b08a5e;
+  white-space: nowrap;
+}
+
+/* 翻到另一本的一瞬间不接点击，避免同一次点按穿到新面板 */
+.game-stage.is-book-turning aside,
+.game-stage.is-book-turning .pet-drawer {
+  pointer-events: none;
+}
+
+/* 相册借抽屉显示：从手账进来时换成「‹ 相册」标题，不混在食堂 / 装扮 / 打工页签里 */
+.drawer-album-head {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 900;
+  color: #74583a;
+}
+
+.pet-drawer.is-album .drawer-tabs {
+  display: none;
+}
+
+.pet-drawer.is-album .drawer-album-head {
+  display: flex;
+}
+
+/* 「家具与装扮」里原来成对的入口只剩一个时占满整行，不留空洞 */
+.room-theme-grid > .room-theme-card:only-child {
+  grid-column: 1 / -1;
+}
+
+.care-btn-memory-book {
+  background: linear-gradient(180deg, #fffaf0 0%, #fdebcd 100%);
+  outline-color: rgba(232, 198, 150, 0.7);
+  box-shadow:
+    0 3px 0 rgba(224, 188, 140, 0.5),
+    0 4px 8px rgba(180, 140, 90, 0.14);
+}
+
+.care-btn-memory-book .care-label {
+  color: #85602e;
+}
+
+/* ===== AR-G3 船坞 23 键：拼贴 / 压花 / 日记收进手账后重新分配宽度，键略大、不留空洞 =====
+   1240px 以上单排；921~1239px 与窄屏 / 旋转舞台两排，每排 11 键，小铺竖跨两排放在第 12 列 */
+.care-btn {
+  min-width: 43px;
+}
+
+@media (min-width: 1240px) and (max-width: 1399px) and (min-height: 431px) {
+  .care-btn {
+    min-width: 37px;
+  }
+  .care-label {
+    font-size: 9.6px;
+  }
+}
+
+@media (min-width: 921px) and (max-width: 1239px) and (min-height: 431px) {
+  .pet-care-bar {
+    grid-template-columns: repeat(11, 44px) 48px;
+  }
+  .care-btn {
+    min-width: 0;
+  }
+  .care-btn-shop {
+    grid-column: 12;
+  }
+}
+
+@media (max-width: 920px), (max-height: 430px) {
+  .pet-care-bar {
+    grid-template-columns: repeat(11, 39px) 40px;
+  }
+  .care-btn {
+    min-width: 0;
+  }
+  .care-btn-shop {
+    grid-column: 12;
+  }
+  .care-label {
+    font-size: 7.8px;
+  }
+
+  .memory-book-card {
+    right: 10px;
+    top: 44px;
+    width: min(338px, calc(100% - 24px));
+    max-height: calc(100% - 140px);
+    padding: 6px 9px 7px;
+    border-radius: 17px;
+  }
+  .mb-head {
+    margin-bottom: 4px;
+  }
+  .mb-title {
+    font-size: 15px;
+  }
+  .mb-bond-row {
+    padding: 2px 10px 2px 6px;
+    margin-bottom: 5px;
+  }
+  .mb-bond-ico {
+    width: 30px;
+    height: 30px;
+  }
+  .mb-bond-lv {
+    font-size: 14px;
+  }
+  .mb-bond-main {
+    gap: 3px;
+  }
+  .mb-bond-track {
+    height: 7px;
+  }
+  .mb-grid {
+    gap: 5px;
+  }
+  .mb-tile {
+    gap: 1px;
+    padding: 3px 3px 3px;
+    border-radius: 13px;
+  }
+  .mb-tile-ico {
+    width: 30px;
+    height: 30px;
+  }
+  .mb-tile-name {
+    font-size: 13px;
+  }
+  .mb-dot {
+    top: 2px;
+    right: 3px;
+    font-size: 10px;
+  }
+  .mb-foot {
+    margin-top: 5px;
+    gap: 5px;
+  }
+  .mb-foot-btn {
+    padding: 3px 4px;
+    font-size: 12px;
+  }
+  .mb-call-chip {
+    padding: 4px 11px;
+    font-size: 13px;
+  }
+  .mb-page {
+    padding: 4px 8px;
+  }
+  .mb-page-ico {
+    width: 30px;
+    height: 30px;
+  }
+  .mb-page-title {
+    font-size: 14px;
+  }
+  .mb-page-text {
+    font-size: 12px;
+  }
+  .mb-card-back {
+    width: 22px;
+    height: 22px;
+    font-size: 15px;
+  }
+}
+
+/* AR-COM3 摄像头说明卡 */
+.camera-notice {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 248, 236, 0.62);
+  pointer-events: auto;
+}
+
+.camera-notice.hidden {
+  display: none;
+}
+
+.camera-notice-card {
+  width: min(420px, calc(100% - 40px));
+  padding: 18px 22px 14px;
+  border-radius: 26px;
+  border: 3px solid #ffffff;
+  outline: 2px solid rgba(232, 208, 176, 0.85);
+  background: linear-gradient(165deg, #fffdf8 0%, #fff3df 100%);
+  box-shadow: 0 16px 40px rgba(180, 150, 110, 0.28);
+  text-align: center;
+}
+
+.camera-notice-ico {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.camera-notice-title {
+  margin: 4px 0 8px;
+  font-size: 21px;
+  font-weight: 900;
+  color: #74583a;
+}
+
+.camera-notice-text {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: #7d6248;
+}
+
+.camera-notice-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.camera-notice-btn {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 18px;
+  border: 2.5px solid #ffffff;
+  outline: 1.5px solid rgba(232, 208, 176, 0.85);
+  background: linear-gradient(180deg, #fffaf0 0%, #fbeacb 100%);
+  color: #85602e;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.camera-notice-btn.is-on {
+  outline-color: rgba(244, 150, 180, 0.8);
+  background: linear-gradient(180deg, #ffe4ec 0%, #ffc4d6 100%);
+  color: #9c3f64;
+}
+
+.camera-notice-links {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 10px;
+}
+
+.camera-notice-links a {
+  padding: 3px 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #a07c50;
+}
+
+@media (max-height: 430px), (max-width: 430px) {
+  .camera-notice-card {
+    padding: 12px 18px 10px;
+  }
+  .camera-notice-ico {
+    width: 44px;
+    height: 44px;
+  }
+  .camera-notice-title {
+    margin: 2px 0 4px;
+    font-size: 19px;
+  }
+  .camera-notice-actions {
+    margin-top: 9px;
+  }
+  .camera-notice-links {
+    margin-top: 6px;
   }
 }

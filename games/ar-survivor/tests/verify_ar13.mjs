@@ -5,6 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { prepareArContext } from './_ar_entry_helper.mjs';
+import { GAME_MODULES, readGameSource } from './_split_lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/project/idle-games/node_modules/playwright');
@@ -37,7 +39,7 @@ const REQUIRED_AR13_ASSETS = [
   'diary_sticker.webp'
 ];
 
-const CARE_BTN_COUNT = 25;
+const CARE_BTN_COUNT = 23;
 const SAVE_KEY = 'ar_deepseek_pet_v2';
 const MIN_DOCK_MARGIN = 10;
 
@@ -60,7 +62,7 @@ function isoLocal(d) {
 }
 
 function runStaticChecks() {
-  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js'];
+  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js', ...GAME_MODULES];
   for (const file of jsFiles) {
     execFileSync(process.execPath, ['--check', path.join(PUBLIC_DIR, file)], { stdio: 'pipe' });
   }
@@ -80,7 +82,7 @@ function runStaticChecks() {
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
-  const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
+  const gameContent = readGameSource(PUBLIC_DIR);
   const audioContent = fs.readFileSync(path.join(PUBLIC_DIR, 'audio.js'), 'utf8');
   // AR-14 起缓存号继续递增（hd29 / hd53），这里只要求不低于 AR-13 的 hd28 / hd52
   assert(/\.\/style\.css\?v=hd(?:2[89]|[3-9]\d)\b/.test(htmlContent), 'index.html must reference ./style.css?v=hd28+');
@@ -238,7 +240,7 @@ async function dockAudit(page) {
       lastC = c;
     }
     const picnic = r(document.getElementById('btn-picnic-basket'));
-    const diary = r(document.getElementById('btn-diary-book'));
+    const book = r(document.getElementById('btn-memory-book'));
     return {
       rotated,
       count: btns.length,
@@ -248,7 +250,7 @@ async function dockAudit(page) {
       jumpMargin: along(act).start - along(care).end,
       jumpKeyMargin: along(jump).start - along(care).end,
       minKey: Math.min(...btns.map((b) => Math.min(b.width, b.height))),
-      newKeysVisible: picnic.width > 20 && diary.width > 20,
+      newKeysVisible: picnic.width > 20 && book.width > 20,
       care: { left: care.left, top: care.top, right: care.right, bottom: care.bottom }
     };
   });
@@ -260,6 +262,7 @@ async function runPlaywrightSuite() {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await prepareArContext(context);
     await context.route('https://**', (route) => route.abort());
     const page = await context.newPage();
 
@@ -423,12 +426,12 @@ async function runPlaywrightSuite() {
     assert.deepEqual(await openPanelNames(page), ['picnicBasket'], 'Drawer picnic shortcut must open only #picnic-basket-card');
     await page.click('#btn-shop');
     await page.waitForTimeout(140);
-    await page.click('[data-ar13-shortcut="diary"]');
+    await page.click('#btn-diary-book');
     await page.waitForTimeout(150);
-    assert.deepEqual(await openPanelNames(page), ['diaryBook'], 'Drawer diary shortcut must open only #diary-book-card');
+    assert.deepEqual(await openPanelNames(page), ['diaryBook'], 'The diary tile in the memory book must open only #diary-book-card');
     await page.click('#btn-diary-book');
     await page.waitForTimeout(130);
-    assert.deepEqual(await openPanelNames(page), [], 'Tapping the diary dock button again must close the diary');
+    assert.deepEqual(await openPanelNames(page), [], 'Closing the diary leaves no panel open');
 
     // 3. 工作日：可以挑点心 / 选地点、装篮子攒期待章，但不能出发（友好提示，不是什么都做不了的硬锁）
     await page.click('#btn-picnic-basket');
@@ -848,7 +851,7 @@ async function runPlaywrightSuite() {
     assert(reloaded.diaryBook.totalStickers >= 8);
     assert.equal(reloaded.picnicRun.phase, 'plan', 'Outing state is runtime only');
 
-    // 11. 桌面 1440x900：25 键单排，摇杆 / 跳跃键两侧留白 >= 10px
+    // 11. 桌面 1440x900：23 键单排，摇杆 / 跳跃键两侧留白 >= 10px
     const deskDock = await dockAudit(page);
     assert.equal(deskDock.count, CARE_BTN_COUNT);
     assert.equal(deskDock.rows, 1, '1440x900 keeps one dock row');

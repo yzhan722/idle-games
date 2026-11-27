@@ -38,150 +38,272 @@ const SPRITE_FILES = {
   heroPoseRps: './assets/hero_pose_rps.webp?v=hd5',
   heroPoseCheer: './assets/hero_pose_cheer.webp?v=hd5',
 
-  slime: './assets/mon_slime.webp?v=hd8',
-  bat: './assets/mon_bat.webp?v=hd8',
+  slime: './assets/mon_slime.webp?v=hd60',
+  bat: './assets/mon_bat.webp?v=hd60',
   elite: './assets/mon_elite.webp?v=hd8',
   boss: './assets/mon_boss.webp?v=hd4',
-  star: './assets/star_goal.webp?v=hd8',
-  foodRice: './assets/food_rice.webp?v=hd2',
-  foodTea: './assets/food_tea.webp?v=hd2',
-  foodBento: './assets/food_bento.webp?v=hd2',
-  foodCake: './assets/food_cake.webp?v=hd2',
-  toyWhale: './assets/toy_whale.webp?v=hd2',
-  toyYarn: './assets/toy_yarn.webp?v=hd2',
-  toyDuck: './assets/toy_duck.webp?v=hd2',
-  propCushion: './assets/prop_cushion.webp?v=hd2',
-  furnPc: './assets/furn_pc.webp?v=hd4',
+  star: './assets/star_goal.webp?v=hd60',
+  foodRice: './assets/food_rice.webp?v=hd60',
+  foodTea: './assets/food_tea.webp?v=hd60',
+  foodBento: './assets/food_bento.webp?v=hd60',
+  foodCake: './assets/food_cake.webp?v=hd60',
+  toyWhale: './assets/toy_whale.webp?v=hd60',
+  toyYarn: './assets/toy_yarn.webp?v=hd60',
+  toyDuck: './assets/toy_duck.webp?v=hd60',
+  propCushion: './assets/prop_cushion.webp?v=hd60',
+  furnPc: './assets/furn_pc.webp?v=hd60',
   furnTree: './assets/furn_tree.webp?v=hd4',
-  furnLamp: './assets/furn_lamp.webp?v=hd4',
+  furnLamp: './assets/furn_lamp.webp?v=hd60',
   furnMusicbox: './assets/furn_musicbox.webp?v=hd31',
-  propStudyBook: './assets/prop_study_book.webp?v=hd31',
+  propStudyBook: './assets/prop_study_book.webp?v=hd60',
 
   // 治愈系手绘 UI / 装扮发饰 / 武器强化 / 粒子贴纸素材
-  uiCoin: './assets/ui_coin.webp?v=hd6',
-  uiBtnPomodoro: './assets/ui_btn_pomodoro.webp?v=hd31',
-  uiStampFocus: './assets/ui_stamp_focus.webp?v=hd31',
-  uiBtnTeatime: './assets/ui_btn_teatime.webp?v=hd31',
-  teaPeachOolong: './assets/tea_peach_oolong.webp?v=hd31',
-  teaBlueberryFoam: './assets/tea_blueberry_foam.webp?v=hd31',
-  teaOsmanthusMilk: './assets/tea_osmanthus_milk.webp?v=hd31',
-  pastrySouffle: './assets/pastry_souffle.webp?v=hd31',
-  pastryWhaleMacaron: './assets/pastry_whale_macaron.webp?v=hd31',
-  pastryPuddingTart: './assets/pastry_pudding_tart.webp?v=hd31',
-  teaPlatterSignature: './assets/tea_platter_signature.webp?v=hd31',
+  uiCoin: './assets/ui_coin.webp?v=hd60',
+  uiBtnPomodoro: './assets/ui_btn_pomodoro.webp?v=hd60',
+  uiStampFocus: './assets/ui_stamp_focus.webp?v=hd60',
+  uiBtnTeatime: './assets/ui_btn_teatime.webp?v=hd60',
+  teaPeachOolong: './assets/tea_peach_oolong.webp?v=hd60',
+  teaBlueberryFoam: './assets/tea_blueberry_foam.webp?v=hd60',
+  teaOsmanthusMilk: './assets/tea_osmanthus_milk.webp?v=hd60',
+  pastrySouffle: './assets/pastry_souffle.webp?v=hd60',
+  pastryWhaleMacaron: './assets/pastry_whale_macaron.webp?v=hd60',
+  pastryPuddingTart: './assets/pastry_pudding_tart.webp?v=hd60',
+  teaPlatterSignature: './assets/tea_platter_signature.webp?v=hd60',
   uiBtnWeeklyJournal: './assets/ui_btn_weekly_journal.webp?v=hd31',
-  uiBtnTerrarium: './assets/ui_btn_terrarium.webp?v=hd31',
-  plantPeachSucculent: './assets/plant_peach_succulent.webp?v=hd31',
+  uiBtnTerrarium: './assets/ui_btn_terrarium.webp?v=hd60',
+  plantPeachSucculent: './assets/plant_peach_succulent.webp?v=hd60',
   plantStarLily: './assets/plant_star_lily.webp?v=hd31',
-  plantBlueHydrangea: './assets/plant_blue_hydrangea.webp?v=hd31',
-  uiBtnMusicbox: './assets/ui_btn_musicbox.webp?v=hd31',
-  stampGoodnightMoon: './assets/stamp_goodnight_moon.webp?v=hd31',
-  uiBtnCollageFrame: './assets/ui_btn_collage_frame.webp?v=hd31',
-  stickerLaceGarland: './assets/sticker_lace_garland.webp?v=hd31',
-  stickerPressedDaisy: './assets/sticker_pressed_daisy.webp?v=hd31',
-  stickerWhaleStamp: './assets/sticker_whale_stamp.webp?v=hd31',
-  uiBtnCozyRadio: './assets/ui_btn_cozy_radio.webp?v=hd31',
-  radioVinylNote: './assets/radio_vinyl_note.webp?v=hd31',
-  uiBtnCrochetBasket: './assets/ui_btn_crochet_basket.webp?v=hd31',
-  knitWhaleScarf: './assets/knit_whale_scarf.webp?v=hd31',
-  knitStarCoaster: './assets/knit_star_coaster.webp?v=hd31',
-  knitCloudPillow: './assets/knit_cloud_pillow.webp?v=hd31',
-  uiBtnCocoaBar: './assets/ui_btn_cocoa_bar.webp?v=hd31',
-  cocoaMarshmallowTopping: './assets/cocoa_marshmallow_topping.webp?v=hd31',
-  uiBtnPressedFlowers: './assets/ui_btn_pressed_flowers.webp?v=hd31',
-  pressedSakuraBookmark: './assets/pressed_sakura_bookmark.webp?v=hd31',
-  pressedGinkgoBookmark: './assets/pressed_ginkgo_bookmark.webp?v=hd31',
-  pressedBabysbreathBookmark: './assets/pressed_babysbreath_bookmark.webp?v=hd31',
-  uiBtnTelescope: './assets/ui_btn_telescope.webp?v=hd31',
-  uiBtnWatercolorEasel: './assets/ui_btn_watercolor_easel.webp?v=hd31',
-  uiBtnMailbox: './assets/ui_btn_mailbox.webp?v=hd31',
+  plantBlueHydrangea: './assets/plant_blue_hydrangea.webp?v=hd60',
+  uiBtnMusicbox: './assets/ui_btn_musicbox.webp?v=hd60',
+  stampGoodnightMoon: './assets/stamp_goodnight_moon.webp?v=hd60',
+  uiBtnCollageFrame: './assets/ui_btn_collage_frame.webp?v=hd60',
+  stickerLaceGarland: './assets/sticker_lace_garland.webp?v=hd60',
+  stickerPressedDaisy: './assets/sticker_pressed_daisy.webp?v=hd60',
+  stickerWhaleStamp: './assets/sticker_whale_stamp.webp?v=hd60',
+  uiBtnCozyRadio: './assets/ui_btn_cozy_radio.webp?v=hd60',
+  radioVinylNote: './assets/radio_vinyl_note.webp?v=hd60',
+  uiBtnCrochetBasket: './assets/ui_btn_crochet_basket.webp?v=hd60',
+  knitWhaleScarf: './assets/knit_whale_scarf.webp?v=hd60',
+  knitStarCoaster: './assets/knit_star_coaster.webp?v=hd60',
+  knitCloudPillow: './assets/knit_cloud_pillow.webp?v=hd60',
+  uiBtnCocoaBar: './assets/ui_btn_cocoa_bar.webp?v=hd60',
+  cocoaMarshmallowTopping: './assets/cocoa_marshmallow_topping.webp?v=hd60',
+  uiBtnPressedFlowers: './assets/ui_btn_pressed_flowers.webp?v=hd60',
+  pressedSakuraBookmark: './assets/pressed_sakura_bookmark.webp?v=hd60',
+  pressedGinkgoBookmark: './assets/pressed_ginkgo_bookmark.webp?v=hd60',
+  pressedBabysbreathBookmark: './assets/pressed_babysbreath_bookmark.webp?v=hd60',
+  uiBtnTelescope: './assets/ui_btn_telescope.webp?v=hd60',
+  uiBtnWatercolorEasel: './assets/ui_btn_watercolor_easel.webp?v=hd60',
+  uiBtnMailbox: './assets/ui_btn_mailbox.webp?v=hd60',
   watercolorRainyWindow: './assets/watercolor_rainy_window.webp?v=hd31',
-  watercolorPalette: './assets/watercolor_palette.webp?v=hd31',
-  letterEnvelope: './assets/letter_envelope.webp?v=hd31',
-  stampWhale: './assets/stamp_whale.webp?v=hd31',
-  uiBtnBentoKitchen: './assets/ui_btn_bento_kitchen.webp?v=hd31',
-  uiBtnMemoryPuzzle: './assets/ui_btn_memory_puzzle.webp?v=hd31',
+  watercolorPalette: './assets/watercolor_palette.webp?v=hd60',
+  letterEnvelope: './assets/letter_envelope.webp?v=hd60',
+  stampWhale: './assets/stamp_whale.webp?v=hd60',
+  uiBtnBentoKitchen: './assets/ui_btn_bento_kitchen.webp?v=hd60',
+  uiBtnMemoryPuzzle: './assets/ui_btn_memory_puzzle.webp?v=hd60',
   bentoBoxFinished: './assets/bento_box_finished.webp?v=hd31',
-  onigiriTrio: './assets/onigiri_trio.webp?v=hd31',
-  puzzlePieceMemory: './assets/puzzle_piece_memory.webp?v=hd31',
+  onigiriTrio: './assets/onigiri_trio.webp?v=hd60',
+  puzzlePieceMemory: './assets/puzzle_piece_memory.webp?v=hd60',
   memoryWallFrame: './assets/memory_wall_frame.webp?v=hd31',
-  uiBtnKittenCorner: './assets/ui_btn_kitten_corner.webp?v=hd31',
-  uiBtnGreetingCard: './assets/ui_btn_greeting_card.webp?v=hd31',
-  kittenGinger: './assets/kitten_ginger.webp?v=hd31',
-  kittenTuxedo: './assets/kitten_tuxedo.webp?v=hd31',
-  catFoodBowl: './assets/cat_food_bowl.webp?v=hd31',
-  handmadeCard: './assets/handmade_card.webp?v=hd31',
-  uiBtnPicnicBasket: './assets/ui_btn_picnic_basket.webp?v=hd31',
-  uiBtnDiary: './assets/ui_btn_diary.webp?v=hd31',
+  uiBtnKittenCorner: './assets/ui_btn_kitten_corner.webp?v=hd60',
+  uiBtnGreetingCard: './assets/ui_btn_greeting_card.webp?v=hd60',
+  kittenGinger: './assets/kitten_ginger.webp?v=hd60',
+  kittenTuxedo: './assets/kitten_tuxedo.webp?v=hd60',
+  catFoodBowl: './assets/cat_food_bowl.webp?v=hd60',
+  handmadeCard: './assets/handmade_card.webp?v=hd60',
+  uiBtnPicnicBasket: './assets/ui_btn_picnic_basket.webp?v=hd60',
+  uiBtnDiary: './assets/ui_btn_diary.webp?v=hd60',
   picnicBlanket: './assets/picnic_blanket.webp?v=hd31',
-  picnicSandwich: './assets/picnic_sandwich.webp?v=hd31',
-  diaryPage: './assets/diary_page.webp?v=hd31',
-  diarySticker: './assets/diary_sticker.webp?v=hd31',
-  uiBtnPotteryWheel: './assets/ui_btn_pottery_wheel.webp?v=hd31',
-  uiBtnAromaTable: './assets/ui_btn_aroma_table.webp?v=hd31',
-  potteryCup: './assets/pottery_cup.webp?v=hd31',
-  potteryVase: './assets/pottery_vase.webp?v=hd31',
-  aromaBottle: './assets/aroma_bottle.webp?v=hd31',
-  aromaDiffuser: './assets/aroma_diffuser.webp?v=hd31',
-  uiBtnStarProjector: './assets/ui_btn_star_projector.webp?v=hd31',
-  uiBtnRainCorner: './assets/ui_btn_rain_corner.webp?v=hd31',
-  starProjector: './assets/star_projector.webp?v=hd31',
-  constellationCard: './assets/constellation_card.webp?v=hd31',
-  rainCushion: './assets/rain_cushion.webp?v=hd31',
-  rainChime: './assets/rain_chime.webp?v=hd31',
+  picnicSandwich: './assets/picnic_sandwich.webp?v=hd60',
+  diaryPage: './assets/diary_page.webp?v=hd60',
+  diarySticker: './assets/diary_sticker.webp?v=hd60',
+  uiBtnPotteryWheel: './assets/ui_btn_pottery_wheel.webp?v=hd60',
+  uiBtnAromaTable: './assets/ui_btn_aroma_table.webp?v=hd60',
+  potteryCup: './assets/pottery_cup.webp?v=hd60',
+  potteryVase: './assets/pottery_vase.webp?v=hd60',
+  aromaBottle: './assets/aroma_bottle.webp?v=hd60',
+  aromaDiffuser: './assets/aroma_diffuser.webp?v=hd60',
+  uiBtnStarProjector: './assets/ui_btn_star_projector.webp?v=hd60',
+  uiBtnRainCorner: './assets/ui_btn_rain_corner.webp?v=hd60',
+  starProjector: './assets/star_projector.webp?v=hd60',
+  constellationCard: './assets/constellation_card.webp?v=hd60',
+  rainCushion: './assets/rain_cushion.webp?v=hd60',
+  rainChime: './assets/rain_chime.webp?v=hd60',
   // AR-16 墙面刺绣绷架 & 地板小暖炉冬日角（奶油手账风去底贴图）
-  uiBtnEmbroidery: './assets/ui_btn_embroidery.webp?v=hd31',
-  uiBtnHearthCorner: './assets/ui_btn_hearth_corner.webp?v=hd31',
+  uiBtnEmbroidery: './assets/ui_btn_embroidery.webp?v=hd60',
+  uiBtnHearthCorner: './assets/ui_btn_hearth_corner.webp?v=hd60',
   embroideryHoop: './assets/embroidery_hoop.webp?v=hd31',
-  embroideryPatch: './assets/embroidery_patch.webp?v=hd31',
-  floorHeater: './assets/floor_heater.webp?v=hd31',
-  roastedSnack: './assets/roasted_snack.webp?v=hd31',
+  embroideryPatch: './assets/embroidery_patch.webp?v=hd60',
+  floorHeater: './assets/floor_heater.webp?v=hd60',
+  roastedSnack: './assets/roasted_snack.webp?v=hd60',
   // AR-17 季节换装衣橱 & 睡前故事书（奶油手账风去底贴图）
-  uiBtnWardrobe: './assets/ui_btn_wardrobe.webp?v=hd33',
-  uiBtnStorybook: './assets/ui_btn_storybook.webp?v=hd33',
+  uiBtnWardrobe: './assets/ui_btn_wardrobe.webp?v=hd60',
+  uiBtnStorybook: './assets/ui_btn_storybook.webp?v=hd60',
   storybookPage: './assets/storybook_page.webp?v=hd33',
-  storyBookmark: './assets/story_bookmark.webp?v=hd33',
-  itemBow: './assets/item_bow.webp?v=hd6',
-  itemCrown: './assets/item_crown.webp?v=hd6',
+  storyBookmark: './assets/story_bookmark.webp?v=hd60',
+  itemBow: './assets/item_bow.webp?v=hd60',
+  itemCrown: './assets/item_crown.webp?v=hd60',
   itemAura: './assets/item_aura.webp?v=hd6',
-  itemShellClip: './assets/item_shell_clip.webp?v=hd31',
-  itemStarWreath: './assets/item_star_wreath.webp?v=hd31',
-  vfxSeasonSpring: './assets/vfx_season_spring.webp?v=hd31',
-  vfxSeasonSummer: './assets/vfx_season_summer.webp?v=hd31',
-  vfxSeasonAutumn: './assets/vfx_season_autumn.webp?v=hd31',
-  vfxSeasonWinter: './assets/vfx_season_winter.webp?v=hd31',
-  upgBlaster: './assets/upg_blaster.webp?v=hd6',
-  upgBlade: './assets/upg_blade.webp?v=hd6',
-  upgMagnet: './assets/upg_magnet.webp?v=hd6',
-  upgBoots: './assets/upg_boots.webp?v=hd6',
-  propAlarm: './assets/prop_alarm.webp?v=hd6',
-  vfxHeart: './assets/vfx_heart.webp?v=hd6',
-  vfxSparkle: './assets/vfx_sparkle.webp?v=hd6',
-  vfxNote: './assets/vfx_note.webp?v=hd6',
-  vfxZzz: './assets/vfx_zzz.webp?v=hd6',
-  vfxAngry: './assets/vfx_angry.webp?v=hd6',
-  vfxGem: './assets/vfx_gem.webp?v=hd6',
+  itemShellClip: './assets/item_shell_clip.webp?v=hd60',
+  itemStarWreath: './assets/item_star_wreath.webp?v=hd60',
+  vfxSeasonSpring: './assets/vfx_season_spring.webp?v=hd60',
+  vfxSeasonSummer: './assets/vfx_season_summer.webp?v=hd60',
+  vfxSeasonAutumn: './assets/vfx_season_autumn.webp?v=hd60',
+  vfxSeasonWinter: './assets/vfx_season_winter.webp?v=hd60',
+  upgBlaster: './assets/upg_blaster.webp?v=hd60',
+  upgBlade: './assets/upg_blade.webp?v=hd60',
+  upgMagnet: './assets/upg_magnet.webp?v=hd60',
+  upgBoots: './assets/upg_boots.webp?v=hd60',
+  propAlarm: './assets/prop_alarm.webp?v=hd60',
+  vfxHeart: './assets/vfx_heart.webp?v=hd60',
+  vfxSparkle: './assets/vfx_sparkle.webp?v=hd60',
+  vfxNote: './assets/vfx_note.webp?v=hd60',
+  vfxZzz: './assets/vfx_zzz.webp?v=hd60',
+  vfxAngry: './assets/vfx_angry.webp?v=hd60',
+  vfxGem: './assets/vfx_gem.webp?v=hd60',
 
   // AR-1 幸存者打工 2.0：奶油手账风肉鸽技能卡、蓝鲸/茶刃超武与最高班次徽章贴图
-  skFrostBubble: './assets/sk_frost_bubble.webp?v=hd15',
-  skCatLightning: './assets/sk_cat_lightning.webp?v=hd15',
-  skOnigiriHeal: './assets/sk_onigiri_heal.webp?v=hd15',
-  skStarPhantom: './assets/sk_star_phantom.webp?v=hd15',
-  skCritCharm: './assets/sk_crit_charm.webp?v=hd15',
-  upgSuperWhale: './assets/upg_super_whale.webp?v=hd15',
-  upgSuperTeablade: './assets/upg_super_teablade.webp?v=hd15',
-  uiBadgeShift: './assets/ui_badge_shift.webp?v=hd15'
+  skFrostBubble: './assets/sk_frost_bubble.webp?v=hd60',
+  skCatLightning: './assets/sk_cat_lightning.webp?v=hd60',
+  skOnigiriHeal: './assets/sk_onigiri_heal.webp?v=hd60',
+  skStarPhantom: './assets/sk_star_phantom.webp?v=hd60',
+  skCritCharm: './assets/sk_crit_charm.webp?v=hd60',
+  upgSuperWhale: './assets/upg_super_whale.webp?v=hd60',
+  upgSuperTeablade: './assets/upg_super_teablade.webp?v=hd60',
+  uiBadgeShift: './assets/ui_badge_shift.webp?v=hd60'
+};
+
+// AR-COM5 按需加载：第一批只下站立 4 帧和房间里固定摆着的 11 样；其余等真要画（绘制前都会先问 isReady）才下，
+// 第一屏下完之后在后台补角色动作；打工 / 摘星的贴图在切过去时下。没下完照旧走各处的兜底
+const FIRST_SPRITES = [
+  'heroIdle',
+  'heroIdle2',
+  'heroIdleBlink',
+  'heroIdleTalk',
+  'uiBtnCozyRadio',
+  'uiBtnAromaTable',
+  'uiBtnPotteryWheel',
+  'starProjector',
+  'rainCushion',
+  'rainChime',
+  'embroideryHoop',
+  'floorHeater',
+  'roastedSnack',
+  'vfxHeart',
+  'vfxSparkle'
+];
+const HERO_BACKFILL = [
+  'heroRun1',
+  'heroRunPass1',
+  'heroRunAir1',
+  'heroRunContact2',
+  'heroRun2',
+  'heroRunPass2',
+  'heroJumpPrep',
+  'heroJump',
+  'heroAirApex',
+  'heroFall',
+  'heroBrake',
+  'heroPosePeace',
+  'heroPoseRps',
+  'heroSitEdge',
+  'heroSleepLoaf',
+  'heroInteractPoke',
+  'heroProud',
+  'heroPattedTsundere',
+  'heroPoseReach',
+  'heroPoseCheer',
+  'heroCrouch',
+  'heroLedgeHang',
+  'heroClimbUp',
+  'heroAttack'
+];
+const MODE_SPRITES = {
+  parkour: ['star'],
+  survivor: [
+    'slime',
+    'bat',
+    'elite',
+    'boss',
+    'vfxGem',
+    'uiCoin',
+    'upgBlaster',
+    'upgBlade',
+    'skFrostBubble',
+    'skCatLightning',
+    'skStarPhantom',
+    'skOnigiriHeal',
+    'skCritCharm',
+    'upgSuperWhale',
+    'upgSuperTeablade',
+    'uiBadgeShift',
+    'heroAttack'
+  ]
 };
 
 export const images = {};
+const spriteLoads = new Map(); // 还没下完的：img -> { src, busy, tries, retryAt }
 for (const [key, src] of Object.entries(SPRITE_FILES)) {
   const img = new Image();
-  img.src = src;
+  const st = { src, busy: false, tries: 0, retryAt: 0 };
+  img.onload = () => spriteLoads.delete(img);
+  // 下载失败：隔 1.5 秒、3 秒、6 秒……再让它重下，最久隔 30 秒
+  img.onerror = () => {
+    st.busy = false;
+    st.retryAt = performance.now() + Math.min(30000, 1500 * 2 ** st.tries);
+    st.tries += 1;
+  };
+  spriteLoads.set(img, st);
   images[key] = img;
 }
 
+function loadSprite(img, low = false) {
+  const st = spriteLoads.get(img);
+  if (!st || st.busy || performance.now() < st.retryAt) return false;
+  st.busy = true;
+  if (low) img.fetchPriority = 'low';
+  img.src = st.src;
+  return true;
+}
+
 export function isReady(img) {
-  return img && img.complete && img.naturalWidth > 0;
+  if (!img) return false;
+  if (img.complete && img.naturalWidth > 0) return true;
+  loadSprite(img);
+  return false;
+}
+
+export function preloadModeSprites(mode) {
+  for (const key of MODE_SPRITES[mode] || []) loadSprite(images[key]);
+}
+
+// 后台补角色动作：一次两张、低优先级；开了省流量就不补，用到哪张下哪张
+function backfillHero() {
+  if (navigator.connection && navigator.connection.saveData) return;
+  const queue = HERO_BACKFILL.map((key) => images[key]);
+  const next = () => {
+    while (queue.length) {
+      const img = queue.shift();
+      if (!loadSprite(img, true)) continue;
+      img.addEventListener('load', next, { once: true });
+      img.addEventListener('error', next, { once: true });
+      return;
+    }
+  };
+  next();
+  next();
+}
+
+// 恢复联网：不等退避时间，下一帧画到就重下
+function retrySpritesNow() {
+  for (const st of spriteLoads.values()) st.retryAt = 0;
+}
+
+for (const key of FIRST_SPRITES) loadSprite(images[key]);
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', retrySpritesNow);
+  if (document.readyState === 'complete') setTimeout(backfillHero, 600);
+  else window.addEventListener('load', () => setTimeout(backfillHero, 600), { once: true });
 }
 
 const anim = {
@@ -207,6 +329,8 @@ const anim = {
   crossfadeSpeed: 11,
   lastPoseKey: 'idle'
 };
+const STAND_SPRITES = new Set([images.heroIdle, images.heroIdle2, images.heroIdleBlink, images.heroIdleTalk]);
+const poseGroup = (key) => key.split('_')[0];
 
 function drawArticulatedMesh(ctx, img, drawSize, footAnchorY, meshParams) {
   if (!isReady(img)) return;
@@ -625,6 +749,15 @@ export function drawHeroSprite(ctx, p, now) {
     }
   }
 
+  // AR-COM5 这个动作的图还没下完：同一个动作（跑步缺帧）接着用手上这张，换了动作用站立帧
+  // （免得趴着 / 闭着眼就去跑），不画蓝点
+  if (!isReady(targetSprite)) {
+    const cur = anim.currSprite;
+    const keep = isReady(cur) && poseGroup(poseKey) === poseGroup(anim.lastPoseKey);
+    const stand = isReady(images.heroIdle) ? images.heroIdle : images.heroIdle2;
+    targetSprite = keep ? cur : isReady(stand) ? stand : isReady(cur) ? cur : images.heroIdle;
+  }
+
   // Live2D 视线与身体重心动态跟随（朝向主人的指尖、手中美食、玩具球或手掌倾斜角微倾）
   if (!p.isPickedUp && p.spinTimer <= 0) {
     const signedLook = (p.lookOffsetX || 0) * (p.facing || 1);
@@ -715,7 +848,8 @@ export function drawHeroSprite(ctx, p, now) {
     ctx.fill();
   }
 
-  const isLowPose = p.isCrouching || (p.idleTime > 5.2 && !isMoving && !p.onPalm);
+  // 蹲 / 趴的图还没下完时画的是站立帧，发饰跟着站立的头顶
+  const isLowPose = (p.isCrouching || (p.idleTime > 5.2 && !isMoving && !p.onPalm)) && !STAND_SPRITES.has(anim.currSprite);
   const headTopY = (isLowPose ? -88 : -110) + verticalWave * 0.85;
   const hatOffsetX = anim.headSwayX * 0.85;
 

@@ -5,6 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { prepareArContext } from './_ar_entry_helper.mjs';
+import { GAME_MODULES, readGameSource } from './_split_lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/project/idle-games/node_modules/playwright');
@@ -46,7 +48,7 @@ async function shot(page, name) {
 }
 
 function runStaticChecks() {
-  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js'];
+  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js', ...GAME_MODULES];
   for (const file of jsFiles) {
     execFileSync(process.execPath, ['--check', path.join(PUBLIC_DIR, file)], { stdio: 'pipe' });
   }
@@ -83,7 +85,7 @@ function runStaticChecks() {
   assert(/export function drawPressedFlowerDesk/.test(spritesContent), 'sprites.js must export drawPressedFlowerDesk');
   assert(/export function drawStargazeTelescopeProp/.test(spritesContent), 'sprites.js must export drawStargazeTelescopeProp');
 
-  const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
+  const gameContent = readGameSource(PUBLIC_DIR);
   assert(/\.\/sprites\.js\?v=hd(?:2[4-9]|[3-9]\d)/.test(gameContent), 'game.js must import ./sprites.js?v=hd24+');
   assert(/\.\/audio\.js\?v=hd(?:2[4-9]|[3-9]\d)/.test(gameContent), 'game.js must import ./audio.js?v=hd24+');
   assert(/\.\/vision\.js\?v=hd(?:2[4-9]|[3-9]\d)/.test(gameContent), 'game.js must import ./vision.js?v=hd24+');
@@ -179,6 +181,7 @@ async function runPlaywrightSuite() {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await prepareArContext(context);
     await context.route('https://**', (route) => route.abort());
     const page = await context.newPage();
 
@@ -295,10 +298,10 @@ async function runPlaywrightSuite() {
     }
 
     // 装扮抽屉 AR-9 快捷入口
-    await page.click('[data-ar9-shortcut="pressed"]');
+    await page.click('#btn-pressed-flowers');
     await page.waitForTimeout(150);
     let afterShortcut = (await getAr9State(page)).openPanels;
-    assert.equal(afterShortcut.pressedFlowers, true, 'Dress drawer pressed shortcut must open #pressed-flower-card');
+    assert.equal(afterShortcut.pressedFlowers, true, 'The pressed-flower tile in the memory book must open #pressed-flower-card');
     assert.equal(afterShortcut.drawer, false, 'Drawer must close when #pressed-flower-card opens');
     await page.click('#btn-shop');
     await page.waitForTimeout(140);

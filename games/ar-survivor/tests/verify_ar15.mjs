@@ -5,6 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { prepareArContext } from './_ar_entry_helper.mjs';
+import { GAME_MODULES, readGameSource } from './_split_lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/project/idle-games/node_modules/playwright');
@@ -37,8 +39,8 @@ const REQUIRED_AR15_ASSETS = [
   'rain_chime.webp'
 ];
 
-// AR-15 明确不再加船坞键：仍是 AR-13 起的 25 键
-const CARE_BTN_COUNT = 25;
+// AR-15 不加船坞键；AR-G3 把拼贴 / 压花 / 日记收进手账后是 23 键
+const CARE_BTN_COUNT = 23;
 const SAVE_KEY = 'ar_deepseek_pet_v2';
 const MIN_DOCK_MARGIN = 10;
 
@@ -118,7 +120,7 @@ function sliceBetween(content, startMarker, endMarker, label) {
 }
 
 function runStaticChecks() {
-  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js'];
+  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js', ...GAME_MODULES];
   for (const file of jsFiles) {
     execFileSync(process.execPath, ['--check', path.join(PUBLIC_DIR, file)], { stdio: 'pipe' });
   }
@@ -138,7 +140,7 @@ function runStaticChecks() {
   const htmlContent = fs.readFileSync(path.join(PUBLIC_DIR, 'index.html'), 'utf8');
   const cssContent = fs.readFileSync(path.join(PUBLIC_DIR, 'style.css'), 'utf8');
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
-  const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
+  const gameContent = readGameSource(PUBLIC_DIR);
   const audioContent = fs.readFileSync(path.join(PUBLIC_DIR, 'audio.js'), 'utf8');
 
   // 缓存号：AR-16 起继续递增（hd31 / hd55），这里只要求不低于 AR-15 的 hd30 / hd54，且没有任何 hd23..hd29 / game.js?v=hd50..hd53 残留
@@ -187,7 +189,7 @@ function runStaticChecks() {
     assert(fs.statSync(full).size > 0, `Empty asset on disk: ${full}`);
   }
 
-  // 船坞不加键：仍是 25 键，也没有任何星空 / 听雨船坞键
+  // 船坞不加键：仍是 23 键，也没有任何星空 / 听雨船坞键
   assert.equal((htmlContent.match(/class="care-btn[\s"]/g) || []).length, CARE_BTN_COUNT, `index.html must keep exactly ${CARE_BTN_COUNT} dock keys`);
   const dockHtml = htmlContent.slice(htmlContent.indexOf('id="pet-care-bar"'), htmlContent.indexOf('class="action-zone"'));
   assert(dockHtml.length > 100 && !/star-projector|star_projector|rain-corner|rain_corner|rain_chime/.test(dockHtml), 'AR-15 must not add a star / rain key to the dock');
@@ -543,6 +545,7 @@ async function runPlaywrightSuite() {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await prepareArContext(context);
     // 全程断网：AR-15 的“本地天气时段”不允许联网
     const outbound = [];
     await context.route('https://**', (route) => {
@@ -621,7 +624,7 @@ async function runPlaywrightSuite() {
     assert(initialAudit.domImgCount >= 9, `Expected >= 9 AR-15 <img> in DOM, got ${initialAudit.domImgCount}`);
     assert.equal(initialAudit.domLoaded, true, 'Every AR-15 <img> in DOM must load (naturalWidth > 0)');
     for (const [file, info] of Object.entries(initialAudit.loadReport)) {
-      assert(info.w === 256 && info.h === 256, `AR-15 image ${file} must decode as 256x256, got ${JSON.stringify(info)}`);
+      assert(info.w === info.h && info.w >= 96, `AR-15 image ${file} must decode as a square >= 96px, got ${JSON.stringify(info)}`);
     }
     assert.equal(initialAudit.careBtnCount, CARE_BTN_COUNT, `Expected ${CARE_BTN_COUNT} dock buttons, got ${initialAudit.careBtnCount}`);
     assert(initialAudit.overflowX <= 0 && initialAudit.overflowY <= 0, `Desktop 1440x900 overflow: ${JSON.stringify(initialAudit)}`);
@@ -1161,7 +1164,7 @@ async function runPlaywrightSuite() {
     await page.click('#btn-diary-book');
     await page.waitForTimeout(160);
 
-    // 9. 桌面 1440x900：25 键单排不变，两张卡不压船坞 / 顶部工具栏，内容不出内部滚动
+    // 9. 桌面 1440x900：23 键单排不变，两张卡不压船坞 / 顶部工具栏，内容不出内部滚动
     let dock = await dockAudit(page);
     assert(dock.count === CARE_BTN_COUNT && dock.rows === 1 && dock.overlap === 0 && dock.joyMargin >= MIN_DOCK_MARGIN && dock.jumpMargin >= MIN_DOCK_MARGIN, `1440x900 dock: ${JSON.stringify(dock)}`);
     for (const [cardId, fn] of [

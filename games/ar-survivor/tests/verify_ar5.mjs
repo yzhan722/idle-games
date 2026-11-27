@@ -5,6 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { prepareArContext } from './_ar_entry_helper.mjs';
+import { GAME_MODULES, readGameSource } from './_split_lib.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('C:/project/idle-games/node_modules/playwright');
@@ -43,7 +45,7 @@ const REQUIRED_AR5_ASSETS = [
 ];
 
 function runStaticChecks() {
-  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js'];
+  const jsFiles = ['audio.js', 'vision.js', 'sprites.js', 'game.js', ...GAME_MODULES];
   for (const file of jsFiles) {
     execFileSync(process.execPath, ['--check', path.join(PUBLIC_DIR, file)], { stdio: 'pipe' });
   }
@@ -71,7 +73,7 @@ function runStaticChecks() {
   const spritesContent = fs.readFileSync(path.join(PUBLIC_DIR, 'sprites.js'), 'utf8');
   assert(/\?v=hd(?:2\d|[3-9]\d)/.test(spritesContent), 'sprites.js must reference ?v=hd20+');
 
-  const gameContent = fs.readFileSync(path.join(PUBLIC_DIR, 'game.js'), 'utf8');
+  const gameContent = readGameSource(PUBLIC_DIR);
   assert(/\.\/sprites\.js\?v=hd(?:2\d|[3-9]\d)/.test(gameContent), 'game.js must import ./sprites.js?v=hd20+');
 
   for (const reqAsset of REQUIRED_AR5_ASSETS) {
@@ -127,6 +129,7 @@ async function runPlaywrightSuite() {
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await prepareArContext(context);
     await context.route('https://**', (route) => route.abort());
     const page = await context.newPage();
 

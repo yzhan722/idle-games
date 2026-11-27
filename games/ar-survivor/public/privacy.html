@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!-- 草案开关：data-status="draft" 时显示草案横幅；主体、邮箱、管辖填好并经人审过后再改成 "final" -->
+<html lang="zh-CN" data-status="draft">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex" />
+  <title>隐私说明</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+      background: #f5efe6;
+      color: #5c4338;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 17px;
+      line-height: 1.75;
+    }
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 24px 22px 28px;
+      border: 3px solid #ffffff;
+      border-radius: 24px;
+      background: #fffdf8;
+      box-shadow: 0 12px 28px rgba(180, 150, 110, 0.18);
+    }
+    h1 { font-size: 26px; color: #74583a; margin-bottom: 12px; }
+    h2 { font-size: 19px; color: #9c4a68; margin: 22px 0 6px; }
+    ul { padding-left: 1.2em; }
+    li { margin: 3px 0; }
+    .short { padding: 12px 16px; border-radius: 16px; background: #fff0f4; font-weight: 700; }
+    .draft { display: none; max-width: 680px; margin: 0 auto 14px; padding: 10px 16px; border-radius: 16px; background: #fde7c4; color: #85602e; font-weight: 800; text-align: center; }
+    [data-status="draft"] .draft { display: block; }
+    .todo { padding: 0 6px; border-radius: 6px; background: #fde7c4; }
+    a { color: #9c4a68; }
+  </style>
+</head>
+<body>
+  <p class="draft">草案，还没有生效</p>
+  <main>
+    <h1>隐私说明</h1>
+    <p class="short">摄像头画面只在你的设备上看，不上传。<br />照片和存档只在这个浏览器里。<br />没有账号，没有广告，我们不做统计，不用 Cookie。</p>
+
+    <h2>摄像头</h2>
+    <ul>
+      <li>第一次点「开启」后才会用，选择会记住，下次打开按上次的来；点「先不用」就在小屋背景里玩。</li>
+      <li>用来把她画在实景上，认手掌和手势，看画面移动和明暗；摘星、打工时还会认桌上的物品。</li>
+      <li>这些都在你的设备上算。游戏不录像，也不把画面发出去。</li>
+      <li>在「手账」里随时可以关掉。切到后台、锁屏或切到别的标签页时会停掉摄像头；回来时，走之前开着的会重新打开，打不开（比如权限被收回）就留在小屋，不会反复申请。</li>
+      <li>摄像头开着时，右上角相机键上挂着「开」字。不使用麦克风。</li>
+    </ul>
+
+    <h2>照片</h2>
+    <ul>
+      <li>按拍照键、做拍照心愿，会拍一张合影。没开摄像头时拍的是小屋背景。</li>
+      <li>对着镜头比耶：第一次会先问你，选「以后自动拍」才自动拍，选「只在我点时拍」就不拍；选择会记住，在「手账」的「比耶拍」里可以改。</li>
+      <li>每次拍都会闪一下，开着声音还有快门声。镜头里拍到的人和东西都会拍进去。</li>
+      <li>合影上印着拍摄时间和亲密等级。缩小后存在这个浏览器里，最多 24 张；满了会去掉没置顶的旧照片。</li>
+      <li>在「手账 · 相册」里可以删，也可以自己下载。</li>
+      <li>用合影玩拼图会另存一张小图，最多 6 张。在相册里删照片，小图不会跟着删。</li>
+    </ul>
+
+    <h2>存在这个浏览器里的东西</h2>
+    <ul>
+      <li>游戏进度（含你写的专注事项名称）、相册、拼图小图、声音开关、曲目、摄像头选择、比耶自动拍选择。</li>
+      <li>清掉浏览器里本站的数据，就全部删除，找不回来。你自己下载的照片不受影响。</li>
+    </ul>
+
+    <h2>会连到哪里</h2>
+    <ul>
+      <li>Cloudflare：托管网站，访问时会处理你的 IP 地址和浏览器信息；日志留多久：<span class="todo">待填</span></li>
+      <li>开启摄像头后，会从 cdn.jsdelivr.net 和 storage.googleapis.com 下载手势与物品识别组件。下载时对方会看到你的 IP 地址和浏览器信息，我们不会把摄像头画面发给它们。</li>
+      <li>识别组件自己会不会另外联网上报使用情况：<span class="todo">待填</span></li>
+      <li>她说话用浏览器自带的朗读。有的浏览器会联网合成，发出去的是她的台词。关掉声音就不朗读。</li>
+      <li>除此之外，游戏自己不向任何服务器发送数据。</li>
+    </ul>
+
+    <h2>未成年人</h2>
+    <p><span class="todo">待填</span></p>
+
+    <h2>联系</h2>
+    <p>运营主体：<span class="todo">待填</span></p>
+    <p>联系邮箱：<span class="todo">待填</span></p>
+    <p>适用地区与法律：<span class="todo">待填</span></p>
+    <p>生效日期：<span class="todo">待填</span></p>
+    <p style="margin-top: 18px"><a href="./terms.html?v=hd1">用户协议</a></p>
+  </main>
+</body>
+</html>
