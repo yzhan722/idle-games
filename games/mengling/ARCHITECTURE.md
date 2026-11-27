@@ -19,7 +19,8 @@
 
 ### 入口与启动流程
 
-1. **main.js**：比对 `CURRENT_VERSION`（localStorage `lastKnownVersion`）；版本变化时清 SW 缓存并刷新。动态 `import` `type_zh.js` → `app.js`，失败最多 5 次指数退避重试。
+1. **main.js**：动态 `import` `type_zh.js` → `app.js`（首次带 `?v=`，重试换地址），失败最多 5 次指数退避重试。
+   面板模块按需加载：`modules/app/lazy_panel.js`（功能 / 挑战 / 帮助 / 萌灵 / 图鉴 / 商店 / 背包 / 排行榜 / 社交），进页后空闲时预取；体积与口径见 `docs/PERF.md`。
 2. **app.js `boot()`**：`load()` 本地存档 → 离线 tick 结算 → 每日登录奖励 → 云存档 token 则 `doCloudSyncNow()` → 初始化好友/社交/引导/红点 → `render()` → 默认 `activateTab("bonfire")` → 500ms `tick` 循环 + 3s 自动存。
 
 ### Tab 阶段性解锁（`app.js` `render()` 内 `updateTabVisibility`）
@@ -40,7 +41,8 @@
 | 区域 | 路径 |
 |------|------|
 | 健康检查 | `GET /api/health` |
-| 鉴权 | `POST /api/auth/{register,login,logout}` |
+| 鉴权 | `POST /api/auth/{register,login,logout,logout-all,delete}`（`logout-all` = 退出所有设备；注册按来源限 10 次 / 小时；`delete` = 注销：密码 + 原样输入用户名，`requestId` 幂等，D1 batch 一次删完；清单在 `functions/api/_account.js`，新加带 uid 的表要登记） |
+| 匿名统计 | `POST /api/ops/ingest`（不存账号 / IP）· `GET /api/ops/retention`（`X-Ops-Key`，聚合） |
 | 云存档 | `GET /api/save/meta` · `GET|PUT /api/save?slot=`（乐观锁：PUT 若客户端 `updatedAt` < 库内 → 409） |
 
 ### 存档槽约定
@@ -52,7 +54,8 @@
 | 2–3 | API 预留，前端未接线 |
 
 - 本机：localStorage + `_bak`；切后台/关页会 `keepalive` 推 slot0
-- Session：Bearer，TTL **90 天**（按 `sessions.created_at`，过期删会话）
+- Session：Bearer，TTL **90 天**（按 `sessions.created_at`，过期删会话）；提前吊销看 `token_version`（`migrations/009`、`010`，没跑之前接口按旧写法工作）
+- 前向兼容：这一版不认识的存档字段由 `modules/save_forward.js` 原样收着写回；老伙伴标记在 `meta.veterans` 里留一份，旧客户端丢了能补回，拉云存档时也保护
 - 选项页：导出/导入 JSON 文件（灾难恢复）
 
 | 排行榜 | `POST /api/score/submit` · `GET /api/leaderboard/:board` |
@@ -60,7 +63,7 @@
 | 全服 Buff | `GET /api/server/buffs` · `POST /api/server/buffs/buy` |
 | Boss | `GET /api/server/boss/bully` · `POST .../attack|claim` |
 | 好友 | `/api/friends/{list,request,accept,gift}`（`requireUser`） |
-| 社交 | `/api/social/{messages,pvp-*,achievements,friend-profile}`（**全部 `requireUser`**；actor=session uid） |
+| 社交 | 私信限 20 条 / 分钟、300 条 / 天，好友申请 / 切磋邀请 10 次 / 分钟，其余写接口也限次（存档写入除外） · `/api/social/{messages,pvp-*,achievements,friend-profile}`（**全部 `requireUser`**；actor=session uid） |
 | 每日任务 | 客户端本地进度 + 登录后 `GET/POST /api/daily_tasks*`（Bearer，防重复领取）；离线仍可玩 |
 
 共享模块：`_db.js` · `_auth.js` · `_uid.js` · `_buffs.js` · `_boss.js`。
@@ -99,11 +102,17 @@ CI：`.github/workflows/selfcheck.yml`（push/PR 跑 selfcheck；0.41.6 已绿�
 
 - `app.js` 组装层；`ui.fetch` 带 Bearer，供云存档与社交 API 使用
 - 道具使用：`modules/item_usage.js`（幸运蛋/王冠/糖果等）；药剂强化在 `modules/tabs/mons_tab.js`（`statBonus` 单项上限 +50）
-- 版本四处同步：`index.html` / `main.js` / `sw.js` / `modules/config.js`
+- 版本四处同步：`index.html` / `main.js` / `sw.js` / `modules/config.js`（`styles.css` 的图标地址也带 `?v=`）；换图必须升版本号，图是本机缓存优先
+- 加删模块或首屏图之后跑 `node scripts/build-precache.mjs`：重写 `sw.js` 预缓存清单与 `index.html` 的 modulepreload；首屏预算由 `first-screen-selfcheck` 锁住
 - 协作：`.cursor/rules/mengling-collab.mdc`
 - 氛围假人：`REMOTE_CONFIG_DEFAULTS.featureFlags.atmosphereFakes` 默认 `false`；排行榜仍 remap 乱码名，但不垫 NPC。
 - 孵化：`modules/systems/breeding.js` 的 `hatchEgg`，`tick.js` 只接线。
+- 收集玩法：实现按期数分在 `modules/systems/collection/*.js`（8 个），`collection_fun.js` 只再导出公开名字；调用方仍从 `collection_fun.js` 引用，新增公开函数要在那里补一行。
+- 立绘：`modules/sprites.js` 只用本地图，缺图退回爪印徽记；不要再加按物种画的矢量造型。
+- 物种数值：捕获率、稀有度、基础属性、进化条件由 `scripts/beast_rules.mjs` 的公式生成（输入 `data/beast_traits.json`），改完跑 `node scripts/build-beast-data.mjs`；`own-numbers-selfcheck` 锁住与第三方快照不一致，`own-balance-selfcheck` 锁住平衡 ±15%。`scripts/_srcdata/` 只供比对。
+- 旧存档：`modules/own_numbers_compat.js` 让规则调整前的伙伴不降稀有度、不降属性、进化免门槛。
+- 二周目：`modules/systems/rebirth.js` 的 `REBIRTH_HEADSTART`（自带加成）由 `scripts/rebirth-speed-selfcheck.mjs` 锁住「到第 5 纪元至少快 25%」。
 
 ## 密钥
 
-- `.env*` 已 ignore；本项目当前选择不轮换 token（2026-07-11）
+- `.env*` 已 ignore，git 历史里没有提交过。2026-11-26 查到线上部署公开过 `.env.local`，token 要不要换、怎么处置见 `docs/ops/LEAK_2026-11-26.md`（2026-07-11 曾选择不轮换，泄露后需用户重新定）。

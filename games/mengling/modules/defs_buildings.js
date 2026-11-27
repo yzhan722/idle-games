@@ -136,7 +136,7 @@ export const BUILDING_DEFS = {
     effects: (state) => {
       const n = state.buildings.ballBench.owned;
       return {
-        capPokeballAdd: 10 * n,
+        capOrbAdd: 10 * n,
       };
     },
     visible: (state) => state.tech.pokeballBasics || state.buildings.ballBench.owned > 0,

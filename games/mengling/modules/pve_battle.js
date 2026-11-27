@@ -29,7 +29,7 @@ export function typeMatchScore(monTypes, stageType) {
   if (resist) score += 45;
   if (weak) score -= 70;
   if (se && resist) score += 35;
-  if (se && weak) score -= 25; // 互克陷阱（如幽灵馆带幽灵）
+  if (se && weak) score -= 25; // 互克陷阱（如幻系关带幻系）
   return { se, resist, weak, score };
 }
 
@@ -275,7 +275,7 @@ export function simulateBattle(team, enemies, stageType, opts = {}) {
     const hit1 = calcDamage(first, second, stageType, dmgOpts);
     second.hp = Math.max(0, second.hp - hit1.damage);
     if (first.side === "player" && hit1.typeMul > 1) superEffectiveHits += 1;
-    const eff1 = hit1.immune ? "（无效）" : hit1.typeMul > 1 ? "（效果拔群）" : hit1.typeMul < 1 ? "（效果不佳）" : "";
+    const eff1 = hit1.immune ? "（无效）" : hit1.typeMul > 1 ? "（克制命中）" : hit1.typeMul < 1 ? "（收效甚微）" : "";
     log.push(`R${rounds}: ${first.name} → ${second.name} ${hit1.damage}伤害${eff1} (${second.hp}/${second.maxHp})`);
 
     if (second.hp <= 0) {
@@ -293,7 +293,7 @@ export function simulateBattle(team, enemies, stageType, opts = {}) {
     const hit2 = calcDamage(second, first, stageType, dmgOpts);
     first.hp = Math.max(0, first.hp - hit2.damage);
     if (second.side === "player" && hit2.typeMul > 1) superEffectiveHits += 1;
-    const eff2 = hit2.immune ? "（无效）" : hit2.typeMul > 1 ? "（效果拔群）" : hit2.typeMul < 1 ? "（效果不佳）" : "";
+    const eff2 = hit2.immune ? "（无效）" : hit2.typeMul > 1 ? "（克制命中）" : hit2.typeMul < 1 ? "（收效甚微）" : "";
     log.push(`R${rounds}: ${second.name} → ${first.name} ${hit2.damage}伤害${eff2} (${first.hp}/${first.maxHp})`);
 
     if (first.hp <= 0) {
@@ -491,7 +491,7 @@ export function simulateDualBattle(primaryMon, partnerMon, enemies, stageType, o
       const hit = calcDamage(actor, target, stageType, dmgOpts);
       target.hp = Math.max(0, target.hp - hit.damage);
       if (actor.side === "player" && hit.typeMul > 1) superEffectiveHits += 1;
-      const effTag = hit.immune ? "（无效）" : hit.typeMul > 1 ? "（效果拔群）" : hit.typeMul < 1 ? "（效果不佳）" : "";
+      const effTag = hit.immune ? "（无效）" : hit.typeMul > 1 ? "（克制命中）" : hit.typeMul < 1 ? "（收效甚微）" : "";
       log.push(`R${rounds}: ${actor.name} → ${target.name} ${hit.damage}伤害${effTag} (${target.hp}/${target.maxHp})`);
       if (target.hp <= 0) {
         log.push(`${target.name} 倒下了！`);
@@ -520,7 +520,7 @@ export function simulateDualBattle(primaryMon, partnerMon, enemies, stageType, o
         focusEnemy.hp = Math.max(0, focusEnemy.hp - comboHit.damage);
         comboHits += 1;
         if (comboHit.typeMul > 1) superEffectiveHits += 1;
-        const effTag = comboHit.typeMul > 1 ? "（效果拔群）" : "";
+        const effTag = comboHit.typeMul > 1 ? "（克制命中）" : "";
         log.push(
           `✦ R${rounds} 合体连携技【${synergy.comboSkill}】→ ${focusEnemy.name} ${comboHit.damage}伤害${effTag} (${focusEnemy.hp}/${focusEnemy.maxHp})`,
         );

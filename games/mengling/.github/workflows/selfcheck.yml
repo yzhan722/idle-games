@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Frontend selfcheck
         run: node scripts/selfcheck.mjs
       - name: API contract selfcheck
@@ -21,12 +21,30 @@ jobs:
         run: node scripts/items-selfcheck.mjs
       - name: Analytics selfcheck
         run: node scripts/analytics-selfcheck.mjs
+      - name: Account delete selfcheck
+        run: node scripts/account-delete-selfcheck.mjs
       - name: Era selfcheck
         run: node scripts/era-selfcheck.mjs
       - name: Rebirth selfcheck
         run: node scripts/rebirth-selfcheck.mjs
+      - name: Rebirth speed selfcheck
+        run: node scripts/rebirth-speed-selfcheck.mjs
       - name: Branding selfcheck
         run: node scripts/branding-selfcheck.mjs
+      - name: Own numbers selfcheck
+        run: node scripts/own-numbers-selfcheck.mjs
+      - name: Own balance selfcheck
+        run: node scripts/own-balance-selfcheck.mjs
+      - name: Auth security selfcheck
+        run: node scripts/auth-security-selfcheck.mjs
+      - name: Save forward-compat selfcheck
+        run: node scripts/save-forward-selfcheck.mjs
+      - name: Release package selfcheck
+        run: node scripts/release-selfcheck.mjs
+      - name: First screen selfcheck
+        run: node scripts/first-screen-selfcheck.mjs
+      - name: Service worker selfcheck
+        run: node scripts/sw-selfcheck.mjs
       - name: Gameplay fun selfcheck
         run: node scripts/gameplay-fun-selfcheck.mjs
       - name: Cloud save selfcheck

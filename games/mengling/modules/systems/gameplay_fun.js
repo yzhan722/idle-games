@@ -372,8 +372,16 @@ export const DAILY_SPIN_REWARDS = Object.freeze([
   { id: "fc15", w: 28, futurecoin: 15, label: "中额未来币 +15" },
   { id: "fc30", w: 15, futurecoin: 30, label: "大额未来币 +30" },
   { id: "berry", w: 12, bigBerry: 1, label: "大灵果 ×1" },
-  { id: "fc80", w: 5, futurecoin: 80, label: "幸运大奖 +80" },
+  { id: "fc80", w: 5, futurecoin: 80, label: "幸运大奖：未来币 +80" },
 ]);
+
+/** 转盘几率公示一行字，直接由上表算出：「几率：+5币 40% · … · 大灵果 12% · +80币 5%」 */
+export function dailySpinOddsLine(rewards = DAILY_SPIN_REWARDS) {
+  const total = rewards.reduce((s, r) => s + r.w, 0) || 1;
+  const pct = (w) => `${Math.round((w / total) * 1000) / 10}%`;
+  const what = (r) => (r.futurecoin > 0 ? `+${r.futurecoin}币` : r.bigBerry > 0 ? `大灵果${r.bigBerry > 1 ? ` ×${r.bigBerry}` : ""}` : r.label);
+  return `几率：${rewards.map((r) => `${what(r)} ${pct(r.w)}`).join(" · ")}`;
+}
 
 export function canClaimDailySpin(meta, today = localDateStr()) {
   const last = meta && typeof meta.dailySpinDate === "string" ? meta.dailySpinDate : "";

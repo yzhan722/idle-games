@@ -122,7 +122,7 @@ export function createPvpBattle() {
   function doAttack(attacker, defender, log, roundBonus) {
     const damage = calculateDamage(attacker, defender, roundBonus);
     defender.currentHp -= damage.value;
-    const mulText = damage.mul > 1 ? "（效果拔群）" : damage.mul === 0 ? "（免疫）" : "";
+    const mulText = damage.mul > 1 ? "（克制命中）" : damage.mul === 0 ? "（免疫）" : "";
     log.push(`${attacker.name} 攻击 ${defender.name}，造成 ${damage.value} 伤害${mulText}！（剩余 HP: ${Math.max(0, defender.currentHp)}）`);
   }
 
@@ -134,7 +134,7 @@ export function createPvpBattle() {
     const baseDamage = Math.max(1, Math.floor((attack * level / 50) - (defense / 4)));
     const damageWithBonus = Math.floor(baseDamage * (1 + roundBonus));
 
-    // 使用共享的 calcTypeMul（统一 2x 效果拔群）
+    // 使用共享的 calcTypeMul（统一 2x 克制命中）
     const typeMul = calcTypeMul(attacker.types, defender.types);
 
     if (typeMul === 0) return { value: 1, mul: 0 };

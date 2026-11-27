@@ -1,4 +1,4 @@
-import { applyEncounterBias, confirmPrestige, eraEncounterRechargeMul, eraPokeballBonusCrafted } from "../systems/era.js";
+import { applyEncounterBias, confirmPrestige, eraEncounterRechargeMul, eraOrbBonusCrafted } from "../systems/era.js";
 import { rollNature } from "../mons.js";
 import {
   bumpCatchStreak,
@@ -18,7 +18,7 @@ import {
   captureSessionProgress,
   abilityCatchRateAdd,
 } from "../systems/gameplay_fun.js";
-import { ballCatchMult } from "../systems/ball_catch.js";
+import { ballCatchMult, wildShinyRate } from "../systems/ball_catch.js";
 
 export function initCaptureTab({
   elCaptureArea,
@@ -28,7 +28,7 @@ export function initCaptureTab({
   getState,
   clamp,
   randFloat,
-  getPokeballMakeCost,
+  getOrbMakeCost,
   canAfford,
   pay,
   addRes,
@@ -44,10 +44,11 @@ export function initCaptureTab({
   awardCaughtBeast,
   doCatch,
   pushTickerEvent,
-  onPokeballCraft,
+  onOrbCraft,
   onEraAdvance,
   getCaptureAreas,
   starterMonFactory,
+  onPrestige = null,
 }) {
   const CAPTURE_PREVIEW_KEY = "mengling_idle_capture_preview_hidden_v1";
   const rareWeight = (p, base, rareWeightMul) =>
@@ -110,6 +111,7 @@ export function initCaptureTab({
         const state = getState();
         const result = confirmPrestige(state, { addLog, getCaptureAreas, starterMonFactory });
         if (result.ok) {
+          onPrestige?.();
           markCaptureDirty();
           render();
         }
@@ -307,11 +309,9 @@ export function initCaptureTab({
 
         ui.encounterPid = p.id;
         ui.encounterNature = rollNature();
-        // 闪光概率计算：基础 1/4096，激活虹彩护符时 x2
-        const baseShinyRate = 1 / 4096;
+        // 闪光概率计算：基础 1/4096，激活虹彩护符时 x2（与捕捉页的几率公示共用 wildShinyRate）
         const charmOn = typeof state.shinyCharmRemainingSec === "number" && state.shinyCharmRemainingSec > 0;
-        const shinyMul = Math.max(0, typeof techEff.shinyChanceMul === "number" ? techEff.shinyChanceMul : 1);
-        const shinyRate = (charmOn ? baseShinyRate * 2 : baseShinyRate) * shinyMul;
+        const shinyRate = wildShinyRate({ charmOn, shinyMul: techEff.shinyChanceMul });
         const isShiny = randFloat() < shinyRate;
         ui.encounterIsShiny = isShiny;
         ui.shinyModalOpen = false;
@@ -409,7 +409,7 @@ export function initCaptureTab({
         const luxuryBonus = ballType === "luxuryball" ? 20 : 0;
         awardCaughtBeast(p, { isShiny, affectionBonus: luxuryBonus, ballType, nature: ui.encounterNature || undefined });
         onCatchSuccessFun(state);
-        if (luxuryBonus > 0) addLog(`豪华灵球效果：${p.name} 亲密度 +${luxuryBonus}`);
+        if (luxuryBonus > 0) addLog(`绒心灵球效果：${p.name} 亲密度 +${luxuryBonus}`);
         const didAuto = tryAutoEncounter();
         if (!didAuto) { markCaptureDirty(); render(); }
         return true;
@@ -421,7 +421,7 @@ export function initCaptureTab({
         const qty = Math.max(0, Math.min(clamp(qtyWanted, 1, 1000), space));
         if (qty <= 0) return;
 
-        const cost = getPokeballMakeCost(qty);
+        const cost = getOrbMakeCost(qty);
         if (!canAfford(cost)) return;
 
         pay(cost);
@@ -429,12 +429,12 @@ export function initCaptureTab({
         addRes("pokeball", qty);
         const after = state.res.pokeball.value;
         const made = Math.max(0, after - before);
-        const bonus = eraPokeballBonusCrafted(state, made);
+        const bonus = eraOrbBonusCrafted(state, made);
         if (bonus > 0) addRes("pokeball", bonus);
         const afterBonus = state.res.pokeball.value;
         const bonusMade = Math.max(0, afterBonus - after);
         state.pokeballMade = Math.max(0, (state.pokeballMade ?? 0) + made + bonusMade);
-        if (made > 0 && typeof onPokeballCraft === "function") onPokeballCraft(made + bonusMade);
+        if (made > 0 && typeof onOrbCraft === "function") onOrbCraft(made + bonusMade);
         if (made > 0) addLog(`制作：灵球 +${made + bonusMade}${bonusMade > 0 ? `（时代加成 +${bonusMade}）` : ""}`);
         markCaptureDirty();
         render();
@@ -524,11 +524,9 @@ export function initCaptureTab({
 
         ui.encounterPid = chosen.id;
         ui.encounterNature = rollNature();
-        // 闪光概率计算：基础 1/1024，激活虹彩护符时 x2
-        const baseShinyRate = 1 / 1024;
+        // 闪光概率计算：高级遭遇基础 1/1024，激活虹彩护符时 x2（与高级遭遇按钮的几率提示共用 wildShinyRate）
         const charmOn = typeof state.shinyCharmRemainingSec === "number" && state.shinyCharmRemainingSec > 0;
-        const shinyMul = Math.max(0, typeof techEff.shinyChanceMul === "number" ? techEff.shinyChanceMul : 1);
-        const shinyRate = (charmOn ? baseShinyRate * 2 : baseShinyRate) * shinyMul;
+        const shinyRate = wildShinyRate({ charmOn, shinyMul: techEff.shinyChanceMul, advanced: true });
         const isShiny = randFloat() < shinyRate;
         ui.encounterIsShiny = isShiny;
         ui.shinyModalOpen = false;
@@ -738,7 +736,7 @@ export function initCaptureTab({
           setTimeout(() => elCaptureActions.classList.remove(flashClass), 900);
         }
         
-        // 豪华灵球效果：捕获后亲密度+20
+        // 绒心灵球效果：捕获后亲密度+20
         const luxuryBonus = ballType === "luxuryball" ? 20 : 0;
         
         // 记录捕捉前的唯一数量，用于里程碑检测
@@ -748,7 +746,7 @@ export function initCaptureTab({
         onCatchSuccessFun(state);
         
         if (luxuryBonus > 0) {
-          addLog(`豪华灵球效果：${p.name} 亲密度 +${luxuryBonus}`);
+          addLog(`绒心灵球效果：${p.name} 亲密度 +${luxuryBonus}`);
         }
         
         // 里程碑检测：检查是否刚达到某区域解锁门槛
@@ -790,7 +788,7 @@ export function initCaptureTab({
         ui.encounterIsShiny = false;
         ui.shinyModalOpen = false;
         ui.mythicModalOpen = false;
-        // 究极灵球捕捉动画
+        // 星契灵球捕捉动画
         if (elCaptureActions) {
           elCaptureActions.classList.remove("capture-success-flash", "capture-shiny-flash");
           void elCaptureActions.offsetWidth;
@@ -800,7 +798,7 @@ export function initCaptureTab({
         const uniqueBeforeMb = Object.values(state.dex?.caught ?? {}).filter((v) => typeof v === "number" && v > 0).length;
         awardCaughtBeast(p, { isShiny, ballType: "masterball", nature: ui.encounterNature || undefined });
         onCatchSuccessFun(state);
-        addLog(`究极灵球捕捉：${p.name} 捕捉成功！`, true);
+        addLog(`星契灵球捕捉：${p.name} 捕捉成功！`, true);
         const uniqueAfterMb = Object.values(state.dex?.caught ?? {}).filter((v) => typeof v === "number" && v > 0).length;
         const MILESTONES_MB = { 5:"蜜露林径",13:"溪光浅滩",26:"风铃高原",38:"星砂荒漠",51:"月见花园",64:"霜晶山脊",77:"龙眠幽谷",96:"幻梦秘境" };
         for (const [m, name] of Object.entries(MILESTONES_MB)) {

@@ -4,6 +4,7 @@ import { renderBeastIcon } from "../sprites.js";
 import { renderResSvg, renderUiIcon } from "../render/rpg_svg_icons.js";
 import { renderSocialStageHtml } from "../render/tab_stages.js";
 import { summarizePvpBattle, bumpPvpSeasonStats, normalizePvpRecent } from "../systems/pvp_narrative.js";
+import { REPORT_REASON_LABELS } from "../social.js";
 import {
   listNpcTrainers,
   buildNpcTeam,
@@ -164,6 +165,7 @@ export function createSocialTab({
         <div class="social-section" ${needCloud ? "hidden" : ""}>
           <h3 class="row__titleLine">${renderResSvg("friendshipBracelet", 16)}<span>好友列表</span></h3>
           <div id="friends" ${needCloud ? "hidden" : ""}></div>
+          <div id="blockedList" ${needCloud ? "hidden" : ""}></div>
         </div>
         <div class="social-section" ${needCloud ? "hidden" : ""}>
           <h3 class="row__titleLine">${renderUiIcon("tab_pve", 16)}<span>PVP 约战记录</span></h3>
@@ -212,6 +214,7 @@ export function createSocialTab({
     renderPvpRecent();
     renderPvpInvites();
     if (typeof renderFriends === "function") renderFriends();
+    renderSocial.renderBlocked?.();
     renderSocial.renderFriendFeed();
     renderSocial.renderMessages();
     ingestOutgoingPvpResults();
@@ -268,7 +271,8 @@ export function createSocialTab({
       (getState()).meta.pvpRecent = ui.pvpRecent.slice();
       bumpPvpSeasonStats((getState()).meta, winner);
       addLog(`PvP（回传）：${line}`, iWon);
-      if (typeof pushTickerEvent === "function") pushTickerEvent("pvp", line);
+      // 全服播报所有人可见：不带对方的名字
+      if (typeof pushTickerEvent === "function") pushTickerEvent("pvp", iWon ? "好友对战：胜利" : r.winner_uid ? "好友对战：落败" : "好友对战：平局");
     }
     if (changed) {
       writeSeenBattleIds(seen);
@@ -285,10 +289,57 @@ export function createSocialTab({
     renderPvpRecent();
     await renderPvpInvites();
     if (typeof renderFriends === "function") await renderFriends();
+    await renderSocial.renderBlocked?.();
     await loadFriendsList();
     await renderSocial.renderFriendFeed();
     await renderSocial.renderMessages();
     await ingestOutgoingPvpResults();
+  }
+
+  // 屏蔽 / 举报（ML-COM3）：名片、私信、好友行上的「⋯」点开；不加新页，一个小弹窗
+  function openSafetyMenu(uid, name) {
+    if (!uid) return;
+    const blocked = ui.blockedUids instanceof Set && ui.blockedUids.has(uid);
+    const modal = document.createElement("div");
+    modal.className = "modalOverlay";
+    modal.innerHTML = `
+      <div class="modal">
+        <div class="modal__header">
+          <div class="modal__title"><span>${escapeHtml(name || "这位玩家")}</span></div>
+          <div class="modal__right"><button type="button" class="btn btn--small" data-action="close">关闭</button></div>
+        </div>
+        <div class="modal__body">
+          <div class="actions">
+            <button type="button" class="btn ${blocked ? "" : "btn--danger"}" data-safety-act="${blocked ? "unblock" : "block"}">${blocked ? "解除屏蔽" : "屏蔽"}</button>
+          </div>
+          ${blocked ? "" : `<div class="modal__desc">TA 的私信、好友申请、切磋都收不到，TA 不会知道。</div>`}
+          <div class="row__title" style="margin-top:12px">举报</div>
+          <div class="actions" style="flex-wrap:wrap">
+            ${Object.entries(REPORT_REASON_LABELS)
+              .map(([k, label]) => `<button type="button" class="btn btn--small" data-safety-report="${k}">${label}</button>`)
+              .join("")}
+          </div>
+          <div class="modal__desc muted">附上 TA 发给你的最近 5 条私信，保存 90 天，由人工查看。</div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    const close = () => modal.parentNode?.removeChild(modal);
+    modal.addEventListener("click", async (e) => {
+      if (e.target === modal || e.target.closest('[data-action="close"]')) {
+        close();
+        return;
+      }
+      const act = e.target.closest("[data-safety-act]");
+      const rep = e.target.closest("[data-safety-report]");
+      if (!act && !rep) return;
+      modal.querySelectorAll("button").forEach((b) => (b.disabled = true));
+      const ok = act
+        ? await socialSystem.blockUser(uid, act.getAttribute("data-safety-act") === "block")
+        : await socialSystem.reportUser(uid, rep.getAttribute("data-safety-report"));
+      close();
+      if (ok && act) await refreshSocial();
+    });
   }
 
   function renderNpcTrainers() {
@@ -392,6 +443,20 @@ export function createSocialTab({
   function setupSocialEvents() {
     const panelSocial = document.getElementById("panel-social");
     if (!panelSocial) return;
+
+    // 「⋯」屏蔽 / 举报；「解除」直接解除屏蔽
+    panelSocial.addEventListener("click", async (e) => {
+      const menuBtn = e.target.closest("[data-safety-menu]");
+      if (menuBtn && panelSocial.contains(menuBtn)) {
+        openSafetyMenu(menuBtn.getAttribute("data-safety-menu"), menuBtn.getAttribute("data-safety-name"));
+        return;
+      }
+      const unblockBtn = e.target.closest("[data-safety-unblock]");
+      if (!unblockBtn || !panelSocial.contains(unblockBtn)) return;
+      unblockBtn.disabled = true;
+      if (await socialSystem.blockUser(unblockBtn.getAttribute("data-safety-unblock"), false)) await refreshSocial();
+      else unblockBtn.disabled = false;
+    });
 
     panelSocial.addEventListener("click", async (e) => {
       const claimBtn = e.target.closest("[data-npc-weekly-claim]");
@@ -542,7 +607,7 @@ export function createSocialTab({
         friendBtn.disabled = false;
         if (ok) {
           if (input) input.value = "";
-          if (typeof pushTickerEvent === "function") pushTickerEvent("friend", `向 ${name} 发送好友请求`);
+          if (typeof pushTickerEvent === "function") pushTickerEvent("friend", "发出了好友请求"); // 播报所有人可见，不带对方名字
           if (typeof renderFriends === "function") await renderFriends();
         }
         return;
@@ -562,7 +627,6 @@ export function createSocialTab({
       }
       if (act === "challenge") {
         const friendUid = friendBtn.getAttribute("data-friend-uid");
-        const friendName = friendBtn.getAttribute("data-friend-name") || "好友";
         if (!friendUid) return;
         if (!selectedTeam || selectedTeam.length === 0) {
           addLog("请先选择你的队伍，再发起对战", true);
@@ -572,7 +636,7 @@ export function createSocialTab({
         const success = await socialSystem.sendPvpInvite(friendUid, selectedTeam);
         friendBtn.disabled = false;
         if (success) {
-          if (typeof pushTickerEvent === "function") pushTickerEvent("pvp", `向 ${friendName} 发起对战`);
+          if (typeof pushTickerEvent === "function") pushTickerEvent("pvp", "发起了好友对战"); // 不带对方名字
           await renderPvpInvites();
         }
       }

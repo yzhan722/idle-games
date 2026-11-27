@@ -45,7 +45,7 @@ export function createCaptureFlow({
       bumpEraCounter,
       syncEraProgress: () => syncEraProgress(),
       afterAward: ({ species, prev, isShiny, prevCatchCount }) => {
-        if (prevCatchCount === 0) analytics.trackFirstCapture({ beastId: species.id, dex: species.dex });
+        if (prevCatchCount === 0) analytics.trackOnce("first_capture");
 
         if (prev === 0 && (species.tier === "rare" || species.tier === "epic") && typeof pushTickerEvent === "function") {
           pushTickerEvent("catch", `捕捉成功 ${species.name}`);

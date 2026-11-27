@@ -1,5 +1,6 @@
 import { requireUser } from "../_auth.js";
 import { dbFirst, getDb, handleOptions, json } from "../_db.js";
+import { displayName, maskText } from "../../../modules/name_filter.js";
 import { clampUid } from "../_uid.js";
 
 export async function onRequest(context) {
@@ -63,9 +64,9 @@ export async function onRequest(context) {
 
   return json(
     {
-      user: { name: profileUser?.username || score?.name || friendUid },
+      user: { name: displayName(profileUser?.username || score?.name || friendUid) },
       stats,
-      mons,
+      mons: mons.map((m) => (m && typeof m.name === "string" ? { ...m, name: maskText(m.name) } : m)),
     },
     { req }
   );

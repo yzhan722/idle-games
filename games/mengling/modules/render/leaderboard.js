@@ -1,6 +1,7 @@
 // 排行榜渲染（只写 DOM，不改业务 state）
 // 维护者窗口：C（渲染）/ 数据刷新仍在 app.js SECTION:LEADERBOARD_DATA
 
+import { isLocalAvatar } from "../avatar_guard.js";
 import { cleanLeaderboard } from "../systems/world_presence.js";
 import { renderLeaderboardStageHtml, setHtmlPreservingStage } from "./tab_stages.js";
 import { renderResSvg, renderUiIcon } from "./rpg_svg_icons.js";
@@ -226,7 +227,7 @@ export function createRenderLeaderboard({
               const score = typeof it?.score === "number" ? it.score : 0;
               const topMons = Array.isArray(it?.attrs?.topMons) ? it.attrs.topMons : [];
               const teamScore = topMons.length > 0 ? calcTeamPower(topMons) : score;
-              const isAvatar = Boolean(avatarDataUrl);
+              const isAvatar = isLocalAvatar(avatarDataUrl);
               const avatarSrc = isAvatar ? avatarDataUrl : trainerIconSrc();
               const avatarStyle = isAvatar ? "" : "image-rendering:pixelated;object-fit:contain";
               const monsHtml =

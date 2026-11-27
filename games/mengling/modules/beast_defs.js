@@ -1,28 +1,14 @@
 // beast_defs.js — 萌灵物种定义
 // 数据源：data/beasts.js（生成）· roster 驱动，不在 roster 内的物种不进入图鉴/捕捉池。
 
+import { getBeastTier, getTameRate, higherTier, TIER_ORDER } from "./beast_tier.js";
+
 const pad3 = (n) => String(n).padStart(3, "0");
 
 const getBeastZhName = (dex) => {
   const map = globalThis.BEAST_ZH;
   const v = map?.[`p${pad3(dex)}`];
   return typeof v === "string" && v.trim() ? v.trim() : null;
-};
-
-const getCatchRate = (dex) => {
-  const map = globalThis.BEAST_CATCH_RATE;
-  const v = map?.[`p${pad3(dex)}`];
-  return typeof v === "number" && v >= 0 && v <= 255 ? v : 45;
-};
-
-const getBeastTier = (dex) => {
-  const v = globalThis.BEAST_TIER?.[`p${pad3(dex)}`];
-  if (typeof v === "string" && v) return v;
-  const rate = getCatchRate(dex);
-  if (rate < 10) return "epic";
-  if (rate < 50) return "rare";
-  if (rate < 150) return "uncommon";
-  return "common";
 };
 
 /** roster 内物种列表；roster 外物种不进图鉴/捕捉池。zone = 生态区序号（见 CAPTURE_AREAS）。 */
@@ -62,6 +48,6 @@ export const ZONE_LABELS = {
 };
 export const beastZone = (dex) => globalThis.BEAST_ZONES?.[dex] ?? null;
 
-export { getCatchRate, getBeastTier };
+export { getTameRate, getBeastTier, higherTier, TIER_ORDER };
 
 export const beasts = buildBeastList();

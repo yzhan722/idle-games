@@ -23,6 +23,9 @@ const criticalFiles = [
   "modules/systems/era.js",
   "modules/systems/rebirth.js",
   "functions/api/health.js",
+  "functions/api/auth/delete.js",
+  "legal/privacy.html",
+  "legal/terms.html",
   "migrations/007_daily_tasks_progress.sql",
   "migrations/008_rebirth_count.sql",
 ];
@@ -33,6 +36,7 @@ for (const rel of criticalFiles) {
 
 const childChecks = [
   "analytics-selfcheck.mjs",
+  "account-delete-selfcheck.mjs",
   "era-selfcheck.mjs",
   "migrations-selfcheck.mjs",
   "save-stress-selfcheck.mjs",

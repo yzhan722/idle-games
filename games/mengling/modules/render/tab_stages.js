@@ -5,6 +5,7 @@
 import { pad3 } from "../utils.js";
 import { renderOrbSvg, renderResSvg, renderBuildingSvg, renderUiIcon } from "./rpg_svg_icons.js";
 import { computeBreedingShinyInfo } from "../systems/breeding.js";
+import { dailySpinOddsLine } from "../systems/gameplay_fun.js";
 
 /**
  * 将全景舞台 (stageHtml) 与列表内容 (rowsHtml) 挂载到容器，
@@ -207,6 +208,7 @@ export function renderCaptureStageHtml({
   renderBeastIcon,
   typeZh,
   escapeHtml,
+  advShinyOddsLine = "",
 }) {
   const biomeId = area?.id || "meadow";
   const pbVal = Math.max(0, Math.floor(state.res?.pokeball?.value ?? 0));
@@ -254,9 +256,9 @@ export function renderCaptureStageHtml({
 
   const BALL_BELT_DEFS = [
     { id: "pokeball", name: "灵球", tag: "1.0x", count: pbVal, always: true },
-    { id: "ultraball", name: "高级灵球", tag: "2.0x", count: ubVal },
+    { id: "ultraball", name: "精制灵球", tag: "2.0x", count: ubVal },
     { id: "quickball", name: "迅捷灵球", tag: "首发5x", count: qbVal },
-    { id: "luxuryball", name: "豪华灵球", tag: "亲密+20", count: lbVal },
+    { id: "luxuryball", name: "绒心灵球", tag: "亲密+20", count: lbVal },
     { id: "netball", name: "捕灵球", tag: "水草3x", count: nbVal },
     { id: "duskball", name: "暗夜灵球", tag: "夜间3x", count: dbVal },
   ];
@@ -278,9 +280,9 @@ export function renderCaptureStageHtml({
           .join("")}
         ${
           mbVal > 0
-            ? `<button type="button" class="ball-slot ball-slot--master" data-capture-action="masterball" ${enc ? "" : "disabled"} title="使用究极灵球 100% 必中捕获！">
+            ? `<button type="button" class="ball-slot ball-slot--master" data-capture-action="masterball" ${enc ? "" : "disabled"} title="使用星契灵球 100% 必中捕获！">
                 <span class="ball-slot__icon">${renderOrbSvg("masterball", 18)}</span>
-                <span class="ball-slot__name">究极灵球</span>
+                <span class="ball-slot__name">星契灵球</span>
                 <span class="ball-slot__tag">100%必中</span>
                 <span class="ball-slot__cnt">×${mbVal}</span>
               </button>`
@@ -336,7 +338,7 @@ export function renderCaptureStageHtml({
           <div class="capture-chance-meter ${pct >= 65 ? "is-high" : pct >= 35 ? "is-mid" : "is-low"}">
             <div class="capture-chance-meter__top">
               <span>${renderOrbSvg(selectedBall, 14)} 综合捕获率预估：<strong>${pct}%</strong> <em class="capture-chance-tier">${pct >= 65 ? "稳操胜券" : pct >= 35 ? "时机成熟" : "可投浆果增幅"}</em></span>
-              <span>当前球种：${renderOrbSvg(selectedBall, 14)} ${selectedBall === "pokeball" ? "灵球" : selectedBall === "ultraball" ? "高级灵球" : selectedBall === "quickball" ? "迅捷灵球" : selectedBall === "luxuryball" ? "豪华灵球" : selectedBall === "netball" ? "捕灵球" : "暗夜灵球"}</span>
+              <span>当前球种：${renderOrbSvg(selectedBall, 14)} ${selectedBall === "pokeball" ? "灵球" : selectedBall === "ultraball" ? "精制灵球" : selectedBall === "quickball" ? "迅捷灵球" : selectedBall === "luxuryball" ? "绒心灵球" : selectedBall === "netball" ? "捕灵球" : "暗夜灵球"}</span>
             </div>
             <div class="capture-chance-meter__bar">
               <div class="capture-chance-meter__fill" style="width:${Math.max(6, pct)}%"></div>
@@ -389,7 +391,7 @@ export function renderCaptureStageHtml({
       <div class="capture-stage-explore">
         <div class="capture-stage-explore__clearing">
           ${wanderersHtml || `<div class="camp-stage__emptyHint">当前生态区暂无灵兽出没</div>`}
-          <button type="button" class="capture-wanderer capture-wanderer--altar" data-stage-act="field-hunt-plus" ${advOk ? "" : "disabled"} title="催动高阶星界灵脉阵，优先引出本区未收录/高稀有度萌灵！">
+          <button type="button" class="capture-wanderer capture-wanderer--altar" data-stage-act="field-hunt-plus" ${advOk ? "" : "disabled"} title="催动高阶星界灵脉阵，优先引出本区未收录/高稀有度萌灵！${advShinyOddsLine ? ` ${escapeHtml(advShinyOddsLine)}` : ""}">
             <span class="capture-wanderer__spark">${renderResSvg("evolutionStone", 14)} 灵脉祭坛</span>
             <div class="capture-wanderer__altarOrb">${renderResSvg("megaStone", 46)}</div>
             <div class="capture-wanderer__tag">高级定向寻踪</div>
@@ -436,7 +438,7 @@ export function renderCaptureStageHtml({
       </div>
       <div class="tab-stage__header">
         <span class="camp-stage__badge">${renderUiIcon("tab_capture", 16)} ${escapeHtml(area.name)} · 实景生态猎场与缩圈捕猎剧场</span>
-        <span class="camp-stage__sub">${luckyBadge}${streakBadge} · 灵球 ${pbVal} · 高级灵球 ${ubVal}</span>
+        <span class="camp-stage__sub">${luckyBadge}${streakBadge} · 灵球 ${pbVal} · 精制灵球 ${ubVal}</span>
       </div>
       ${biomeRibbonHtml}
       <div class="tab-stage__body">
@@ -630,7 +632,7 @@ export function renderFutureStageHtml({
       </div>
       <div class="tab-stage__header">
         <span class="camp-stage__badge">${renderUiIcon("tab_future", 16)} 星辉奇珍炼金坊 · 贸易与奇物合成</span>
-        <span class="camp-stage__sub">灵果 / 灵木可兑换未来币 · 每日星盘免费抽取奇珍</span>
+        <span class="camp-stage__sub">灵果 / 灵木可兑换未来币 · 每日转盘免费领未来币或大灵果</span>
       </div>
       <div class="tab-stage__body tab-stage__body--bazaar">
         <div class="bazaar-vault">
@@ -659,7 +661,7 @@ export function renderFutureStageHtml({
           <button type="button" class="btn btn--primary btn--small" data-fc-daily-free ${claimedDailyFree ? "disabled" : ""}>
             ${claimedDailyFree ? "✓ 今日免费币已领" : `${renderResSvg("futurecoin", 14)} 领每日 +5 未来币`}
           </button>
-          <button type="button" class="btn btn--small" data-fc-daily-spin ${claimedDailySpin ? "disabled" : ""}>
+          <button type="button" class="btn btn--small" data-fc-daily-spin ${claimedDailySpin ? "disabled" : ""} title="${dailySpinOddsLine()}">
             ${claimedDailySpin ? "✓ 今日幸运转盘已转" : `${renderResSvg("shinyCharm", 14)} 免费转幸运星盘`}
           </button>
         </div>
@@ -907,9 +909,9 @@ export function renderSocialStageHtml({ state, selectedTeam, renderBeastIcon, es
     : `<div class="diorama-empty">选择队伍后在此列阵</div>`;
 
   const rivalDexes = [
-    { dex: 26, name: "雷鼓天貂" },
-    { dex: 6, name: "焚天煌龙" },
-    { dex: 149, name: "天穹皇龙" },
+    { dex: 26, name: "天雷御守鼠" },
+    { dex: 6, name: "焚天炽翼龙" },
+    { dex: 149, name: "凌霄圣龙" },
   ];
   const rivalIcons = rivalDexes
     .map(

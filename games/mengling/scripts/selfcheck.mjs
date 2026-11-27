@@ -7,7 +7,7 @@ import path from "node:path";
 import {
   computeTechEffects,
   computeDexEffects,
-  getPokeballMakeCost,
+  getOrbMakeCost,
   getResearchCost,
   getBuildingCost,
   computeResearchTimeSec,
@@ -56,6 +56,7 @@ import {
   clampStar,
 } from "../modules/stars.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let failed = 0;
 function assert(cond, msg) {
   if (!cond) {
@@ -109,7 +110,7 @@ const state = {
 const defs = {
   tech: {
     woodWorking: { effects: { woodRateMul: 1.1, catchChanceAdd: 0.01 } },
-    ballCheap: { effects: { pokeballMakeCostMul: 0.5 } },
+    ballCheap: { effects: { orbMakeCostMul: 0.5 } },
   },
 };
 const ui = { serverBuffLevels: new Map([["capture", 1]]) };
@@ -123,7 +124,7 @@ assert(Math.abs(eff.catchChanceAdd - 0.21) < 1e-9, "catchChanceAdd got " + eff.c
   assert(Math.abs(te.catchChanceAdd - 0.41) < 1e-9, "timed capture boost +0.2");
 }
 assert(computeDexEffects(state).catnipPerSecMul === 1.02, "dex catnip");
-assert(getPokeballMakeCost(1, state, ui, null, defs).wood === 3, "pokeball cost");
+assert(getOrbMakeCost(1, state, ui, null, defs).wood === 3, "pokeball cost");
 assert(getResearchCost({ cost: { catnip: 200 } }, state).catnip === 90, "research cap");
 {
   const capState = {
@@ -177,10 +178,10 @@ const ps = {
 const pe = accumulateBuildingEffects(ps, pdefs);
 applyTechAndServerCapToEff(pe, {
   catnipPerSecMul: 1, woodRateMul: 1, mineralsRateMul: 1,
-  capCatnipAdd: 0, capWoodAdd: 0, capMineralsAdd: 0, capPokeballAdd: 0,
-  capCatnipMul: 1, capWoodMul: 1, capMineralsMul: 1, capPokeballMul: 1,
+  capCatnipAdd: 0, capWoodAdd: 0, capMineralsAdd: 0, capOrbAdd: 0,
+  capCatnipMul: 1, capWoodMul: 1, capMineralsMul: 1, capOrbMul: 1,
 }, 1);
-pe.unlockPokeball = true;
+pe.unlockOrb = true;
 applyCoreResourceCaps(ps, computeBaseResourceCaps(pdefs, pe), true, permanentBoostMul(2));
 assert(ps.res.catnip.cap === 120, "core cap");
 applyStaticItemCaps(ps, computeStaticItemCaps(pdefs));
@@ -342,7 +343,7 @@ assert(Math.abs(getStarBonusMul(5) - 2.4) < 1e-9, "★5 mul");
   const pvpLine = summarizePvpBattle({
     winner: 2,
     rounds: 8,
-    battleLog: ["你 派出 电毛球！", "对手 倒下了！", "你获胜！"],
+    battleLog: ["你 派出 星雷灵鼠！", "对手 倒下了！", "你获胜！"],
   });
   assert(pvpLine.includes("险胜"), "pvp narrative win");
   const seasonLine = summarizePvpBattle(
@@ -429,7 +430,7 @@ assert(win.winner === 1 && win.rounds > 0, "pvp strong wins");
   });
   assert(lines.some((x) => x.includes("祝福")), "buff strip light");
   assert(lines.some((x) => x.includes("打磨")), "buff strip stone");
-  assert(lines.some((x) => x.includes("霸凌")), "buff strip dark");
+  assert(lines.some((x) => x.includes("夜锋")), "buff strip dark");
 }
 
 {
@@ -457,7 +458,7 @@ assert(win.winner === 1 && win.rounds > 0, "pvp strong wins");
     "../modules/systems/newbie_compass.js"
   );
   const { getTrainerLevel } = await import("../modules/render/resources.js");
-  const { beastSpriteSvg, renderBeastIcon } = await import("../modules/sprites.js");
+  const { BEAST_FALLBACK_ART, renderBeastIcon } = await import("../modules/sprites.js");
 
   const c1 = computeNewbieCompass({ res: { catnip: { value: 10 } }, catchCount: 0 });
   assert(c1.stepIndex === 1 && c1.ctaAction === "gather", "compass step 1 gather");
@@ -486,20 +487,39 @@ assert(win.winner === 1 && win.rounds > 0, "pvp strong wins");
   assert(getCampfireVisualTier({ era: { index: 5 } }).tier === 4, "campfire visual tier 4");
   assert(getTrainerLevel(150).level === 9 && getTrainerLevel(0).nextReq === 5, "trainer level calibrated to 160 dex");
 
-  const svg12 = beastSpriteSvg(12, false);
-  const svg150 = beastSpriteSvg(150, false);
   const iconHtml = renderBeastIcon(25, "星雷金貂", true);
-  assert(svg12 !== svg150 && svg12.includes("<svg"), "distinct procedural svg sprites");
   assert(
     iconHtml.includes("./assets/beasts_shiny/025.png") &&
       iconHtml.includes("__beastSpriteOnError") &&
       iconHtml.includes("mon-icon--shiny"),
-    "hd illustrated beast icon with svg fallback"
+    "hd illustrated beast icon with fallback handler"
   );
-  globalThis.BEAST_FORCE_SVG = true;
-  const fallbackHtml = renderBeastIcon(25, "星雷金貂", true);
-  delete globalThis.BEAST_FORCE_SVG;
-  assert(fallbackHtml.includes("data:image/svg+xml;utf8,"), "svg fallback icon when BEAST_FORCE_SVG=true");
+  // ML-COM1：图鉴外物种 / 缺图一律退回爪印徽记，不再按物种画矢量造型
+  const strayHtml = renderBeastIcon(9999, "逸散的萌灵", false);
+  assert(strayHtml.includes(BEAST_FALLBACK_ART) && !strayHtml.includes("data:image/svg"), "stray species uses neutral fallback art");
+  assert(existsSync(path.join(__dirname, "..", BEAST_FALLBACK_ART)), "fallback art file exists");
+  for (const dex of globalThis.BEAST_ROSTER) {
+    const file = `${String(dex).padStart(3, "0")}.png`;
+    assert(existsSync(path.join(__dirname, "..", "assets", "beasts", file)), `beast art ${file}`);
+    assert(existsSync(path.join(__dirname, "..", "assets", "beasts_shiny", file)), `shiny beast art ${file}`);
+  }
+}
+
+// 闪光馆随存档往返：放生 / 转生后身边没有闪光伙伴也不丢；名字按现行图鉴重取
+{
+  await import("../data/beasts.js");
+  const { defaultState, serializeState, loadFromRaw } = await import("../modules/state.js");
+  const st = defaultState();
+  st.dex.caught = { p025: 3 };
+  st.dex.shiny = { p025: { dex: 25, name: "旧名甲", tier: "rare", at: 3 }, bad: { dex: 1 }, p007: null };
+  const back = loadFromRaw(JSON.stringify(serializeState(st)));
+  assert(back.dex.caught.p025 === 3, "caught dex kept");
+  assert(JSON.stringify(back.dex.shiny) === JSON.stringify({ p025: { dex: 25, name: "星雷灵鼠", tier: "rare", at: 3 } }), `shiny gallery round-trips (${JSON.stringify(back.dex.shiny)})`);
+  const again = loadFromRaw(JSON.stringify(serializeState(back)));
+  assert(JSON.stringify(again.dex.shiny) === JSON.stringify(back.dex.shiny), "shiny gallery round-trip is stable");
+  const old = defaultState();
+  delete old.dex.shiny;
+  assert(Object.keys(loadFromRaw(JSON.stringify(serializeState(old))).dex.shiny ?? {}).length === 0, "saves without a gallery still load");
 }
 
 // ML-1 Eugenics Breeding 2.0: high-IV / star / locked-ability inheritance + dynamic shiny odds & pity
@@ -556,7 +576,7 @@ assert(win.winner === 1 && win.rounds > 0, "pvp strong wins");
     getSpeciesByPid: () => ({ id: "p001", dex: 1, name: "青萝幼龙", tier: "common" }),
   });
   assert(preview.eligible && preview.inheritedIvCount === 5 && preview.starBounds.guaranteedStars === 2, "ML-1 preview 5-IV & 2-star floor");
-  assert(preview.abilityPreviewText.includes("复眼"), "ML-1 preview reflects locked parent B ability");
+  assert(preview.abilityPreviewText.includes("眼观八方"), "ML-1 preview reflects locked parent B ability");
 
   // Hatch with locked ability B and non-shiny roll (0.99) -> increments pity & inherits high IV + stars + compoundEyes
   const ok1 = hatchEgg(boostedState, {
@@ -589,7 +609,6 @@ assert(win.winner === 1 && win.rounds > 0, "pvp strong wins");
   }
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const era = spawnSync(process.execPath, [path.join(__dirname, "era-selfcheck.mjs")], { stdio: "inherit" });
 if (era.status !== 0) failed += 1;
 const collection = spawnSync(process.execPath, [path.join(__dirname, "collection-fun-selfcheck.mjs")], { stdio: "inherit" });
@@ -606,6 +625,8 @@ const restart = spawnSync(process.execPath, [path.join(__dirname, "restart-p1-p1
 if (restart.status !== 0) failed += 1;
 const rebirth = spawnSync(process.execPath, [path.join(__dirname, "rebirth-selfcheck.mjs")], { stdio: "inherit" });
 if (rebirth.status !== 0) failed += 1;
+const rebirthSpeed = spawnSync(process.execPath, [path.join(__dirname, "rebirth-speed-selfcheck.mjs")], { stdio: "inherit" });
+if (rebirthSpeed.status !== 0) failed += 1;
 const ml14 = spawnSync(process.execPath, [path.join(__dirname, "ml14-selfcheck.mjs")], { stdio: "inherit" });
 if (ml14.status !== 0) failed += 1;
 const ml15 = spawnSync(process.execPath, [path.join(__dirname, "ml15-selfcheck.mjs")], { stdio: "inherit" });
@@ -614,8 +635,30 @@ const ml16 = spawnSync(process.execPath, [path.join(__dirname, "ml16-selfcheck.m
 if (ml16.status !== 0) failed += 1;
 const ml17 = spawnSync(process.execPath, [path.join(__dirname, "ml17-selfcheck.mjs")], { stdio: "inherit" });
 if (ml17.status !== 0) failed += 1;
+const accountDelete = spawnSync(process.execPath, [path.join(__dirname, "account-delete-selfcheck.mjs")], { stdio: "inherit" });
+if (accountDelete.status !== 0) failed += 1;
 const branding = spawnSync(process.execPath, [path.join(__dirname, "branding-selfcheck.mjs")], { stdio: "inherit" });
 if (branding.status !== 0) failed += 1;
+const ownNumbers = spawnSync(process.execPath, [path.join(__dirname, "own-numbers-selfcheck.mjs")], { stdio: "inherit" });
+if (ownNumbers.status !== 0) failed += 1;
+const ownBalance = spawnSync(process.execPath, [path.join(__dirname, "own-balance-selfcheck.mjs")], { stdio: "inherit" });
+if (ownBalance.status !== 0) failed += 1;
+const authSecurity = spawnSync(process.execPath, [path.join(__dirname, "auth-security-selfcheck.mjs")], { stdio: "inherit" });
+if (authSecurity.status !== 0) failed += 1;
+const saveForward = spawnSync(process.execPath, [path.join(__dirname, "save-forward-selfcheck.mjs")], { stdio: "inherit" });
+if (saveForward.status !== 0) failed += 1;
+const release = spawnSync(process.execPath, [path.join(__dirname, "release-selfcheck.mjs")], { stdio: "inherit" });
+if (release.status !== 0) failed += 1;
+const firstScreen = spawnSync(process.execPath, [path.join(__dirname, "first-screen-selfcheck.mjs")], { stdio: "inherit" });
+if (firstScreen.status !== 0) failed += 1;
+const swCheck = spawnSync(process.execPath, [path.join(__dirname, "sw-selfcheck.mjs")], { stdio: "inherit" });
+if (swCheck.status !== 0) failed += 1;
+const avatarCheck = spawnSync(process.execPath, [path.join(__dirname, "avatar-selfcheck.mjs")], { stdio: "inherit" });
+if (avatarCheck.status !== 0) failed += 1;
+const legalFacts = spawnSync(process.execPath, [path.join(__dirname, "legal-facts-selfcheck.mjs")], { stdio: "inherit" });
+if (legalFacts.status !== 0) failed += 1;
+const socialSafety = spawnSync(process.execPath, [path.join(__dirname, "social-safety-selfcheck.mjs")], { stdio: "inherit" });
+if (socialSafety.status !== 0) failed += 1;
 
 if (failed) {
   console.error(`selfcheck: ${failed} failed`);

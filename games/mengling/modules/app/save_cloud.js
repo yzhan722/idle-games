@@ -6,9 +6,10 @@ import { serializeState, loadFromRaw } from "../state.js";
 import { encodeSaveText, decodeSaveText } from "../save_codec.js";
 import { createCloudSave } from "../cloud_save.js";
 import { formatLocalYmd } from "../utils.js";
+import { checkName } from "../name_filter.js";
 import { STORAGE_KEY, STORAGE_BACKUP_KEY, SAVE_SLOT_KEY, readLocalStorage } from "./storage.js";
 
-export function createSaveCloud({ getState, setState, getAutosaveEnabled, ui, render, hint, addLog, elCloudStatus }) {
+export function createSaveCloud({ getState, setState, getAutosaveEnabled, ui, render, hint, addLog, elCloudStatus, onRegistered = null }) {
   function setCloudStatus(text) {
     if (!elCloudStatus) return;
     elCloudStatus.textContent = typeof text === "string" ? text : String(text ?? "");
@@ -224,7 +225,7 @@ export function createSaveCloud({ getState, setState, getAutosaveEnabled, ui, re
           } catch {
           }
         } catch (e) {
-          const msg = typeof e?.message === "string" ? e.message : "登录失败";
+          const msg = e?.status === 429 ? "试得太频繁，10 分钟后再来" : typeof e?.message === "string" ? e.message : "登录失败";
           setCloudStatus(`登录失败：${msg}`);
         }
       });
@@ -239,15 +240,21 @@ export function createSaveCloud({ getState, setState, getAutosaveEnabled, ui, re
             setCloudStatus("请输入用户名和密码");
             return;
           }
+          // 用户名会被好友、私信对象看到：命中屏蔽词不让注册（服务器同样会拒）
+          if (!checkName(u).ok) {
+            setCloudStatus("注册失败：这个用户名不能用，换一个");
+            return;
+          }
           setCloudStatus("注册中...");
           await cloudSave.register(u, p);
+          onRegistered?.();
           await doCloudSyncNow();
           try {
             refreshSocial?.();
           } catch {
           }
         } catch (e) {
-          const msg = typeof e?.message === "string" ? e.message : "注册失败";
+          const msg = e?.status === 429 ? "这个网络注册得太频繁，1 小时后再来" : e?.message === "name not allowed" ? "这个用户名不能用，换一个" : typeof e?.message === "string" ? e.message : "注册失败";
           setCloudStatus(`注册失败：${msg}`);
         }
       });

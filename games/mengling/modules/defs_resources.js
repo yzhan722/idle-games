@@ -48,11 +48,11 @@ export const RESOURCE_DEFS = {
     baseCap: 999,
   },
   masterball: {
-    name: "究极灵球",
+    name: "星契灵球",
     baseCap: 999,
   },
   ultraball: {
-    name: "高级灵球",
+    name: "精制灵球",
     baseCap: 999,
   },
   quickball: {
@@ -60,7 +60,7 @@ export const RESOURCE_DEFS = {
     baseCap: 999,
   },
   luxuryball: {
-    name: "豪华灵球",
+    name: "绒心灵球",
     baseCap: 999,
   },
   expCandy: {
@@ -96,11 +96,11 @@ export const RESOURCE_DEFS = {
     baseCap: 999,
   },
   spaPotion: {
-    name: "特攻药剂",
+    name: "灵攻药剂",
     baseCap: 999,
   },
   spdPotion: {
-    name: "特防药剂",
+    name: "灵防药剂",
     baseCap: 999,
   },
   spePotion: {

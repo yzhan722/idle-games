@@ -93,24 +93,24 @@ function rebalanceTechDefs(defs) {
 
   const nerfMul = (v) => 1 + (v - 1) * TECH_BALANCE.prodMulNerf;
   const nerfMulWood = (v) => 1 + (v - 1) * TECH_BALANCE.woodProdMulNerf;
-  const CAP_ADD_KEYS = ["capCatnipAdd", "capWoodAdd", "capMineralsAdd", "capPokeballAdd"];
+  const CAP_ADD_KEYS = ["capCatnipAdd", "capWoodAdd", "capMineralsAdd", "capOrbAdd"];
   const CAP_TO_MUL = {
     capCatnipAdd: "capCatnipMul",
     capWoodAdd: "capWoodMul",
     capMineralsAdd: "capMineralsMul",
-    capPokeballAdd: "capPokeballMul",
+    capOrbAdd: "capOrbMul",
   };
   const CAP_DENOM = {
     capCatnipAdd: 400,
     capWoodAdd: 500,
     capMineralsAdd: 600,
-    capPokeballAdd: 1200,
+    capOrbAdd: 1200,
   };
   const CAP_MUL_MAX = {
     capCatnipMul: 6,
     capWoodMul: 6,
     capMineralsMul: 6,
-    capPokeballMul: 3,
+    capOrbMul: 3,
   };
   const PROD_KEYS = ["catnipPerSecMul", "woodRateMul", "mineralsRateMul"];
 
@@ -141,7 +141,7 @@ function rebalanceTechDefs(defs) {
     const cCap = typeof eff.capCatnipMul === "number" && Number.isFinite(eff.capCatnipMul) ? eff.capCatnipMul : null;
     const wCap = typeof eff.capWoodMul === "number" && Number.isFinite(eff.capWoodMul) ? eff.capWoodMul : null;
     const mCap = typeof eff.capMineralsMul === "number" && Number.isFinite(eff.capMineralsMul) ? eff.capMineralsMul : null;
-    const pCap = typeof eff.capPokeballMul === "number" && Number.isFinite(eff.capPokeballMul) ? eff.capPokeballMul : null;
+    const pCap = typeof eff.capOrbMul === "number" && Number.isFinite(eff.capOrbMul) ? eff.capOrbMul : null;
 
     if (cCap) d = d.replace(/灵果上限\s*\+\s*\d+/g, `灵果上限 +${pctFromMul(cCap)}%`);
     if (wCap) d = d.replace(/灵木上限\s*\+\s*\d+/g, `灵木上限 +${pctFromMul(wCap)}%`);

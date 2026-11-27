@@ -44,7 +44,7 @@ import { createBoot } from "./modules/app/boot.js";
 
 (() => {
   setupGlobalErrorHandling();
-  const analytics = createAnalytics({ gameVersion: "0.7.58" });
+  const analytics = createAnalytics({ gameVersion: "0.7.63" });
 
   installSpriteHandlers();
   installGlobalAudioWiring();
@@ -196,7 +196,6 @@ import { createBoot } from "./modules/app/boot.js";
     markOverlaysDirty,
     markServerBuffsDirty,
     pushTickerEvent,
-    analytics,
     elServerBuffBar: els.elServerBuffBar,
     elServerBuffToggle: els.elServerBuffToggle,
   });
@@ -234,7 +233,6 @@ import { createBoot } from "./modules/app/boot.js";
     getState,
     ui,
     defs,
-    analytics,
     addLog,
     serverBuffMul,
     activateTab,
@@ -256,7 +254,7 @@ import { createBoot } from "./modules/app/boot.js";
     startResearchByTid,
     tryAutoResearch,
     addRes,
-    getPokeballMakeCost,
+    getOrbMakeCost,
     computeDerived,
   } = core;
 
@@ -270,6 +268,7 @@ import { createBoot } from "./modules/app/boot.js";
     hint,
     addLog,
     elCloudStatus: els.elCloudStatus,
+    onRegistered: () => analytics.trackOnce("register"),
   });
   savecRef = savec;
   const {
@@ -383,7 +382,7 @@ import { createBoot } from "./modules/app/boot.js";
       canAfford,
       pay,
       addRes,
-      getPokeballMakeCost,
+      getOrbMakeCost,
       canStartResearch,
       startResearchByTid,
       tryAutoResearch,
@@ -470,6 +469,7 @@ import { createBoot } from "./modules/app/boot.js";
     refreshCloudUI,
     doCloudSyncNow,
     bindSavePanelEvents,
+    preloadPanels: wiring.preloadPanels,
   });
   boot();
 })();

@@ -201,7 +201,7 @@ import * as PT from "../modules/systems/pve_tower.js";
 {
   const state = {
     dex: { caught: {}, shiny: {} },
-    mons: { list: [{ pid: "p25", dex: 25, name: "电毛球", isShiny: true }] },
+    mons: { list: [{ pid: "p25", dex: 25, name: "星雷灵鼠", isShiny: true }] },
   };
   const n = syncShinyGalleryFromMons(state);
   assert.equal(n, 1, "sync added");
@@ -213,13 +213,13 @@ import * as PT from "../modules/systems/pve_tower.js";
   const state = {
     dex: {
       shiny: {
-        p25: { dex: 25, name: "电毛球", at: 3 },
+        p25: { dex: 25, name: "星雷灵鼠", at: 3 },
         p001b: { dex: 1, name: "芽苞苞", at: 2 },
       },
     },
   };
   const text = buildShinyShareText(state);
-  assert.ok(text.includes("电毛球") && text.includes("闪光馆"), "share text");
+  assert.ok(text.includes("星雷灵鼠") && text.includes("闪光馆"), "share text");
   assert.equal(shinyShareCardPayload(state).unique, 2, "share card unique");
 }
 
@@ -403,7 +403,7 @@ import * as PT from "../modules/systems/pve_tower.js";
       id: 4,
       dex: 25,
       pid: "p025",
-      name: "电毛球",
+      name: "星雷灵鼠",
       lvl: 28,
       stars: 0,
       types: ["electric", "fire"],
@@ -533,10 +533,10 @@ import * as PT from "../modules/systems/pve_tower.js";
   assert.ok(relicTech.catchChanceAdd >= relicAura.catchAdd, "computeTechEffects includes eco-relic catchAdd");
 
   // Temperament Mint Directed Tuning Workshop: +10%/-10% & neutral, commemorative nature preservation, CP & PvE/Dual battle wiring, save/rebirth persistence
-  const targetMon = st.mons.list[0]; // id=1, orig nature = "timid" (胆小)
+  const targetMon = st.mons.list[0]; // id=1, orig nature = "timid" (怯生)
   const untunedStats = getMonCurrentStats(targetMon);
   const untunedCp = monPower(targetMon);
-  assert.equal(formatMonNatureWithTuning(targetMon), "胆小", "untuned companion displays original nature");
+  assert.equal(formatMonNatureWithTuning(targetMon), "怯生", "untuned companion displays original nature");
 
   // Reject invalid same-stat tuning
   const invalidTune = applyMintTuningToMon(st, 1, { up: "spa", down: "spa" });
@@ -549,7 +549,7 @@ import * as PT from "../modules/systems/pve_tower.js";
   assert.equal(st.res.tuningMint.value, mintBeforeTune - 1, "applyMintTuningToMon consumes 1 tuningMint");
   assert.equal(targetMon.nature, "timid", "original commemorative nature id is preserved untouched");
   assert.ok(
-    formatMonNatureWithTuning(targetMon).includes("胆小 →") && formatMonNatureWithTuning(targetMon).includes("灵攻+10%"),
+    formatMonNatureWithTuning(targetMon).includes("怯生 →") && formatMonNatureWithTuning(targetMon).includes("灵攻+10%"),
     "formatMonNatureWithTuning displays 原性格 → 调律偏向",
   );
 
@@ -601,7 +601,7 @@ import * as PT from "../modules/systems/pve_tower.js";
   assert.equal(neutralRes.ok, true, "neutral 心平归元 tuning succeeds");
   const neutralStats = getMonCurrentStats(targetMon);
   assert.deepEqual(neutralStats, untunedStats, "neutral 心平归元 tuning restores exact 1.0x stats");
-  assert.ok(formatMonNatureWithTuning(targetMon).includes("胆小 → 心平归元"), "neutral tuning shows 原性格 → 心平归元");
+  assert.ok(formatMonNatureWithTuning(targetMon).includes("怯生 → 心平归元"), "neutral tuning shows 原性格 → 心平归元");
 }
 
 // ============================================================================
@@ -624,8 +624,8 @@ import * as PT from "../modules/systems/pve_tower.js";
     const uiTag = renderUiIcon(iconKey, 24);
     const resTag = renderResSvg(iconKey, 20);
     assert.ok(
-      uiTag.includes(`${iconKey}.webp?v=0.7.58`) && resTag.includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      uiTag.includes(`${iconKey}.webp?v=0.7.63`) && resTag.includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
 
@@ -640,7 +640,7 @@ import * as PT from "../modules/systems/pve_tower.js";
     { id: 1, dex: 3, pid: "p003", name: "花蓬蓬", lvl: 30, stars: 1, affection: 20, types: ["grass", "wind"], nature: "jolly", baseStats: { hp: 80, atk: 82, def: 83, spa: 100, spd: 100, spe: 80 }, iv: { hp: 8, atk: 8, def: 8, spa: 8, spd: 8, spe: 8 } },
     { id: 2, dex: 6, pid: "p006", name: "焰翼龙", lvl: 32, stars: 1, affection: 15, types: ["fire"], nature: "brave", baseStats: { hp: 78, atk: 84, def: 78, spa: 109, spd: 85, spe: 100 }, iv: { hp: 8, atk: 8, def: 8, spa: 8, spd: 8, spe: 8 } },
     { id: 3, dex: 9, pid: "p009", name: "沧澜龟", lvl: 28, stars: 1, affection: 10, types: ["water"], nature: "calm", baseStats: { hp: 79, atk: 83, def: 100, spa: 85, spd: 105, spe: 78 }, iv: { hp: 8, atk: 8, def: 8, spa: 8, spd: 8, spe: 8 } },
-    { id: 4, dex: 25, pid: "p025", name: "电毛球", lvl: 26, stars: 0, affection: 12, types: ["electric"], nature: "hasty", baseStats: { hp: 55, atk: 55, def: 40, spa: 50, spd: 50, spe: 90 }, iv: { hp: 6, atk: 6, def: 6, spa: 6, spd: 6, spe: 6 } },
+    { id: 4, dex: 25, pid: "p025", name: "星雷灵鼠", lvl: 26, stars: 0, affection: 12, types: ["electric"], nature: "hasty", baseStats: { hp: 55, atk: 55, def: 40, spa: 50, spd: 50, spe: 90 }, iv: { hp: 6, atk: 6, def: 6, spa: 6, spd: 6, spe: 6 } },
     { id: 5, dex: 37, pid: "p037", name: "暖尾狐", lvl: 18, stars: 0, affection: 5, types: ["fire"], nature: "timid", baseStats: { hp: 45, atk: 41, def: 40, spa: 50, spd: 65, spe: 65 }, iv: { hp: 5, atk: 5, def: 5, spa: 5, spd: 5, spe: 5 } },
     { id: 6, dex: 10, pid: "p010", name: "毛茸茸", lvl: 3, stars: 0, affection: 0, types: ["grass"], nature: "hardy", baseStats: { hp: 45, atk: 30, def: 35, spa: 20, spd: 20, spe: 45 }, iv: { hp: 1, atk: 1, def: 1, spa: 1, spd: 1, spe: 1 } },
   ];
@@ -813,13 +813,13 @@ import * as PT from "../modules/systems/pve_tower.js";
     const uiTag = renderUiIcon(iconKey, 24);
     const resTag = renderResSvg(iconKey, 20);
     assert.ok(
-      uiTag.includes(`${iconKey}.webp?v=0.7.58`) && resTag.includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      uiTag.includes(`${iconKey}.webp?v=0.7.63`) && resTag.includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
   assert.ok(
-    renderResSvg("shinyStarSand", 16).includes("boutiqueMirrorStar.webp?v=0.7.58"),
-    "shinyStarSand resource icon resolves to boutiqueMirrorStar.webp?v=0.7.58",
+    renderResSvg("shinyStarSand", 16).includes("boutiqueMirrorStar.webp?v=0.7.63"),
+    "shinyStarSand resource icon resolves to boutiqueMirrorStar.webp?v=0.7.63",
   );
 
   const st = defaultState();
@@ -982,17 +982,17 @@ import * as PT from "../modules/systems/pve_tower.js";
     const uiTag = renderUiIcon(iconKey, 24);
     const resTag = renderResSvg(iconKey, 20);
     assert.ok(
-      uiTag.includes(`${iconKey}.webp?v=0.7.58`) && resTag.includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      uiTag.includes(`${iconKey}.webp?v=0.7.63`) && resTag.includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
   assert.ok(
-    renderResSvg("ancientGeneAmber", 16).includes("amberFossilGem.webp?v=0.7.58"),
-    "ancientGeneAmber resource icon resolves to amberFossilGem.webp?v=0.7.58",
+    renderResSvg("ancientGeneAmber", 16).includes("amberFossilGem.webp?v=0.7.63"),
+    "ancientGeneAmber resource icon resolves to amberFossilGem.webp?v=0.7.63",
   );
   assert.ok(
-    renderResSvg("corridorStarMedals", 16).includes("corridorStarCrest.webp?v=0.7.58"),
-    "corridorStarMedals resource icon resolves to corridorStarCrest.webp?v=0.7.58",
+    renderResSvg("corridorStarMedals", 16).includes("corridorStarCrest.webp?v=0.7.63"),
+    "corridorStarMedals resource icon resolves to corridorStarCrest.webp?v=0.7.63",
   );
 
   const st = defaultState();
@@ -1147,11 +1147,11 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-9 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.63`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
-  assert.ok(renderResSvg("driftBottle", 16).includes("driftBottle.webp?v=0.7.58"), "driftBottle resource icon resolves to driftBottle.webp");
+  assert.ok(renderResSvg("driftBottle", 16).includes("driftBottle.webp?v=0.7.63"), "driftBottle resource icon resolves to driftBottle.webp");
   const dockSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
   assert.ok(!/<svg/i.test(dockSrc.slice(dockSrc.indexOf("ML-9 Section"), dockSrc.indexOf("ML-8 Section"))), "ML-9 dock UI uses webp icons only (no inline svg)");
 
@@ -1320,11 +1320,11 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-10 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.63`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
-  assert.ok(renderResSvg("fireflyLantern", 16).includes("fireflyLantern.webp?v=0.7.58"), "fireflyLantern resource icon resolves to fireflyLantern.webp");
+  assert.ok(renderResSvg("fireflyLantern", 16).includes("fireflyLantern.webp?v=0.7.63"), "fireflyLantern resource icon resolves to fireflyLantern.webp");
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
   const ml10Ui = ftSrc.slice(ftSrc.indexOf("ML-10 Section: 萌灵「月光夜行"), ftSrc.indexOf("ML-9 Section"));
   assert.ok(ml10Ui.length > 1000 && !/<svg/i.test(ml10Ui) && !/<canvas/i.test(ml10Ui), "ML-10 UI uses webp icons only (no inline svg / canvas)");
@@ -1523,8 +1523,8 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-11 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.63`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
@@ -1709,11 +1709,11 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-12 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.63`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
-  assert.ok(renderResSvg("mapFragment", 16).includes("mapFragment.webp?v=0.7.58"), "mapFragment resource icon resolves to mapFragment.webp");
+  assert.ok(renderResSvg("mapFragment", 16).includes("mapFragment.webp?v=0.7.63"), "mapFragment resource icon resolves to mapFragment.webp");
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");
   const ml12Ui = ftSrc.slice(ftSrc.indexOf("ML-12 Section: 萌灵「寻宝地图远航」"), ftSrc.indexOf("ML-11 Section: 萌灵「云顶浮空岛建造」"));
   assert.ok(ml12Ui.length > 4000 && ml12Ui.includes("ML-12 Section: 萌灵「乐队合奏音乐会」"), "ML-12 treasure + band UI sections exist ahead of ML-11");
@@ -1986,8 +1986,8 @@ import * as PT from "../modules/systems/pve_tower.js";
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${iconKey}.webp`)), `ML-13 icon asset exists: ${iconKey}.webp`);
     assert.equal(WEBP_UI_ICONS[iconKey], iconKey, `WEBP_UI_ICONS registers ${iconKey}`);
     assert.ok(
-      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.58`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.58`,
+      renderUiIcon(iconKey, 24).includes(`${iconKey}.webp?v=0.7.63`) && renderResSvg(iconKey, 20).includes(`${iconKey}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${iconKey}.webp?v=0.7.63`,
     );
   }
   const ftSrc = readFileSync(path.join(rootDir, "modules", "tabs", "functions_tab.js"), "utf8");

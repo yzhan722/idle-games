@@ -84,6 +84,9 @@ const actorBoundEndpoints = [
   "friends/accept.js",
   "friends/request.js",
   "friends/gift.js",
+  "social/block.js",
+  "social/prefs.js",
+  "social/report.js",
 ];
 for (const endpoint of actorBoundEndpoints) {
   const source = await readFile(new URL(`../functions/api/${endpoint}`, import.meta.url), "utf8");
@@ -97,6 +100,21 @@ const rateLimitedWriteEndpoints = [
   { file: "score/submit.js", key: "score/submit" },
   { file: "events/push.js", key: "events/push" },
   { file: "social/pvp-result.js", key: "social/pvp-result" },
+  { file: "auth/delete.js", key: "auth/delete" },
+  { file: "auth/logout-all.js", key: "auth/logout-all" },
+  { file: "social/messages.js", key: "social/message" },
+  { file: "social/messages.js", key: "social/message-read" },
+  { file: "social/pvp-invite.js", key: "social/pvp-invite" },
+  { file: "social/pvp-accept.js", key: "social/pvp-accept" },
+  { file: "social/achievements.js", key: "social/share" },
+  { file: "social/achievements.js", key: "social/like" },
+  { file: "friends/request.js", key: "friends/request" },
+  { file: "friends/accept.js", key: "friends/accept" },
+  { file: "friends/gift.js", key: "friends/gift" },
+  { file: "server/boss/bully/claim.js", key: "boss/claim" },
+  { file: "social/block.js", key: "social/block" },
+  { file: "social/prefs.js", key: "social/prefs" },
+  { file: "social/report.js", key: "social/report" },
 ];
 for (const { file, key } of rateLimitedWriteEndpoints) {
   const source = await readFile(new URL(`../functions/api/${file}`, import.meta.url), "utf8");
@@ -105,7 +123,8 @@ for (const { file, key } of rateLimitedWriteEndpoints) {
   assert(source.includes(key), `${file} uses rate limit key ${key}`);
 }
 
-const authOnlyWriteEndpoints = ["server/boss/bully/claim.js"];
+// 存档写入不加：每人固定 4 行、每次覆盖同一行，限流本身也要写一行
+const authOnlyWriteEndpoints = ["save/index.js"];
 for (const endpoint of authOnlyWriteEndpoints) {
   const source = await readFile(new URL(`../functions/api/${endpoint}`, import.meta.url), "utf8");
   assert(source.includes("requireUser"), `${endpoint} requires authenticated user`);

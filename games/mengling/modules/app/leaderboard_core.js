@@ -2,6 +2,8 @@
 // 维护者窗口：D
 // getToken/refreshLeaderboards 为惰性 thunk，容忍 cloudSave/lbData 后初始化
 
+import { isLocalAvatar } from "../avatar_guard.js";
+import { checkName } from "../name_filter.js";
 import { escapeHtml } from "../utils.js";
 import {
   LB_UID_KEY,
@@ -28,7 +30,8 @@ export function initLeaderboardIdentity(ui) {
     const rawName = readLocalStorage(LB_NAME_KEY);
     const rawAvatar = readLocalStorage(LB_AVATAR_KEY);
     ui.lbUid = rawUid && typeof rawUid === "string" ? rawUid : makeUid();
-    ui.lbName = rawName && typeof rawName === "string" ? rawName : "";
+    // 旧版本存下的昵称命中屏蔽词：清空，显示默认名，等玩家重新起名
+    ui.lbName = rawName && typeof rawName === "string" && checkName(rawName).ok ? rawName : "";
     ui.lbAvatar = rawAvatar && typeof rawAvatar === "string" ? rawAvatar : "";
     try {
       writeLocalStorage(LB_UID_KEY, ui.lbUid);
@@ -94,7 +97,7 @@ export function createLbFetchJson({ getToken }) {
   };
 }
 
-// 头像/训练师图标缓存 + 头像文件处理
+// 头像/育灵师图标缓存 + 头像文件处理
 export function createAvatarTools({ ui, markLeaderboardDirty, render }) {
   let TRAINER_ICON_DATA_URL = null;
   let TRAINER_ICON_LOADING = false;
@@ -151,13 +154,13 @@ export function createAvatarTools({ ui, markLeaderboardDirty, render }) {
   }
 
   function renderOwnerIcon(avatarDataUrl) {
-    const isAvatar = typeof avatarDataUrl === "string" && avatarDataUrl;
+    const isAvatar = isLocalAvatar(avatarDataUrl);
     const src = isAvatar ? avatarDataUrl : trainerIconSrc();
     return `<img class="lb-avatar-badge" src="${escapeHtml(src)}" width="24" height="24" alt="" loading="eager" decoding="async" />`;
   }
 
   function renderSelfAvatarPreview() {
-    const isAvatar = typeof ui.lbAvatar === "string" && ui.lbAvatar;
+    const isAvatar = isLocalAvatar(ui.lbAvatar);
     const src = isAvatar ? ui.lbAvatar : trainerIconSrc();
     return `<img class="lb-avatar-badge lb-avatar-badge--self" src="${escapeHtml(src)}" width="32" height="32" alt="" loading="eager" decoding="async" />`;
   }

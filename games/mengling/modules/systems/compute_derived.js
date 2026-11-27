@@ -21,16 +21,16 @@ export function computeDerived(state, ctx) {
   const eff = accumulateBuildingEffects(state, defs);
   const techEff = computeTechEffects();
   applyTechAndServerCapToEff(eff, techEff, serverBuffMul("resCap"));
-  eff.unlockPokeball = Boolean(state.tech.pokeballBasics);
+  eff.unlockOrb = Boolean(state.tech.pokeballBasics);
 
   const caps = computeBaseResourceCaps(defs, eff);
   const permCapMul = permanentBoostMul(state.permanentBoosts?.capacity) * natureResCapMul(state) * legacyCapMul(state);
-  applyCoreResourceCaps(state, caps, eff.unlockPokeball, permCapMul);
+  applyCoreResourceCaps(state, caps, eff.unlockOrb, permCapMul);
   applyStaticItemCaps(state, computeStaticItemCaps(defs));
 
   state.unlocks.wood = Boolean(eff.unlockWood);
   state.unlocks.minerals = Boolean(eff.unlockMinerals);
-  state.unlocks.pokeball = Boolean(eff.unlockPokeball);
+  state.unlocks.pokeball = Boolean(eff.unlockOrb);
 
   if (!state.meta || typeof state.meta !== "object") state.meta = {};
   if (!state.meta.earlyPaceGranted && (state.catchCount || 0) === 0) {
@@ -44,7 +44,7 @@ export function computeDerived(state, ctx) {
     }
   }
 
-  if (eff.unlockPokeball) {
+  if (eff.unlockOrb) {
     state.res.pokeball.cap = Math.max(Number(state.res.pokeball.cap) || 0, 10);
     if (!state.meta.starterBallsGranted) {
       if ((state.catchCount || 0) > 0 || (state.pokeballMade || 0) > 0 || (state.res.pokeball.value || 0) > 0) {

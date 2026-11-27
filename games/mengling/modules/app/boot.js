@@ -7,13 +7,10 @@ import { initGuideSystem } from "../guide.js";
 import { createTabBadgeSystem } from "../tab_badges.js";
 import { load as loadRemoteConfig } from "../remote_config.js";
 import { formatWelcomeBackSummary, localDateStr } from "../systems/gameplay_fun.js";
-import { createFriendsSystem, createRenderFriends } from "../friends.js";
-import { createSocialSystem } from "../social.js";
-import { createRenderSocial } from "../render/social.js";
-import { createSocialTab } from "../tabs/social_tab.js";
-import { createPvpBattle } from "../pvp_battle.js";
 import { DAILY_LOGIN_REWARD_KEY, readLocalStorage } from "./storage.js";
 import { initStageInteractions } from "../ui/stage_interactions.js";
+import { initPrivacyPanel } from "./privacy_panel.js";
+import { createLazyPanel } from "./lazy_panel.js";
 
 export function createBoot({
   ui,
@@ -44,6 +41,7 @@ export function createBoot({
   refreshCloudUI,
   doCloudSyncNow,
   bindSavePanelEvents,
+  preloadPanels = () => {},
 }) {
   return function boot() {
     const state = getState();
@@ -59,14 +57,12 @@ export function createBoot({
 
     refreshCloudUI();
     cloudSave.installLifecycleFlush();
-    analytics.init({
-      baseUrl: lbBaseUrl,
-      getToken: () => cloudSave.getToken(),
-      getUid: () => (typeof ui.lbUid === "string" ? ui.lbUid : ""),
-    });
-    analytics.trackOnceSession("session_start");
+    analytics.init({ baseUrl: lbBaseUrl });
+    analytics.startSession({ isNewPlayer: !(state.totalPlayMs > 0) && !(state.catchCount > 0) });
+    initPrivacyPanel({ analytics, cloudSave, hint, addLog, lbBaseUrl, onAccountDeleted: () => { refreshCloudUI(); getSocialTab()?.refreshSocial?.(); } });
     loadRemoteConfig(lbBaseUrl()).then((cfg) => {
       ui.remoteConfig = cfg;
+      analytics.setRemoteEnabled(cfg?.featureFlags?.analytics);
     }).catch(() => {});
     if (cloudSave.getToken()) {
       doCloudSyncNow();
@@ -135,8 +131,8 @@ export function createBoot({
           addRes("evolutionStone", 1);
           const gotMb = randFloat() < 0.05;
           if (gotMb) addRes("masterball", 1);
-          addLog(gotMb ? "每日登录奖励：灵球 +20，灵晶石 +1，额外 究极灵球 +1" : "每日登录奖励：灵球 +20，灵晶石 +1", true);
-          hint(gotMb ? "今日登录奖励已发放，获得究极灵球！" : "今日登录奖励已发放。", 3000);
+          addLog(gotMb ? "每日登录奖励：灵球 +20，灵晶石 +1，额外 星契灵球 +1" : "每日登录奖励：灵球 +20，灵晶石 +1", true);
+          hint(gotMb ? "今日登录奖励已发放，获得星契灵球！" : "今日登录奖励已发放。", 3000);
           save();
         }
       } catch {
@@ -144,70 +140,97 @@ export function createBoot({
       }
     }
 
-    // 初始化好友系统
-    const friendsSystem = createFriendsSystem({
-      lbBaseUrl,
-      ui,
-      addLog,
-    });
+    // 好友 / 社交：排行榜页里才用到，打开或空闲时再下载；别处照旧通过 getSocialTab() 调用
+    let realSocialTab = null;
+    const socialPanel = createLazyPanel({
+      reload: () => {
+        save();
+        window.location.reload();
+      },
+      load: (q) =>
+        Promise.all([
+          import(`../friends.js${q}`),
+          import(`../social.js${q}`),
+          import(`../render/social.js${q}`),
+          import(`../tabs/social_tab.js${q}`),
+          import(`../pvp_battle.js${q}`),
+        ]),
+      setup: ([{ createFriendsSystem, createRenderFriends }, { createSocialSystem }, { createRenderSocial }, { createSocialTab }, { createPvpBattle }]) => {
+        // 初始化好友系统
+        const friendsSystem = createFriendsSystem({
+          lbBaseUrl,
+          ui,
+          addLog,
+        });
 
-    const renderFriends = createRenderFriends({
-      ui,
-      escapeHtml,
-      friendsSystem,
-    });
+        const renderFriends = createRenderFriends({
+          ui,
+          escapeHtml,
+          friendsSystem,
+        });
 
-    // 初始化社交系统
-    const socialSystem = createSocialSystem({
-      lbBaseUrl,
-      lbFetchJson,
-      ui,
-      addLog,
-    });
+        // 初始化社交系统
+        const socialSystem = createSocialSystem({
+          lbBaseUrl,
+          lbFetchJson,
+          ui,
+          addLog,
+        });
 
-    const renderSocial = createRenderSocial({
-      ui,
-      escapeHtml,
-      socialSystem,
-      getState,
-      formatTime: (ts) => {
-        const now = Date.now();
-        const diff = now - ts;
-        const minute = 60 * 1000;
-        const hour = 60 * minute;
-        const day = 24 * hour;
-        if (diff < minute) return "刚刚";
-        if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
-        if (diff < day) return `${Math.floor(diff / hour)}小时前`;
-        if (diff < 7 * day) return `${Math.floor(diff / day)}天前`;
-        const date = new Date(ts);
-        return `${date.getMonth() + 1}/${date.getDate()}`;
+        const renderSocial = createRenderSocial({
+          ui,
+          escapeHtml,
+          socialSystem,
+          getState,
+          formatTime: (ts) => {
+            const now = Date.now();
+            const diff = now - ts;
+            const minute = 60 * 1000;
+            const hour = 60 * minute;
+            const day = 24 * hour;
+            if (diff < minute) return "刚刚";
+            if (diff < hour) return `${Math.floor(diff / minute)}分钟前`;
+            if (diff < day) return `${Math.floor(diff / hour)}小时前`;
+            if (diff < 7 * day) return `${Math.floor(diff / day)}天前`;
+            const date = new Date(ts);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+          },
+        });
+
+        realSocialTab = createSocialTab({
+          ui,
+          addLog,
+          socialSystem,
+          renderSocial,
+          friendsSystem,
+          renderFriends,
+          getState,
+          createPvpBattle,
+          getMonCurrentStats,
+          getBeastDataByDex,
+          pushTickerEvent,
+        });
+
+        // 初始化社交标签页
+        realSocialTab.setupSocialTab();
+        return () => realSocialTab.refreshSocial?.();
+      },
+      getHost: () => document.getElementById("panel-social"),
+      isActive: () => ui.activeTab === "leaderboard",
+    });
+    setSocialTab({
+      refreshSocial: () => socialPanel.render(),
+      autoShareAchievement: async (...args) => {
+        if (!realSocialTab && !(await socialPanel.preload())) return undefined;
+        return realSocialTab.autoShareAchievement(...args);
       },
     });
-
-    const socialTabInstance = createSocialTab({
-      ui,
-      addLog,
-      socialSystem,
-      renderSocial,
-      friendsSystem,
-      renderFriends,
-      getState,
-      createPvpBattle,
-      getMonCurrentStats,
-      getBeastDataByDex,
-      pushTickerEvent,
-    });
-
-    setSocialTab(socialTabInstance);
-
-    // 初始化社交标签页
-    socialTabInstance.setupSocialTab();
 
     render();
 
     // 默认落在 Bonfire 标签页
     activateTab("bonfire");
+    preloadPanels([socialPanel]);
 
     let lastFrame = nowMs();
     window.setInterval(() => {

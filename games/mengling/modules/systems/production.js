@@ -46,14 +46,14 @@ export function accumulateBuildingEffects(state, defs) {
     capCatnipAdd: 0,
     capWoodAdd: 0,
     capMineralsAdd: 0,
-    capPokeballAdd: 0,
+    capOrbAdd: 0,
     capCatnipMul: 1,
     capWoodMul: 1,
     capMineralsMul: 1,
-    capPokeballMul: 1,
+    capOrbMul: 1,
     unlockWood: false,
     unlockMinerals: false,
-    unlockPokeball: false,
+    unlockOrb: false,
   };
   const buildings = defs?.buildings && typeof defs.buildings === "object" ? defs.buildings : {};
   for (const [, bdef] of Object.entries(buildings)) {
@@ -78,16 +78,16 @@ export function applyTechAndServerCapToEff(eff, techEff, serverCapMul) {
   eff.capCatnipAdd += techEff.capCatnipAdd ?? 0;
   eff.capWoodAdd += techEff.capWoodAdd ?? 0;
   eff.capMineralsAdd += techEff.capMineralsAdd ?? 0;
-  eff.capPokeballAdd += techEff.capPokeballAdd ?? 0;
+  eff.capOrbAdd += techEff.capOrbAdd ?? 0;
   eff.capCatnipMul *= techEff.capCatnipMul ?? 1;
   eff.capWoodMul *= techEff.capWoodMul ?? 1;
   eff.capMineralsMul *= techEff.capMineralsMul ?? 1;
-  eff.capPokeballMul *= techEff.capPokeballMul ?? 1;
+  eff.capOrbMul *= techEff.capOrbMul ?? 1;
   const sb = typeof serverCapMul === "number" && Number.isFinite(serverCapMul) ? serverCapMul : 1;
   eff.capCatnipMul *= sb;
   eff.capWoodMul *= sb;
   eff.capMineralsMul *= sb;
-  eff.capPokeballMul *= sb;
+  eff.capOrbMul *= sb;
   return eff;
 }
 
@@ -100,7 +100,7 @@ export function computeBaseResourceCaps(defs, eff) {
     catnip: ((r.catnip?.baseCap ?? 0) + (eff.capCatnipAdd ?? 0)) * (eff.capCatnipMul ?? 1),
     wood: ((r.wood?.baseCap ?? 0) + (eff.capWoodAdd ?? 0)) * (eff.capWoodMul ?? 1),
     minerals: ((r.minerals?.baseCap ?? 0) + (eff.capMineralsAdd ?? 0)) * (eff.capMineralsMul ?? 1),
-    pokeball: ((r.pokeball?.baseCap ?? 0) + (eff.capPokeballAdd ?? 0)) * (eff.capPokeballMul ?? 1),
+    pokeball: ((r.pokeball?.baseCap ?? 0) + (eff.capOrbAdd ?? 0)) * (eff.capOrbMul ?? 1),
   };
 }
 
@@ -177,13 +177,13 @@ const CORE_ALWAYS = new Set([
 /**
  * 写回核心四资源 cap
  */
-export function applyCoreResourceCaps(state, caps, unlockPokeball, permCapMul) {
+export function applyCoreResourceCaps(state, caps, unlockOrb, permCapMul) {
   if (!state?.res) return;
   const mul = typeof permCapMul === "number" && Number.isFinite(permCapMul) ? permCapMul : 1;
   state.res.catnip.cap = Math.max(0, Math.floor((caps?.catnip ?? 0) * mul));
   state.res.wood.cap = Math.max(0, Math.floor((caps?.wood ?? 0) * mul));
   state.res.minerals.cap = Math.max(0, Math.floor((caps?.minerals ?? 0) * mul));
-  state.res.pokeball.cap = unlockPokeball ? Math.max(0, Math.floor((caps?.pokeball ?? 0) * mul)) : 0;
+  state.res.pokeball.cap = unlockOrb ? Math.max(0, Math.floor((caps?.pokeball ?? 0) * mul)) : 0;
 }
 
 /**

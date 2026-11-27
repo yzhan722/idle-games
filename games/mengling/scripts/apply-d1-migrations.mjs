@@ -18,6 +18,8 @@ const files = [
   "scripts/migrations/2026-07-12-rate-limits.sql",
   "scripts/migrations/2026-07-13-iap-orders.sql",
   "scripts/migrations/2026-07-12-analytics.sql",
+  "scripts/migrations/2026-11-26-account-deletions.sql",
+  "scripts/migrations/2026-11-27-social-safety.sql",
 ];
 
 for (const rel of files) {

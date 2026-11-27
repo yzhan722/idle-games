@@ -81,13 +81,10 @@ export function createRenderMons({
   getMonCurrentStats,
   expNeedForLevel,
   getBeastDataByDex,
-  getEvoMap,
-  stageIndex,
   getSpeciesByPid,
-  getEvoReqLevel,
-  defaultReqLvlByStage,
-  isTradeEvo,
-  isAffectionEvo,
+  getEvoTargets,
+  getEvoStatus,
+  evoConditionText,
   getState,
 }) {
   return function renderMons() {
@@ -213,17 +210,12 @@ export function createRenderMons({
       const canBatchCandy = candyHave >= 1 && candyTargets.length > 0;
       const batchCandyCount = Math.min(candyHave, candyTargets.length);
 
-      const evoMap = typeof getEvoMap === "function" ? getEvoMap() : {};
+      const canEvolveNow = (m) => getEvoTargets(m).some((toPid) => getEvoStatus(m, toPid, state.res).ok);
       let evoReadyCount = 0;
       let firstEvoMonId = null;
       for (const m of filtered) {
         if (!m || typeof m !== "object") continue;
-        const outs = evoMap[m.pid];
-        if (!Array.isArray(outs) || outs.length === 0) continue;
-        const ready = outs.some((toPid) => {
-          const reqLvl = typeof getEvoReqLevel === "function" ? getEvoReqLevel(m.pid, toPid) : 0;
-          return (m.lvl || 0) >= (reqLvl || 0);
-        });
+        const ready = canEvolveNow(m);
         if (ready) {
           evoReadyCount += 1;
           if (firstEvoMonId == null) firstEvoMonId = m.id;
@@ -465,11 +457,7 @@ export function createRenderMons({
           const mTitle = globalThis.BEAST_TITLE?.[mPid] || "";
           const mOrder = globalThis.BEAST_ORDER?.[mPid] || m.dex;
           const mTitleHtml = mTitle ? `<span class="beast-title-tag">【${escapeHtml(mTitle)}】</span>` : "";
-          const evoOuts = Array.isArray(evoMap[m.pid]) ? evoMap[m.pid] : [];
-          const isEvoReady = evoOuts.some((toPid) => {
-            const reqLvl = typeof getEvoReqLevel === "function" ? getEvoReqLevel(m.pid, toPid) : 0;
-            return (m.lvl || 0) >= (reqLvl || 0);
-          });
+          const isEvoReady = canEvolveNow(m);
           const evoBadgeHtml = isEvoReady ? `<span class="badge badge--evo-ready">✦ 可进化</span>` : "";
           const isNatalBond = state?.meta?.natalBondMonId === m.id;
           const nocturnalForm = getMonNocturnalFormBonus(state, m.id);
@@ -483,7 +471,7 @@ export function createRenderMons({
             <div class="row mon-card${cardExtraCls}">
               <div class="row__left">
                 <div class="row__title row__titleLine">${renderBeastIcon(m.dex, m.name, Boolean(m.isShiny))}<span>${escapeHtml(m.name)}</span>${mTitleHtml}${shinyBadge}${natalBadgeHtml}${nocturnalBadgeHtml}${evoBadgeHtml}<span class="tag">No.${pad3(mOrder)}</span><span style="margin-left:auto">${starsHtml}</span></div>
-                <div class="row__desc">Lv.${m.lvl} · 战力 ${power} · 性格 ${escapeHtml(natureName)} · 特性 ${escapeHtml(ab?.name || "—")} · 亲密 ${aff}/100${"caughtWith" in m && m.caughtWith && m.caughtWith !== "pokeball" ? " · " + ({"pokeball":"灵球","ultraball":"高级灵球","quickball":"迅捷灵球","luxuryball":"豪华灵球","masterball":"究极灵球","netball":"捕灵球","duskball":"暗夜灵球"}[m.caughtWith] ?? m.caughtWith) : ""}</div>
+                <div class="row__desc">Lv.${m.lvl} · 战力 ${power} · 性格 ${escapeHtml(natureName)} · 特性 ${escapeHtml(ab?.name || "—")} · 亲密 ${aff}/100${"caughtWith" in m && m.caughtWith && m.caughtWith !== "pokeball" ? " · " + ({"pokeball":"灵球","ultraball":"精制灵球","quickball":"迅捷灵球","luxuryball":"绒心灵球","masterball":"星契灵球","netball":"捕灵球","duskball":"暗夜灵球"}[m.caughtWith] ?? m.caughtWith) : ""}</div>
               </div>
               <div class="row__right">
                 <div class="mon-card__skills">${skillHtml}</div>
@@ -611,10 +599,8 @@ export function createRenderMons({
         <div class="badge">灵防 ${base.spd}</div>
         <div class="badge">速度 ${base.spe}</div>
       `
-      : `<div class="badge badge--muted">种族值加载中</div>`;
-    const evo = getEvoMap();
-    const next = Array.isArray(evo[selected.pid]) ? evo[selected.pid] : [];
-    const st = stageIndex(selected.pid);
+      : `<div class="badge badge--muted">基础值加载中</div>`;
+    const next = getEvoTargets(selected);
     const candyHave = Math.max(0, Math.floor(state.res.rareCandy?.value ?? 0));
     const canFeedCandy = candyHave >= 1;
 
@@ -626,25 +612,9 @@ export function createRenderMons({
         const sp = getSpeciesByPid(toPid);
         const label = sp ? sp.name : toPid;
 
-        const needRope = typeof isTradeEvo === "function" ? isTradeEvo(selected.pid, toPid) : false;
-        const needAff = !needRope && (typeof isAffectionEvo === "function" ? isAffectionEvo(selected.pid, toPid) : false);
-        const reqLvl = getEvoReqLevel(selected.pid, toPid);
-        const reqRid = needRope ? "linkRope" : "evolutionStone";
-        const reqText = needRope
-          ? "灵契绳 x1"
-          : needAff
-            ? "亲密度20+ · 灵晶石 x1"
-            : "灵晶石 x1";
-        const evoOkRes = (state.res?.[reqRid]?.value ?? 0) >= 1;
-        const evoOkAff = !needAff || (typeof selected.affection === "number" && selected.affection >= 20);
-
-        const fallbackReqLvl = defaultReqLvlByStage(selected.pid);
-        const effReqLvl = typeof reqLvl === "number" ? reqLvl : fallbackReqLvl;
-        const evoOkLvl = reqLvl === null ? selected.lvl >= fallbackReqLvl : selected.lvl >= effReqLvl;
-        const lvlText = reqLvl === null ? `Lv.${fallbackReqLvl}+` : reqLvl === 0 ? "无等级" : `Lv.${effReqLvl}+`;
-        const disabled = evoOkLvl && evoOkRes && evoOkAff ? "" : "disabled";
+        const evoSt = getEvoStatus(selected, toPid, state.res);
         evoRows.push(
-          `<button class="btn btn--small" data-mon-evo="${selected.id}" data-evo-to="${toPid}" ${disabled}>进化为 ${escapeHtml(label)}（${lvlText} · ${reqText}）</button>`
+          `<button class="btn btn--small" data-mon-evo="${selected.id}" data-evo-to="${toPid}" ${evoSt.ok ? "" : "disabled"}>进化为 ${escapeHtml(label)}（${evoConditionText(evoSt)}）</button>`
         );
       }
     }
@@ -817,8 +787,8 @@ export function createRenderMons({
           <button class="btn btn--small" data-mon-potion="hpPotion" data-mon-potion-mon="${selected.id}" ${(state.res.hpPotion?.value ?? 0) >= 1 ? "" : "disabled"}>疗伤药剂</button>
           <button class="btn btn--small" data-mon-potion="atkPotion" data-mon-potion-mon="${selected.id}" ${(state.res.atkPotion?.value ?? 0) >= 1 ? "" : "disabled"}>攻击药剂</button>
           <button class="btn btn--small" data-mon-potion="defPotion" data-mon-potion-mon="${selected.id}" ${(state.res.defPotion?.value ?? 0) >= 1 ? "" : "disabled"}>防御药剂</button>
-          <button class="btn btn--small" data-mon-potion="spaPotion" data-mon-potion-mon="${selected.id}" ${(state.res.spaPotion?.value ?? 0) >= 1 ? "" : "disabled"}>特攻药剂</button>
-          <button class="btn btn--small" data-mon-potion="spdPotion" data-mon-potion-mon="${selected.id}" ${(state.res.spdPotion?.value ?? 0) >= 1 ? "" : "disabled"}>特防药剂</button>
+          <button class="btn btn--small" data-mon-potion="spaPotion" data-mon-potion-mon="${selected.id}" ${(state.res.spaPotion?.value ?? 0) >= 1 ? "" : "disabled"}>灵攻药剂</button>
+          <button class="btn btn--small" data-mon-potion="spdPotion" data-mon-potion-mon="${selected.id}" ${(state.res.spdPotion?.value ?? 0) >= 1 ? "" : "disabled"}>灵防药剂</button>
           <button class="btn btn--small" data-mon-potion="spePotion" data-mon-potion-mon="${selected.id}" ${(state.res.spePotion?.value ?? 0) >= 1 ? "" : "disabled"}>速度药剂</button>
         </div>
       </div>
@@ -835,7 +805,7 @@ export function createRenderMons({
 
       <div class="row">
         <div class="row__left">
-          <div class="row__title row__titleLine">${renderResSvg("science", 18)}<span>种族值</span><span class="tag">本源潜能</span></div>
+          <div class="row__title row__titleLine">${renderResSvg("science", 18)}<span>基础值</span><span class="tag">本源潜能</span></div>
           <div class="row__desc">星野灵兽本源六维潜能</div>
         </div>
         <div class="row__right">
@@ -863,8 +833,9 @@ export function createRenderMons({
           <div class="row__title row__titleLine">
             ${renderResSvg("evolutionStone", 18)}<span>进化</span>
             <span class="tag">灵晶石 ×${Math.max(0, Math.floor(state.res.evolutionStone?.value ?? 0))}</span>
+            <span class="tag">灵契绳 ×${Math.max(0, Math.floor(state.res.linkRope?.value ?? 0))}</span>
           </div>
-          <div class="row__desc">需求：达到对应分支等级（见按钮）且 消耗灵晶石 x1</div>
+          <div class="row__desc">条件写在按钮上</div>
         </div>
         <div class="row__right">
           ${evoRows.join("")}

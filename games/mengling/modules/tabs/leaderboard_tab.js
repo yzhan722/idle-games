@@ -1,6 +1,10 @@
 // 排行榜 Tab 事件（DOM only）
 // 维护者窗口：D
 
+import { checkName } from "../name_filter.js";
+
+const NAME_REFUSED = "这个名字不能用，换一个";
+
 export function initLeaderboardTab({
   elLeaderboard,
   ui,
@@ -18,14 +22,28 @@ export function initLeaderboardTab({
 }) {
   if (!elLeaderboard) return;
 
+  // 改名：命中屏蔽词（辱骂、色情、仇恨、冒充官方）不保存，离开输入框时退回上一个名字
   elLeaderboard.addEventListener("input", (ev) => {
     const nameInp = ev.target?.closest?.("input[data-lb-name]");
     if (!nameInp || !elLeaderboard.contains(nameInp)) return;
-    ui.lbName = String(nameInp.value || "");
+    const value = String(nameInp.value || "");
+    const allowed = checkName(value).ok;
+    nameInp.classList.toggle("is-invalid", !allowed);
+    nameInp.title = allowed ? "" : NAME_REFUSED;
+    if (!allowed) return;
+    ui.lbName = value;
     try {
       localStorage.setItem(LB_NAME_KEY, ui.lbName);
     } catch {
     }
+  });
+  elLeaderboard.addEventListener("change", (ev) => {
+    const nameInp = ev.target?.closest?.("input[data-lb-name]");
+    if (!nameInp || !elLeaderboard.contains(nameInp) || checkName(nameInp.value).ok) return;
+    nameInp.value = ui.lbName || "";
+    nameInp.classList.remove("is-invalid");
+    nameInp.title = "";
+    if (typeof addLog === "function") addLog(NAME_REFUSED, true);
   });
 
   elLeaderboard.addEventListener("change", async (ev) => {

@@ -18,7 +18,7 @@ import {
   typeZh,
 } from "../systems/gameplay_fun.js";
 import { getNatureInfo } from "../mons.js";
-import { ballCatchMult } from "../systems/ball_catch.js";
+import { ballCatchMult, wildShinyOddsLine, wildShinyRate } from "../systems/ball_catch.js";
 import { renderCaptureStageHtml, setHtmlPreservingStage } from "./tab_stages.js";
 import { renderBuildingSvg, renderOrbSvg, renderResSvg, renderUiIcon } from "./rpg_svg_icons.js";
 
@@ -68,7 +68,7 @@ export function createRenderCapture({
   getUnlockedCaptureAreas,
   getActiveCaptureArea,
   dexCaughtUnique,
-  getPokeballMakeCost,
+  getOrbMakeCost,
   canAfford,
   computeTechEffects,
   baseCatchChanceByDex,
@@ -261,6 +261,13 @@ export function createRenderCapture({
     const stageEncIsMythic = Boolean(stageEnc && stageEnc.tier === "epic");
     const stageEncTypes = stageEnc && Array.isArray(globalThis.BEAST_TYPES?.[stageEnc.dex]) ? globalThis.BEAST_TYPES[stageEnc.dex] : [];
     const stageTechEff = computeTechEffects();
+    const shinyCharmOn = typeof state.shinyCharmRemainingSec === "number" && state.shinyCharmRemainingSec > 0;
+    const shinyOddsLine = wildShinyOddsLine(wildShinyRate({ charmOn: shinyCharmOn, shinyMul: stageTechEff.shinyChanceMul }));
+    // 高级遭遇另算（基础 1/1024），放在按钮的悬停提示里
+    const advShinyOddsLine = wildShinyOddsLine(
+      wildShinyRate({ charmOn: shinyCharmOn, shinyMul: stageTechEff.shinyChanceMul, advanced: true }),
+      { advanced: true }
+    );
     const stageAdd = (typeof stageTechEff.catchChanceAdd === "number" ? stageTechEff.catchChanceAdd : 0) + abilityCatchRateAdd(state);
     const stageFails = typeof state.rng?.catchFails === "number" ? state.rng.catchFails : 0;
     const stagePity = Math.min(0.02 * Math.max(0, Math.floor(stageFails)), 0.2);
@@ -310,6 +317,7 @@ export function createRenderCapture({
       advMaxCharges: stageAdvMax,
       encOk: stageEncOk,
       advOk: stageAdvOk,
+      advShinyOddsLine,
       throwOk: stageThrowOk,
       lucky,
       week,
@@ -339,6 +347,7 @@ export function createRenderCapture({
                 <span class="bcard__tag">生态分布</span>
               </div>
               <div class="row__desc">栖息池共 ${pool.length} 种（${escapeHtml(tierSummary)}）</div>
+              <div class="row__desc">${escapeHtml(shinyOddsLine)}</div>
               ${poolEmptyHint ? `<div class="row__desc hint hint--danger">${escapeHtml(poolEmptyHint)}</div>` : ""}
               ${areaHint ? `<div class="row__desc hint">${escapeHtml(areaHint)}</div>` : ""}
             </div>
@@ -369,7 +378,7 @@ export function createRenderCapture({
         const makeQty = clamp(makeQtyWanted, 1, 1000);
         const makeQtyEff = Math.max(0, Math.min(makeQty, space));
 
-        const makeCost = getPokeballMakeCost(makeQtyEff);
+        const makeCost = getOrbMakeCost(makeQtyEff);
 
         const makeOk = makeQtyEff > 0 && canAfford(makeCost);
         const makeCostText = Object.entries(makeCost)
@@ -377,7 +386,7 @@ export function createRenderCapture({
           .join(" / ");
 
         const pbNow = Math.max(0, Math.floor(state.res.pokeball.value ?? 0));
-        const oneCost = getPokeballMakeCost(1);
+        const oneCost = getOrbMakeCost(1);
         const oneOk = pbNow === 0 && space >= 1 && canAfford(oneCost);
         const oneCostText = Object.entries(oneCost)
           .map(([rid, v]) => `${defs.resources[rid].name}${v}`)
@@ -558,7 +567,7 @@ export function createRenderCapture({
               <span>自动遭遇</span>
             </label>
             <button class="btn btn--primary" data-capture-action="encounter" ${encOk ? "" : "disabled"}>${encText}</button>
-            <button class="btn btn--small" data-capture-action="encounterPlus" ${advOk ? "" : "disabled"}>${advText}</button>
+            <button class="btn btn--small" data-capture-action="encounterPlus" title="${escapeHtml(advShinyOddsLine)}" ${advOk ? "" : "disabled"}>${advText}</button>
             <button class="btn btn--small" data-capture-action="run" ${enc ? "" : "disabled"}>逃跑</button>
           </div>
         </div>
@@ -616,9 +625,9 @@ export function createRenderCapture({
           <div class="row__right">
             <select class="input" data-ball-selector ${enc ? "" : "disabled"}>
               <option value="pokeball" ${selectedBall === "pokeball" ? "selected" : ""}>灵球 (${pbVal})</option>
-              ${ubVal > 0 ? `<option value="ultraball" ${selectedBall === "ultraball" ? "selected" : ""}>高级灵球 (${ubVal}) - 捕获率x2</option>` : ""}
+              ${ubVal > 0 ? `<option value="ultraball" ${selectedBall === "ultraball" ? "selected" : ""}>精制灵球 (${ubVal}) - 捕获率x2</option>` : ""}
               ${qbVal > 0 ? `<option value="quickball" ${selectedBall === "quickball" ? "selected" : ""}>迅捷灵球 (${qbVal}) - 首次遭遇x5</option>` : ""}
-              ${lbVal > 0 ? `<option value="luxuryball" ${selectedBall === "luxuryball" ? "selected" : ""}>豪华灵球 (${lbVal}) - 亲密度+20</option>` : ""}
+              ${lbVal > 0 ? `<option value="luxuryball" ${selectedBall === "luxuryball" ? "selected" : ""}>绒心灵球 (${lbVal}) - 亲密度+20</option>` : ""}
               ${nbVal > 0 ? `<option value="netball" ${selectedBall === "netball" ? "selected" : ""}>捕灵球 (${nbVal}) - 水/草x3</option>` : ""}
               ${dbVal > 0 ? `<option value="duskball" ${selectedBall === "duskball" ? "selected" : ""}>暗夜灵球 (${dbVal}) - 夜间x3</option>` : ""}
             </select>
@@ -626,9 +635,9 @@ export function createRenderCapture({
             ${enc && ui.lastCatchNearMiss?.pid === enc.id ? `<div class="badge badge--warning capture-near-miss-badge">差一点！上次约 ${ui.lastCatchNearMiss.pct}%</div>` : ""}
             <div class="badge capture-pity-row">${fails2 > 0 ? `失败 ${Math.max(0, Math.floor(fails2))} 次 · +${Math.round(pity2 * 100)}%` : "连续失败提升捕获率"} ${pityBarHtml}</div>
             <div class="badge">灵球：${pbVal}/${pbCap}</div>
-            ${mbVal > 0 ? `<div class="badge">究极灵球：${mbVal}</div>` : ""}
+            ${mbVal > 0 ? `<div class="badge">星契灵球：${mbVal}</div>` : ""}
             <button class="btn btn--primary" data-capture-action="throw" ${throwOk ? "" : "disabled"}>${renderOrbSvg(selectedBall, 14)} 捕捉</button>
-            ${mbVal > 0 ? `<button class="btn btn--small" data-capture-action="masterball" ${mbOk ? "" : "disabled"}>${renderOrbSvg("masterball", 14)} 究极灵球捕捉</button>` : ""}
+            ${mbVal > 0 ? `<button class="btn btn--small" data-capture-action="masterball" ${mbOk ? "" : "disabled"}>${renderOrbSvg("masterball", 14)} 星契灵球捕捉</button>` : ""}
             <label class="check" style="margin-left:8px">
               <input type="checkbox" data-auto-throw-toggle ${autoThrowOn ? "checked" : ""} />
               <span>自动捕捉${autoThrowOn ? "（开）" : "（关）"}</span>

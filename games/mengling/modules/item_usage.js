@@ -77,7 +77,7 @@ export function createItemUsage({ getState, addRes, addLog, addExpToMon, render 
     return { success: true, message: `${mon.name} 的亲密度提升了！` };
   }
 
-  // 使用王冠（提升个体值）
+  // 使用桂冠（提升资质）
   function useBottleCap(monId, itemType, statType) {
     const state = getState();
     const id = Number(monId);
@@ -93,31 +93,31 @@ export function createItemUsage({ getState, addRes, addLog, addExpToMon, render 
     }
 
     if (itemType === "goldBottleCap") {
-      // 金桂冠：全部个体值提升到31
+      // 金桂冠：全部资质提升到31
       mon.iv = { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 };
       state.res[itemType].value = Math.max(0, itemCount - 1);
-      addLog(`使用金桂冠：${mon.name} 所有个体值提升至31（6V）`);
-      return { success: true, message: `${mon.name} 的所有个体值已达到完美！` };
+      addLog(`使用金桂冠：${mon.name} 所有资质提升至31（满资质）`);
+      return { success: true, message: `${mon.name} 的所有资质已达到完美！` };
     } else if (itemType === "bottleCap") {
-      // 银桂冠：单项个体值提升到31
+      // 银桂冠：单项资质提升到31
       if (!statType) return { success: false, message: "请选择要提升的属性" };
       
       const statNames = {
         hp: "HP",
         atk: "攻击",
         def: "防御",
-        spa: "特攻",
-        spd: "特防",
+        spa: "灵攻",
+        spd: "灵防",
         spe: "速度",
       };
 
       if (!statNames[statType]) return { success: false, message: "无效的属性类型" };
-      if (mon.iv[statType] >= 31) return { success: false, message: "该属性个体值已达到最大值" };
+      if (mon.iv[statType] >= 31) return { success: false, message: "该属性资质已达到最大值" };
 
       mon.iv[statType] = 31;
       state.res[itemType].value = Math.max(0, itemCount - 1);
-      addLog(`使用银桂冠：${mon.name} ${statNames[statType]}个体值提升至31`);
-      return { success: true, message: `${mon.name} 的${statNames[statType]}个体值已达到完美！` };
+      addLog(`使用银桂冠：${mon.name} ${statNames[statType]}资质提升至31`);
+      return { success: true, message: `${mon.name} 的${statNames[statType]}资质已达到完美！` };
     }
 
     return { success: false, message: "无效的道具类型" };

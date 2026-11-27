@@ -13,7 +13,7 @@ const VALID_ORBS = new Set([
 ]);
 
 const RES_ICON_MAP = {
-  pokeball: "pokeball",
+  pokeball: "spiritOrb",
   greatball: "greatball",
   ultraball: "ultraball",
   quickball: "quickball",
@@ -53,7 +53,7 @@ const RES_ICON_MAP = {
   spdpotion: "spdPotion",
   spepotion: "spePotion",
   stardust: "evolutionStone",
-  pokedexshard: "megaStone",
+  dexshard: "megaStone",
   badgetoken: "goldBottleCap",
   rebirthessence: "megaStone",
   affection: "affectionTreat",
@@ -198,13 +198,13 @@ const TECH_ICON_MAP = {
 function renderIconImg(iconFileKey, size = 24, extraClass = "") {
   const s = Number(size) || 24;
   const cls = ["rpg-ai-icon", extraClass].filter(Boolean).join(" ");
-  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.58" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
+  return `<img class="${cls}" src="./assets/ui_icons/${iconFileKey}.webp?v=0.7.63" width="${s}" height="${s}" style="width:${s}px;height:${s}px" alt="" decoding="async" />`;
 }
 
 export function renderOrbSvg(ballId = "pokeball", size = 24) {
   const raw = String(ballId || "pokeball").toLowerCase();
   const key = VALID_ORBS.has(raw) ? raw : "pokeball";
-  return renderIconImg(key, size, `rpg-svg-orb rpg-svg-orb--${key}`);
+  return renderIconImg(RES_ICON_MAP[key] || key, size, `rpg-svg-orb rpg-svg-orb--${key}`);
 }
 
 export function renderResSvg(rid = "catnip", size = 20) {

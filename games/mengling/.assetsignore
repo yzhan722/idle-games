@@ -23,7 +23,7 @@ deploy.ps1
 download.sh
 file_list.txt
 data/beasts_zh.js
-data/beast_roster.gen.json
+data/beast_traits.json
 *.exe
 *.msi
 *.dmg

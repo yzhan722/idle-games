@@ -23,6 +23,12 @@ function needLogin(addLog) {
   return true;
 }
 
+function failText(response, data) {
+  if (response.status === 429) return "太频繁了，歇一会儿再试";
+  if (data.error === "you blocked this player") return "你屏蔽了对方，先解除";
+  return data.error || `HTTP ${response.status}`;
+}
+
 export function createFriendsSystem({ lbBaseUrl, ui, addLog }) {
   async function getFriendsList() {
     if (!getAuthToken()) return null;
@@ -54,7 +60,7 @@ export function createFriendsSystem({ lbBaseUrl, ui, addLog }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.error) {
-        addLog(`发送好友请求失败：${data.error || `HTTP ${response.status}`}`, true);
+        addLog(`发送好友请求失败：${failText(response, data)}`, true);
         return false;
       }
       addLog(`已向 ${toUsername} 发送好友请求`, true);
@@ -77,7 +83,7 @@ export function createFriendsSystem({ lbBaseUrl, ui, addLog }) {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || data.error) {
-        addLog(`接受好友请求失败：${data.error || `HTTP ${response.status}`}`, true);
+        addLog(`接受好友请求失败：${failText(response, data)}`, true);
         return false;
       }
       addLog("已接受好友请求", true);
@@ -95,6 +101,12 @@ export function createFriendsSystem({ lbBaseUrl, ui, addLog }) {
     acceptFriendRequest,
     hasAuth: () => Boolean(getAuthToken()),
   };
+}
+
+/** 名片 / 私信 / 好友行上的「⋯」：点开是屏蔽与举报（social_tab.js 的 openSafetyMenu） */
+export function safetyMenuButton(escapeHtml, uid, name) {
+  if (!uid) return "";
+  return `<button type="button" class="btn btn--small btn--ghost" data-safety-menu="${escapeHtml(uid)}" data-safety-name="${escapeHtml(name || "")}" title="屏蔽 / 举报" aria-label="屏蔽或举报">⋯</button>`;
 }
 
 export function createRenderFriends({ ui, escapeHtml, friendsSystem }) {
@@ -160,6 +172,7 @@ export function createRenderFriends({ ui, escapeHtml, friendsSystem }) {
             </div>
             <div class="row__right">
               <button class="btn btn--primary btn--small" data-friend-action="accept" data-request-id="${req.id}">接受</button>
+              ${safetyMenuButton(escapeHtml, req.uid, req.username)}
             </div>
           </div>
         `;
@@ -175,13 +188,17 @@ export function createRenderFriends({ ui, escapeHtml, friendsSystem }) {
         </div>
       `;
       for (const friend of friends) {
+        const action = friend.blocked
+          ? `<span class="tag">已屏蔽</span><button class="btn btn--small" data-safety-unblock="${escapeHtml(friend.uid)}">解除</button>`
+          : `<button class="btn btn--small" data-friend-action="challenge" data-friend-uid="${escapeHtml(friend.uid)}" data-friend-name="${escapeHtml(friend.username)}">发起对战</button>
+              ${safetyMenuButton(escapeHtml, friend.uid, friend.username)}`;
         html += `
           <div class="row">
             <div class="row__left">
               <div class="row__title">${escapeHtml(friend.username)}</div>
             </div>
             <div class="row__right">
-              <button class="btn btn--small" data-friend-action="challenge" data-friend-uid="${escapeHtml(friend.uid)}" data-friend-name="${escapeHtml(friend.username)}">发起对战</button>
+              ${action}
             </div>
           </div>
         `;

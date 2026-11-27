@@ -29,6 +29,8 @@ import {
   legacyExpeditionRewardMul,
   setNatalBondMonId,
   REBIRTH_SHINY_REQ,
+  REBIRTH_HEADSTART,
+  rebirthHeadstart,
 } from "../modules/systems/rebirth.js";
 import {
   autofillShinyShowcase,
@@ -88,6 +90,18 @@ function clearedState(overrides = {}) {
   assert(p.essence > 0, "preview exposes essence");
   assert(p.prestigeCountAfter === 1, "first prestige → count 1");
   assert(p.keeps.length === PRESTIGE_KEEP_FIELDS.length, "keeps list intact");
+}
+
+// ── 轮回熟路：一周目没有，转生后生效，旧存档（无字段）按 0 次 ──
+{
+  const none = rebirthHeadstart({ era: {} });
+  assert(none.prodMul === 1 && none.catchAdd === 0, "headstart off before first rebirth");
+  const one = { era: { prestigeCount: 1 }, meta: { legacy: { perks: {} } } };
+  assert(Math.abs(legacyProdMul(one) - (1 + REBIRTH_HEADSTART.prodFirst)) < 1e-9, "headstart prod on lap 2 without perks");
+  assert(Math.abs(legacyCatchAdd(one) - REBIRTH_HEADSTART.catchFirst) < 1e-9, "headstart catch on lap 2 without perks");
+  const perked = { era: { prestigeCount: 1 }, meta: { legacy: { perks: { prod: 2, catch: 1 } } } };
+  assert(Math.abs(legacyProdMul(perked) - 1.24 * (1 + REBIRTH_HEADSTART.prodFirst)) < 1e-9, "perk stacks on headstart");
+  assert(rebirthHeadstart({ era: { prestigeCount: 99 } }).prodMul === 1 + REBIRTH_HEADSTART.prodMax, "headstart capped");
 }
 
 // ── 灵珀公式 ──────────────────────────────────────────

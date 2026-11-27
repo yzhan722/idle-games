@@ -223,16 +223,16 @@ export function initFutureTab({ elFutureShop, ui, defs, getState, addRes, addLog
         addLog(`兑换：未来币 -${price} → 跃级糖丸 +${amount}`);
       } else if (kind === "masterball") {
         addRes("masterball", amount);
-        addLog(`购买：未来币 -${price} → 究极灵球 +${amount}`, true);
+        addLog(`购买：未来币 -${price} → 星契灵球 +${amount}`, true);
       } else if (kind === "ultraball") {
         addRes("ultraball", amount);
-        addLog(`购买：未来币 -${price} → 高级灵球 +${amount}`, true);
+        addLog(`购买：未来币 -${price} → 精制灵球 +${amount}`, true);
       } else if (kind === "quickball") {
         addRes("quickball", amount);
         addLog(`购买：未来币 -${price} → 迅捷灵球 +${amount}`, true);
       } else if (kind === "luxuryball") {
         addRes("luxuryball", amount);
-        addLog(`购买：未来币 -${price} → 豪华灵球 +${amount}`, true);
+        addLog(`购买：未来币 -${price} → 绒心灵球 +${amount}`, true);
       } else if (kind === "expCandy") {
         addRes("expCandy", amount);
         addLog(`购买：未来币 -${price} → 历练糖丸 +${amount}`, true);

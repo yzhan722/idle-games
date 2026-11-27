@@ -1,3 +1,5 @@
+import { protectVeterans } from "./own_numbers_compat.js";
+
 function safeJsonParse(text) {
   try {
     return JSON.parse(text);
@@ -33,6 +35,9 @@ export function createCloudSave({
 
   let syncTimer = 0;
   let lastPushedAutosaveAt = 0;
+  // 云端自动存档这一版读不了（新版存的）：停掉自动上传，免得把它盖掉；刷新到新版就好，手动「上传」照旧
+  let remoteUnreadable = false;
+  const REMOTE_NEWER_MSG = "云端存档来自更新的版本，刷新页面再同步";
 
   // 同步状态跟踪
   let lastSyncStatus = "idle"; // idle | syncing | success | partial | error
@@ -75,6 +80,7 @@ export function createCloudSave({
   }
 
   function clearToken() {
+    remoteUnreadable = false;
     try {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
@@ -147,6 +153,61 @@ export function createCloudSave({
     try {
       await refreshSlotPanel();
     } catch {}
+  }
+
+  /** 退出所有设备（含这一台）：成功才清本机登录态；401 时 apiFetch 已清 */
+  async function logoutAll() {
+    const data = await apiFetch("/api/auth/logout-all", { method: "POST" });
+    if (!data || !data.ok) throw new Error("bad response");
+    stopAutoSync();
+    clearToken();
+    try {
+      await refreshSlotPanel();
+    } catch {}
+    return data;
+  }
+
+  // 注销请求号存到成功为止：响应丢了重试时带同一个号，服务端据此返回「已完成」。
+  // 号跟着用户名走：换了账号就换新号，否则别人留下的号会让服务端误报「已完成」。
+  const DELETE_REQ_KEY = "mengling_idle_account_delete_req_v1";
+  function deleteRequestId() {
+    const owner = getUsername();
+    try {
+      const saved = safeJsonParse(localStorage.getItem(DELETE_REQ_KEY) || "null");
+      if (saved && saved.owner === owner && /^[a-zA-Z0-9-]{16,64}$/.test(saved.id)) return saved.id;
+    } catch {}
+    const id =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `del-${nowMs().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
+    try {
+      localStorage.setItem(DELETE_REQ_KEY, JSON.stringify({ owner, id }));
+    } catch {}
+    return id;
+  }
+
+  /** 注销账号：删服务器上的账号与云存档；本机存档不动 */
+  async function deleteAccount({ confirm, password }) {
+    stopAutoSync();
+    const requestId = deleteRequestId();
+    let data = null;
+    try {
+      data = await apiFetch("/api/auth/delete", { method: "POST", body: { requestId, confirm, password } });
+    } catch (e) {
+      // 没删成就恢复自动同步；401 时 apiFetch 已清登录态
+      if (getToken()) startAutoSync();
+      throw e;
+    }
+    if (!data || !data.deleted) throw new Error("bad response");
+    clearToken();
+    lastPushedAutosaveAt = 0;
+    try {
+      localStorage.removeItem(DELETE_REQ_KEY);
+    } catch {}
+    try {
+      await refreshSlotPanel();
+    } catch {}
+    return data;
   }
 
   function localEncoded(key) {
@@ -249,16 +310,25 @@ export function createCloudSave({
 
   async function pullSlot(slot, key) {
     const data = await apiFetch(`/api/save?slot=${slot}`);
-    const saveJson = data && typeof data.saveJson === "string" ? data.saveJson : "";
+    let saveJson = data && typeof data.saveJson === "string" ? data.saveJson : "";
     const updatedAt = data && typeof data.updatedAt === "number" ? data.updatedAt : Number(data.updatedAt || 0);
     if (!saveJson) return { applied: false, updatedAt: 0 };
 
-    writeLocalEncoded(key, saveJson);
+    // 云端那份可能是旧版客户端存的：老伙伴标记以本机为准补回，其余照旧整份采用云端
+    const remote = safeJsonParse(saveJson);
+    if (remote && protectVeterans(remote, safeJsonParse(localRawJson(key) ?? ""))) saveJson = JSON.stringify(remote);
+
     if (slot === 0 && typeof applyAutosaveRaw === "function") {
+      let readable = true;
       try {
-        applyAutosaveRaw(saveJson);
-      } catch {}
+        readable = applyAutosaveRaw(saveJson) !== false;
+      } catch {
+        readable = false;
+      }
+      remoteUnreadable = !readable;
+      if (!readable) throw new Error(REMOTE_NEWER_MSG);
     }
+    writeLocalEncoded(key, saveJson);
     if (typeof refreshSaveUI === "function") {
       try {
         refreshSaveUI();
@@ -276,6 +346,7 @@ export function createCloudSave({
     try {
       const data = await apiFetch(`/api/save?slot=${slot}`, { method: "PUT", body: { saveJson: raw, updatedAt: t } });
       const applied = !!(data && data.applied);
+      if (slot === 0 && applied) remoteUnreadable = false;
       return { applied, updatedAt: t };
     } catch (e) {
       if (e && e.status === 409) {
@@ -318,6 +389,7 @@ export function createCloudSave({
     writeLocalEncoded(key, newRaw);
     try {
       const res = await apiFetch(`/api/save?slot=${slot}`, { method: "PUT", body: { saveJson: newRaw, updatedAt: bumped } });
+      if (slot === 0 && res && res.applied) remoteUnreadable = false;
       return { applied: !!(res && res.applied), updatedAt: bumped };
     } catch (e) {
       if (e && e.status === 409) {
@@ -499,6 +571,11 @@ export function createCloudSave({
             lastSyncError = `存档槽 ${it.slot} 同步失败: ${e.message}`;
           }
         } else if (localT > remoteT) {
+          if (it.slot === 0 && remoteUnreadable) {
+            hasConflict = true;
+            lastSyncError = REMOTE_NEWER_MSG;
+            continue;
+          }
           try {
             const pushed = await pushSlot(it.slot, it.key);
             if (pushed.conflict) {
@@ -536,7 +613,7 @@ export function createCloudSave({
     if (!token) return { applied: false };
     const raw = localRawJson(autosaveKey);
     const t = localUpdatedAt(autosaveKey);
-    if (!raw || t <= 0 || t <= lastPushedAutosaveAt) return { applied: false };
+    if (remoteUnreadable || !raw || t <= 0 || t <= lastPushedAutosaveAt) return { applied: false };
     try {
       const res = await fetch(`/api/save?slot=0`, {
         method: "PUT",
@@ -568,7 +645,7 @@ export function createCloudSave({
         const token = getToken();
         if (!token) return;
         const t = localUpdatedAt(autosaveKey);
-        if (t > 0 && t > lastPushedAutosaveAt) {
+        if (!remoteUnreadable && t > 0 && t > lastPushedAutosaveAt) {
           const pushed = await pushSlot(0, autosaveKey);
           if (pushed.applied) lastPushedAutosaveAt = t;
         }
@@ -609,6 +686,8 @@ export function createCloudSave({
     register,
     login,
     logout,
+    logoutAll,
+    deleteAccount,
     syncAll,
     startAutoSync,
     stopAutoSync,

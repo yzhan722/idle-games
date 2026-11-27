@@ -35,7 +35,7 @@ mengling-idle/
 - SECTION: STATE_INIT, DEFS_AND_BALANCE, TECH_EFFECTS, DEX_EFFECTS, ECONOMY, RESOURCES, COMPUTE_DERIVED, SAVE_CLOUD, RENDER_AND_SAVE, CORE_HELPERS, TAB_AND_RENDER_WIRE（组装）
 - 文件：`modules/systems/{effects,production}.js`, `modules/state.js`, `modules/save_codec.js`
 
-### 窗口 B — 精灵/捕捉系统
+### 窗口 B — 萌灵/捕捉系统
 - SECTION: CAPTURE_AWARD, MON_HELPERS, TICKER_SYSTEM
 - 文件：`modules/mons.js`, `modules/tabs/capture_tab.js`, `modules/render/capture.js`, `modules/app/{capture_system,ticker}.js`, `modules/systems/expedition.js`
 

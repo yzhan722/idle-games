@@ -30,9 +30,9 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       netball: "对水/草属性捕获率 ×3",
       duskball: "夜间捕获率 ×3，其余时段 ×1.2",
       futurecoin: "用于未来币商店兑换/升级",
-      evolutionStone: "用于进化页的石之进化（消耗 x1）",
+      evolutionStone: "萌灵进化用（消耗 x1）",
       megaStone: "超级觉醒：1小时内 PvE 能力+20%",
-      linkRope: "用于萌灵页的通信进化（消耗 x1）",
+      linkRope: "部分萌灵进化用（消耗 x1）",
       rareCandy: "喂食萌灵 +1Lv",
       bigBerry: "使用：全体萌灵活力恢复并推进护理进度",
       hugeBerry: "使用：获得 24 小时巨大灵果加成",
@@ -44,8 +44,8 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       friendshipBracelet: "使用：萌灵亲密度直接达到 100",
       shinyCharm: "使用：消耗1个，闪光率 x2（24小时）",
       luckyEgg: "使用：指定萌灵 1小时经验 x1.5（与商店全局双倍可叠加）",
-      bottleCap: "使用：萌灵单项个体值提升至31",
-      goldBottleCap: "使用：萌灵所有个体值提升至31（6V）",
+      bottleCap: "使用：萌灵单项资质提升至31",
+      goldBottleCap: "使用：萌灵所有资质提升至31（满资质）",
       energyDrink: "使用：采集充能 +250",
       searchFlare: "使用：遭遇充能 +25",
       advSearchCell: "使用：高级搜索次数 +2",
@@ -53,12 +53,12 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
       hpPotion: "使用：HP 永久 +5（单项上限 +50）",
       atkPotion: "使用：攻击 永久 +5（单项上限 +50）",
       defPotion: "使用：防御 永久 +5（单项上限 +50）",
-      spaPotion: "使用：特攻 永久 +5（单项上限 +50）",
-      spdPotion: "使用：特防 永久 +5（单项上限 +50）",
+      spaPotion: "使用：灵攻 永久 +5（单项上限 +50）",
+      spdPotion: "使用：灵防 永久 +5（单项上限 +50）",
       spePotion: "使用：速度 永久 +5（单项上限 +50）",
       seasonMark: "无尽试炼塔里程碑荣誉印记，可在挑战页试炼军需处兑换灵晶石、跃级糖丸与金桂冠",
       tuningMint: "秘境生态沙盘特产灵草，可在育灵中枢调律工坊或萌灵详情页定向调律六维偏向（保留原性格纪念标签）",
-      shinyStarSand: "星辉配饰流彩造型屋与冠军联盟殿堂赛凝结的璀璨星砂，用于制作/升阶星辉配饰与调染极光流彩光晕",
+      shinyStarSand: "星辉配饰流彩造型屋与星冠殿堂挑战赛凝结的璀璨星砂，用于制作/升阶星辉配饰与调染极光流彩光晕",
       ancientGeneAmber: "远古琥珀基因复苏所与双系星轨回廊凝结的远古基因琥珀，用于苏醒/升阶四大太古血脉印记与淬炼伙伴个体潜能",
       corridorStarMedals: "双系星轨回廊无尽试炼荣誉勋章，可在挑战页星轨回廊兑换远古基因琥珀、闪光祈愿星砂与心性调律薄荷",
       driftBottle: "星海漂流瓶心愿码头拾回的漂流瓶，在功能页拆开可读到心愿回信，并拾得海洋奇珍与未来币",
@@ -548,7 +548,7 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
         const selected = Number(ui.itemUseSelectedMon) === Number(m.id);
         const aff = Math.max(0, Math.floor(m.affection ?? 0));
         const ivLine = m.iv
-          ? `个体值 HP ${m.iv.hp ?? 0} · 攻 ${m.iv.atk ?? 0} · 防 ${m.iv.def ?? 0} · 特攻 ${m.iv.spa ?? 0} · 特防 ${m.iv.spd ?? 0} · 速 ${m.iv.spe ?? 0}`
+          ? `资质 HP ${m.iv.hp ?? 0} · 攻 ${m.iv.atk ?? 0} · 防 ${m.iv.def ?? 0} · 灵攻 ${m.iv.spa ?? 0} · 灵防 ${m.iv.spd ?? 0} · 速 ${m.iv.spe ?? 0}`
           : `当前经验 ${Math.floor(m.exp ?? 0)}`;
         return `
           <div class="row func-mon-row ${selected ? "is-active" : ""}">
@@ -574,8 +574,8 @@ export function createRenderItems({ defs, getState, itemUsage, ui, render, markM
             hp: "HP",
             atk: "攻击",
             def: "防御",
-            spa: "特攻",
-            spd: "特防",
+            spa: "灵攻",
+            spd: "灵防",
             spe: "速度",
           };
           statSelectHtml = `

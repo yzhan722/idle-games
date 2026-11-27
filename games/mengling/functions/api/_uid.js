@@ -1,3 +1,5 @@
+import { displayName } from "../../modules/name_filter.js";
+
 export function clampStr(v, maxLen) {
   const s = typeof v === "string" ? v : String(v ?? "");
   return s.trim().slice(0, maxLen);
@@ -9,9 +11,10 @@ export function clampUid(v) {
   return s || null;
 }
 
+/** 昵称：最长 32；命中屏蔽词的字打码（规则与前端共用 modules/name_filter.js） */
 export function clampName(v) {
   const s = typeof v === "string" ? v.trim() : "";
-  return s ? s.slice(0, 32) : "育灵师";
+  return s ? displayName(s.slice(0, 32)) : "育灵师";
 }
 
 export function clampUsername(v) {

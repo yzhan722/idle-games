@@ -43,14 +43,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
   const state = {
     dex: {
       shiny: {
-        p25: { dex: 25, name: "电毛球", at: 3 },
+        p25: { dex: 25, name: "星雷灵鼠", at: 3 },
         p001b: { dex: 1, name: "芽苞苞", at: 2 },
       },
     },
   };
   const text = buildShinyShareText(state);
   assert.ok(text.includes("闪光馆"), "share mentions gallery");
-  assert.ok(text.includes("电毛球"), "share names shiny");
+  assert.ok(text.includes("星雷灵鼠"), "share names shiny");
   assert.ok(text.includes("2"), "share unique count");
   const card = shinyShareCardPayload(state);
   assert.equal(card.unique, 2, "card unique");
@@ -86,15 +86,15 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
   const hatched = hatchEgg(state, {
     mons: {
       list: [
-        { id: 1, pid: "p25", name: "电毛球" },
-        { id: 2, pid: "p25", name: "电毛球" },
+        { id: 1, pid: "p25", name: "星雷灵鼠" },
+        { id: 2, pid: "p25", name: "星雷灵鼠" },
       ],
     },
     monById: null,
-    getMonById: (_mons, _map, id) => ({ id, pid: "p25", name: "电毛球" }),
+    getMonById: (_mons, _map, id) => ({ id, pid: "p25", name: "星雷灵鼠" }),
     getBasePid: (pid) => pid,
     sameFamily: () => true,
-    getSpeciesByPid: () => ({ id: "p25", pid: "p25", dex: 25, name: "电毛球", tier: "common" }),
+    getSpeciesByPid: () => ({ id: "p25", pid: "p25", dex: 25, name: "星雷灵鼠", tier: "common" }),
     createMonInstance: (sp) => ({ id: 9, pid: sp.pid, dex: sp.dex, name: sp.name, isShiny: false }),
     randFloat: () => 0.5,
     addLog: (m) => logs.push(m),

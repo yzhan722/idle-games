@@ -18,7 +18,7 @@ export const ERA_DEFS = [
   {
     id: "hamlet",
     name: "秘传乡里",
-    blurb: "秘传乡里的灵果香气招来草系与普通系。",
+    blurb: "秘传乡里的灵果香气招来草系与风系。",
     pveHint: "秘传乡里：带上草系伙伴，挑战前先看推荐属性。",
     encounterBias: { typeBoost: { grass: 1.35, wind: 1.35 } },
     logOnEnter: "迈入了「秘传乡里」——灵果的香气弥漫开来。",
@@ -33,8 +33,8 @@ export const ERA_DEFS = [
   {
     id: "fossil",
     name: "化石苏醒",
-    blurb: "化石馆的尘土飞扬——岩石与地面更常见。",
-    pveHint: "化石苏醒：岩石与地面伙伴适合打持久挑战。",
+    blurb: "古石馆的尘土飞扬——岩系更常见。",
+    pveHint: "化石苏醒：岩系伙伴适合打持久挑战。",
     encounterBias: { typeBoost: { stone: 1.4 } },
     logOnEnter: "迈入了「化石苏醒」——化石萌灵的气息变浓了。",
     mutators: ["catchRate_6", "researchTime_m8"],
@@ -48,7 +48,7 @@ export const ERA_DEFS = [
   {
     id: "gym",
     name: "巡礼试炼纪",
-    blurb: "试炼场的气息：战斗型更活跃。",
+    blurb: "试炼场的气息：岩、电、水系更活跃。",
     pveHint: "巡礼试炼纪：优先用推荐属性打挑战页。",
     encounterBias: { typeBoost: { stone: 1.25, electric: 1.15, water: 1.15 }, tierBoost: { rare: 1.15 } },
     logOnEnter: "迈入了「巡礼试炼纪」——挑战试炼的时代开始了。",
@@ -73,10 +73,10 @@ export const ERA_DEFS = [
   {
     id: "champion",
     name: "王者之路",
-    blurb: "通往联盟之路，少见个体变多。",
+    blurb: "通往星冠殿堂的路，少见个体变多。",
     pveHint: "王者之路：练高星主力，再冲章节三星。",
     encounterBias: { tierBoost: { uncommon: 1.2, rare: 1.2 } },
-    logOnEnter: "迈入了「王者之路」——联盟的荣光在召唤你。",
+    logOnEnter: "迈入了「王者之路」——星冠的荣光在召唤你。",
     mutators: ["pokeballCap_8"],
     quests: [
       { id: "champ_dex_90", kind: "main", type: "dex_unique", target: 90, scope: "absolute" },
@@ -88,10 +88,10 @@ export const ERA_DEFS = [
   {
     id: "mega",
     name: "觉醒潮汐",
-    blurb: "关键石共鸣——高成长线萌灵权重微升。",
+    blurb: "觉醒石共鸣——高成长线萌灵权重微升。",
     pveHint: "觉醒潮汐：高成长萌灵配推荐属性更稳。",
-    encounterBias: { dexRangeBoost: { min: 3, max: 905, mul: 1.12 }, tierBoost: { rare: 1.2 } },
-    logOnEnter: "迈入了「觉醒潮汐」——关键石的力量苏醒了。",
+    encounterBias: { tierBoost: { rare: 1.2 } },
+    logOnEnter: "迈入了「觉醒潮汐」——觉醒石的力量苏醒了。",
     mutators: ["buildingYield_10", "researchCost_m8"],
     quests: [
       { id: "mega_lab_5", kind: "main", type: "building_level", target: 5, scope: "absolute", buildingId: "researchLab" },
@@ -164,9 +164,9 @@ export const ERA_MUTATORS = {
   catchRate_4: { catchChanceAdd: 0.04 },
   researchTime_m8: { researchTimeMul: 0.92 },
   researchTime_m10: { researchTimeMul: 0.90 },
-  pokeballGain_10: { pokeballCraftBonusMul: 1.1 },
+  pokeballGain_10: { orbCraftBonusMul: 1.1 },
   encounterRefresh_fast: { encounterCooldownMul: 0.9 },
-  pokeballCap_8: { capPokeballMul: 1.08 },
+  pokeballCap_8: { capOrbMul: 1.08 },
   buildingYield_10: { catnipPerSecMul: 1.1, woodRateMul: 1.1, mineralsRateMul: 1.1 },
   researchCost_m8: { researchCostMul: 0.92 },
   fieldYield_10: { catnipPerSecMul: 1.1 },

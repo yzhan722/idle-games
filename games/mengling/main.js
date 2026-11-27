@@ -1,25 +1,10 @@
 const BOOT_PANEL_ID = "bootStatus";
 const MAX_RETRY = 5;
 const RELOAD_GUARD_KEY = "bootReloadCount";
-const VERSION_CHECK_KEY = "lastKnownVersion";
-const CURRENT_VERSION = "0.7.58";
+const CURRENT_VERSION = "0.7.63";
 
-// 版本检测：版本变化时清缓存并刷新
-(function checkVersion() {
-  const lastVersion = localStorage.getItem(VERSION_CHECK_KEY);
-  if (lastVersion && lastVersion !== CURRENT_VERSION) {
-    localStorage.setItem(VERSION_CHECK_KEY, CURRENT_VERSION);
-    if ('caches' in window) {
-      caches.keys().then(keys => {
-        keys.forEach(key => caches.delete(key));
-      }).finally(() => window.location.reload());
-    } else {
-      window.location.reload();
-    }
-    return;
-  }
-  localStorage.setItem(VERSION_CHECK_KEY, CURRENT_VERSION);
-})();
+// 换版本不在这里清缓存、也不刷新：代码本来就联网优先，旧缓存由新版 Service Worker 装好后自己删（sw.js activate）。
+// 页面先删的话，新版没装好又断网，旧版也打不开了。
 
 function ensureBootPanel() {
   let el = document.getElementById(BOOT_PANEL_ID);
@@ -41,7 +26,8 @@ function getReloadGuardCount() {
     const n = raw ? Number(raw) : 0;
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
   } catch {
-    return 0;
+    // 存不了计数（存储被禁用）：从地址里的 r=时间_次数 读，免得一直刷
+    return Number(/[?&]r=\d+_(\d+)/.exec(window.location.search)?.[1]) || 0;
   }
 }
 
@@ -117,7 +103,8 @@ async function boot(force = false) {
 
     renderBootPanel({ loading: true, attempt });
 
-    const bust = `b=${Date.now()}_${attempt}${force ? "_f" : ""}`;
+    // 第一次带版本号（能用上 modulepreload 与离线缓存），重试才换新地址
+    const bust = attempt === 0 && !force ? `v=${CURRENT_VERSION}` : `v=${CURRENT_VERSION}&r=${Date.now()}_${attempt}${force ? "_f" : ""}`;
     try {
       await import(`./modules/type_zh.js?${bust}`);
       await import(`./app.js?${bust}`);
@@ -131,9 +118,9 @@ async function boot(force = false) {
 
       renderBootPanel({ loading: false, detail, attempt });
 
-      // 网络错误时自动刷新页面（最多3次，避免死循环）
+      // 网络错误、或新旧文件混在一起缺导出（SyntaxError）时自动刷新页面（最多2次，避免死循环）
       const canAutoReload = getReloadGuardCount() < 2;
-      const isFetchLike = /failed to fetch|dynamically imported module|importing a module script failed/i.test(detail);
+      const isFetchLike = err instanceof SyntaxError || /failed to fetch|dynamically imported module|importing a module script failed/i.test(detail);
       if (!force && attempt >= 1 && canAutoReload && isFetchLike) {
         await waitMs(400);
         forceReloadPage();

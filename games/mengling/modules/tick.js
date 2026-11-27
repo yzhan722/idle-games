@@ -86,7 +86,7 @@ export function createTick(ctx) {
   const getBuildingCost = ctx.getBuildingCost;
   const canAfford = ctx.canAfford;
   const pay = ctx.pay;
-  const getPokeballMakeCost = ctx.getPokeballMakeCost;
+  const getOrbMakeCost = ctx.getOrbMakeCost;
   const getState = ctx.getState;
   const pushTickerEvent = ctx.pushTickerEvent;
   const onResearchComplete = ctx.onResearchComplete;
@@ -738,7 +738,7 @@ export function createTick(ctx) {
         getBuildingCost,
         canAfford,
         pay,
-        getPokeballMakeCost,
+        getOrbMakeCost,
         addRes,
         addLog,
       });

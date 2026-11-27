@@ -10,7 +10,7 @@ const ICON_MAP = {
   star: "megaStone.webp",
   science: "science.webp",
   capture: "tab_capture.webp",
-  ball: "pokeball.webp",
+  ball: "spiritOrb.webp",
   heart: "affectionTreat.webp",
   egg: "luckyEgg.webp",
   train: "trainingGround.webp",

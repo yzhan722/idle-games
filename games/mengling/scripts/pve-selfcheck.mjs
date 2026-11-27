@@ -168,10 +168,10 @@ try {
   assert(seResult.teamHpPct > wrongResult.teamHpPct, "SE team preserves more HP than higher-power wrong type");
   assert(seResult.superEffectiveHits > wrongResult.superEffectiveHits, "SE team lands more super-effective hits");
 
-  const specialAttacker = { side: "player", name: "特攻手", types: ["water"], atk: 40, spa: 100 };
+  const specialAttacker = { side: "player", name: "灵攻手", types: ["water"], atk: 40, spa: 100 };
   const physicalAttacker = { side: "player", name: "物攻手", types: ["wind"], atk: 100, spa: 40 };
   const physWall = { side: "enemy", name: "物防墙", types: ["wind"], def: 120, spd: 40 };
-  const specWall = { side: "enemy", name: "特防墙", types: ["wind"], def: 40, spd: 120 };
+  const specWall = { side: "enemy", name: "灵防墙", types: ["wind"], def: 40, spd: 120 };
   assert(calcDamage(specialAttacker, physWall).damage > calcDamage(specialAttacker, specWall).damage, "special attacker checks spd");
   assert(calcDamage(physicalAttacker, specWall).damage > calcDamage(physicalAttacker, physWall).damage, "physical attacker checks def");
 
@@ -214,10 +214,10 @@ try {
     stats: { hp: 60000, atk: 8, def: 999, spa: 8, spd: 999, spe: 40 },
   }];
   const fatEnemies = [
-    { dex: 149, name: "胖胖龙", lvl: 55, stars: 2 },
+    { dex: 149, name: "凌霄圣龙", lvl: 55, stars: 2 },
     { dex: 148, name: "丝带龙", lvl: 50, stars: 2 },
     { dex: 230, name: "海龙王", lvl: 50, stars: 2 },
-    { dex: 149, name: "胖胖龙2", lvl: 45, stars: 2 },
+    { dex: 149, name: "凌霄圣龙2", lvl: 45, stars: 2 },
   ];
   const stall = simulateBattle(stallTeam, fatEnemies, "mystic");
   assert(stall.rounds >= PVE_MAX_ROUNDS || stall.win, "stall fight hits cap or finishes");
@@ -520,12 +520,12 @@ try {
   assert(mockEl.innerHTML.includes("data-pve-result-overlay"), "Battle Result Modal renders even when dexCount < 10 (chapterLocked)");
 
   // ==========================================================================
-  // ML-7: 萌灵「冠军联盟四天王殿堂赛」(Champion League Elite Four & Grand Champion Gauntlet)
+  // ML-7: 萌灵「星冠殿堂挑战赛」(Star Crown Hall Gauntlet)
   // ==========================================================================
   assert(
     CHAMPION_LEAGUE_STAGES.length === 5 &&
-      CHAMPION_LEAGUE_STAGES.map((s) => s.shortTitle).join("->") === "炎狱天王->沧溟天王->翠岚天王->星穹天王->圣殿总冠军",
-    "Champion League defines 5 consecutive stages (炎狱天王 -> 沧溟天王 -> 翠岚天王 -> 星穹天王 -> 圣殿总冠军)",
+      CHAMPION_LEAGUE_STAGES.map((s) => s.shortTitle).join("->") === "炎狱殿主->沧溟殿主->翠岚殿主->星穹殿主->圣殿总冠军",
+    "Champion League defines 5 consecutive stages (炎狱殿主 -> 沧溟殿主 -> 翠岚殿主 -> 星穹殿主 -> 圣殿总冠军)",
   );
 
   const leagueState = defaultState();
@@ -584,7 +584,7 @@ try {
       id: 4,
       dex: 25,
       pid: "p025",
-      name: "电毛球",
+      name: "星雷灵鼠",
       lvl: 20,
       stars: 0,
       types: ["electric"],
@@ -632,7 +632,7 @@ try {
   const singleStep = simulateLeagueGauntlet(leagueState, { mode: "single", getMonTypes: (m) => m.types });
   assert(
     singleStep.ok && singleStep.win && singleStep.stagesCleared === 1 && leagueState.pve.championLeague.activeStageIdx === 1,
-    "single-stage League bout clears Stage 1 (炎狱天王) and advances activeStageIdx to Stage 2",
+    "single-stage League bout clears Stage 1 (炎狱殿主) and advances activeStageIdx to Stage 2",
   );
   assert(leagueState.res.shinyStarSand.value === sandBeforeSingle + 4, "first clear of Stage 1 grants +4 shinyStarSand");
   resetChampionLeagueProgress(leagueState);
@@ -1826,10 +1826,10 @@ try {
     assert(eraSrcPost.includes("recallHotSpringForRebirth(state)") && eraSrcPost.includes("recallPostOfficeForRebirth(state)"), "confirmPrestige recalls soakers and messengers");
   }
 
-  // Mandatory v0.7.58 version sync verification across all 8 versioned files + icon cache-busting
+  // Mandatory v0.7.63 version sync verification across all 8 versioned files + icon cache-busting
   const projRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-  assert(GAME_CONFIG.VERSION === "0.7.58", "modules/config.js VERSION is 0.7.58");
-  assert(GAME_STATE_SYNC_VERSION === "0.7.58", "modules/app/game_state.js GAME_STATE_SYNC_VERSION is 0.7.58");
+  assert(GAME_CONFIG.VERSION === "0.7.63", "modules/config.js VERSION is 0.7.63");
+  assert(GAME_STATE_SYNC_VERSION === "0.7.63", "modules/app/game_state.js GAME_STATE_SYNC_VERSION is 0.7.63");
   const htmlTxt = readFileSync(join(projRoot, "index.html"), "utf8");
   const mainTxt = readFileSync(join(projRoot, "main.js"), "utf8");
   const appTxt = readFileSync(join(projRoot, "app.js"), "utf8");
@@ -1838,14 +1838,14 @@ try {
   const gameStateTxt = readFileSync(join(projRoot, "modules/app/game_state.js"), "utf8");
   const helpTxt = readFileSync(join(projRoot, "modules/tabs/help_tab.js"), "utf8");
   const iconsTxt = readFileSync(join(projRoot, "modules/render/rpg_svg_icons.js"), "utf8");
-  assert(htmlTxt.includes("0.7.58") && !htmlTxt.includes("0.7.56"), "index.html synced to 0.7.58");
-  assert(mainTxt.includes('CURRENT_VERSION = "0.7.58"') && !mainTxt.includes("0.7.56"), "main.js synced to 0.7.58");
-  assert(appTxt.includes("0.7.58") && !appTxt.includes("0.7.56"), "app.js synced to 0.7.58");
-  assert(swTxt.includes("mengling-v0.7.58") && !swTxt.includes("0.7.56"), "sw.js synced to 0.7.58");
-  assert(healthTxt.includes("0.7.58") && !healthTxt.includes("0.7.56"), "functions/api/health.js synced to 0.7.58");
-  assert(gameStateTxt.includes("0.7.58") && !gameStateTxt.includes("0.7.56"), "modules/app/game_state.js synced to 0.7.58");
-  assert(helpTxt.includes("版本 v0.7.58") && helpTxt.includes("v0.7.56 新增") && helpTxt.includes("v0.7.55 新增"), "modules/tabs/help_tab.js synced to 0.7.58 (ML-16 / ML-15 help blocks kept)");
-  assert(iconsTxt.includes(".webp?v=0.7.58") && !iconsTxt.includes("0.7.56"), "rpg_svg_icons.js synced to 0.7.58");
+  assert(htmlTxt.includes("0.7.63") && !htmlTxt.includes("0.7.56"), "index.html synced to 0.7.63");
+  assert(mainTxt.includes('CURRENT_VERSION = "0.7.63"') && !mainTxt.includes("0.7.56"), "main.js synced to 0.7.63");
+  assert(appTxt.includes("0.7.63") && !appTxt.includes("0.7.56"), "app.js synced to 0.7.63");
+  assert(swTxt.includes("mengling-v0.7.63") && !swTxt.includes("0.7.56"), "sw.js synced to 0.7.63");
+  assert(healthTxt.includes("0.7.63") && !healthTxt.includes("0.7.56"), "functions/api/health.js synced to 0.7.63");
+  assert(gameStateTxt.includes("0.7.63") && !gameStateTxt.includes("0.7.56"), "modules/app/game_state.js synced to 0.7.63");
+  assert(helpTxt.includes("版本 v0.7.63") && helpTxt.includes("v0.7.56 新增") && helpTxt.includes("v0.7.55 新增"), "modules/tabs/help_tab.js synced to 0.7.63 (ML-16 / ML-15 help blocks kept)");
+  assert(iconsTxt.includes(".webp?v=0.7.63") && !iconsTxt.includes("0.7.56"), "rpg_svg_icons.js synced to 0.7.63");
 } finally {
   Math.random = realRandom;
 }

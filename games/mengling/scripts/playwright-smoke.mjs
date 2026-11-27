@@ -77,7 +77,7 @@ try {
     console.error("playwright-smoke: FAIL unexpected title:", title);
     process.exit(1);
   }
-  if (!status.includes("v0.7.58")) {
+  if (!status.includes("v0.7.63")) {
     console.error("playwright-smoke: FAIL unexpected topbar:", status);
     process.exit(1);
   }
@@ -237,7 +237,7 @@ try {
     !funcText.includes("星海漂流瓶心愿码头") ||
     !funcText.includes("远古琥珀基因复苏所") ||
     !funcText.includes("星辉配饰流彩造型屋") ||
-    !funcText.includes("冠军联盟四天王殿堂赛") ||
+    !funcText.includes("星冠殿堂挑战赛") ||
     !funcText.includes("星界羁绊露营野餐屋") ||
     !funcText.includes("料理食谱风味增益工坊") ||
     !funcText.includes("秘境生态探索沙盘") ||
@@ -931,7 +931,7 @@ try {
   if (
     !pveText.includes("三系生态大师锦标殿") ||
     !pveText.includes("双系星轨回廊无尽试炼") ||
-    !pveText.includes("冠军联盟四天王殿堂赛")
+    !pveText.includes("星冠殿堂挑战赛")
   ) {
     console.error("playwright-smoke: FAIL PvE tab missing Tri-Element Championship Hall, Star-Rail Corridor or Champion League card");
     process.exit(1);

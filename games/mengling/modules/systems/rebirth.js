@@ -11,7 +11,7 @@ export const LEGACY_PERKS = {
   cap:              { name: "轮回仓廪", desc: "资源上限 +15%/级", max: 10, baseCost: 8, icon: "mineralSilo" },
   startTech:        { name: "轮回开物", desc: "转生后开局自带「灵果培育」「灵球基础」科技", max: 1, baseCost: 60, icon: "science" },
   starterMon:       { name: "轮回之缘", desc: "转生后开局赠一只稀有萌灵入队", max: 1, baseCost: 90, icon: "affectionTreat" },
-  natalBond:        { name: "本命灵契", desc: "转生时保留 1 只缔契本命萌灵跨周目随行（重置为 Lv.1，保留闪光/星级/个体值/性格/特性/亲密）", max: 1, baseCost: 120, icon: "natalBond" },
+  natalBond:        { name: "本命灵契", desc: "转生时保留 1 只缔契本命萌灵跨周目随行（重置为 Lv.1，保留闪光/星级/资质/性格/特性/亲密）", max: 1, baseCost: 120, icon: "natalBond" },
   swiftHatch:       { name: "极速孵育", desc: "育灵屋孵蛋耗时 -12%/级（最高 -60%），破壳初始亲密 +6/级", max: 5, baseCost: 25, icon: "swiftHatch" },
   expeditionMaster: { name: "远征达人", desc: "次元远征耗时 -8%/级（最高 -40%），远征经验与未来币收益 +15%/级", max: 5, baseCost: 25, icon: "expeditionMaster" },
 };
@@ -92,12 +92,35 @@ export function computeEssence(state, nowMs = Date.now()) {
   return 50 + unique + shiny * 10 + speedBonus + rebirths * 15;
 }
 
+/**
+ * 轮回熟路：转生自带、不用花灵珀的底子，抵掉纪元目标 ×1.5 之后仍明显更快（PRD §4.3，rebirth-speed-selfcheck 锁住）。
+ * 首次转生给大头，之后每次小步加，封顶防后期膨胀。
+ */
+export const REBIRTH_HEADSTART = Object.freeze({
+  prodFirst: 0.5,
+  prodStep: 0.1,
+  prodMax: 1,
+  catchFirst: 0.3,
+  catchStep: 0.05,
+  catchMax: 0.5,
+});
+
+export function rebirthHeadstart(state) {
+  const n = Math.max(0, Math.floor(Number(state?.era?.prestigeCount) || 0));
+  if (n <= 0) return { prodMul: 1, catchAdd: 0 };
+  const H = REBIRTH_HEADSTART;
+  return {
+    prodMul: 1 + Math.min(H.prodMax, H.prodFirst + H.prodStep * (n - 1)),
+    catchAdd: Math.min(H.catchMax, H.catchFirst + H.catchStep * (n - 1)),
+  };
+}
+
 export function legacyProdMul(state) {
-  return 1 + 0.12 * perkLevel(state, "prod");
+  return (1 + 0.12 * perkLevel(state, "prod")) * rebirthHeadstart(state).prodMul;
 }
 
 export function legacyCatchAdd(state) {
-  return 0.04 * perkLevel(state, "catch");
+  return 0.04 * perkLevel(state, "catch") + rebirthHeadstart(state).catchAdd;
 }
 
 export function legacyCapMul(state) {
@@ -190,6 +213,8 @@ export function cloneMonForNatalRebirth(mon, newId = 1) {
   }
   if (mon.ability) out.ability = mon.ability;
   if (mon.caughtWith) out.caughtWith = mon.caughtWith;
+  if (mon.veteran) out.veteran = true;
+  if (mon.statKeep) out.statKeep = mon.statKeep;
   out.baseStats =
     mon.baseStats && typeof mon.baseStats === "object"
       ? copyObj(mon.baseStats)

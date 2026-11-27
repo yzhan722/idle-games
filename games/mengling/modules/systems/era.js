@@ -540,11 +540,11 @@ export function applyMutatorsToEff(eff, state) {
   return eff;
 }
 
-export function eraPokeballBonusCrafted(state, qty) {
+export function eraOrbBonusCrafted(state, qty) {
   const made = Math.max(0, Math.floor(typeof qty === "number" && Number.isFinite(qty) ? qty : 0));
   if (made <= 0) return 0;
-  const eff = applyMutatorsToEff({ pokeballCraftBonusMul: 1 }, state);
-  const mul = typeof eff.pokeballCraftBonusMul === "number" && Number.isFinite(eff.pokeballCraftBonusMul) ? eff.pokeballCraftBonusMul : 1;
+  const eff = applyMutatorsToEff({ orbCraftBonusMul: 1 }, state);
+  const mul = typeof eff.orbCraftBonusMul === "number" && Number.isFinite(eff.orbCraftBonusMul) ? eff.orbCraftBonusMul : 1;
   return Math.max(0, Math.floor(made * Math.max(0, mul - 1)));
 }
 
@@ -563,12 +563,6 @@ export function applyEncounterBias(weight, mon, state, getMonTypes) {
 
   const tierMul = bias.tierBoost?.[mon?.tier];
   if (typeof tierMul === "number" && Number.isFinite(tierMul)) out *= Math.max(0, tierMul);
-
-  const range = bias.dexRangeBoost;
-  if (range && typeof mon?.dex === "number" && mon.dex >= range.min && mon.dex <= range.max) {
-    const mul = typeof range.mul === "number" && Number.isFinite(range.mul) ? range.mul : 1;
-    out *= Math.max(0, mul);
-  }
 
   const typeBoost = bias.typeBoost;
   if (typeBoost && typeof typeBoost === "object") {

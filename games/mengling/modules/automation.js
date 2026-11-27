@@ -1,4 +1,4 @@
-import { bumpEraCounter, eraPokeballBonusCrafted } from "./systems/era.js";
+import { bumpEraCounter, eraOrbBonusCrafted } from "./systems/era.js";
 
 export function ensureAutoState(state) {
   if (!state.auto || typeof state.auto !== "object") {
@@ -135,7 +135,7 @@ export function runAutomation({
   getBuildingCost,
   canAfford,
   pay,
-  getPokeballMakeCost,
+  getOrbMakeCost,
   addRes,
   addLog,
 }) {
@@ -174,7 +174,7 @@ export function runAutomation({
       const qty = Math.min(1, space);
       if (qty <= 0) break;
 
-      const cost = getPokeballMakeCost(qty, { consume: true });
+      const cost = getOrbMakeCost(qty, { consume: true });
       if (!canAfford(cost)) break;
 
       pay(cost);
@@ -182,7 +182,7 @@ export function runAutomation({
       addRes("pokeball", qty);
       const after = state.res.pokeball.value;
       const made = Math.max(0, after - before);
-      const bonus = eraPokeballBonusCrafted(state, made);
+      const bonus = eraOrbBonusCrafted(state, made);
       if (bonus > 0) addRes("pokeball", bonus);
       const afterBonus = state.res.pokeball.value;
       const bonusMade = Math.max(0, afterBonus - after);

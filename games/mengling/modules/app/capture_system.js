@@ -1,6 +1,6 @@
 // 捕获系统管理
 import { CAPTURE_AREAS } from "../config.js";
-import { getCatchRate } from "../beast_defs.js";
+import { getTameRate } from "../beast_defs.js";
 
 export function createCaptureSystem({ defs, getState, state, ui, randFloat }) {
   const readState = typeof getState === "function" ? getState : () => state;
@@ -64,20 +64,16 @@ export function createCaptureSystem({ defs, getState, state, ui, randFloat }) {
     return defs.beasts.filter((p) => p && p.tier === "epic");
   }
 
-  // 基于官方 capture_rate 计算基础捕获概率
-  // 公式：(capture_rate / 255) / 2，即官方概率的一半
+  // 基础捕获概率 = 物种驯服率（%）
   function getBaseCatchChanceByDex(dex) {
-    const rate = getCatchRate(dex);
-    return (rate / 255) / 2;
+    return getTameRate(dex) / 100;
   }
 
-  // 兼容旧代码的稀有度查询（用于显示）
+  // 稀有度的典型捕获概率 = 该稀有度全部物种的均值（用于显示）
   function getBaseCatchChanceByTier(tier) {
-    // 使用各稀有度的典型 capture_rate 计算
-    if (tier === "epic") return getBaseCatchChanceByDex(150); // capture_rate ~3
-    if (tier === "rare") return getBaseCatchChanceByDex(26); // capture_rate ~45
-    if (tier === "uncommon") return getBaseCatchChanceByDex(25); // capture_rate ~190
-    return getBaseCatchChanceByDex(10); // common, capture_rate ~255
+    const list = defs.beasts.filter((p) => p && p.tier === tier);
+    if (!list.length) return 0;
+    return list.reduce((sum, p) => sum + getBaseCatchChanceByDex(p.dex), 0) / list.length;
   }
 
   // 从池中随机选择萌灵

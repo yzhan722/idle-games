@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultState, serializeState, loadFromRaw } from "../modules/state.js";
 import * as CF from "../modules/systems/collection_fun.js";
+import { COLLECTION_FILES, collectionSource } from "./_collection_src.mjs";
 import * as PT from "../modules/systems/pve_tower.js";
 import { busyMonIds, pickWeakMonIds, releaseMonIds } from "../modules/systems/mon_release.js";
 import { computeTechEffects } from "../modules/systems/effects.js";
@@ -17,9 +18,9 @@ import { ERA_DEFS } from "../modules/defs_eras.js";
 import { monPower } from "../modules/mons.js";
 import { WEBP_UI_ICONS, renderResSvg, renderUiIcon } from "../modules/render/rpg_svg_icons.js";
 
-// 界面文案审视后全仓版本号升到 0.7.57，ML-17 起为 0.7.58：VERSION 校验当前构建的版本同步 / 图标缓存号（PREV_VERSION 为不得残留的旧号），
+// 界面文案审视后全仓版本号升到 0.7.57，ML-17 起为 0.7.58，商业化欠账轮起为 0.7.59，自有数值轮起为 0.7.60，首屏与安全轮为 0.7.61，其审查修复起为 0.7.62，交流管控轮（ML-COM3）起为 0.7.63：VERSION 校验当前构建的版本同步 / 图标缓存号（PREV_VERSION 为不得残留的旧号），
 // ML16_VERSION / ML15_VERSION 校验 ML-16、ML-15 自己的帮助块与样式块标签
-const VERSION = "0.7.58";
+const VERSION = "0.7.63";
 const PREV_VERSION = "0.7.57";
 const ML16_VERSION = "0.7.56";
 const ML15_VERSION = "0.7.55";
@@ -145,7 +146,7 @@ function returnedFixture() {
 }
 
 // ============================================================================
-// 0) Icons (256×256 transparent WebP, reused art under new names), version sync, UI / tick / rebirth / load wiring
+// 0) Icons (128×128 transparent WebP — shown at 44px at most, resampled in 0.7.61, reused art under new names), version sync, UI / tick / rebirth / load wiring
 // ============================================================================
 {
   for (const key of ML16_ICONS) {
@@ -154,7 +155,7 @@ function returnedFixture() {
     const buf = readFileSync(file);
     const info = webpInfo(buf);
     assert.ok(info, `${key}.webp is a real WebP file`);
-    assert.ok(info.w === 256 && info.h === 256, `${key}.webp is 256×256 (got ${info.w}×${info.h})`);
+    assert.ok(info.w === 128 && info.h === 128, `${key}.webp is 128×128 (got ${info.w}×${info.h})`);
     assert.ok(info.alpha, `${key}.webp carries an alpha channel (transparent background)`);
     assert.equal(WEBP_UI_ICONS[key], key, `WEBP_UI_ICONS registers ${key}`);
     assert.ok(
@@ -242,7 +243,7 @@ function returnedFixture() {
 
   // Source guard: the raw readers are only used by the registry itself, their own systems and the mon-detail tag
   const allowed = new Set([
-    path.join(rootDir, "modules", "systems", "collection_fun.js"),
+    ...COLLECTION_FILES,
     path.join(rootDir, "modules", "systems", "pve_tower.js"),
     path.join(rootDir, "modules", "render", "mons.js"),
   ]);
@@ -251,14 +252,14 @@ function returnedFixture() {
     if (!/getCloudParkOperatorMonIds|getStargazeCamperMonIds/.test(text)) continue;
     assert.ok(allowed.has(file), `no separate exclusion list: ${path.relative(rootDir, file)} must read the away registry instead`);
   }
-  const cfSrc = src("modules", "systems", "collection_fun.js");
+  const cfSrc = collectionSource();
   const reg = cfSrc.slice(cfSrc.indexOf("const AWAY_ACTIVITY_REGISTRY"), cfSrc.indexOf("export const AWAY_ACTIVITY_DEFS"));
   assert.ok(reg.includes("read: (s) => getCloudParkOperatorMonIds(s)") && reg.includes("read: (s) => getStargazeCamperMonIds(s)"), "both readers are wired as registry rows");
   for (const fn of ["listStargazeReturnedUnits", "listBalloonReturnedUnits", "listPostReturnedUnits", "listTreasureVoyageReturnedUnits", "listWishDockReturnedUnits"]) {
     assert.ok(reg.includes(`returned: (s) => ${fn}(s)`), `${fn} is wired as a registry returned reader`);
   }
-  assert.equal((cfSrc.match(/getCloudParkOperatorMonIds\(/g) || []).length, 3, "collection_fun.js: park reader = definition + registry + aura count");
-  assert.equal((cfSrc.match(/getStargazeCamperMonIds\(/g) || []).length, 2, "collection_fun.js: camper reader = definition + registry");
+  assert.equal((cfSrc.match(/getCloudParkOperatorMonIds\(/g) || []).length, 3, "collection modules: park reader = definition + registry + aura count");
+  assert.equal((cfSrc.match(/getStargazeCamperMonIds\(/g) || []).length, 2, "collection modules: camper reader = definition + registry");
   const ptSrc = src("modules", "systems", "pve_tower.js");
   assert.ok(!/getStargazeCamperMonIds|getCloudParkOperatorMonIds/.test(ptSrc), "pve_tower.js never re-lists campers / operators (registry only)");
   const nonSandbox = cfSrc.slice(cfSrc.indexOf("export function getNonSandboxBusyIds"), cfSrc.indexOf("export function getEcoSandboxBusyIds"));

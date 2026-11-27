@@ -11,6 +11,8 @@ import { EXTRA_TECH_FLAGS } from "./tech_defs.js";
 import { ensureEraState } from "./systems/era.js";
 import { normalizeLegacy } from "./systems/rebirth.js";
 import { normalizeMintTuning } from "./mons.js";
+import { migrateToOwnNumbers, mirrorVeterans, normalizeStatKeep, NUM_RULES_VERSION } from "./own_numbers_compat.js";
+import { applyForward, collectForward } from "./save_forward.js";
 import {
   ensureAmberRevivalState,
   ensureEcoSandboxState,
@@ -116,6 +118,8 @@ export const defaultState = () => ({
     lastSavedAt: nowMs(),
 
     legacy: { essence: 0, essenceEarned: 0, perks: {} },
+
+    numRules: NUM_RULES_VERSION,
 
   },
 
@@ -520,7 +524,10 @@ export function serializeState(s) {
 
   };
 
-  return {
+  // 老伙伴标记在 meta 里留一份：旧版客户端会丢掉伙伴身上的标记，但 meta 整块保留
+  mirrorVeterans(meta, s?.mons?.list);
+
+  return applyForward({
 
     ...s,
 
@@ -530,7 +537,7 @@ export function serializeState(s) {
 
     t: ts,
 
-  };
+  }, s);
 
 }
 
@@ -1366,6 +1373,33 @@ export function loadFromRaw(raw) {
 
     }
 
+    // 闪光馆是身份资产（转生保留）：放生或转生后身边没有闪光伙伴，也要从存档读回来
+    const shinyDex = data.dex.shiny;
+
+    if (shinyDex && typeof shinyDex === "object" && !Array.isArray(shinyDex)) {
+
+      s.dex.shiny = {};
+
+      for (const [pid, v] of Object.entries(shinyDex)) {
+
+        if (!/^p\d+$/.test(pid) || !v || typeof v !== "object") continue;
+
+        s.dex.shiny[pid] = {
+
+          dex: typeof v.dex === "number" && Number.isFinite(v.dex) ? Math.max(0, Math.floor(v.dex)) : Number(pid.slice(1)),
+
+          name: globalThis.BEAST_ZH?.[pid] || (typeof v.name === "string" ? v.name : pid),
+
+          tier: typeof v.tier === "string" && v.tier ? v.tier : undefined,
+
+          at: typeof v.at === "number" && Number.isFinite(v.at) ? v.at : 0,
+
+        };
+
+      }
+
+    }
+
   }
 
 
@@ -1526,6 +1560,14 @@ export function loadFromRaw(raw) {
 
           ability: typeof it.ability === "string" ? it.ability : undefined,
 
+          ...(it.veteran === true ? { veteran: true } : {}),
+
+          ...(normalizeStatKeep(it.statKeep) ? { statKeep: normalizeStatKeep(it.statKeep) } : {}),
+
+          ...(typeof it.caughtWith === "string" && it.caughtWith ? { caughtWith: it.caughtWith } : {}),
+
+          ...(typeof it.buffs?.luckyEgg === "number" && Number.isFinite(it.buffs.luckyEgg) ? { buffs: { luckyEgg: it.buffs.luckyEgg } } : {}),
+
           autoExpCarry,
 
           affectionCarry,
@@ -1567,6 +1609,9 @@ export function loadFromRaw(raw) {
     }
 
   }
+
+  // 数值规则换代：旧档伙伴的稀有度、属性、进化资格不倒退（必须用存档原值判断，不能用已合并默认值的 s.meta）
+  migrateToOwnNumbers(s, data.meta?.numRules);
 
   ensureEcoSandboxState(s);
   if (s.meta?.starBoutique) {
@@ -1783,7 +1828,7 @@ export function loadFromRaw(raw) {
 
   ensureEraState(s);
 
-
+  collectForward(data, s);
 
   return s;
 

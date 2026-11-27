@@ -1,37 +1,54 @@
-// Client analytics: localStorage queue, best-effort flush to /api/ops/ingest
+// 匿名留存统计（ML-G4）：本机排队、尽力发送到 /api/ops/ingest。
+// 只记事件名、时间、一次性会话号、首次打开日期、版本；不带账号、昵称、存档。
+// 玩家明确同意才记：没表态 = 关；隐私政策还是草案时不问，正式版第一次打开问一次。设置里随时可开可关。
+// 说明文字在 legal/privacy.html，改这里的事件要同步改那一页和 functions/api/_retention.js。
+import { LEGAL_DRAFT } from "./legal_status.js";
+
 const QUEUE_KEY = "mengling_idle_analytics_queue_v1";
-const FIRST_CAPTURE_KEY = "mengling_idle_analytics_first_capture_v1";
+const FIRST_CAPTURE_KEY = "mengling_idle_analytics_first_capture_v1"; // 旧版首捕标记，只读
+const ONCE_KEY = "mengling_idle_analytics_once_v1";
+const COHORT_KEY = "mengling_idle_analytics_cohort_v1";
+const OPT_KEY = "mengling_idle_analytics_opt_v1"; // "on" = 同意，"off" = 不同意，没有 = 没表态
 const MAX_QUEUE = 200;
 const MAX_BATCH = 50;
 const FLUSH_INTERVAL_MS = 15000;
+const MIN_MS = 60000;
 
 export const FUNNEL_EVENTS = [
   "session_start",
-  "gather_click",
+  "register",
+  "first_battle",
   "first_capture",
-  "daily_claim",
-  "futurecoin_spend",
+  "first_rebirth",
+  "return_d1",
+  "return_d7",
+  "session_time",
 ];
+
+/** 每个设备只发一次的事件 */
+const ONCE_EVENTS = new Set(["register", "first_battle", "first_capture", "first_rebirth", "return_d1", "return_d7"]);
+
+/** 单次在线时长分桶：达到这些分钟数各记一次 */
+export const SESSION_BUCKETS_MIN = [1, 5, 15, 30, 60];
+
+export const LEGACY_COHORT = "legacy";
 
 export function sanitizeEventName(name) {
   const s = typeof name === "string" ? name.trim().slice(0, 64) : "";
   return /^[a-z][a-z0-9_]{0,63}$/.test(s) ? s : "";
 }
 
+export function isCohort(v) {
+  return v === LEGACY_COHORT || (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v));
+}
+
+/** 白名单属性，其余一律丢掉 */
 export function sanitizeProps(props) {
   if (!props || typeof props !== "object" || Array.isArray(props)) return {};
   const out = {};
-  let n = 0;
-  for (const [k, v] of Object.entries(props)) {
-    if (n >= 20) break;
-    const key = typeof k === "string" ? k.trim().slice(0, 32) : "";
-    if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(key)) continue;
-    if (v == null) continue;
-    if (typeof v === "string") out[key] = v.slice(0, 200);
-    else if (typeof v === "number" && Number.isFinite(v)) out[key] = v;
-    else if (typeof v === "boolean") out[key] = v;
-    n += 1;
-  }
+  if (isCohort(props.cohort)) out.cohort = props.cohort;
+  if (typeof props.new === "boolean") out.new = props.new;
+  if (SESSION_BUCKETS_MIN.includes(props.bucket)) out.bucket = props.bucket;
   return out;
 }
 
@@ -43,16 +60,66 @@ export function mergeQueues(a, b, maxLen = MAX_QUEUE) {
   return merged.slice(merged.length - maxLen);
 }
 
-export function buildIngestPayload(events, { sessionId = "", uid = "", gameVersion = "" } = {}) {
+export function buildIngestPayload(events, { sessionId = "", gameVersion = "" } = {}) {
   const batch = (Array.isArray(events) ? events : []).slice(0, MAX_BATCH).map((e) => ({
     event: sanitizeEventName(e?.event),
     ts: Number.isFinite(e?.ts) ? Math.floor(e.ts) : Date.now(),
     props: sanitizeProps(e?.props),
-    sessionId: typeof sessionId === "string" ? sessionId.slice(0, 64) : "",
-    uid: typeof uid === "string" ? uid.slice(0, 64) : "",
+    // 上一次会话没发完的事件带着自己的会话号
+    sessionId: String(e?.sessionId || sessionId || "").slice(0, 64),
     gameVersion: typeof gameVersion === "string" ? gameVersion.slice(0, 32) : "",
   }));
-  return { events: batch.filter((e) => e.event) };
+  return { events: batch.filter((e) => FUNNEL_EVENTS.includes(e.event)) };
+}
+
+/** 两个 YYYY-MM-DD 相差几天；不是日期返回 NaN */
+export function dayDiff(from, to) {
+  if (!isCohort(from) || !isCohort(to) || from === LEGACY_COHORT || to === LEGACY_COHORT) return NaN;
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000);
+}
+
+export function returnEvent(cohort, today) {
+  const d = dayDiff(cohort, today);
+  if (d === 1) return "return_d1";
+  if (d === 7) return "return_d7";
+  return "";
+}
+
+/** 在线时长从 prevMs 走到 nextMs，新跨过了哪些分桶 */
+export function bucketsCrossed(prevMs, nextMs) {
+  return SESSION_BUCKETS_MIN.filter((m) => prevMs < m * MIN_MS && nextMs >= m * MIN_MS);
+}
+
+export function localDay(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function isAnalyticsEnabled(storage) {
+  try {
+    return storage.getItem(OPT_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
+/** 要不要弹一次询问：正式版、且还没表态 */
+export function shouldAskAnalytics(storage, draft = LEGAL_DRAFT) {
+  if (draft || !storage) return false;
+  try {
+    const v = storage.getItem(OPT_KEY);
+    return v !== "on" && v !== "off";
+  } catch {
+    return false;
+  }
+}
+
+/** 关掉时连同还没发出的记录一起清掉 */
+export function setAnalyticsEnabled(storage, on) {
+  try {
+    storage.setItem(OPT_KEY, on ? "on" : "off");
+    if (!on) storage.removeItem(QUEUE_KEY);
+  } catch {
+  }
 }
 
 function readQueue(storage) {
@@ -78,55 +145,100 @@ function writeQueue(storage, queue) {
   }
 }
 
-export function createAnalytics({ gameVersion = "" } = {}) {
+function readOnce(storage) {
+  try {
+    const parsed = JSON.parse(storage.getItem(ONCE_KEY) || "{}");
+    const out = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    if (storage.getItem(FIRST_CAPTURE_KEY)) out.first_capture = 1;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writeOnce(storage, once) {
+  try {
+    storage.setItem(ONCE_KEY, JSON.stringify(once));
+  } catch {
+  }
+}
+
+export function createAnalytics({ gameVersion = "", storage = typeof localStorage !== "undefined" ? localStorage : null } = {}) {
   const sessionId =
     typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
       ? crypto.randomUUID()
       : `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
   let getBaseUrl = () => "";
-  let getToken = () => "";
-  let getUid = () => "";
+  let remoteEnabled = true;
   let flushTimer = 0;
   let flushing = false;
   let sessionStarted = false;
+  let sessionEvents = null; // 本次开局的事件，同意之前先不记
+  let cohort = "";
+  let activeMs = 0;
 
-  function enqueue(item) {
-    if (typeof localStorage === "undefined") return;
-    const q = readQueue(localStorage);
-    q.push(item);
-    writeQueue(localStorage, q);
-  }
+  const enabled = () => Boolean(storage) && remoteEnabled && isAnalyticsEnabled(storage);
 
   function track(event, props = null) {
     try {
+      if (!enabled()) return;
       const name = sanitizeEventName(event);
-      if (!name) return;
-      enqueue({
+      if (!FUNNEL_EVENTS.includes(name)) return;
+      const q = readQueue(storage);
+      q.push({
         event: name,
         ts: Date.now(),
-        props: sanitizeProps(props),
+        props: sanitizeProps({ ...(props || {}), cohort }),
         sessionId,
       });
+      writeQueue(storage, q);
       scheduleFlush();
     } catch {
     }
   }
 
-  function trackOnceSession(event, props = null) {
-    if (sessionStarted && event === "session_start") return;
-    if (event === "session_start") sessionStarted = true;
-    track(event, props);
+  /** already = 这件事以前就发生过（老存档），只记标记不发 */
+  function trackOnce(event, { already = false } = {}) {
+    if (!storage || !ONCE_EVENTS.has(event)) return;
+    const once = readOnce(storage);
+    if (once[event]) return;
+    once[event] = 1;
+    writeOnce(storage, once);
+    if (!already) track(event);
   }
 
-  function trackFirstCapture(props = null) {
+  function startSession({ isNewPlayer = false, today = localDay() } = {}) {
+    if (sessionStarted || !storage) return;
+    sessionStarted = true;
+    let fresh = false;
     try {
-      if (typeof localStorage !== "undefined" && localStorage.getItem(FIRST_CAPTURE_KEY)) return;
-      track("first_capture", props);
-      if (typeof localStorage !== "undefined") localStorage.setItem(FIRST_CAPTURE_KEY, "1");
+      const saved = storage.getItem(COHORT_KEY);
+      if (isCohort(saved)) cohort = saved;
+      else {
+        fresh = Boolean(isNewPlayer);
+        cohort = fresh ? today : LEGACY_COHORT;
+        storage.setItem(COHORT_KEY, cohort);
+      }
     } catch {
-      track("first_capture", props);
+      cohort = LEGACY_COHORT;
     }
+    sessionEvents = { fresh, back: returnEvent(cohort, today) };
+    reportSession();
+  }
+
+  function reportSession() {
+    if (!sessionEvents || !enabled()) return;
+    const { fresh, back } = sessionEvents;
+    sessionEvents = null;
+    track("session_start", { new: fresh });
+    if (back) trackOnce(back);
+  }
+
+  function addActiveTime(ms) {
+    const next = activeMs + Math.max(0, Number(ms) || 0);
+    for (const bucket of bucketsCrossed(activeMs, next)) track("session_time", { bucket });
+    activeMs = next;
   }
 
   function scheduleFlush() {
@@ -138,17 +250,10 @@ export function createAnalytics({ gameVersion = "" } = {}) {
   }
 
   async function flush() {
-    if (flushing || typeof localStorage === "undefined") return;
+    if (flushing || !enabled()) return;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return;
 
-    const token = typeof getToken === "function" ? getToken() : "";
-    const uid = typeof getUid === "function" ? getUid() : "";
-    // ponytail: flush when online; auth optional — server accepts anonymous uid
-    if (!token && !uid) {
-      // still flush anonymous events with empty uid
-    }
-
-    const queue = readQueue(localStorage);
+    const queue = readQueue(storage);
     if (queue.length === 0) return;
 
     flushing = true;
@@ -157,26 +262,22 @@ export function createAnalytics({ gameVersion = "" } = {}) {
       if (!base) return;
 
       const batch = queue.slice(0, MAX_BATCH);
-      const payload = buildIngestPayload(batch, {
-        sessionId,
-        uid,
-        gameVersion,
-      });
+      const payload = buildIngestPayload(batch, { sessionId, gameVersion });
 
-      const headers = { "Content-Type": "application/json" };
-      if (token) headers.Authorization = `Bearer ${token}`;
+      if (payload.events.length > 0) {
+        // 不带登录凭证：统计不与账号关联
+        const res = await fetch(`${base}/api/ops/ingest`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true,
+        });
+        if (!res.ok) return;
+      }
 
-      const res = await fetch(`${base}/api/ops/ingest`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-        keepalive: true,
-      });
-
-      if (!res.ok) return;
-
-      const rest = queue.slice(batch.length);
-      writeQueue(localStorage, rest);
+      if (!enabled()) return;
+      const rest = readQueue(storage).slice(batch.length);
+      writeQueue(storage, rest);
       if (rest.length > 0) scheduleFlush();
     } catch {
     } finally {
@@ -184,30 +285,41 @@ export function createAnalytics({ gameVersion = "" } = {}) {
     }
   }
 
-  function init({ baseUrl, getToken: gt, getUid: gu } = {}) {
+  function init({ baseUrl } = {}) {
     if (typeof baseUrl === "function") getBaseUrl = baseUrl;
     else if (typeof baseUrl === "string") getBaseUrl = () => baseUrl;
-
-    if (typeof gt === "function") getToken = gt;
-    if (typeof gu === "function") getUid = gu;
 
     if (typeof window !== "undefined") {
       window.addEventListener("online", () => flush());
       window.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden") flush();
       });
-      window.setInterval(() => flush(), FLUSH_INTERVAL_MS);
+      window.setInterval(() => {
+        if (document.visibilityState === "visible") addActiveTime(FLUSH_INTERVAL_MS);
+        flush();
+      }, FLUSH_INTERVAL_MS);
     }
   }
 
   return {
     track,
-    trackOnceSession,
-    trackFirstCapture,
-    trackFuturecoinSpend: (amount, reason = "") =>
-      track("futurecoin_spend", { amount: Math.max(0, Math.floor(amount || 0)), reason: String(reason || "").slice(0, 64) }),
+    trackOnce,
+    startSession,
+    addActiveTime,
     flush,
     init,
+    /** 远端配置 featureFlags.analytics === false 时停收 */
+    setRemoteEnabled: (on) => {
+      remoteEnabled = on !== false;
+    },
+    isEnabled: enabled,
+    /** 同意后补记本次开局（只这一次会话），之前没同意时发生的事不补 */
+    setEnabled: (on) => {
+      if (!storage) return;
+      setAnalyticsEnabled(storage, on);
+      if (on) reportSession();
+    },
+    shouldAsk: (draft) => shouldAskAnalytics(storage, draft),
     sessionId,
   };
 }

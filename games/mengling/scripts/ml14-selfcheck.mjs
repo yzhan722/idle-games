@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultState, serializeState, loadFromRaw } from "../modules/state.js";
 import * as CF from "../modules/systems/collection_fun.js";
+import { collectionSource } from "./_collection_src.mjs";
 import * as PT from "../modules/systems/pve_tower.js";
 import { busyMonIds, pickWeakMonIds, releaseMonIds } from "../modules/systems/mon_release.js";
 import { computeTechEffects } from "../modules/systems/effects.js";
@@ -67,8 +68,8 @@ const rng = () => {
     assert.ok(existsSync(path.join(rootDir, "assets", "ui_icons", `${key}.webp`)), `ML-14 icon asset exists: ${key}.webp`);
     assert.equal(WEBP_UI_ICONS[key], key, `WEBP_UI_ICONS registers ${key}`);
     assert.ok(
-      renderUiIcon(key, 24).includes(`${key}.webp?v=0.7.58`) && renderResSvg(key, 20).includes(`${key}.webp?v=0.7.58`),
-      `rpg_svg_icons wires ${key}.webp?v=0.7.58`,
+      renderUiIcon(key, 24).includes(`${key}.webp?v=0.7.63`) && renderResSvg(key, 20).includes(`${key}.webp?v=0.7.63`),
+      `rpg_svg_icons wires ${key}.webp?v=0.7.63`,
     );
     const buf = readFileSync(path.join(rootDir, "assets", "ui_icons", `${key}.webp`));
     assert.ok(buf.slice(0, 4).toString() === "RIFF" && buf.slice(8, 12).toString() === "WEBP", `${key}.webp is a real WebP file`);
@@ -101,7 +102,7 @@ const rng = () => {
   for (const a of CF.AWAY_ACTIVITY_DEFS) assert.ok(a.label && a.releaseHint && a.blockLog, `away activity ${a.id} has label / release hint / block log`);
 
   // Source: every consumer reads the registry instead of re-listing the systems
-  const cfSrc = src("modules", "systems", "collection_fun.js");
+  const cfSrc = collectionSource();
   const nonSandbox = cfSrc.slice(cfSrc.indexOf("export function getNonSandboxBusyIds"), cfSrc.indexOf("export function getEcoSandboxBusyIds"));
   assert.ok(nonSandbox.includes("getAwayMonIds(state)") && !nonSandbox.includes("getHotSpringSoakingMonIds"), "getNonSandboxBusyIds reads the registry");
   const camp = cfSrc.slice(cfSrc.indexOf("export function getCampUnavailableMonIds"), cfSrc.indexOf("export function getAvailableStarCampCandidates"));
@@ -175,7 +176,7 @@ const rng = () => {
   const half = PT.simulateEcoTriTournament(st, { mode: "single", getMonTypes: triTypes, commit: false });
   assert.ok(!["squad_away", "squad_at_sea", "empty_squad"].includes(half.reason), "a squad with one partner at home still fights (the away one sits out)");
 
-  // 冠军联盟 / 星轨回廊 自动编队同样跳过
+  // 星冠殿堂 / 星轨回廊 自动编队同样跳过
   const league = PT.autofillChampionLeagueSquad(st, triTypes, monPower);
   assert.ok(league.squadIds.length > 0 && league.squadIds.every((id) => !away.has(id)), "autofillChampionLeagueSquad skips away partners");
   const corridor = PT.autofillStarCorridorSquad(st, triTypes, monPower);

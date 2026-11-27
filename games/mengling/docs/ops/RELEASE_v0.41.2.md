@@ -1,6 +1,6 @@
 # v0.41.2
 
-Production tag on `master` (`7ce8d4d`). Live site `https://game.pokeauto.online` `/api/health` returned `0.41.2` on 2026-09-10.
+Production tag on `master` (`19aef9b`). Live site `https://game.pokeauto.online` `/api/health` returned `0.41.2` on 2026-09-10.
 
 GitHub release: https://github.com/yzhan722/mengling-idle/releases/tag/v0.41.2  
 Milestone: https://github.com/yzhan722/mengling-idle/milestone/1

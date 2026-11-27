@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultState, serializeState, loadFromRaw } from "../modules/state.js";
 import * as CF from "../modules/systems/collection_fun.js";
+import { COLLECTION_FILES, collectionSource } from "./_collection_src.mjs";
 import * as PT from "../modules/systems/pve_tower.js";
 import { busyMonIds, pickWeakMonIds, releaseMonIds } from "../modules/systems/mon_release.js";
 import { computeTechEffects } from "../modules/systems/effects.js";
@@ -16,9 +17,10 @@ import { confirmPrestige, emptyEraState, bumpEraCounter, syncEraQuests } from ".
 import { ERA_DEFS } from "../modules/defs_eras.js";
 import { WEBP_UI_ICONS, renderResSvg, renderUiIcon } from "../modules/render/rpg_svg_icons.js";
 
-// ML-17 起全仓版本号为 0.7.58：VERSION 校验版本同步 / 图标缓存号，PREV_VERSION 为不得残留的旧号
-const VERSION = "0.7.58";
+// ML-17 为 0.7.58，商业化欠账轮（COM1 / COM3 / G2 / G4）起为 0.7.59，自有数值轮起为 0.7.60，首屏与安全轮为 0.7.61，其审查修复起为 0.7.62，交流管控轮（ML-COM3）起为 0.7.63：VERSION 校验版本同步 / 图标缓存号，PREV_VERSION 为不得残留的旧号
+const VERSION = "0.7.63";
 const PREV_VERSION = "0.7.57";
+const ML17_VERSION = "0.7.58";
 const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = (...p) => readFileSync(path.join(rootDir, ...p), "utf8");
 const ML17_ICONS = ["iceRink", "skateScore", "rinkBuff", "beeWorkshop", "beeHive", "honeyJar", "hiveBadge"];
@@ -100,7 +102,7 @@ function* walkJs(dir) {
 }
 
 // ============================================================================
-// 0) Icons (256×256 transparent WebP, reused art under new names), version sync, UI / tick / rebirth / load wiring, 量词「位」
+// 0) Icons (128×128 transparent WebP — shown at 44px at most, resampled in 0.7.61, reused art under new names), version sync, UI / tick / rebirth / load wiring, 量词「位」
 // ============================================================================
 {
   for (const key of ML17_ICONS) {
@@ -108,7 +110,7 @@ function* walkJs(dir) {
     assert.ok(existsSync(file), `ML-17 icon asset exists: ${key}.webp`);
     const info = webpInfo(readFileSync(file));
     assert.ok(info, `${key}.webp is a real WebP file`);
-    assert.ok(info.w === 256 && info.h === 256, `${key}.webp is 256×256 (got ${info.w}×${info.h})`);
+    assert.ok(info.w === 128 && info.h === 128, `${key}.webp is 128×128 (got ${info.w}×${info.h})`);
     assert.ok(info.alpha, `${key}.webp carries an alpha channel (transparent background)`);
     assert.equal(WEBP_UI_ICONS[key], key, `WEBP_UI_ICONS registers ${key}`);
     assert.ok(
@@ -133,11 +135,11 @@ function* walkJs(dir) {
     assert.ok(!src(...f).includes(PREV_VERSION), `${f.join("/")} has no stale version`);
   }
   const help = src("modules", "tabs", "help_tab.js");
-  assert.ok(help.includes(`版本 v${VERSION}`) && help.includes(`v${VERSION} 新增`) && help.includes("冰晶溜冰场与花田蜜蜂工坊"), "help tab version + ML-17 block");
+  assert.ok(help.includes(`版本 v${VERSION}`) && help.includes(`v${ML17_VERSION} 新增`) && help.includes("冰晶溜冰场与花田蜜蜂工坊"), "help tab version + ML-17 block");
   const helpBlock = help.slice(help.indexOf('rows.push(block("冰晶溜冰场与花田蜜蜂工坊"'), help.indexOf('rows.push(block("云端游乐园与星空露营观测"'));
   assert.ok(helpBlock.length > 500 && helpBlock.includes("一键收取") && helpBlock.includes("外出登记表现有 14 项") && helpBlock.includes('renderUiIcon("iceRink"'), "help block documents the rules, the registry and one-click collect");
   assert.ok(!/renderUiIcon\("(workshop|showStarTrophy|shinyCharm|field|granary|bigBerry|sanctumBadge)"/.test(helpBlock), "help block shows no original of a reused icon");
-  assert.ok(src("styles.css").includes(`ML-17 「冰晶溜冰场」&「花田蜜蜂工坊」 (v${VERSION})`), "styles.css ML-17 block");
+  assert.ok(src("styles.css").includes(`ML-17 「冰晶溜冰场」&「花田蜜蜂工坊」 (v${ML17_VERSION})`), "styles.css ML-17 block");
 
   const ft = src("modules", "tabs", "functions_tab.js");
   const iA = ft.indexOf("ML-16 Section: 外出归来「一键收取已归来伙伴」");
@@ -204,7 +206,7 @@ function* walkJs(dir) {
   for (const a of CF.AWAY_ACTIVITY_DEFS.slice(0, 2)) assert.ok(a.title && a.label && a.releaseHint && a.blockLog && a.returnable, `away activity ${a.id} has title / label / hints and is returnable`);
 
   const allowed = new Set([
-    path.join(rootDir, "modules", "systems", "collection_fun.js"),
+    ...COLLECTION_FILES,
     path.join(rootDir, "modules", "render", "mons.js"),
   ]);
   for (const file of walkJs(path.join(rootDir, "modules"))) {
@@ -212,7 +214,7 @@ function* walkJs(dir) {
     if (!/getIceRinkSkaterMonIds|getBeeKeeperMonIds/.test(text)) continue;
     assert.ok(allowed.has(file), `no separate exclusion list: ${path.relative(rootDir, file)} must read the away registry instead`);
   }
-  const cfSrc = src("modules", "systems", "collection_fun.js");
+  const cfSrc = collectionSource();
   const reg = cfSrc.slice(cfSrc.indexOf("const AWAY_ACTIVITY_REGISTRY"), cfSrc.indexOf("export const AWAY_ACTIVITY_DEFS"));
   assert.ok(reg.includes("read: (s) => getIceRinkSkaterMonIds(s)") && reg.includes("read: (s) => getBeeKeeperMonIds(s)"), "both readers are wired as registry rows");
   assert.ok(reg.includes("returned: (s) => listIceRinkReturnedUnits(s)") && reg.includes("returned: (s) => listBeeReturnedUnits(s)"), "both returned readers are wired on the registry rows");

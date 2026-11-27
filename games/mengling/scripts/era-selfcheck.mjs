@@ -9,7 +9,7 @@ import {
   applyEncounterBias,
   deriveEraIndex,
   eraEncounterRechargeMul,
-  eraPokeballBonusCrafted,
+  eraOrbBonusCrafted,
   ensureEraState,
   canPrestige,
   previewPrestige,
@@ -88,9 +88,9 @@ assert(ERA_DEFS.every((e) => typeof e.pveHint === "string" && e.pveHint.length >
 
 {
   const gym = { era: emptyEraState(3) };
-  assert(eraPokeballBonusCrafted(gym, 9) === 0, "craft bonus floors under 10");
-  assert(eraPokeballBonusCrafted(gym, 10) === 1, "craft bonus grants 1 per 10");
-  assert(eraPokeballBonusCrafted(gym, 25) === 2, "craft bonus floors batch math");
+  assert(eraOrbBonusCrafted(gym, 9) === 0, "craft bonus floors under 10");
+  assert(eraOrbBonusCrafted(gym, 10) === 1, "craft bonus grants 1 per 10");
+  assert(eraOrbBonusCrafted(gym, 25) === 2, "craft bonus floors batch math");
   assert(Math.abs(eraEncounterRechargeMul(gym) - 0.9) < 1e-9, "gym recharge mul");
   assert(eraEncounterRechargeMul({ era: emptyEraState(0) }) === 1, "default recharge mul");
 }

@@ -10,7 +10,7 @@ export const TYPE_SKILLS = {
   wind: "飞翔",
   stone: "打磨",
   light: "祝福",
-  dark: "霸凌",
+  dark: "夜锋",
   mystic: "梦魇",
 };
 
@@ -60,7 +60,7 @@ export function listActiveSkillBuffs(skills) {
   };
   if ((s.fairyAffGainRemainingSec ?? 0) > 0) lines.push(`祝福 ${fmt(s.fairyAffGainRemainingSec)}`);
   if ((s.rockBuildBoostRemainingSec ?? 0) > 0) lines.push(`打磨 ${fmt(s.rockBuildBoostRemainingSec)}`);
-  if ((s.darkPveDamageBoostRemainingSec ?? 0) > 0) lines.push(`霸凌 ${fmt(s.darkPveDamageBoostRemainingSec)}`);
+  if ((s.darkPveDamageBoostRemainingSec ?? 0) > 0) lines.push(`夜锋 ${fmt(s.darkPveDamageBoostRemainingSec)}`);
   return lines;
 }
 

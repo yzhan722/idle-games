@@ -51,20 +51,30 @@ Write-Host "version: $version" -ForegroundColor Cyan
 Write-Host "uploading..." -ForegroundColor Yellow
 Write-Host ""
 
+# only allow-listed files are uploaded (scripts/stage-release.mjs); never the project folder itself
+$branch = (& git rev-parse --abbrev-ref HEAD)
+$stage = Join-Path ([IO.Path]::GetTempPath()) ("mengling-release-" + [Guid]::NewGuid().ToString("N"))
+& node "scripts/stage-release.mjs" $stage
+if ($LASTEXITCODE -ne 0) { Write-Host "[error] staging failed" -ForegroundColor Red; exit 1 }
+
 $env:CF_API_TOKEN = $token
 $env:CLOUDFLARE_API_TOKEN = $token
+Push-Location $stage
 if ($useNpx) {
-    & npx --yes wrangler pages deploy . --project-name=$project --commit-message="$Message"
+    & npx --yes wrangler pages deploy . --project-name=$project --branch=$branch --commit-message="$Message"
 } else {
-    & $wrangler pages deploy . --project-name=$project --commit-message="$Message"
+    & $wrangler pages deploy . --project-name=$project --branch=$branch --commit-message="$Message"
 }
+$deployCode = $LASTEXITCODE
+Pop-Location
+Remove-Item -Recurse -Force $stage
 
-if ($LASTEXITCODE -eq 0) {
+if ($deployCode -eq 0) {
     Write-Host ""
     Write-Host "=== Deploy OK ===" -ForegroundColor Green
     Write-Host "https://game.pokeauto.online/" -ForegroundColor Cyan
     Write-Host "Wait 1-2 min for CDN cache" -ForegroundColor Yellow
 } else {
     Write-Host ""
-    Write-Host "=== Deploy failed (code: $LASTEXITCODE) ===" -ForegroundColor Red
+    Write-Host "=== Deploy failed (code: $deployCode) ===" -ForegroundColor Red
 }

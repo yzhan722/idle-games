@@ -29,13 +29,15 @@ CREATE TABLE users (
   uid TEXT NOT NULL UNIQUE,
   username TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  token_version INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE sessions (
   token TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL,
   created_at INTEGER NOT NULL,
+  token_version INTEGER,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 CREATE INDEX idx_sessions_user ON sessions(user_id);

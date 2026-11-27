@@ -10,12 +10,13 @@ export function corsHeaders(req) {
   };
 }
 
-export function json(data, { status = 200, req = null } = {}) {
+export function json(data, { status = 200, req = null, headers = null } = {}) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       ...corsHeaders(req),
+      ...(headers || {}),
     },
   });
 }

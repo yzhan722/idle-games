@@ -25,7 +25,6 @@ export function createServerBuffsUi({
   markOverlaysDirty,
   markServerBuffsDirty,
   pushTickerEvent,
-  analytics,
   elServerBuffBar,
   elServerBuffToggle,
 }) {
@@ -117,7 +116,6 @@ export function createServerBuffsUi({
       });
 
       state.res.futurecoin.value = Math.max(0, (state.res.futurecoin?.value ?? 0) - price);
-      analytics.trackFuturecoinSpend(price, "server_buff");
       ui.futureDirty = true;
       addLog(`购买全服增益：${SERVER_BUFF_UI[k]?.name ?? k}（+${m} 分钟，花费未来币 ${price}）`, true);
       if (typeof pushTickerEvent === "function") {

@@ -1,5 +1,6 @@
 import { dbAll, dbFirst, getDb, handleOptions, json } from "../_db.js";
 import { intOr } from "../_uid.js";
+import { maskText } from "../../../modules/name_filter.js";
 
 export async function onRequest(context) {
   const req = context.request;
@@ -25,7 +26,7 @@ export async function onRequest(context) {
           id: Number(it.id),
           ts: Number(it.ts) || 0,
           type: it.type || "",
-          msg: it.msg || "",
+          msg: maskText(it.msg || ""), // 播报里带昵称，旧数据读出时也过一遍屏蔽词
         })),
         lastId,
       },

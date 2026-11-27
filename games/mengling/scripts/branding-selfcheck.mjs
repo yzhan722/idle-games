@@ -20,7 +20,21 @@ const FORBIDDEN = [
   /神兽/, /精灵(?!)/, // 「精灵」任何残留
   /raw\.githubusercontent\.com\/PokeAPI/i, /jsdelivr\.net\/gh\/PokeAPI/i, /pokeapi\.co/i,
   /assets\/pokemon/,
+  // ML-COM1：第三方特性名 / 战斗用语 / 球名 / 赛事名（原创名见 docs/RENAME_CHECKLIST.md）
+  /厚脂肪/, /压迫感/, /迷人之躯/, /锐利目光/, /贪吃鬼/, /怪力钳/, /怕寂寞/,
+  /效果拔群/, /效果不佳/, /四天王/, /冠军联盟/, /关键石/, /究极灵球/, /豪华灵球/, /高级灵球/, /究极球/, /高级球/,
+  /种族值/, /个体值/, /特攻/, /特防/, /六尾/, /九尾/, /训练家/,
+  /耿胖胖/, /胖胖龙/, /夜绒布/, /念力鸭/, /疾风汪/, /电毛球/, /钢鳞长/, /超能胡仙/,
+  /《星露谷》|星露谷式|《动森》|动物森友会/,
 ];
+
+// 存档 id（res.pokeball / tech.pokeballBasics / 计数 pokeball_earned 等）不改名，其余标识符与文件名不得再带 poke
+const POKE_SAVE_IDS = new Set([
+  "pokeball", "pokeball_earned", "pokeballBasics", "pokeballBasic", "pokeballMade",
+  "pokeballGain_10", "pokeballCap_8",
+]);
+// 线上域名由用户定，见 docs/RENAME_CHECKLIST.md
+const POKE_DOMAIN = /game\.pokeauto\.online/g;
 
 // 放行：构建期源数据、数据生成器、本检查脚本自身、存档迁移白名单文件
 const WHITELIST = [
@@ -78,8 +92,27 @@ for (const dir of SCAN_DIRS) {
           fails.push(`${rel}:${i + 1}  ${re}  →  ${line.trim().slice(0, 80)}`);
         }
       }
+      for (const m of line.replace(POKE_DOMAIN, "").matchAll(/[A-Za-z0-9_]*pok[eé][A-Za-z0-9_]*/gi)) {
+        if (!POKE_SAVE_IDS.has(m[0])) fails.push(`${rel}:${i + 1}  标识符带 poke：${m[0]}`);
+      }
     });
   }
+}
+
+// 对外文档与素材文件名（ML-COM1）
+for (const f of ["README.md", "DESIGN.md", "ARCHITECTURE.md"]) {
+  const text = readFileSync(join(root, f), "utf8");
+  if (/宝可梦|神奇宝贝|口袋妖怪|精灵球|训练家/.test(text)) fails.push(`${f} 残留第三方作品词汇`);
+}
+function* walkAll(dir) {
+  for (const e of readdirSync(join(root, dir))) {
+    const rel = join(dir, e);
+    if (statSync(join(root, rel)).isDirectory()) yield* walkAll(rel);
+    else yield rel.split("\\").join("/");
+  }
+}
+for (const f of walkAll("assets")) {
+  if (/pok[eé]/i.test(f)) fails.push(`素材文件名带 poke：${f}`);
 }
 
 if (fails.length) {
@@ -87,4 +120,4 @@ if (fails.length) {
   for (const f of fails.slice(0, 60)) console.log("  FAIL", f);
   process.exit(1);
 }
-console.log("branding-selfcheck: OK — 运行时文件无宝可梦 IP 词汇残留");
+console.log("branding-selfcheck: OK — 运行时文件、对外文档、素材文件名无第三方作品词汇残留");

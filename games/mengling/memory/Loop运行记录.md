@@ -6,7 +6,7 @@
 |----|-----|
 | 模式 | 长跑到队列空 |
 | 可执行队列 | **空** |
-| commit | `273df87` |
+| commit | `52bf1cc` |
 | 前端仓 | https://github.com/yzhan722/mengling-idle |
 
 ## 最近一次 · 2026-07-11 存档加固 SAVE-001…006
@@ -26,4 +26,4 @@
 
 ## 历史 · 2026-07-11 上线后加固 POST-*
 
-- help/bulletin、CI、migration 政策、QA；commits `7905ebb`/`0848e64`
+- help/bulletin、CI、migration 政策、QA；commits `7f9f2c4`/`fb00b13`

@@ -1,5 +1,7 @@
 # Era Contentization — Design Spec
 
+> 历史文档：文中第三方作品的名称、角色、地名、数值只作研究记录，**不得取用**（ML-COM1，见 `docs/RENAME_CHECKLIST.md`）。
+
 **Date:** 2026-07-12  
 **Status:** Ready for loop implementation  
 **Depends on:** existing Era Chronicle (`defs_eras.js`, `systems/era.js`)  

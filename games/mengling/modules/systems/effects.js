@@ -107,19 +107,19 @@ export function computeTechEffects(state, defs, ui) {
     capCatnipAdd:      0,
     capWoodAdd:        0,
     capMineralsAdd:    0,
-    capPokeballAdd:    0,
+    capOrbAdd:    0,
     capCatnipMul:      1,
     capWoodMul:        1,
     capMineralsMul:    1,
-    capPokeballMul:    1,
-    pokeballMakeCostMul: 1,
+    capOrbMul:    1,
+    orbMakeCostMul: 1,
     researchTimeMul:   1,
     researchCostMul:   1,
     shinyChanceMul:    1,
     catchChanceAdd:    0,
   };
 
-  const CAP_ADD_KEYS = new Set(["capCatnipAdd", "capWoodAdd", "capMineralsAdd", "capPokeballAdd"]);
+  const CAP_ADD_KEYS = new Set(["capCatnipAdd", "capWoodAdd", "capMineralsAdd", "capOrbAdd"]);
   const techDefs = defs?.tech && typeof defs.tech === "object" ? defs.tech : {};
 
   for (const [tid, tdef] of Object.entries(techDefs)) {
@@ -251,7 +251,7 @@ export function getBuildingCost(id, state, defs, ui) {
     if (buildingEffects && typeof buildingEffects === "object") {
       const resourceMap = {
         capCatnipAdd: "catnip", capWoodAdd: "wood",
-        capMineralsAdd: "minerals", capPokeballAdd: "pokeball",
+        capMineralsAdd: "minerals", capOrbAdd: "pokeball",
       };
       for (const [capKey, rid] of Object.entries(resourceMap)) {
         if (typeof buildingEffects[capKey] === "number" && buildingEffects[capKey] > 0) {
@@ -354,11 +354,11 @@ export function getResearchEfficiency(state) {
  * @param {object} state
  * @param {object} ui
  * @param {object | null} opts
- * @param {{ tech?: object } | null} defs  — 需传入以应用 pokeballMakeCostMul 科技
+ * @param {{ tech?: object } | null} defs  — 需传入以应用 orbMakeCostMul 科技
  */
-export function getPokeballMakeCost(qty = 1, state, ui, opts = null, defs = null) {
+export function getOrbMakeCost(qty = 1, state, ui, opts = null, defs = null) {
   const techEff = computeTechEffects(state, defs, ui);
-  const mul = typeof techEff.pokeballMakeCostMul === "number" ? techEff.pokeballMakeCostMul : 1;
+  const mul = typeof techEff.orbMakeCostMul === "number" ? techEff.orbMakeCostMul : 1;
 
   const base0 = 6;
   const step = 1;

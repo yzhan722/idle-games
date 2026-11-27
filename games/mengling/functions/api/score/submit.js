@@ -1,4 +1,5 @@
 import { requireUser } from "../_auth.js";
+import { cleanAvatar } from "../_avatar.js";
 import { dbRun, getDb, handleOptions, json, nowMs, readJson } from "../_db.js";
 import { checkRateLimit } from "../_rate_limit.js";
 import { clampName, clampStr, intOr } from "../_uid.js";
@@ -36,8 +37,7 @@ export async function onRequest(context) {
   const gameVersion = clampStr(body.gameVersion, 32);
   const topMons = Array.isArray(body.topMons) ? body.topMons.slice(0, 6) : [];
   const topMonsJson = JSON.stringify(topMons);
-  let avatarDataUrl = typeof body.avatar === "string" ? body.avatar : "";
-  if (avatarDataUrl.length > 200000) avatarDataUrl = "";
+  const avatarDataUrl = cleanAvatar(body.avatar);
 
   const profile_json = JSON.stringify({
     mons: topMons,
@@ -50,7 +50,8 @@ export async function onRequest(context) {
     `INSERT INTO scores(
       uid, name, dexCount, power, totalPower, hatchCount, shinyCount,
       gatherClicks, resourceProduced, catchCount, rebirthCount, updatedAt, gameVersion, topMonsJson, avatarDataUrl, profile_json
-    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    ) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+    WHERE EXISTS (SELECT 1 FROM users WHERE uid = ?)
     ON CONFLICT(uid) DO UPDATE SET
       name=excluded.name, dexCount=excluded.dexCount, power=excluded.power, totalPower=excluded.totalPower,
       hatchCount=excluded.hatchCount, shinyCount=excluded.shinyCount, gatherClicks=excluded.gatherClicks,
@@ -75,6 +76,7 @@ export async function onRequest(context) {
       topMonsJson,
       avatarDataUrl || null,
       profile_json,
+      uid, // 账号正在注销时，迟到的提交不再写回榜单
     ]
   );
 

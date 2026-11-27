@@ -32,7 +32,7 @@ const ingest = await fetch(`${base}/api/ops/ingest`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    events: [{ event: "session_start", ts: Date.now(), sessionId: "retention-baseline", props: { source: "ops" } }],
+    events: [{ event: "ops_probe", ts: Date.now() }],
   }),
 });
 let ingestJson = null;
@@ -53,15 +53,14 @@ const md = `# Retention baseline
 - Dex rows that look real: ${realDex.length}
 - Top real score: ${realDex[0]?.score ?? "n/a"}
 - Power board status: ${power.status}
-- Ingest session_start: HTTP ${ingest.status} ok=${ingestJson?.ok === true}
+- Ingest probe: HTTP ${ingest.status} ok=${ingestJson?.ok === true}
 
 ## Reading
 
-Public leaderboards are the only heat signal without D1. A single-digit real row count means DAU is not yet measurable from the client. Query \`analytics_events\` with wrangler when credentials are available:
+Public leaderboards are the only heat signal without D1. Real retention (per-event counts, D1/D7 by cohort, session buckets) comes from \`GET /api/ops/retention?days=30\` with header \`X-Ops-Key\` (env \`OPS_ADMIN_KEY\`), or from D1 directly:
 
 \`\`\`
-SELECT event, COUNT(*) AS n FROM analytics_events GROUP BY event;
-SELECT COUNT(DISTINCT sessionId) AS sessions FROM analytics_events WHERE event = 'session_start';
+SELECT event, COUNT(*) AS n, COUNT(DISTINCT session_id) AS sessions FROM analytics_events GROUP BY event;
 \`\`\`
 
 This file is overwritten by \`node scripts/retention-baseline.mjs\`.

@@ -1,6 +1,7 @@
 import { requireUser } from "../../../_auth.js";
 import { BOSS_KEY, parseRewards } from "../../../_boss.js";
 import { dbFirst, dbRun, getDb, handleOptions, json, nowMs, readJson } from "../../../_db.js";
+import { checkRateLimit } from "../../../_rate_limit.js";
 import { clampName } from "../../../_uid.js";
 
 export async function onRequest(context) {
@@ -12,6 +13,11 @@ export async function onRequest(context) {
   const db = getDb(context.env);
   const user = await requireUser(db, req);
   if (!user) return json({ error: "unauthorized" }, { status: 401, req });
+
+  const rl = await checkRateLimit(db, `boss/claim:${user.uid}`, { limit: 20, windowSec: 60 });
+  if (!rl.ok) {
+    return json({ error: "rate limit exceeded", retryAfterSec: rl.retryAfterSec }, { status: 429, req });
+  }
 
   const body = await readJson(req);
   const uid = user.uid;

@@ -2,7 +2,7 @@
 // 设计原则：
 // 1. 整体背景音乐（BGM）采用 F大调9和弦 / C大调五声吕底亚调式（Fmaj9 - Em7 - Dm9 - Cmaj9），
 //    融合温暖竖琴拨弦（Harp）、星辉钢片琴（Celesta）、柔和暖垫弦乐（Warm Pad）与篝火微风环境底噪，
-//    营造《星露谷》《动森》般舒缓、治愈、久听不累的休闲氛围。
+//    营造舒缓、治愈、久听不累的休闲氛围。
 // 2. 全操作反馈：覆盖采集、砍树、采矿、添柴、建造、研究、切换页签、草丛奇袭、缩圈投球、
 //    捕获成功/失败、闪光降临、喂食、抚摸、温养灵蛋、进化/升星、炼金、转盘、试炼对战等 25+ 种细腻声效。
 // 3. 零外部音频 404 风险，支持三档切换：「音乐+音效」/「仅音效」/「静音」，状态持久化至 localStorage。
@@ -394,7 +394,7 @@ export function playSfx(kind = "ui_click") {
       playPitchGlide({ fStart: 392, fEnd: 523.25, duration: 0.065, type: "sine", volume: 0.10 });
       break;
 
-    // 3. 采集灵果（清脆饱满的星露谷式采摘跳跃音）
+    // 3. 采集灵果（清脆饱满的采摘跳跃音）
     case "gather":
       playPitchGlide({ fStart: 360, fEnd: 680, duration: 0.075, type: "sine", volume: 0.15 });
       playSequence([NOTE.C5, NOTE.G5], { interval: 0.055, volume: 0.12, decay: 0.32, brightness: 2200 });

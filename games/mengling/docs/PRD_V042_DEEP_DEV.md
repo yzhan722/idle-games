@@ -1,6 +1,8 @@
 # PRD — 二次深度开发（v0.42 系列）
 
-> 基线：v0.41.8（`master` @ `d17657b`，生产 = 仓库同步）  
+> 历史文档：文中第三方作品的名称、角色、地名、数值只作研究记录，**不得取用**（ML-COM1，见 `docs/RENAME_CHECKLIST.md`）。
+
+> 基线：v0.41.8（`master` @ `4eeebb1`，生产 = 仓库同步）  
 > 撰写：2026-10-09 · 状态：**已评审，执行中**  
 > 关联：`ARCHITECTURE.md` / `PLAYER_FUN_SCORECARD.md` / `docs/IAP_DECISION.md` / `docs/COMMERCIAL_OPS.md`
 
@@ -106,7 +108,7 @@ P1 去IP化 → P2 Prestige循环 → P3 PvE扩容 → P4 app.js拆解 → P5 �
 ### 4.3 验收
 
 - [ ] `rebirth-selfcheck.mjs`：模拟全通关存档 → 转生 → 断言保留/清空集合正确、essence 结算正确、存档 v2→v3 迁移幂等
-- [ ] `player-sim.mjs` 二周目跑通：转生后二周目速度显著快于一周目（可测断言）
+- [x] `player-sim.mjs` 二周目跑通：转生后二周目速度显著快于一周目（可测断言）——2026-11-26 `rebirth-speed-selfcheck.mjs`：同策略到第 5 纪元快 46%～48%（门槛 25%），不花灵珀快 30%
 - [ ] 云端：轮回榜 submit/pull 正常；旧账号（无 rebirths 字段）不崩
 
 **工作量**：M。**依赖**：P1 完成（新设定下写转生叙事，避免双写文案）。

@@ -89,10 +89,10 @@ const PVE_STAR_NARRATIVE = {
 const PVE_STAGE_HINTS = {
   "1-1": "首关教学：火系克制草系；先训练到 Lv.3+ 更稳。",
   "1-2": "碎石岩场：电系有优势，注意石长长耐久。",
-  "1-3": "潮汐浅湾：草系优先；宝星辉特攻偏高。",
+  "1-3": "潮汐浅湾：草系优先；紫微宝星皇灵攻偏高。",
   "2-1": "风语高台：电系克制风系；对手等级低，适合练手。",
-  "2-4": "幽影古塔：光系克制暗系；耿胖胖高星需克制与练度。",
-  "2-8": "龙眠深窟终盘：幻系互克；胖胖龙高星，建议满编再挑战。",
+  "2-4": "幽影古塔：光系克制暗系；噬影夜魔王高星需克制与练度。",
+  "2-8": "龙眠深窟终盘：幻系互克；凌霄圣龙高星，建议满编再挑战。",
 };
 
 export function createRenderPve({
@@ -907,7 +907,7 @@ export function createRenderPve({
       }
     }
 
-    // ML-7 「冠军联盟四天王殿堂赛」 (Champion League Elite Four & Grand Champion Gauntlet)
+    // ML-7 「星冠殿堂挑战赛」 (Star Crown Hall Gauntlet)
     let leaguePickerModalHtml = "";
     {
       const cl = ensureChampionLeagueState(state);
@@ -993,7 +993,7 @@ export function createRenderPve({
       const latestHof = cl.hallOfFameRecords[0] || null;
       const hofBannerText = latestHof
         ? `冠军殿堂荣誉留名（Tier ${latestHof.tier}/${CHAMPION_LEAGUE_MAX_TIER}）：${latestHof.squad.map((s) => `${s.name} Lv.${s.lvl}（绶带×${s.ribbons}）`).join(" · ")}`
-        : "击败「炎狱天王 → 沧溟天王 → 翠岚天王 → 星穹天王 → 圣殿总冠军」五重强敌，即可为出征伙伴刻印【冠军殿堂绶带】并晋升全局殿堂阶位！";
+        : "击败「炎狱殿主 → 沧溟殿主 → 翠岚殿主 → 星穹殿主 → 圣殿总冠军」五重强敌，即可为出征伙伴刻印【冠军殿堂绶带】并晋升全局殿堂阶位！";
 
       rows.push(`
         <div class="row champion-league-card">
@@ -1001,7 +1001,7 @@ export function createRenderPve({
             <div class="dual-sanctum-head">
               <div class="row__title row__titleLine">
                 ${renderUiIcon("leagueEliteCrest", 20)}
-                <span>冠军联盟四天王殿堂赛 · 巅峰五连挑战</span>
+                <span>星冠殿堂挑战赛 · 巅峰五连挑战</span>
                 <span class="tag tag--hof-ribbon">${renderUiIcon("leagueChampionRibbon", 14)}<span>殿堂阶位 Tier ${leagueBonus.hallOfFameTier}/${CHAMPION_LEAGUE_MAX_TIER}</span></span>
                 <span class="tag tag--sand-stock">${renderResSvg("shinyStarSand", 13)}<span>星砂 ×${sandStock}</span></span>
                 ${leagueBonus.pveOutAdd > 0 ? `<span class="badge badge--ok">殿堂增伤 +${Math.round(leagueBonus.pveOutAdd * 100)}%</span>` : ""}
@@ -1070,7 +1070,7 @@ export function createRenderPve({
               <div class="modal__header">
                 <div class="modal__title">
                   ${renderUiIcon("leagueEliteCrest", 20)}
-                  <span>编排冠军联盟三灵阵容</span>
+                  <span>编排星冠殿堂三灵阵容</span>
                   <span class="tag">已选 ${cl.squadIds.length}/${CHAMPION_LEAGUE_SQUAD_SIZE}</span>
                 </div>
                 <div class="modal__right">
@@ -1337,7 +1337,7 @@ export function createRenderPve({
         .map((l) => {
           const isTurn = /^—\s*第\s*\d+\s*回合|^—\s*战斗/.test(l);
           const isKo = /倒下了|击败|胜利|全灭/.test(l);
-          const isSe = /效果拔群|暴击/.test(l);
+          const isSe = /克制命中|暴击/.test(l);
           const cls = isTurn
             ? "battle-log__line battle-log__line--turn"
             : isKo
@@ -1790,13 +1790,13 @@ export function createRenderPve({
     });
     if (!res.ok) {
       // ML-15：整队外出（squad_away）或空队时给出明确提示，而不是静默无反应
-      if (typeof addLog === "function") addLog(res.log?.[0] || "冠军联盟暂不可挑战");
+      if (typeof addLog === "function") addLog(res.log?.[0] || "星冠殿堂暂不可挑战");
       ui.pveDirty = true;
       if (typeof render === "function") render();
       return;
     }
     if (res.benchedAway?.length && typeof addLog === "function") {
-      addLog(`冠军联盟：${res.benchedAway.map((b) => `${b.name}（${b.awayLabel}）`).join("、")}本场不出战`);
+      addLog(`星冠殿堂：${res.benchedAway.map((b) => `${b.name}（${b.awayLabel}）`).join("、")}本场不出战`);
     }
 
     const rw = res.rewardsEarned || {};
@@ -1819,14 +1819,14 @@ export function createRenderPve({
       if (typeof addLog === "function") {
         addLog(
           res.championCleared
-            ? `冠军联盟登顶捷报：连克四天王与圣殿总冠军！（${parts.join("、")}）`
-            : `冠军联盟捷报：攻克当前天王殿（${parts.join("、")}）`,
+            ? `星冠殿堂登顶捷报：连克四殿主与圣殿总冠军！（${parts.join("、")}）`
+            : `星冠殿堂捷报：攻克当前殿主厅（${parts.join("、")}）`,
           true,
         );
       }
     } else if (typeof addLog === "function") {
       addLog(
-        `冠军联盟战报：连闯 ${res.stagesCleared} 殿后止步于【${res.stoppedTitle || "四天王"}】${parts.length ? `（已获 ${parts.join("、")}）` : ""}`,
+        `星冠殿堂战报：连闯 ${res.stagesCleared} 殿后止步于【${res.stoppedTitle || "四殿主"}】${parts.length ? `（已获 ${parts.join("、")}）` : ""}`,
       );
     }
 
@@ -1839,7 +1839,7 @@ export function createRenderPve({
       superEffectiveHits: 1,
       stageType: "light",
       stageElements: ["fire", "water", "grass", "light"],
-      stageName: res.mode === "full" ? "冠军联盟四天王五连战" : lastResult?.title || "冠军联盟天王殿",
+      stageName: res.mode === "full" ? "星冠殿堂五连战" : lastResult?.title || "星冠殿堂殿主厅",
       recTypes: ["water", "grass", "fire", "dark"],
       rewardText: parts.join("、"),
       practice: false,
@@ -2054,7 +2054,7 @@ export function createRenderPve({
         if (Number.isFinite(id) && id > 0) {
           const res = toggleChampionLeagueSquadMon(state, id);
           if (!res.ok) leagueChk.checked = false;
-          if (!res.ok && res.reason === "mon_away" && typeof addLog === "function") addLog(`这只伙伴正在${res.awayLabel || "外出"}，不能编入冠军联盟小队`);
+          if (!res.ok && res.reason === "mon_away" && typeof addLog === "function") addLog(`这只伙伴正在${res.awayLabel || "外出"}，不能编入星冠殿堂小队`);
           ui.pveDirty = true;
           if (typeof render === "function") render();
         }
@@ -2226,7 +2226,7 @@ export function createRenderPve({
       if (leagueAutoBtn && !leagueAutoBtn.disabled) {
         const res = autofillChampionLeagueSquad(state, getMonTypes, monPower);
         if (res.ok && typeof addLog === "function") {
-          addLog(`冠军联盟：已优选 ${res.squadIds.length} 只精锐伙伴组建殿堂挑战小队`, true);
+          addLog(`星冠殿堂：已优选 ${res.squadIds.length} 只精锐伙伴组建殿堂挑战小队`, true);
         }
         ui.pveDirty = true;
         if (typeof render === "function") render();

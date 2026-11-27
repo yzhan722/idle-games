@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// ML-15 验证脚本：云朵甜点烘焙坊 + 彩虹气球旅行 + 统一外出登记表 + 冠军联盟 / 星轨回廊手动编入排除。
+// ML-15 验证脚本：云朵甜点烘焙坊 + 彩虹气球旅行 + 统一外出登记表 + 星冠殿堂 / 星轨回廊手动编入排除。
 // 用法：node scripts/ml15-selfcheck.mjs（selfcheck.mjs 也会调用）
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defaultState, serializeState, loadFromRaw } from "../modules/state.js";
 import * as CF from "../modules/systems/collection_fun.js";
+import { COLLECTION_FILES, collectionSource } from "./_collection_src.mjs";
 import * as PT from "../modules/systems/pve_tower.js";
 import { busyMonIds, pickWeakMonIds, releaseMonIds } from "../modules/systems/mon_release.js";
 import { computeTechEffects } from "../modules/systems/effects.js";
@@ -17,8 +18,8 @@ import { ERA_DEFS } from "../modules/defs_eras.js";
 import { monPower } from "../modules/mons.js";
 import { WEBP_UI_ICONS, renderResSvg, renderUiIcon } from "../modules/render/rpg_svg_icons.js";
 
-// ML-16 起全仓版本号升到 0.7.56（界面文案审视后为 0.7.57，ML-17 起为 0.7.58）：VERSION 校验当前构建的版本同步 / 图标缓存号，ML15_VERSION 校验 ML-15 自己的帮助块与样式块标签
-const VERSION = "0.7.58";
+// ML-16 起全仓版本号升到 0.7.56（界面文案审视后为 0.7.57，ML-17 起为 0.7.58，商业化欠账轮起为 0.7.59，自有数值轮起为 0.7.60，首屏与安全轮为 0.7.61，其审查修复起为 0.7.62，交流管控轮（ML-COM3）起为 0.7.63）：VERSION 校验当前构建的版本同步 / 图标缓存号，ML15_VERSION 校验 ML-15 自己的帮助块与样式块标签
+const VERSION = "0.7.63";
 const ML15_VERSION = "0.7.55";
 const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const src = (...p) => readFileSync(path.join(rootDir, ...p), "utf8");
@@ -95,7 +96,7 @@ function* walkJs(dir) {
 }
 
 // ============================================================================
-// 0) Icons (256×256 transparent WebP, original names), version sync, UI / tick / rebirth / load wiring
+// 0) Icons (128×128 transparent WebP — shown at 44px at most, resampled in 0.7.61, original names), version sync, UI / tick / rebirth / load wiring
 // ============================================================================
 {
   for (const key of ML15_ICONS) {
@@ -103,7 +104,7 @@ function* walkJs(dir) {
     assert.ok(existsSync(file), `ML-15 icon asset exists: ${key}.webp`);
     const info = webpInfo(readFileSync(file));
     assert.ok(info, `${key}.webp is a real WebP file`);
-    assert.ok(info.w === 256 && info.h === 256, `${key}.webp is 256×256 (got ${info.w}×${info.h})`);
+    assert.ok(info.w === 128 && info.h === 128, `${key}.webp is 128×128 (got ${info.w}×${info.h})`);
     assert.ok(info.alpha, `${key}.webp carries an alpha channel (transparent background)`);
     assert.equal(WEBP_UI_ICONS[key], key, `WEBP_UI_ICONS registers ${key}`);
     assert.ok(
@@ -164,7 +165,7 @@ function* walkJs(dir) {
   // Source guard: the raw readers are only used by the registry itself, their own systems and the mon-detail tag
   // （ML-16 同步：游乐园 / 星空露营的两个读取器同样只允许这三个文件直接调用，其他地方一律读外出登记表）
   const allowed = new Set([
-    path.join(rootDir, "modules", "systems", "collection_fun.js"),
+    ...COLLECTION_FILES,
     path.join(rootDir, "modules", "systems", "pve_tower.js"),
     path.join(rootDir, "modules", "render", "mons.js"),
   ]);
@@ -173,10 +174,10 @@ function* walkJs(dir) {
     if (!/getBakeryWorkerMonIds|getBalloonTravelerMonIds|getCloudParkOperatorMonIds|getStargazeCamperMonIds/.test(text)) continue;
     assert.ok(allowed.has(file), `no separate exclusion list: ${path.relative(rootDir, file)} must read the away registry instead`);
   }
-  const cfSrc = src("modules", "systems", "collection_fun.js");
+  const cfSrc = collectionSource();
   const reg = cfSrc.slice(cfSrc.indexOf("const AWAY_ACTIVITY_REGISTRY"), cfSrc.indexOf("export const AWAY_ACTIVITY_DEFS"));
   assert.ok(reg.includes("read: (s) => getBalloonTravelerMonIds(s)") && reg.includes("read: (s) => getBakeryWorkerMonIds(s)"), "both readers are wired as registry rows");
-  assert.equal((cfSrc.match(/getBakeryWorkerMonIds\(/g) || []).length, 4, "collection_fun.js: bakery reader = definition + registry + rush guard + aura count");
+  assert.equal((cfSrc.match(/getBakeryWorkerMonIds\(/g) || []).length, 4, "collection modules: bakery reader = definition + registry + rush guard + aura count");
   const ptSrc = src("modules", "systems", "pve_tower.js");
   assert.equal((ptSrc.match(/getBalloonTravelerMonIds\(/g) || []).length, 1, "pve_tower.js reads balloon travelers only for the bonus counter");
   const nonSandbox = cfSrc.slice(cfSrc.indexOf("export function getNonSandboxBusyIds"), cfSrc.indexOf("export function getEcoSandboxBusyIds"));
@@ -233,7 +234,7 @@ function* walkJs(dir) {
 }
 
 // ============================================================================
-// 2) 冠军联盟 / 星轨回廊：manual entry refuses away partners; away squad members sit the match out
+// 2) 星冠殿堂 / 星轨回廊：manual entry refuses away partners; away squad members sit the match out
 // ============================================================================
 {
   const types = (m) => m.types;
@@ -252,7 +253,7 @@ function* walkJs(dir) {
 
   // Manual toggle: explicit reason code + activity id + label
   for (const [fn, label] of [
-    [PT.toggleChampionLeagueSquadMon, "冠军联盟"],
+    [PT.toggleChampionLeagueSquadMon, "星冠殿堂"],
     [PT.toggleStarCorridorSquadMon, "星轨回廊"],
   ]) {
     for (const [id, actId, actLabel] of [

@@ -2,6 +2,7 @@
 
 import { getExpeditionSeasonBlurb, pickExpeditionEventCard, resolveSeasonId } from "../systems/expedition.js";
 import { formatPvpSeasonStats, formatPvpSeasonHeadline } from "../systems/pvp_narrative.js";
+import { safetyMenuButton } from "../friends.js";
 
 export function createRenderSocial({ ui, escapeHtml, socialSystem, formatTime, getState }) {
   function socialUnavailableRow(title) {
@@ -256,13 +257,10 @@ export function createRenderSocial({ ui, escapeHtml, socialSystem, formatTime, g
             <div class="row__desc">${escapeHtml(msg.message)}</div>
             <div class="row__meta">${formatTime(msg.created_at)}</div>
           </div>
-          ${!msg.read ? `
           <div class="row__right">
-            <button class="btn btn--small btn--ghost" data-social-action="mark-read" data-message-id="${msg.id}">
-              标记已读
-            </button>
+            ${!msg.read ? `<button class="btn btn--small btn--ghost" data-social-action="mark-read" data-message-id="${msg.id}">标记已读</button>` : ""}
+            ${safetyMenuButton(escapeHtml, msg.from_uid, msg.from_name)}
           </div>
-          ` : ""}
         </div>
       `;
     }
@@ -299,12 +297,13 @@ export function createRenderSocial({ ui, escapeHtml, socialSystem, formatTime, g
           </div>
         </div>
         <div class="row__right">
-          <button class="btn btn--small" data-social-action="send-message" data-friend-uid="${friendUid}">
+          <button class="btn btn--small" data-social-action="send-message" data-friend-uid="${escapeHtml(friendUid)}">
             发消息
           </button>
-          <button class="btn btn--small btn--primary" data-social-action="pvp-invite" data-friend-uid="${friendUid}">
+          <button class="btn btn--small btn--primary" data-social-action="pvp-invite" data-friend-uid="${escapeHtml(friendUid)}">
             对战邀请
           </button>
+          ${safetyMenuButton(escapeHtml, friendUid, profile.user.name)}
         </div>
       </div>
     `;
@@ -336,10 +335,38 @@ export function createRenderSocial({ ui, escapeHtml, socialSystem, formatTime, g
     elProfile.innerHTML = html;
   }
 
+  // 已屏蔽的人（ML-COM3）：没有就不显示；每人一个「解除」
+  async function renderBlocked() {
+    const el = document.getElementById("blockedList");
+    if (!el) return;
+    if (!socialSystem.hasAuth?.()) {
+      el.innerHTML = "";
+      return;
+    }
+    const list = await socialSystem.getBlocks();
+    if (!list || !list.length) {
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML = `
+      <div class="row"><div class="row__left"><div class="row__title">已屏蔽 (${list.length})</div></div></div>
+      ${list
+        .map(
+          (b) => `
+        <div class="row">
+          <div class="row__left"><div class="row__title">${escapeHtml(b.name)}</div></div>
+          <div class="row__right"><button type="button" class="btn btn--small" data-safety-unblock="${escapeHtml(b.uid)}">解除</button></div>
+        </div>`
+        )
+        .join("")}
+    `;
+  }
+
   return {
     renderFriendFeed,
     renderMessages,
     renderFriendProfile,
+    renderBlocked,
     renderPvpInvites,
     renderPvpRecent,
   };

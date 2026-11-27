@@ -33,11 +33,7 @@ export function initMonsTab({
   getStarUpgradeGate,
   meetsStarUpgradeGate,
   isSameEvoFamily,
-  stageIndex,
-  getEvoReqLevel,
-  defaultReqLvlByStage,
-  isTradeEvo,
-  isAffectionEvo,
+  getEvoStatus,
   evolveMon,
   addRes,
   addLog,
@@ -1015,18 +1011,9 @@ export function initMonsTab({
 
         const beforeName = String(m.name || "");
 
-        const reqLvl = getEvoReqLevel(m.pid, toPid);
-        const fallbackReqLvl = defaultReqLvlByStage(m.pid);
-        const effReqLvl = typeof reqLvl === "number" ? reqLvl : fallbackReqLvl;
-        const needLvl = reqLvl === null ? fallbackReqLvl : effReqLvl;
-        if (m.lvl < needLvl) return;
-
-        const needRope = typeof isTradeEvo === "function" ? isTradeEvo(m.pid, toPid) : false;
-        const needAff = !needRope && (typeof isAffectionEvo === "function" ? isAffectionEvo(m.pid, toPid) : false);
-        if (needAff && !(typeof m.affection === "number" && m.affection >= 20)) return;
-        const reqRid = needRope ? "linkRope" : "evolutionStone";
-        if ((state.res?.[reqRid]?.value ?? 0) < 1) return;
-        state.res[reqRid].value = Math.max(0, (state.res?.[reqRid]?.value ?? 0) - 1);
+        const evoSt = getEvoStatus(m, toPid, state.res);
+        if (!evoSt.ok) return;
+        state.res[evoSt.rid].value = Math.max(0, (state.res[evoSt.rid].value ?? 0) - 1);
 
         const ok = evolveMon(m, toPid);
         if (ok) {

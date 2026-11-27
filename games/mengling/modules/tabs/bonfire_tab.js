@@ -1,4 +1,4 @@
-import { eraPokeballBonusCrafted } from "../systems/era.js";
+import { eraOrbBonusCrafted } from "../systems/era.js";
 import {
   bumpGatherCombo,
   bumpGatherDaily,
@@ -275,7 +275,7 @@ export function initBonfireTab({
   elBonfireActions,
   elBtnGather,
   ui,
-  getPokeballMakeCost,
+  getOrbMakeCost,
   canAfford,
   pay,
   addRes,
@@ -284,7 +284,7 @@ export function initBonfireTab({
   doCatch,
   getState,
   onGather,
-  onPokeballCraft,
+  onOrbCraft,
   activateTab,
 }) {
   const triggerTab = (tabName) => {
@@ -427,7 +427,7 @@ export function initBonfireTab({
 
     const act = btn.getAttribute("data-action");
     if (act === "makeBall") {
-      const makeCost = getPokeballMakeCost(1, { consume: true });
+      const makeCost = getOrbMakeCost(1, { consume: true });
       if (!canAfford(makeCost)) return;
       pay(makeCost);
       const state = typeof getState === "function" ? getState() : null;
@@ -435,14 +435,14 @@ export function initBonfireTab({
       addRes("pokeball", 1);
       const after = state?.res?.pokeball?.value ?? before;
       const made = Math.max(0, after - before);
-      const bonus = eraPokeballBonusCrafted(state, made);
+      const bonus = eraOrbBonusCrafted(state, made);
       if (bonus > 0) addRes("pokeball", bonus);
       const afterBonus = state?.res?.pokeball?.value ?? after;
       const bonusMade = Math.max(0, afterBonus - after);
       if (state && typeof state === "object") {
         state.pokeballMade = Math.max(0, (state.pokeballMade ?? 0) + made + bonusMade);
       }
-      if (typeof onPokeballCraft === "function") onPokeballCraft(made + bonusMade);
+      if (typeof onOrbCraft === "function") onOrbCraft(made + bonusMade);
       addLog(`制作：灵球 +${made + bonusMade}${bonusMade > 0 ? `（时代加成 +${bonusMade}）` : ""}`);
       if (ui) ui.bonfireDirty = true;
       render();

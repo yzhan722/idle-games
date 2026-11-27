@@ -64,14 +64,14 @@ import { CAPTURE_AREAS } from "../config.js";
 import { beastZone, ZONE_IDS, ZONE_LABELS } from "../beast_defs.js";
 
 export const PVE_TOWER_FLOORS = [
-  { floor: 1, name: "塔·1F 虫群", type: "grass", enemies: [{ dex: 10, name: "毛茸茸", lvl: 20, stars: 0 }, { dex: 11, name: "茧团团", lvl: 22, stars: 0 }], rewards: { futurecoin: 40, exp: 400 } },
-  { floor: 2, name: "塔·2F 水流", type: "water", enemies: [{ dex: 54, name: "呆鸭鸭", lvl: 24, stars: 0 }, { dex: 55, name: "念力鸭", lvl: 28, stars: 1 }], rewards: { futurecoin: 60, exp: 600 } },
-  { floor: 3, name: "塔·3F 烈焰", type: "fire", enemies: [{ dex: 58, name: "汪团团", lvl: 28, stars: 0 }, { dex: 59, name: "疾风汪", lvl: 34, stars: 1 }], rewards: { futurecoin: 80, exp: 900 } },
-  { floor: 4, name: "塔·4F 雷鸣", type: "electric", enemies: [{ dex: 25, name: "电毛球", lvl: 32, stars: 1 }, { dex: 26, name: "雷鼓将", lvl: 38, stars: 1 }], rewards: { futurecoin: 100, exp: 1200 } },
-  { floor: 5, name: "塔·5F 龙影【里程碑】", type: "mystic", enemies: [{ dex: 147, name: "迷你蛟", lvl: 36, stars: 1 }, { dex: 148, name: "丝带龙", lvl: 42, stars: 2 }], rewards: { futurecoin: 140, exp: 1800, evolutionStone: 1, rareCandy: 1, seasonMark: 1 }, isMilestone: true },
-  { floor: 6, name: "塔·6F 恶戏", type: "dark", enemies: [{ dex: 197, name: "夜绒布", lvl: 40, stars: 1 }, { dex: 229, name: "夜焰狼", lvl: 46, stars: 2 }], rewards: { futurecoin: 180, exp: 2200 } },
-  { floor: 7, name: "塔·7F 钢壁", type: "stone", enemies: [{ dex: 208, name: "钢鳞长", lvl: 44, stars: 2 }, { dex: 462, name: "磁暴王", lvl: 50, stars: 2 }], rewards: { futurecoin: 220, exp: 2800 } },
-  { floor: 8, name: "塔·8F 王者幻影【经典巅顶】", type: "mystic", enemies: [{ dex: 149, name: "胖胖龙", lvl: 52, stars: 2 }, { dex: 230, name: "海龙王", lvl: 55, stars: 2 }, { dex: 148, name: "丝带龙", lvl: 58, stars: 2 }], rewards: { futurecoin: 320, exp: 4000, evolutionStone: 1, seasonMark: 1 } },
+  { floor: 1, name: "塔·1F 虫群", type: "grass", enemies: [{ dex: 10, name: "翠玉灵蚕", lvl: 20, stars: 0 }, { dex: 11, name: "凝翠星茧", lvl: 22, stars: 0 }], rewards: { futurecoin: 40, exp: 400 } },
+  { floor: 2, name: "塔·2F 水流", type: "water", enemies: [{ dex: 54, name: "涟漪小鸭", lvl: 24, stars: 0 }, { dex: 55, name: "沧澜灵鸭皇", lvl: 28, stars: 1 }], rewards: { futurecoin: 60, exp: 600 } },
+  { floor: 3, name: "塔·3F 烈焰", type: "fire", enemies: [{ dex: 58, name: "炽焰幼犬", lvl: 28, stars: 0 }, { dex: 59, name: "燎原炎狮犬", lvl: 34, stars: 1 }], rewards: { futurecoin: 80, exp: 900 } },
+  { floor: 4, name: "塔·4F 雷鸣", type: "electric", enemies: [{ dex: 25, name: "星雷灵鼠", lvl: 32, stars: 1 }, { dex: 26, name: "天雷御守鼠", lvl: 38, stars: 1 }], rewards: { futurecoin: 100, exp: 1200 } },
+  { floor: 5, name: "塔·5F 龙影【里程碑】", type: "mystic", enemies: [{ dex: 147, name: "云渊幼蛟", lvl: 36, stars: 1 }, { dex: 148, name: "瑞霭灵龙", lvl: 42, stars: 2 }], rewards: { futurecoin: 140, exp: 1800, evolutionStone: 1, rareCandy: 1, seasonMark: 1 }, isMilestone: true },
+  { floor: 6, name: "塔·6F 恶戏", type: "dark", enemies: [{ dex: 197, name: "幽月影狐", lvl: 40, stars: 1 }, { dex: 229, name: "炼狱魔狼王", lvl: 46, stars: 2 }], rewards: { futurecoin: 180, exp: 2200 } },
+  { floor: 7, name: "塔·7F 钢壁", type: "stone", enemies: [{ dex: 208, name: "耀钢龙蛇", lvl: 44, stars: 2 }, { dex: 462, name: "苍穹磁暴舰", lvl: 50, stars: 2 }], rewards: { futurecoin: 220, exp: 2800 } },
+  { floor: 8, name: "塔·8F 王者幻影【经典巅顶】", type: "mystic", enemies: [{ dex: 149, name: "凌霄圣龙", lvl: 52, stars: 2 }, { dex: 230, name: "沧溟海龙皇", lvl: 55, stars: 2 }, { dex: 148, name: "瑞霭灵龙", lvl: 58, stars: 2 }], rewards: { futurecoin: 320, exp: 4000, evolutionStone: 1, seasonMark: 1 } },
 ];
 
 export const TOWER_WEATHER_AFFIXES = [
@@ -156,55 +156,55 @@ const ENDLESS_SPECIES_POOL = {
     { dex: 58, fallback: "炽焰幼犬" },
     { dex: 78, fallback: "逐日天马" },
     { dex: 59, fallback: "燎原炎狮犬" },
-    { dex: 229, fallback: "夜焰狼" },
+    { dex: 229, fallback: "炼狱魔狼王" },
   ],
   water: [
-    { dex: 55, fallback: "念力鸭" },
+    { dex: 55, fallback: "沧澜灵鸭皇" },
     { dex: 121, fallback: "紫微宝星皇" },
-    { dex: 230, fallback: "海龙王" },
+    { dex: 230, fallback: "沧溟海龙皇" },
     { dex: 120, fallback: "辰光海星" },
   ],
   grass: [
     { dex: 71, fallback: "幽林捕蝇皇" },
     { dex: 45, fallback: "绯冠大王花" },
     { dex: 69, fallback: "翠蔓灵芽" },
-    { dex: 11, fallback: "茧团团" },
+    { dex: 11, fallback: "凝翠星茧" },
   ],
   electric: [
-    { dex: 26, fallback: "雷鼓将" },
+    { dex: 26, fallback: "天雷御守鼠" },
     { dex: 82, fallback: "三联磁晶阵" },
-    { dex: 462, fallback: "磁暴王" },
-    { dex: 25, fallback: "电毛球" },
+    { dex: 462, fallback: "苍穹磁暴舰" },
+    { dex: 25, fallback: "星雷灵鼠" },
   ],
   wind: [
     { dex: 17, fallback: "疾风灵隼" },
-    { dex: 149, fallback: "胖胖龙" },
+    { dex: 149, fallback: "凌霄圣龙" },
     { dex: 42, fallback: "影翼猎蝠" },
     { dex: 16, fallback: "云羽雏雀" },
   ],
   stone: [
     { dex: 95, fallback: "巨岩晶蛇" },
     { dex: 112, fallback: "破山钻角犀" },
-    { dex: 208, fallback: "钢鳞长" },
+    { dex: 208, fallback: "耀钢龙蛇" },
     { dex: 28, fallback: "金刚刺甲兽" },
   ],
   light: [
     { dex: 121, fallback: "紫微宝星皇" },
     { dex: 78, fallback: "逐日天马" },
-    { dex: 148, fallback: "丝带龙" },
+    { dex: 148, fallback: "瑞霭灵龙" },
     { dex: 26, fallback: "天雷御守鼠" },
   ],
   dark: [
-    { dex: 197, fallback: "夜绒布" },
-    { dex: 229, fallback: "夜焰狼" },
+    { dex: 197, fallback: "幽月影狐" },
+    { dex: 229, fallback: "炼狱魔狼王" },
     { dex: 44, fallback: "迷雾梦花" },
     { dex: 42, fallback: "影翼猎蝠" },
   ],
   mystic: [
-    { dex: 148, fallback: "丝带龙" },
-    { dex: 149, fallback: "胖胖龙" },
-    { dex: 230, fallback: "海龙王" },
-    { dex: 147, fallback: "迷你蛟" },
+    { dex: 148, fallback: "瑞霭灵龙" },
+    { dex: 149, fallback: "凌霄圣龙" },
+    { dex: 230, fallback: "沧溟海龙皇" },
+    { dex: 147, fallback: "云渊幼蛟" },
   ],
 };
 
@@ -971,7 +971,7 @@ export function computeDualSanctumBadgeBonus(state) {
 }
 
 // ============================================================================
-// ML-7 「冠军联盟四天王殿堂赛」(Champion League Elite Four & Grand Champion Gauntlet)
+// ML-7 「星冠殿堂挑战赛」(Star Crown Hall Gauntlet)
 // ============================================================================
 
 export const CHAMPION_LEAGUE_MAX_TIER = 5;
@@ -981,9 +981,9 @@ export const CHAMPION_LEAGUE_STAGES = Object.freeze([
   {
     id: "elite_flame",
     order: 1,
-    name: "炎狱天王殿",
-    shortTitle: "炎狱天王",
-    masterTitle: "炎狱天王 · 赤煌",
+    name: "炎狱殿主厅",
+    shortTitle: "炎狱殿主",
+    masterTitle: "炎狱殿主 · 赤煌",
     stageType: "fire",
     elements: ["fire", "stone"],
     enemies: [
@@ -996,9 +996,9 @@ export const CHAMPION_LEAGUE_STAGES = Object.freeze([
   {
     id: "elite_tide",
     order: 2,
-    name: "沧溟天王殿",
-    shortTitle: "沧溟天王",
-    masterTitle: "沧溟天王 · 澜汐",
+    name: "沧溟殿主厅",
+    shortTitle: "沧溟殿主",
+    masterTitle: "沧溟殿主 · 澜汐",
     stageType: "water",
     elements: ["water", "electric"],
     enemies: [
@@ -1011,9 +1011,9 @@ export const CHAMPION_LEAGUE_STAGES = Object.freeze([
   {
     id: "elite_verdant",
     order: 3,
-    name: "翠岚天王殿",
-    shortTitle: "翠岚天王",
-    masterTitle: "翠岚天王 · 苍叶",
+    name: "翠岚殿主厅",
+    shortTitle: "翠岚殿主",
+    masterTitle: "翠岚殿主 · 苍叶",
     stageType: "grass",
     elements: ["grass", "wind"],
     enemies: [
@@ -1026,9 +1026,9 @@ export const CHAMPION_LEAGUE_STAGES = Object.freeze([
   {
     id: "elite_astral",
     order: 4,
-    name: "星穹天王殿",
-    shortTitle: "星穹天王",
-    masterTitle: "星穹天王 · 星璇",
+    name: "星穹殿主厅",
+    shortTitle: "星穹殿主",
+    masterTitle: "星穹殿主 · 星璇",
     stageType: "light",
     elements: ["light", "dark"],
     enemies: [
@@ -1226,7 +1226,7 @@ export function toggleChampionLeagueSquadMon(state, monId) {
   if (idx >= 0) {
     cl.squadIds.splice(idx, 1);
   } else {
-    // ML-15 统一忙碌排除：外出 / 驻场中的伙伴不能手动编入冠军联盟（原因码 mon_away，附外出玩法 id 与标签）
+    // ML-15 统一忙碌排除：外出 / 驻场中的伙伴不能手动编入星冠殿堂（原因码 mon_away，附外出玩法 id 与标签）
     const away = getAwayActivityOfMon(state, id);
     if (away) return { ok: false, reason: "mon_away", awayId: away.id, awayLabel: away.label };
     if (cl.squadIds.length >= CHAMPION_LEAGUE_SQUAD_SIZE) {
@@ -1496,7 +1496,7 @@ export function simulateLeagueGauntlet(state, opts = {}) {
       log: [
         away
           ? `— 冠军小队的伙伴都在外出（${benchedAway.map((b) => `${b.name} ${b.awayLabel}`).join("、")}），叫回来或重新编队后再挑战 —`
-          : "— 需至少编入 1~3 只伙伴方可挑战冠军联盟四天王殿堂 —",
+          : "— 需至少编入 1~3 只伙伴方可挑战星冠殿堂 —",
       ],
     };
   }
@@ -1539,7 +1539,7 @@ export function simulateLeagueGauntlet(state, opts = {}) {
   const endIdx = mode === "single" ? cl.activeStageIdx : CHAMPION_LEAGUE_STAGES.length - 1;
 
   const log = [
-    `— 冠军联盟四天王殿堂赛（${mode === "full" ? "五连战登顶挑战" : `第 ${startIdx + 1}/5 殿逐关挑战`}）—`,
+    `— 星冠殿堂挑战赛（${mode === "full" ? "五连战登顶挑战" : `第 ${startIdx + 1}/5 殿逐关挑战`}）—`,
     `阵容加成：总增伤 +${Math.round(synergy.totalOutAdd * 100)}%（羁绊+${Math.round(synergy.bondOutAdd * 100)}% / 调律+${Math.round(synergy.tuningOutAdd * 100)}% / 露营盛宴+${Math.round(synergy.campOutAdd * 100)}% / 星辉配饰+${Math.round(synergy.boutiqueOutAdd * 100)}%）`,
   ];
   if (benchedAway.length) log.push(`本场不出战：${benchedAway.map((b) => `${b.name}（${b.awayLabel}）`).join("、")}`);
@@ -6036,7 +6036,7 @@ export const FISHING_EXP_PER_FISH = 40;
 
 export const FISHING_SECTIONS = Object.freeze([
   { id: "willowBay", name: "柳荫浅湾", elements: Object.freeze(["water", "grass"]), desc: "垂柳把影子铺在水面上，水流最温柔的一段。" },
-  { id: "pebbleRapids", name: "卵石急滩", elements: Object.freeze(["stone", "electric"]), desc: "卵石滩上水花噼啪作响，偶尔能看见电光一闪。" },
+  { id: "pebbleRapids", name: "卵石急滩", elements: Object.freeze(["stone", "electric"]), desc: "卵石滩上水花噼啪作响，偶尔蹿起一小串电火花。" },
   { id: "mapleFalls", name: "枫红瀑潭", elements: Object.freeze(["fire", "wind"]), desc: "红枫叶顺着瀑布落进深潭，风一吹水面就起涟漪。" },
   { id: "fireflyPool", name: "萤火回水潭", elements: Object.freeze(["light", "dark", "mystic"]), desc: "回水湾一到傍晚就浮起萤光，传说有只在梦里见过的鱼。" },
 ]);

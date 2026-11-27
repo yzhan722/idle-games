@@ -1,5 +1,7 @@
 # Player Fun Loop Plan — 一次性推进
 
+> 历史文档：文中第三方作品的名称、角色、地名、数值只作研究记录，**不得取用**（ML-COM1，见 `docs/RENAME_CHECKLIST.md`）。
+
 > Date: 2026-07-13  
 > Source: `mengling-player-tab-eval-2026-07-13`（玩家视角全标签评估）  
 > Mode: **马拉松一次推完** · 不做中间停顿 · 不 commit 除非你要求

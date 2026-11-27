@@ -73,7 +73,7 @@ export function bearerToken(req) {
   return m ? clampStr(m[1], 256) : "";
 }
 
-// ponytail: 90d TTL via created_at only — no schema migration; upgrade = expires_at column if need revoke-before-TTL
+// 90 天到期看 created_at；提前失效看 token_version（见 revokeAllSessions）
 export const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 export function isSessionExpired(createdAt, now = nowMs()) {
@@ -82,33 +82,74 @@ export function isSessionExpired(createdAt, now = nowMs()) {
   return now - t > SESSION_TTL_MS;
 }
 
+/** 还没跑 migrations/009 的库：没有 token_version 列，按旧写法走（不因为先部署后迁移而全员掉线） */
+const lacksTokenVersion = (e) => /no such column|has no column named/i.test(String(e?.message || e));
+
 export async function requireUser(db, req) {
   const token = bearerToken(req);
   if (!token) return null;
-  const row = await dbFirst(
-    db,
-    `SELECT u.id, u.uid, u.username, s.created_at AS sessionCreatedAt
+  const find = (extra) =>
+    dbFirst(
+      db,
+      `SELECT u.id, u.uid, u.username, s.created_at AS sessionCreatedAt${extra}
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token = ?`,
-    [token]
-  );
+      [token]
+    );
+  let row;
+  try {
+    row = await find(", u.token_version AS userVersion, s.token_version AS sessionVersion");
+  } catch (e) {
+    if (!lacksTokenVersion(e)) throw e;
+    row = await find("");
+  }
   if (!row) return null;
-  if (isSessionExpired(row.sessionCreatedAt)) {
+  if (isSessionExpired(row.sessionCreatedAt) || !(await tokenVersionOk(db, token, row))) {
     await destroySession(db, token);
     return null;
   }
   return { id: row.id, uid: row.uid, username: row.username };
 }
 
-export async function createSession(db, userId) {
+/** 令牌版本要与账号一致；迁移前签发的令牌没有版本号，账号没吊销过才认，并补上版本号（只兼容这一次） */
+async function tokenVersionOk(db, token, row) {
+  if (row.userVersion === undefined) return true;
+  const version = Number(row.userVersion) || 0;
+  if (row.sessionVersion === null) {
+    if (version !== 0) return false;
+    await dbRun(db, "UPDATE sessions SET token_version = 0 WHERE token = ? AND token_version IS NULL", [token]);
+    return true;
+  }
+  return Number(row.sessionVersion) === version;
+}
+
+/** version 取验密码时读到的账号版本：验完密码到签发之间被吊销的话，这枚令牌也无效 */
+export async function createSession(db, userId, version = 0) {
   const token = newToken();
-  await dbRun(db, "INSERT INTO sessions(token, user_id, created_at) VALUES(?, ?, ?)", [
-    token,
-    userId,
-    nowMs(),
-  ]);
+  try {
+    await dbRun(db, "INSERT INTO sessions(token, user_id, created_at, token_version) VALUES(?, ?, ?, ?)", [
+      token,
+      userId,
+      nowMs(),
+      Number(version) || 0,
+    ]);
+  } catch (e) {
+    if (!lacksTokenVersion(e)) throw e;
+    await dbRun(db, "INSERT INTO sessions(token, user_id, created_at) VALUES(?, ?, ?)", [token, userId, nowMs()]);
+  }
   return token;
+}
+
+/** 退出所有设备：账号版本 +1 并删掉全部会话（改密码由 migrations/010 的触发器 +1；注销时账号与会话在同一批里删掉） */
+export async function revokeAllSessions(db, userId) {
+  const drop = () => db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId);
+  try {
+    await db.batch([db.prepare("UPDATE users SET token_version = token_version + 1 WHERE id = ?").bind(userId), drop()]);
+  } catch (e) {
+    if (!lacksTokenVersion(e)) throw e;
+    await db.batch([drop()]);
+  }
 }
 
 export async function destroySession(db, token) {

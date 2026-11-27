@@ -3,6 +3,7 @@
 // 注：含 DOM/网络，放 modules/app/（非 systems 纯函数）
 
 import { bossHudLine } from "../systems/world_presence.js";
+import { displayName, maskText } from "../name_filter.js";
 
 export function createTickerSystem({
   getElTicker,
@@ -224,7 +225,7 @@ export function createTickerSystem({
           TICKER_SEEN_EVENT_IDS.add(id);
           if (shouldSuppressTickerMsg(msg)) continue;
           if (ts > 0 && now - ts > maxAgeMs) continue;
-          enqueueLocal(type, msg, { eventId: id });
+          enqueueLocal(type, maskText(msg), { eventId: id }); // 旧服务器 / 旧数据：屏蔽词在这里兜底打码
         }
       }
       TICKER_LAST_ID = Math.max(TICKER_LAST_ID, lastId);
@@ -255,7 +256,7 @@ export function createTickerSystem({
   function pushTickerEvent(type, msg) {
     const ui = typeof getUi === "function" ? getUi() : null;
     const base = lbBaseUrl();
-    const name = typeof ui?.lbName === "string" && ui.lbName.trim() ? ui.lbName.trim() : "育灵师";
+    const name = displayName(typeof ui?.lbName === "string" ? ui.lbName : "");
     if (shouldSuppressTickerMsg(msg)) return;
     const full = String(`${name}：${String(msg || "")}`).slice(0, 200);
     // 本地立刻可见（不等服务端 pull / 不依赖登录）

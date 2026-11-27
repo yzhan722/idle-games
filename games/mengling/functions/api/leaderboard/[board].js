@@ -1,5 +1,7 @@
+import { cleanAvatar } from "../_avatar.js";
 import { dbAll, getDb, handleOptions, json } from "../_db.js";
 import { intOr } from "../_uid.js";
+import { displayName } from "../../../modules/name_filter.js";
 
 const BOARD_COL = {
   dex: "dexCount",
@@ -50,9 +52,10 @@ export async function onRequest(context) {
       rank: i + 1,
       score: Number(r.score) || 0,
       attrs: {
-        ownerName: r.name || "",
+        // 旧数据读出时也过一遍屏蔽词
+        ownerName: r.name ? displayName(r.name) : "",
         uid: r.uid || "",
-        avatarDataUrl: r.avatarDataUrl || "",
+        avatarDataUrl: cleanAvatar(r.avatarDataUrl),
         ...(board === "power" ? { topMons } : {}),
       },
     };

@@ -1,5 +1,6 @@
 import { buffLevel, decayedRemaining, ensureBuffRows, SERVER_BUFF_KEYS } from "../../_buffs.js";
 import { dbAll, dbFirst, dbRun, getDb, handleOptions, json, nowMs } from "../../_db.js";
+import { displayName } from "../../../../modules/name_filter.js";
 
 export async function onRequest(context) {
   const req = context.request;
@@ -29,7 +30,7 @@ export async function onRequest(context) {
       remainingSec: rem,
       contributors: contrib.map((c) => ({
         uid: c.uid,
-        name: c.name,
+        name: displayName(c.name), // 旧数据读出时也过一遍屏蔽词
         sec: Number(c.sec) || 0,
       })),
     });

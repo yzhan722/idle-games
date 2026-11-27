@@ -1,5 +1,6 @@
 import { requireUser } from "../_auth.js";
 import { dbFirst, dbRun, getDb, handleOptions, json, nowMs, readJson } from "../_db.js";
+import { checkRateLimit } from "../_rate_limit.js";
 import { intOr } from "../_uid.js";
 
 function pair(a, b) {
@@ -16,6 +17,11 @@ export async function onRequest(context) {
   const user = await requireUser(db, req);
   if (!user) return json({ error: "unauthorized" }, { status: 401, req });
   const uid = user.uid;
+
+  const rl = await checkRateLimit(db, `friends/accept:${uid}`, { limit: 30, windowSec: 60 });
+  if (!rl.ok) {
+    return json({ error: "rate limit exceeded", retryAfterSec: rl.retryAfterSec }, { status: 429, req });
+  }
 
   const body = await readJson(req);
   const requestId = intOr(body?.requestId, 0);

@@ -18,7 +18,7 @@ assert(looksBrokenName("allf5fec93a50"), "hash stub allf5… should be broken");
 assert(looksBrokenName("qae8166adc59"), "qa… stub should be broken");
 assert(looksBrokenName(""), "empty broken");
 assert(!looksBrokenName("LeafGrove"), "LeafGrove ok");
-assert(!looksBrokenName("训练家小明"), "CJK name ok");
+assert(!looksBrokenName("育灵师小明"), "CJK name ok");
 
 const mapped = displayTrainerId("allf5fec93a50", "u1");
 assert(mapped && mapped !== "allf5fec93a50", `display remap got ${mapped}`);

@@ -1,25 +1,11 @@
-// 存档初始化：主存档 → 备份 → 新档（SECTION:STATE_INIT 拆出 · v0.7.58）
+// 存档初始化：主存档 → 备份 → 新档（SECTION:STATE_INIT 拆出 · v0.7.59）
 // 维护者窗口：A
 
 import { defaultState, loadFromRaw } from "../state.js";
-import { getBeastTier } from "../beast_defs.js";
 import { decodeSaveText } from "../save_codec.js";
 import { STORAGE_KEY, STORAGE_BACKUP_KEY, readLocalStorage } from "./storage.js";
 
-export const GAME_STATE_SYNC_VERSION = "0.7.58";
-
-// 迁移：根据最新 capture_rate 规则，重算所有已存在萌灵实例的稀有度
-function migrateMonTiers(state) {
-  if (!state || !state.mons || !Array.isArray(state.mons.list)) return;
-  for (const m of state.mons.list) {
-    if (!m || typeof m.dex !== "number") continue;
-    try {
-      m.tier = getBeastTier(m.dex);
-    } catch {
-      // 保底：如果计算失败，维持原 tier
-    }
-  }
-}
+export const GAME_STATE_SYNC_VERSION = "0.7.63";
 
 // 确保所有道具资源都存在（兼容旧存档）
 const ENSURE_RESOURCES = [
@@ -71,7 +57,6 @@ export function initGameState() {
     state = defaultState();
   }
 
-  migrateMonTiers(state);
   ensureResourceDefaults(state);
 
   return { state, autosaveEnabled };

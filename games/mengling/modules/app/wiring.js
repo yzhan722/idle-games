@@ -7,31 +7,21 @@ import { TYPE_SKILLS } from "../type_skills.js";
 import { renderBeastIcon } from "../sprites.js";
 import { BUILDING_MAX_LEVEL } from "../state.js";
 import {
-  defaultReqLvlByStage,
-  getEvoMap,
-  getEvoReqLevel,
-  isAffectionEvo,
+  evoConditionText,
+  getEvoStatus,
+  getEvoTargets,
   isSameEvoFamily,
-  isTradeEvo,
-  stageIndex,
 } from "../evo_utils.js";
 import { clampStar, getStarUpgradeNeed, getStarUpgradeGate, meetsStarUpgradeGate, renderStars } from "../stars.js";
 import { bumpEraCounter } from "../systems/era.js";
 import { canClaimDexRegion, markDexRegionClaimed } from "../systems/gameplay_fun.js";
 import { LB_NAME_KEY, LB_AVATAR_KEY } from "./storage.js";
 
-import { initDexTab } from "../tabs/dex_tab.js";
 import { initBuildingsTab } from "../tabs/buildings_tab.js";
 import { initTechTab } from "../tabs/tech_tab.js";
-import { initFutureTab } from "../tabs/future_tab.js";
 import { createRenderBonfireActions, initBonfireTab } from "../tabs/bonfire_tab.js";
 import { initCaptureTab } from "../tabs/capture_tab.js";
-import { initMonsTab } from "../tabs/mons_tab.js";
-import { createRenderItems } from "../tabs/items_tab.js";
-import { initFunctionsTab, createRenderFunctions } from "../tabs/functions_tab.js";
-import { initLeaderboardTab } from "../tabs/leaderboard_tab.js";
-import { createRenderPve } from "../tabs/pve_tab.js";
-import { createRenderHelp } from "../tabs/help_tab.js";
+import { createLazyPanel, preloadWhenIdle } from "./lazy_panel.js";
 import { createItemUsage } from "../item_usage.js";
 import { createTabController } from "../tabs/tabs_controller.js";
 import { createTick } from "../tick.js";
@@ -40,10 +30,6 @@ import { createRenderLog } from "../render/log.js";
 import { createRenderBuildings } from "../render/buildings.js";
 import { createRenderTech } from "../render/tech.js";
 import { createRenderCapture } from "../render/capture.js";
-import { createRenderMons } from "../render/mons.js";
-import { createRenderDex } from "../render/dex.js";
-import { createRenderFutureShop } from "../render/future.js";
-import { createRenderLeaderboard } from "../render/leaderboard.js";
 import { createRenderServerBuffBar } from "../render/server_buff_bar.js";
 import { createRenderOverlays, bindOverlayEvents } from "../render/overlays.js";
 
@@ -56,7 +42,7 @@ export function initGameUi(ctx) {
     markOverlaysDirty, syncEraProgress, tryAdvanceEra,
     getSpeciesByPid, getMonCurrentStats, createMonInstance, addExpToMon, evolveMon, expNeedForLevel, monPower,
     dexCaughtCount, computeDexEffects, computeTechEffects, getBuildingCost, getResearchCost, computeResearchTimeSec,
-    getResearchEfficiency, canAfford, pay, addRes, getPokeballMakeCost, canStartResearch, startResearchByTid,
+    getResearchEfficiency, canAfford, pay, addRes, getOrbMakeCost, canStartResearch, startResearchByTid,
     tryAutoResearch, computeDerived, dexCaughtUnique,
     pickRandomBeast, awardCaughtBeast, doCatch,
     getCaptureAreas, getUnlockedCaptureAreas, ensureCaptureAreaValid, getActiveCaptureArea, getCapturePool,
@@ -77,34 +63,11 @@ export function initGameUi(ctx) {
 
   const renders = {};
 
-  initDexTab({
-    ui,
-    elDexArea: els.elDexArea,
-    elDexSearch: els.elDexSearch,
-    elDexOnlyCaught: els.elDexOnlyCaught,
-    elDexOnlyMissing: els.elDexOnlyMissing,
-    elDexOnlyShiny: els.elDexOnlyShiny,
-    elDexPrev: els.elDexPrev,
-    elDexNext: els.elDexNext,
-    elDexList: els.elDexList,
-    elDexSummary: els.elDexSummary,
-    markDexDirty,
-    getState,
-    addRes,
-    addLog,
-    render: () => render(),
-    setActiveTab: (name) => {
-      try {
-        document.querySelector(`.tab[data-tab="${name}"]`)?.click();
-      } catch {}
-    },
-  });
-
   initBonfireTab({
     elBonfireActions: els.elBonfireActions,
     elBtnGather: els.elBtnGather,
     ui,
-    getPokeballMakeCost,
+    getOrbMakeCost,
     canAfford,
     pay,
     addRes,
@@ -123,11 +86,10 @@ export function initGameUi(ctx) {
       bumpEraCounter(getState(), "gather_total", 1);
       // ponytail: era berry quest counts gather yield even when warehouse is full
       bumpEraCounter(getState(), "berry_earned", intended > 0 ? intended : catnipGained);
-      analytics.track("gather_click", { catnipGained: catnipGained ?? 0 });
       syncEraProgress();
       markCaptureDirty();
     },
-    onPokeballCraft: (qty) => {
+    onOrbCraft: (qty) => {
       bumpEraCounter(getState(), "pokeball_earned", qty);
       syncEraProgress();
       markCaptureDirty();
@@ -180,29 +142,6 @@ export function initGameUi(ctx) {
   // 暴露到全局以便事件处理
   window.itemUsage = itemUsage;
 
-  renders.renderItems = createRenderItems({
-    defs,
-    getState,
-    itemUsage,
-    ui,
-    render,
-    markMonsDirty,
-    addLog,
-  });
-
-  renders.renderHelp = createRenderHelp({
-    elHelp: els.elHelp,
-    ui,
-    escapeHtml,
-    getState,
-    getCaptureAreas,
-    dexCaughtUnique,
-    defs,
-    addRes,
-    addLog,
-    render: () => render(),
-  });
-
   initCaptureTab({
     elCaptureArea: els.elCaptureArea,
     elCaptureInfo: els.elCaptureInfo,
@@ -211,7 +150,7 @@ export function initGameUi(ctx) {
     getState,
     clamp,
     randFloat,
-    getPokeballMakeCost,
+    getOrbMakeCost,
     canAfford,
     pay,
     addRes,
@@ -227,7 +166,7 @@ export function initGameUi(ctx) {
     awardCaughtBeast,
     doCatch,
     pushTickerEvent: ctx.pushTickerEvent,
-    onPokeballCraft: (qty) => {
+    onOrbCraft: (qty) => {
       bumpEraCounter(getState(), "pokeball_earned", qty);
       syncEraProgress();
       markCaptureDirty();
@@ -239,6 +178,7 @@ export function initGameUi(ctx) {
       const pick = pool[Math.floor(randFloat() * pool.length)] || pool[0];
       return pick ? createMonInstance(pick) : null;
     },
+    onPrestige: () => analytics.trackOnce("first_rebirth", { already: (getState().era?.prestigeCount || 0) > 1 }),
   });
 
   initBuildingsTab({
@@ -261,47 +201,6 @@ export function initGameUi(ctx) {
     startResearchByTid,
     tryAutoResearch,
     render,
-  });
-
-  const renderFunctionsImpl = createRenderFunctions({
-    elFunctionsTraining: els.elFunctionsTraining,
-    ui,
-    TYPE_ZH: ctx.TYPE_ZH,
-    getBeastDataByDex,
-    getSpeciesByPid,
-    getMonCurrentStats,
-    computeTechEffects,
-    clamp,
-    escapeHtml,
-    fmtDuration,
-    expNeedForLevel0: expNeedForLevel,
-    monPower,
-    renderBeastIcon,
-    markFunctionsDirty,
-    markMonListDirty,
-    addLog,
-    render,
-    getState,
-  });
-  renders.renderFunctions = () => renderFunctionsImpl();
-
-  renders.renderPve = createRenderPve({
-    elPveList: els.elPveList,
-    ui,
-    clamp,
-    escapeHtml,
-    monPower,
-    renderBeastIcon,
-    getMonCurrentStats,
-    getBeastDataByDex,
-    markPveDirty,
-    addLog,
-    addRes,
-    addExpToMon,
-    render,
-    getState,
-    TYPE_ZH: ctx.TYPE_ZH,
-    dexCaughtUnique,
   });
 
   renders.renderResources = createRenderResources({
@@ -332,14 +231,6 @@ export function initGameUi(ctx) {
     getState,
   });
 
-  renders.renderFutureShop = createRenderFutureShop({
-    elFutureShop: els.elFutureShop,
-    ui,
-    defs,
-    fmt,
-    getState,
-  });
-
   const tick = createTick({
     ui,
     defs,
@@ -356,7 +247,7 @@ export function initGameUi(ctx) {
     getBuildingCost,
     canAfford,
     pay,
-    getPokeballMakeCost,
+    getOrbMakeCost,
     getState,
     pushTickerEvent: ctx.pushTickerEvent,
   });
@@ -377,7 +268,7 @@ export function initGameUi(ctx) {
     getUnlockedCaptureAreas,
     getActiveCaptureArea,
     dexCaughtUnique,
-    getPokeballMakeCost,
+    getOrbMakeCost,
     canAfford,
     computeTechEffects,
     baseCatchChanceByDex,
@@ -391,164 +282,319 @@ export function initGameUi(ctx) {
     getState,
   });
 
-  renders.renderMons = createRenderMons({
-    elMonList: els.elMonList,
-    elMonDetail: els.elMonDetail,
-    elMonBack: els.elMonBack,
-    elMonRegion: els.elMonRegion,
-    elMonType: els.elMonType,
-    elMonPrev: els.elMonPrev,
-    elMonNext: els.elMonNext,
-    elMonPageInfo: els.elMonPageInfo,
-    ui,
-    clamp,
-    escapeHtml,
-    pad3,
-    renderBeastIcon,
-    TYPE_ZH: ctx.TYPE_ZH,
-    TYPE_SKILLS,
-    monPower,
-    clampStar,
-    renderStars,
-    getStarUpgradeNeed,
-    getStarUpgradeGate,
-    meetsStarUpgradeGate,
-    isSameEvoFamily,
-    getMonCurrentStats,
-    expNeedForLevel,
-    getBeastDataByDex,
-    getEvoMap,
-    stageIndex,
-    getSpeciesByPid,
-    getEvoReqLevel,
-    defaultReqLvlByStage,
-    isTradeEvo,
-    isAffectionEvo,
-    getState,
-  });
-
-  initMonsTab({
-    elMonBack: els.elMonBack,
-    elMonList: els.elMonList,
-    elMonDetail: els.elMonDetail,
-    elMonRegion: els.elMonRegion,
-    elMonType: els.elMonType,
-    elMonSort: els.elMonSort,
-    elMonPrev: els.elMonPrev,
-    elMonNext: els.elMonNext,
-    ui,
-    clamp,
-    TYPE_ZH: ctx.TYPE_ZH,
-    TYPE_SKILLS,
-    monPower,
-    clampStar,
-    getStarUpgradeNeed,
-    getStarUpgradeGate,
-    meetsStarUpgradeGate,
-    isSameEvoFamily,
-    stageIndex,
-    getEvoReqLevel,
-    defaultReqLvlByStage,
-    isTradeEvo,
-    isAffectionEvo,
-    evolveMon,
-    addRes,
-    addLog,
-    render,
-    markMonsDirty,
-    markMonListDirty,
-    getState,
-    pushTickerEvent: ctx.pushTickerEvent,
-    lbFetchJson,
-    lbBaseUrl,
-    onBossBullyMaybeReward,
-    getBeastDataByDex,
-  });
-
-  initFunctionsTab({
-    elFunctionsTraining: els.elFunctionsTraining,
-    ui,
-    clamp,
-    fmtDuration,
-    monPower,
-    getBeastDataByDex,
-    markFunctionsDirty,
-    markMonListDirty,
-    markMonsDirty,
-    addExpToMon,
-    addLog,
-    addRes,
-    render,
-    getState,
-    getSpeciesByPid,
-    createMonInstance,
-  });
-
-  initLeaderboardTab({
-    elLeaderboard: els.elLeaderboard,
-    ui,
-    LB_NAME_KEY,
-    LB_AVATAR_KEY,
-    avatarFileToDataUrl,
-    markLeaderboardDirty,
-    render,
-    submitScoreAndRefresh,
-    getState,
-    addRes,
-    addLog,
-    dexCaughtUnique,
-    activateTab,
-  });
-
-  initFutureTab({
-    elFutureShop: els.elFutureShop,
-    ui,
-    defs,
-    getState,
-    addRes,
-    addLog,
-    render,
-  });
-
-  renders.renderDex = createRenderDex({
-    elDexSummary: els.elDexSummary,
-    elDexList: els.elDexList,
-    elDexPrev: els.elDexPrev,
-    elDexNext: els.elDexNext,
-    elDexPageInfo: els.elDexPageInfo,
-    elDexArea: els.elDexArea,
-    elDexRegionInfo: els.elDexRegionInfo,
-    ui,
-    defs,
-    getState,
-    clamp,
-    pad3,
-    escapeHtml,
-    renderBeastIcon,
-    dexCaughtCount,
-    computeDexEffects,
-    getCaptureAreas,
-    canClaimDexRegion,
-    markDexRegionClaimed,
-  });
-
-  renders.renderLeaderboard = createRenderLeaderboard({
-    elLeaderboard: els.elLeaderboard,
-    ui,
-    escapeHtml,
-    fmtDuration,
-    renderBeastIcon,
-    renderOwnerIcon,
-    renderSelfAvatarPreview,
-    trainerIconSrc,
-    dexCaughtUnique,
-    calcTeamPower,
-    calcTotalPower,
-    calcTopMons,
-    getState,
-    ensureLeaderboardAutoRefresh,
-    refreshLeaderboards,
-  });
+  // 打开到才下载的面板：首屏不带它们的模块，空闲时预取（见 lazy_panel.js）；「刷新」前先存一次档
+  const reload = () => {
+    save();
+    window.location.reload();
+  };
+  const lazy = {
+    functions: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../tabs/functions_tab.js${q}`)]),
+      setup: ([{ createRenderFunctions, initFunctionsTab }]) => {
+        initFunctionsTab({
+          elFunctionsTraining: els.elFunctionsTraining,
+          ui,
+          clamp,
+          fmtDuration,
+          monPower,
+          getBeastDataByDex,
+          markFunctionsDirty,
+          markMonListDirty,
+          markMonsDirty,
+          addExpToMon,
+          addLog,
+          addRes,
+          render,
+          getState,
+          getSpeciesByPid,
+          createMonInstance,
+        });
+        return createRenderFunctions({
+          elFunctionsTraining: els.elFunctionsTraining,
+          ui,
+          TYPE_ZH: ctx.TYPE_ZH,
+          getBeastDataByDex,
+          getSpeciesByPid,
+          getMonCurrentStats,
+          computeTechEffects,
+          clamp,
+          escapeHtml,
+          fmtDuration,
+          expNeedForLevel0: expNeedForLevel,
+          monPower,
+          renderBeastIcon,
+          markFunctionsDirty,
+          markMonListDirty,
+          addLog,
+          render,
+          getState,
+        });
+      },
+      getHost: () => els.elFunctionsTraining,
+      isActive: () => ui.activeTab === "functions",
+    }),
+    mons: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../render/mons.js${q}`), import(`../tabs/mons_tab.js${q}`)]),
+      setup: ([{ createRenderMons }, { initMonsTab }]) => {
+        initMonsTab({
+          elMonBack: els.elMonBack,
+          elMonList: els.elMonList,
+          elMonDetail: els.elMonDetail,
+          elMonRegion: els.elMonRegion,
+          elMonType: els.elMonType,
+          elMonSort: els.elMonSort,
+          elMonPrev: els.elMonPrev,
+          elMonNext: els.elMonNext,
+          ui,
+          clamp,
+          TYPE_ZH: ctx.TYPE_ZH,
+          TYPE_SKILLS,
+          monPower,
+          clampStar,
+          getStarUpgradeNeed,
+          getStarUpgradeGate,
+          meetsStarUpgradeGate,
+          isSameEvoFamily,
+          getEvoStatus,
+          evolveMon,
+          addRes,
+          addLog,
+          render,
+          markMonsDirty,
+          markMonListDirty,
+          getState,
+          pushTickerEvent: ctx.pushTickerEvent,
+          lbFetchJson,
+          lbBaseUrl,
+          onBossBullyMaybeReward,
+          getBeastDataByDex,
+        });
+        return createRenderMons({
+          elMonList: els.elMonList,
+          elMonDetail: els.elMonDetail,
+          elMonBack: els.elMonBack,
+          elMonRegion: els.elMonRegion,
+          elMonType: els.elMonType,
+          elMonPrev: els.elMonPrev,
+          elMonNext: els.elMonNext,
+          elMonPageInfo: els.elMonPageInfo,
+          ui,
+          clamp,
+          escapeHtml,
+          pad3,
+          renderBeastIcon,
+          TYPE_ZH: ctx.TYPE_ZH,
+          TYPE_SKILLS,
+          monPower,
+          clampStar,
+          renderStars,
+          getStarUpgradeNeed,
+          getStarUpgradeGate,
+          meetsStarUpgradeGate,
+          isSameEvoFamily,
+          getMonCurrentStats,
+          expNeedForLevel,
+          getBeastDataByDex,
+          getSpeciesByPid,
+          getEvoTargets,
+          getEvoStatus,
+          evoConditionText,
+          getState,
+        });
+      },
+      getHost: () => els.elMonList,
+      isActive: () => ui.activeTab === "mons",
+    }),
+    dex: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../render/dex.js${q}`), import(`../tabs/dex_tab.js${q}`)]),
+      setup: ([{ createRenderDex }, { initDexTab }]) => {
+        initDexTab({
+          ui,
+          elDexArea: els.elDexArea,
+          elDexSearch: els.elDexSearch,
+          elDexOnlyCaught: els.elDexOnlyCaught,
+          elDexOnlyMissing: els.elDexOnlyMissing,
+          elDexOnlyShiny: els.elDexOnlyShiny,
+          elDexPrev: els.elDexPrev,
+          elDexNext: els.elDexNext,
+          elDexList: els.elDexList,
+          elDexSummary: els.elDexSummary,
+          markDexDirty,
+          getState,
+          addRes,
+          addLog,
+          render: () => render(),
+          setActiveTab: (name) => {
+            try {
+              document.querySelector(`.tab[data-tab="${name}"]`)?.click();
+            } catch {}
+          },
+        });
+        return createRenderDex({
+          elDexSummary: els.elDexSummary,
+          elDexList: els.elDexList,
+          elDexPrev: els.elDexPrev,
+          elDexNext: els.elDexNext,
+          elDexPageInfo: els.elDexPageInfo,
+          elDexArea: els.elDexArea,
+          elDexRegionInfo: els.elDexRegionInfo,
+          ui,
+          defs,
+          getState,
+          clamp,
+          pad3,
+          escapeHtml,
+          renderBeastIcon,
+          dexCaughtCount,
+          computeDexEffects,
+          getCaptureAreas,
+          canClaimDexRegion,
+          markDexRegionClaimed,
+        });
+      },
+      getHost: () => els.elDexSummary,
+      isActive: () => ui.activeTab === "dex",
+    }),
+    future: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../render/future.js${q}`), import(`../tabs/future_tab.js${q}`)]),
+      setup: ([{ createRenderFutureShop }, { initFutureTab }]) => {
+        initFutureTab({
+          elFutureShop: els.elFutureShop,
+          ui,
+          defs,
+          getState,
+          addRes,
+          addLog,
+          render,
+        });
+        return createRenderFutureShop({
+          elFutureShop: els.elFutureShop,
+          ui,
+          defs,
+          fmt,
+          getState,
+        });
+      },
+      getHost: () => els.elFutureShop,
+      isActive: () => ui.activeTab === "future",
+    }),
+    items: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../tabs/items_tab.js${q}`)]),
+      setup: ([{ createRenderItems }]) => {
+        return createRenderItems({
+          defs,
+          getState,
+          itemUsage,
+          ui,
+          render,
+          markMonsDirty,
+          addLog,
+        });
+      },
+      getHost: () => document.getElementById("items"),
+      isActive: () => ui.activeTab === "future",
+    }),
+    leaderboard: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../render/leaderboard.js${q}`), import(`../tabs/leaderboard_tab.js${q}`)]),
+      setup: ([{ createRenderLeaderboard }, { initLeaderboardTab }]) => {
+        initLeaderboardTab({
+          elLeaderboard: els.elLeaderboard,
+          ui,
+          LB_NAME_KEY,
+          LB_AVATAR_KEY,
+          avatarFileToDataUrl,
+          markLeaderboardDirty,
+          render,
+          submitScoreAndRefresh,
+          getState,
+          addRes,
+          addLog,
+          dexCaughtUnique,
+          activateTab,
+        });
+        return createRenderLeaderboard({
+          elLeaderboard: els.elLeaderboard,
+          ui,
+          escapeHtml,
+          fmtDuration,
+          renderBeastIcon,
+          renderOwnerIcon,
+          renderSelfAvatarPreview,
+          trainerIconSrc,
+          dexCaughtUnique,
+          calcTeamPower,
+          calcTotalPower,
+          calcTopMons,
+          getState,
+          ensureLeaderboardAutoRefresh,
+          refreshLeaderboards,
+        });
+      },
+      getHost: () => els.elLeaderboard,
+      isActive: () => ui.activeTab === "leaderboard",
+    }),
+    pve: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../tabs/pve_tab.js${q}`)]),
+      setup: ([{ createRenderPve }]) => {
+        return createRenderPve({
+          elPveList: els.elPveList,
+          ui,
+          clamp,
+          escapeHtml,
+          monPower,
+          renderBeastIcon,
+          getMonCurrentStats,
+          getBeastDataByDex,
+          markPveDirty,
+          addLog,
+          addRes,
+          addExpToMon,
+          render,
+          getState,
+          TYPE_ZH: ctx.TYPE_ZH,
+          dexCaughtUnique,
+          onPveAttempt: () => analytics.trackOnce("first_battle", { already: Object.keys(getState().pve?.progress || {}).length > 0 }),
+        });
+      },
+      getHost: () => els.elPveList,
+      isActive: () => ui.activeTab === "pve",
+    }),
+    help: createLazyPanel({
+      reload,
+      load: (q) => Promise.all([import(`../tabs/help_tab.js${q}`)]),
+      setup: ([{ createRenderHelp }]) => {
+        return createRenderHelp({
+          elHelp: els.elHelp,
+          ui,
+          escapeHtml,
+          getState,
+          getCaptureAreas,
+          dexCaughtUnique,
+          defs,
+          addRes,
+          addLog,
+          render: () => render(),
+        });
+      },
+      getHost: () => els.elHelp,
+      isActive: () => ui.activeTab === "options",
+    }),
+  };
+  renders.renderFunctions = lazy.functions.render;
+  renders.renderMons = lazy.mons.render;
+  renders.renderDex = lazy.dex.render;
+  renders.renderFutureShop = lazy.future.render;
+  renders.renderItems = lazy.items.render;
+  renders.renderLeaderboard = lazy.leaderboard.render;
+  renders.renderPve = lazy.pve.render;
+  renders.renderHelp = lazy.help.render;
 
   renders.renderLog = createRenderLog({
     elLog: els.elLog,
@@ -586,5 +632,7 @@ export function initGameUi(ctx) {
     claimBossBullyReward,
   });
 
-  return { renders, tabController, itemUsage, tick };
+  const preloadPanels = (extra = []) => preloadWhenIdle([lazy.mons, lazy.functions, lazy.dex, lazy.future, lazy.items, lazy.leaderboard, ...extra, lazy.pve, lazy.help]);
+
+  return { renders, tabController, itemUsage, tick, preloadPanels };
 }

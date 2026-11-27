@@ -10,12 +10,12 @@ import {
   getResearchCost as getResearchCost0,
   computeResearchTimeSec as computeResearchTimeSec0,
   getResearchEfficiency as getResearchEfficiency0,
-  getPokeballMakeCost as getPokeballMakeCost0,
+  getOrbMakeCost as getOrbMakeCost0,
 } from "../systems/effects.js";
 import { computeDerived as computeDerivedCore } from "../systems/compute_derived.js";
 import { maybeNewbieHandoff } from "../guide.js";
 
-export function createCoreFns({ getState, ui, defs, analytics, addLog, serverBuffMul, activateTab, pushTickerEvent, hint, render }) {
+export function createCoreFns({ getState, ui, defs, addLog, serverBuffMul, activateTab, pushTickerEvent, hint, render }) {
   // ---- 图鉴/科技/建筑 ----
   function dexCaughtCount() {
     return dexCaughtCount0(getState());
@@ -63,8 +63,6 @@ export function createCoreFns({ getState, ui, defs, analytics, addLog, serverBuf
     for (const [rid, v] of Object.entries(cost)) {
       state.res[rid].value = Math.max(0, state.res[rid].value - v);
     }
-    const fc = cost?.futurecoin;
-    if (typeof fc === "number" && Number.isFinite(fc) && fc > 0) analytics.trackFuturecoinSpend(fc, "pay");
   }
 
   function canStartResearch(tid) {
@@ -171,8 +169,8 @@ export function createCoreFns({ getState, ui, defs, analytics, addLog, serverBuf
     if (ui.activeTab === "mons") ui.monsDirty = true;
   }
 
-  function getPokeballMakeCost(qty = 1, opts = null) {
-    return getPokeballMakeCost0(qty, getState(), ui, opts, defs);
+  function getOrbMakeCost(qty = 1, opts = null) {
+    return getOrbMakeCost0(qty, getState(), ui, opts, defs);
   }
 
   // ---- 派生数值 ----
@@ -213,7 +211,7 @@ export function createCoreFns({ getState, ui, defs, analytics, addLog, serverBuf
     startResearchByTid,
     tryAutoResearch,
     addRes,
-    getPokeballMakeCost,
+    getOrbMakeCost,
     computeDerived,
   };
 }

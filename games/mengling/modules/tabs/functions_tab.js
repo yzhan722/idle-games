@@ -5595,7 +5595,7 @@ export function createRenderFunctions({
                 }
               </div>
               <div class="amber-pod-bar__right">
-                <button type="button" class="btn btn--small ${canRefineSelIv ? "btn--primary" : ""}" data-amber-refine-iv="1" ${canRefineSelIv ? "" : "disabled"} title="消耗 ${AMBER_IV_REFINE_COST} 枚远古基因琥珀，立即提升目标伙伴最低单项个体值">琥珀潜能淬炼 (-${AMBER_IV_REFINE_COST}琥珀)</button>
+                <button type="button" class="btn btn--small ${canRefineSelIv ? "btn--primary" : ""}" data-amber-refine-iv="1" ${canRefineSelIv ? "" : "disabled"} title="消耗 ${AMBER_IV_REFINE_COST} 枚远古基因琥珀，立即提升目标伙伴最低单项资质">琥珀潜能淬炼 (-${AMBER_IV_REFINE_COST}琥珀)</button>
                 ${
                   selectedAmberMon && selAmberImprint?.imprinted
                     ? `<button type="button" class="btn btn--small btn--ghost" data-amber-clear-mon="${selectedAmberMon.id}">卸下伙伴印记</button>`
@@ -5839,7 +5839,7 @@ export function createRenderFunctions({
       `);
     }
 
-    // ========== ML-7 Section B: 萌灵「冠军联盟四天王殿堂赛」(Champion League Elite Four & Grand Champion Gauntlet) ==========
+    // ========== ML-7 Section B: 萌灵「星冠殿堂挑战赛」(Star Crown Hall Gauntlet) ==========
     const hideChampionLeague = Boolean(ui.functionsHideChampionLeague);
     const resolveLeagueTypes = (m) =>
       Array.isArray(m?.types) && m.types.length ? m.types : getBeastDataByDex?.(m?.dex)?.types || ["wind"];
@@ -5863,12 +5863,12 @@ export function createRenderFunctions({
         <div class="row__left">
           <div class="row__title row__titleLine">
             ${renderUiIcon("leagueEliteCrest", 20)}
-            <span>冠军联盟四天王殿堂赛</span>
+            <span>星冠殿堂挑战赛</span>
             <span class="tag tag--hof-ribbon">${renderUiIcon("leagueChampionRibbon", 14)}<span>殿堂阶位 Tier ${leagueBonus.hallOfFameTier}/${CHAMPION_LEAGUE_MAX_TIER}</span></span>
             <span class="tag">累计登顶 ${leagueBonus.championClears} 次</span>
             <span class="tag">当前驻殿 ${champLeague.activeStageIdx + 1}/${CHAMPION_LEAGUE_STAGES.length}</span>
           </div>
-          <div class="row__desc">派 3 位伙伴组成冠军小队，连续挑战四天王与圣殿总冠军。</div>
+          <div class="row__desc">派 3 位伙伴组成冠军小队，连续挑战四殿主与圣殿总冠军。</div>
         </div>
         <div class="row__right league-header__btns">
           <button type="button" class="btn btn--small" data-func-league-auto="1" ${list.length > 0 ? "" : "disabled"}>一键优选三灵</button>
@@ -5957,7 +5957,7 @@ export function createRenderFunctions({
           : lastRun.stoppedTitle
             ? `最近战报：连闯 ${lastRun.stagesCleared} 殿后止步于【${lastRun.stoppedTitle}】（获闪光祈愿星砂 +${lastRun.rewardsEarned?.shinyStarSand || 0}）`
             : `最近战报：已攻克 ${lastRun.stagesCleared} 殿（获闪光祈愿星砂 +${lastRun.rewardsEarned?.shinyStarSand || 0}）`
-        : "尚未发起殿堂挑战：集结元素羁绊、薄荷调律、露营盛宴与星辉配饰，向四天王与圣殿总冠军发起冲击吧！";
+        : "尚未发起殿堂挑战：集结元素羁绊、薄荷调律、露营盛宴与星辉配饰，向四殿主与圣殿总冠军发起冲击吧！";
 
       const latestHof = champLeague.hallOfFameRecords[0] || null;
       const hofLine = latestHof
@@ -6028,15 +6028,15 @@ export function createRenderFunctions({
 
         funcLeagueModalHtml = `
           <div class="modalOverlay" data-func-league-modal-overlay="1">
-            <div class="modal" role="dialog" aria-modal="true" aria-label="冠军联盟三灵小队编排">
+            <div class="modal" role="dialog" aria-modal="true" aria-label="星冠殿堂三灵小队编排">
               <div class="modal__head">
-                <div class="modal__title">${renderUiIcon("leagueEliteCrest", 20)} <span>冠军联盟三灵编队（${champLeague.squadIds.length}/${CHAMPION_LEAGUE_SQUAD_SIZE}）</span></div>
+                <div class="modal__title">${renderUiIcon("leagueEliteCrest", 20)} <span>星冠殿堂三灵编队（${champLeague.squadIds.length}/${CHAMPION_LEAGUE_SQUAD_SIZE}）</span></div>
                 <div class="modal__headActions">
                   <button type="button" class="btn btn--small" data-func-league-auto="1">一键优选三灵</button>
                   <button type="button" class="btn btn--small" data-func-league-modal-close="1">关闭</button>
                 </div>
               </div>
-              <div class="modal__desc">选派最多 3 位伙伴出征四天王殿堂赛（出征席位自动受防放生保护；搭配元素双灵共鸣、薄荷调律与星辉配饰可获巨额连战增幅）。外出中的伙伴（烘焙、气球旅行、垂钓、入梦、泡汤、送信等）不能编入，已在队中的外出伙伴本场不出战。</div>
+              <div class="modal__desc">选派最多 3 位伙伴出征星冠殿堂挑战赛（出征席位自动受防放生保护；搭配元素双灵共鸣、薄荷调律与星辉配饰可获巨额连战增幅）。外出中的伙伴（烘焙、气球旅行、垂钓、入梦、泡汤、送信等）不能编入，已在队中的外出伙伴本场不出战。</div>
               <div class="modal__body">${modalRows || '<div class="muted" style="padding:12px">暂无可编入伙伴。</div>'}</div>
               <div class="actions">
                 <button type="button" class="btn btn--primary" data-func-league-modal-close="1">完成冠军编队</button>
@@ -6666,7 +6666,7 @@ export function createRenderFunctions({
         const powerAfter = calcPowerFn(previewClone);
         const powerDelta = powerAfter - powerBefore;
 
-        const origNatureName = getNatureInfo(targetMon.nature)?.name || "勤奋";
+        const origNatureName = getNatureInfo(targetMon.nature)?.name || "踏实";
         const curTuningText = curNorm ? describeMintTuning(curNorm) : "未调律（全维 1.00x）";
         const draftTuningText = describeMintTuning(draftSpec);
 
@@ -10126,7 +10126,7 @@ export function initFunctionsTab({
         markMonListDirty?.(false);
         markMonsDirty?.();
       } else {
-        addLog("琥珀潜能淬炼条件不足（需至少 2 枚远古基因琥珀且伙伴个体值未满 6V）");
+        addLog("琥珀潜能淬炼条件不足（需至少 2 枚远古基因琥珀且伙伴资质未满）");
       }
       markFunctionsDirty();
       render();
@@ -10274,7 +10274,7 @@ export function initFunctionsTab({
         Array.isArray(m?.types) && m.types.length ? m.types : getBeastDataByDex?.(m?.dex)?.types || ["wind"];
       const res = autofillChampionLeagueSquad(state, resolveTypes, monPower);
       if (res.ok) {
-        addLog(`冠军联盟：已优选 ${res.squadIds.length} 位精锐伙伴组建殿堂挑战小队`, true);
+        addLog(`星冠殿堂：已优选 ${res.squadIds.length} 位精锐伙伴组建殿堂挑战小队`, true);
         markMonListDirty?.(false);
       }
       markFunctionsDirty();
@@ -10310,7 +10310,7 @@ export function initFunctionsTab({
     const funcLeagueResetBtn = ev.target?.closest?.("button[data-func-league-reset]");
     if (funcLeagueResetBtn && elFunctionsTraining.contains(funcLeagueResetBtn)) {
       resetChampionLeagueProgress(state);
-      addLog("冠军联盟：已将逐殿挑战进度重置回第 1 殿「炎狱天王」");
+      addLog("星冠殿堂：已将逐殿挑战进度重置回第 1 殿「炎狱殿主」");
       markFunctionsDirty();
       render();
       return;
@@ -10328,20 +10328,20 @@ export function initFunctionsTab({
         addExpToMon,
       });
       // ML-15：整队外出（squad_away）时给出明确原因；部分外出时提示谁本场不出战
-      if (!res.ok) addLog(res.log?.[0] || "冠军联盟暂不可挑战");
-      else if (res.benchedAway?.length) addLog(`冠军联盟：${res.benchedAway.map((b) => `${b.name}（${b.awayLabel}）`).join("、")}本场不出战`);
+      if (!res.ok) addLog(res.log?.[0] || "星冠殿堂暂不可挑战");
+      else if (res.benchedAway?.length) addLog(`星冠殿堂：${res.benchedAway.map((b) => `${b.name}（${b.awayLabel}）`).join("、")}本场不出战`);
       if (res.ok) {
         const sandGot = res.rewardsEarned?.shinyStarSand || 0;
         if (res.championCleared) {
           addLog(
-            `冠军联盟登顶捷报：连破四天王与圣殿总冠军！获闪光祈愿星砂 +${sandGot}，参战伙伴刻印【冠军殿堂绶带】（殿堂 Tier ${res.hallOfFameTier}）！`,
+            `星冠殿堂登顶捷报：连破四殿主与圣殿总冠军！获闪光祈愿星砂 +${sandGot}，参战伙伴刻印【冠军殿堂绶带】（殿堂 Tier ${res.hallOfFameTier}）！`,
             true,
           );
         } else if (res.win) {
-          addLog(`冠军联盟捷报：成功攻克当前天王殿，获得闪光祈愿星砂 +${sandGot}！`, true);
+          addLog(`星冠殿堂捷报：成功攻克当前殿主厅，获得闪光祈愿星砂 +${sandGot}！`, true);
         } else {
           addLog(
-            `冠军联盟战报：攻克 ${res.stagesCleared} 殿后止步于【${res.stoppedTitle || "四天王"}】${sandGot > 0 ? `（已获星砂 +${sandGot}）` : ""}，提升配饰或烹制盛宴后再战吧！`,
+            `星冠殿堂战报：攻克 ${res.stagesCleared} 殿后止步于【${res.stoppedTitle || "四殿主"}】${sandGot > 0 ? `（已获星砂 +${sandGot}）` : ""}，提升配饰或烹制盛宴后再战吧！`,
           );
         }
         markMonListDirty?.(false);
@@ -11164,7 +11164,7 @@ export function initFunctionsTab({
       if (st && Number.isFinite(monId) && monId > 0) {
         const res = toggleChampionLeagueSquadMon(st, monId);
         if (!res.ok) funcLeagueChk.checked = false;
-        if (!res.ok && res.reason === "mon_away") addLog(`这位伙伴正在${res.awayLabel || "外出"}，不能编入冠军联盟小队`);
+        if (!res.ok && res.reason === "mon_away") addLog(`这位伙伴正在${res.awayLabel || "外出"}，不能编入星冠殿堂小队`);
         markMonListDirty?.(false);
         markFunctionsDirty();
         render();

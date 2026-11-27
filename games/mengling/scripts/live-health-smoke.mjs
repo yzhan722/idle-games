@@ -34,7 +34,7 @@ if (
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        events: [{ event: "session_start", ts: Date.now(), sessionId: "live-health-smoke", props: {} }],
+        events: [{ event: "ops_probe", ts: Date.now() }],
       }),
     });
     if (!r.ok) throw new Error(`status ${r.status}`);

@@ -1,5 +1,7 @@
 # Era Chronicle（图鉴编年史）— Design Spec
 
+> 历史文档：文中第三方作品的名称、角色、地名、数值只作研究记录，**不得取用**（ML-COM1，见 `docs/RENAME_CHECKLIST.md`）。
+
 **Date:** 2026-07-12  
 **Status:** Draft for user review (not implemented)  
 **Game:** mengling-idle  

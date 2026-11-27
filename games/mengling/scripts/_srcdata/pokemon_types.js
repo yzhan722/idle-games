@@ -1,3 +1,4 @@
+// 第三方作品数据快照：只供 scripts/own-numbers-selfcheck.mjs 比对（证明自有数值与它不一致），不进构建、不进发布包、不得取用到新内容（ML-COM1，见 docs/RENAME_CHECKLIST.md）
 // Pokemon types table (dex -> types)
 globalThis.POKEMON_TYPES = {
   1: ["grass","poison"],

@@ -1,4 +1,4 @@
-# DESIGN.md — 宝可梦放置冒险
+# DESIGN.md — 萌灵放置冒险
 
 > Source of truth for UI · Ember Camp Night · v0.40.1+
 > Inferred from live product + design-review 2026-07-11；演进现有气质，不换皮成通用 AI 仪表盘。
@@ -34,7 +34,7 @@
 
 ## Layout
 
-1. **Topbar（两簇）**：左身份（品牌 + 训练家）· 右操作簇（采集主 CTA + 资源筹码横排，容量条 + 分色）
+1. **Topbar（两簇）**：左身份（品牌 + 育灵师）· 右操作簇（采集主 CTA + 资源筹码横排，容量条 + 分色）
 2. **Shell**：左日志（可空但有空态）· 右主舞台
 3. **Tabs**：≤5 主栏 +「更多」；active 用琥珀底 + **底边指示条**
 4. **Rows**：左信息 · 右主操作；费用用 muted chip，勿抢 CTA

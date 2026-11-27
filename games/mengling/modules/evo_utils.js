@@ -80,68 +80,80 @@ function buildEvoPrevMap() {
   return prev;
 }
 
-const EVO_PREV = buildEvoPrevMap();
+let evoPrevOf = null;
+let evoPrevMap = {};
+/** BEAST_EVO 换了就重算（import 时数据可能还没加载） */
+function evoPrev() {
+  const src = globalThis.BEAST_EVO;
+  if (src !== evoPrevOf) {
+    evoPrevOf = src;
+    evoPrevMap = buildEvoPrevMap();
+  }
+  return evoPrevMap;
+}
 
 export function stageIndex(pid) {
   let cur = pid;
   let depth = 0;
-  while (EVO_PREV[cur] && depth < 4) {
-    cur = EVO_PREV[cur];
+  const prev = evoPrev();
+  while (prev[cur] && depth < 4) {
+    cur = prev[cur];
     depth += 1;
   }
   return depth;
 }
 
+/** 家族里走到下一段的默认等级：只在条件表缺项时用（例如旧物种） */
 export function defaultReqLvlByStage(pid) {
-  const st = stageIndex(pid);
-  return st <= 0 ? 16 : st === 1 ? 36 : 50;
+  return 18 + 16 * Math.min(2, stageIndex(pid));
 }
 
-export function getEvoReqLevel(fromPid, toPid) {
-  const req = getEvoReqMap();
-  const row = req && typeof req[fromPid] === "object" ? req[fromPid] : null;
-  const lvl = row ? row[toPid] : null;
-  if (typeof lvl === "number" && Number.isFinite(lvl) && lvl > 0) return Math.floor(lvl);
-  if (lvl === 0) return 0;
-  return null;
+/** 规则调整前的直达关系：只对老伙伴（veteran）保留，让调整前就能走的路还能走 */
+const VETERAN_DIRECT = { p133: ["p196", "p197", "p700"], p079: ["p199"] };
+
+/** 进化条件 { path, lvl, aff, rid }，由 scripts/beast_rules.mjs 生成进 BEAST_EVO_REQ */
+export function getEvoCondition(fromPid, toPid) {
+  const row = getEvoReqMap()[fromPid]?.[toPid];
+  const path = row?.path === "bond" || row?.path === "rope" ? row.path : "stone";
+  return {
+    path,
+    lvl: typeof row?.lvl === "number" && row.lvl > 0 ? Math.floor(row.lvl) : defaultReqLvlByStage(fromPid),
+    aff: path === "bond" && typeof row?.aff === "number" ? Math.max(0, Math.floor(row.aff)) : 0,
+    rid: path === "rope" ? "linkRope" : "evolutionStone",
+  };
 }
 
-const TRADE_EVO_PAIRS = new Set([
-  "p064->p065",
-  "p067->p068",
-  "p075->p076",
-  "p093->p094",
-  "p061->p186",
-  "p079->p199",
-  "p095->p208",
-  "p117->p230",
-  "p123->p212",
-  "p137->p233",
-  "p366->p367",
-  "p366->p368",
-  "p112->p464",
-  "p125->p466",
-  "p126->p467",
-  "p233->p474",
-  "p356->p477",
-]);
-
-export function isTradeEvo(fromPid, toPid) {
-  if (!fromPid || !toPid) return false;
-  return TRADE_EVO_PAIRS.has(`${fromPid}->${toPid}`);
+/** 这只萌灵能变成谁 */
+export function getEvoTargets(mon) {
+  const next = getEvoMap()[mon?.pid];
+  const list = Array.isArray(next) ? next : [];
+  return mon?.veteran ? [...list, ...(VETERAN_DIRECT[mon.pid] ?? [])] : list;
 }
 
-const AFFECTION_EVO_PAIRS = new Set([
-  "p042->p169",
-  "p113->p242",
-  "p175->p176",
-  "p427->p428",
-  "p447->p448",
-  "p133->p196",
-  "p133->p197",
-]);
+/**
+ * 进化检查：列表徽章、详情按钮、点击结算共用这一份。
+ * 老伙伴（veteran，规则调整前就在存档里）不看等级和亲密度，灵晶石、灵契绳任一份即可。
+ */
+export function getEvoStatus(mon, toPid, res) {
+  const cond = getEvoCondition(mon?.pid, toPid);
+  const have = (rid) => (res?.[rid]?.value ?? 0) >= 1;
+  const pass = Boolean(mon?.veteran);
+  const other = cond.rid === "linkRope" ? "evolutionStone" : "linkRope";
+  const rid = pass && !have(cond.rid) && have(other) ? other : cond.rid;
+  const lvl = pass ? 1 : cond.lvl;
+  const aff = pass ? 0 : cond.aff;
+  const lvlOk = (mon?.lvl ?? 0) >= lvl;
+  const affOk = (typeof mon?.affection === "number" ? mon.affection : 0) >= aff;
+  const resOk = have(rid);
+  return { path: cond.path, pass, lvl, aff, rid, lvlOk, affOk, resOk, ok: lvlOk && affOk && resOk };
+}
 
-export function isAffectionEvo(fromPid, toPid) {
-  if (!fromPid || !toPid) return false;
-  return AFFECTION_EVO_PAIRS.has(`${fromPid}->${toPid}`);
+/** 按钮上的条件文字 */
+export function evoConditionText(st) {
+  const parts = [];
+  if (st.pass) parts.push("老伙伴免门槛");
+  else parts.push(`Lv.${st.lvl}+`);
+  if (st.aff > 0) parts.push(`亲密度${st.aff}+`);
+  parts.push(st.pass ? "灵晶石或灵契绳 x1" : st.rid === "linkRope" ? "灵契绳 x1" : "灵晶石 x1");
+  return parts.join(" · ");
 }

@@ -8,7 +8,7 @@ function makeMon(id) {
     id,
     pid: "p25chu",
     dex: 25,
-    name: "电毛球",
+    name: "星雷灵鼠",
     lvl: 5,
     exp: 0,
     stars: 0,

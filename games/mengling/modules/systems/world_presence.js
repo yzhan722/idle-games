@@ -1,3 +1,5 @@
+import { maskText } from "../name_filter.js";
+
 /**
  * World presence helpers — real players only.
  * Trainer handles stay ASCII so CDN/encoding never turns them into mojibake.
@@ -45,7 +47,8 @@ export function cleanLeaderboard(items) {
           ? it.name
           : "";
     const uid = typeof it?.uid === "string" ? it.uid : typeof it?.attrs?.uid === "string" ? it.attrs.uid : "";
-    const ownerName = displayTrainerId(rawName, uid);
+    // 屏蔽词打码（服务器已打过，这里兜底旧缓存 / 旧服务器）
+    const ownerName = displayTrainerId(maskText(rawName), uid);
     return {
       ...it,
       name: ownerName,

@@ -61,7 +61,7 @@ export function createRenderOverlays({ elOverlays, ui, defs }) {
                     ${renderResSvg("futurecoin", 18)}<span>基础收益</span>
                     ${expPerMon > 0 && monCount > 0 ? `<span class="tag">经验 +${expPerMon}/只（共${monCount}只）</span>` : ""}
                     ${fc > 0 ? `<span class="tag">${escapeHtml(defs.resources?.futurecoin?.name ?? "未来币")} +${fc}</span>` : ""}
-                    ${mb > 0 ? `<span class="tag">${escapeHtml(defs.resources?.masterball?.name ?? "究极灵球")} +${mb}</span>` : ""}
+                    ${mb > 0 ? `<span class="tag">${escapeHtml(defs.resources?.masterball?.name ?? "星契灵球")} +${mb}</span>` : ""}
                     ${Number(expData.mapFragment) > 0 ? `<span class="tag">${escapeHtml(defs.resources?.mapFragment?.name ?? "藏宝图残片")} +${Math.floor(Number(expData.mapFragment))}</span>` : ""}
                   </div>
                   <div class="row__desc">属性药剂掉落：${potText}</div>

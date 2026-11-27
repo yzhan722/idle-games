@@ -1,34 +1,35 @@
 import { clamp, nowMs, randFloat } from "./utils.js";
 import { getStarBonusMul } from "./stars.js";
 import { getAbilityInfo, monPassive, rollAbility } from "./abilities.js";
+import { carryVeteran, normalizeStatKeep } from "./own_numbers_compat.js";
 
 // ========== 性格系统 ==========
 export const NATURES = [
-  { id: "hardy",   name: "勤奋",  up: null,   down: null },
-  { id: "lonely",  name: "孤僻",  up: "atk",  down: "def" },
-  { id: "brave",   name: "勇敢",  up: "atk",  down: "spe" },
-  { id: "adamant", name: "固执",  up: "atk",  down: "spa" },
-  { id: "naughty", name: "顽皮",  up: "atk",  down: "spd" },
-  { id: "bold",    name: "大胆",  up: "def",  down: "atk" },
-  { id: "docile",  name: "坦率",  up: null,   down: null },
-  { id: "relaxed", name: "悠闲",  up: "def",  down: "spe" },
-  { id: "impish",  name: "淘气",  up: "def",  down: "spa" },
-  { id: "lax",     name: "随和",  up: "def",  down: "spd" },
-  { id: "timid",   name: "胆小",  up: "spe",  down: "atk" },
-  { id: "hasty",   name: "急躁",  up: "spe",  down: "def" },
-  { id: "serious", name: "认真",  up: null,   down: null },
-  { id: "jolly",   name: "爽朗",  up: "spe",  down: "spa" },
-  { id: "naive",   name: "天真",  up: "spe",  down: "spd" },
-  { id: "modest",  name: "内敛",  up: "spa",  down: "atk" },
-  { id: "mild",    name: "温和",  up: "spa",  down: "def" },
-  { id: "quiet",   name: "冷静",  up: "spa",  down: "spe" },
-  { id: "bashful", name: "害羞",  up: null,   down: null },
-  { id: "rash",    name: "鲁莽",  up: "spa",  down: "spd" },
-  { id: "calm",    name: "温顺",  up: "spd",  down: "atk" },
-  { id: "gentle",  name: "温柔",  up: "spd",  down: "def" },
-  { id: "sassy",   name: "自大",  up: "spd",  down: "spe" },
-  { id: "careful", name: "慎重",  up: "spd",  down: "spa" },
-  { id: "quirky",  name: "浮躁",  up: null,   down: null },
+  { id: "hardy",   name: "踏实",  up: null,   down: null },
+  { id: "lonely",  name: "独处",  up: "atk",  down: "def" },
+  { id: "brave",   name: "豪爽",  up: "atk",  down: "spe" },
+  { id: "adamant", name: "倔强",  up: "atk",  down: "spa" },
+  { id: "naughty", name: "捣蛋",  up: "atk",  down: "spd" },
+  { id: "bold",    name: "敢闯",  up: "def",  down: "atk" },
+  { id: "docile",  name: "老实",  up: null,   down: null },
+  { id: "relaxed", name: "慵懒",  up: "def",  down: "spe" },
+  { id: "impish",  name: "机灵",  up: "def",  down: "spa" },
+  { id: "lax",     name: "随缘",  up: "def",  down: "spd" },
+  { id: "timid",   name: "怯生",  up: "spe",  down: "atk" },
+  { id: "hasty",   name: "风火",  up: "spe",  down: "def" },
+  { id: "serious", name: "较真",  up: null,   down: null },
+  { id: "jolly",   name: "爱笑",  up: "spe",  down: "spa" },
+  { id: "naive",   name: "好奇",  up: "spe",  down: "spd" },
+  { id: "modest",  name: "文静",  up: "spa",  down: "atk" },
+  { id: "mild",    name: "慢热",  up: "spa",  down: "def" },
+  { id: "quiet",   name: "沉静",  up: "spa",  down: "spe" },
+  { id: "bashful", name: "腼腆",  up: null,   down: null },
+  { id: "rash",    name: "冒失",  up: "spa",  down: "spd" },
+  { id: "calm",    name: "恬静",  up: "spd",  down: "atk" },
+  { id: "gentle",  name: "暖心",  up: "spd",  down: "def" },
+  { id: "sassy",   name: "傲娇",  up: "spd",  down: "spe" },
+  { id: "careful", name: "心细",  up: "spd",  down: "spa" },
+  { id: "quirky",  name: "善变",  up: null,   down: null },
 ];
 
 // 特殊性格的被动技能加成
@@ -120,7 +121,7 @@ export function describeMintTuning(tuning) {
 }
 
 export function formatMonNatureWithTuning(mon, { compact = false } = {}) {
-  const origName = getNatureInfo(mon?.nature)?.name || "勤奋";
+  const origName = getNatureInfo(mon?.nature)?.name || "踏实";
   const t = normalizeMintTuning(mon?.mintTuning);
   if (!t) return origName;
   if (t.up === null && t.down === null) {
@@ -243,16 +244,19 @@ export function getMonCurrentStats(mon, getBeastDataByDex) {
   const bSpe = typeof bonus.spe === "number" && Number.isFinite(bonus.spe) ? bonus.spe : 0;
 
   const api = typeof getBeastDataByDex === "function" ? getBeastDataByDex(mon.dex) : null;
-  const base = api?.baseStats && typeof api.baseStats === "object" ? api.baseStats : mon.baseStats;
+  const fromTable = api?.baseStats && typeof api.baseStats === "object";
+  const base = fromTable ? api.baseStats : mon.baseStats;
+  // 数值规则换代前的伙伴：物种表变低的部分按存档里的 statKeep 补回
+  const keep = fromTable ? normalizeStatKeep(mon.statKeep) ?? 1 : 1;
   const iv = mon.iv && typeof mon.iv === "object" ? mon.iv : {};
   const mul = 1 + (lvl - 1) * 0.03;
   return {
-    hp:  Math.max(1, Math.floor(((base?.hp ?? 30)  + (iv.hp ?? 0))  * mul * totalMul) + bHp),
-    atk: Math.max(1, Math.floor(((base?.atk ?? 25) + (iv.atk ?? 0)) * mul * totalMul * getNatureMul(natureId, "atk") * getMonTuningMul(mon, "atk")) + bAtk),
-    def: Math.max(1, Math.floor(((base?.def ?? 25) + (iv.def ?? 0)) * mul * totalMul * getNatureMul(natureId, "def") * getMonTuningMul(mon, "def")) + bDef),
-    spa: Math.max(1, Math.floor(((base?.spa ?? 25) + (iv.spa ?? 0)) * mul * totalMul * getNatureMul(natureId, "spa") * getMonTuningMul(mon, "spa")) + bSpa),
-    spd: Math.max(1, Math.floor(((base?.spd ?? 25) + (iv.spd ?? 0)) * mul * totalMul * getNatureMul(natureId, "spd") * getMonTuningMul(mon, "spd")) + bSpd),
-    spe: Math.max(1, Math.floor(((base?.spe ?? 25) + (iv.spe ?? 0)) * mul * totalMul * getNatureMul(natureId, "spe") * getMonTuningMul(mon, "spe")) + bSpe),
+    hp:  Math.max(1, Math.floor(((base?.hp ?? 30) * keep + (iv.hp ?? 0))  * mul * totalMul) + bHp),
+    atk: Math.max(1, Math.floor(((base?.atk ?? 25) * keep + (iv.atk ?? 0)) * mul * totalMul * getNatureMul(natureId, "atk") * getMonTuningMul(mon, "atk")) + bAtk),
+    def: Math.max(1, Math.floor(((base?.def ?? 25) * keep + (iv.def ?? 0)) * mul * totalMul * getNatureMul(natureId, "def") * getMonTuningMul(mon, "def")) + bDef),
+    spa: Math.max(1, Math.floor(((base?.spa ?? 25) * keep + (iv.spa ?? 0)) * mul * totalMul * getNatureMul(natureId, "spa") * getMonTuningMul(mon, "spa")) + bSpa),
+    spd: Math.max(1, Math.floor(((base?.spd ?? 25) * keep + (iv.spd ?? 0)) * mul * totalMul * getNatureMul(natureId, "spd") * getMonTuningMul(mon, "spd")) + bSpd),
+    spe: Math.max(1, Math.floor(((base?.spe ?? 25) * keep + (iv.spe ?? 0)) * mul * totalMul * getNatureMul(natureId, "spe") * getMonTuningMul(mon, "spe")) + bSpe),
   };
 }
 
@@ -329,10 +333,12 @@ export function evolveMon(mon, toPid, getSpeciesByPid) {
   const to = typeof getSpeciesByPid === "function" ? getSpeciesByPid(toPid) : null;
   if (!to) return false;
 
+  const before = { dex: mon.dex, tier: mon.tier, statKeep: mon.statKeep };
   mon.pid = to.id;
   mon.dex = to.dex;
   mon.name = to.name;
   mon.tier = to.tier;
+  carryVeteran(mon, before);
 
   const bump = 1.12;
   mon.baseStats = {

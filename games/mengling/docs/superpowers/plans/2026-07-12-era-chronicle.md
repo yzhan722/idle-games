@@ -1,5 +1,7 @@
 # Era Chronicle（图鉴编年史）Implementation Plan
 
+> 历史文档：文中第三方作品的名称、角色、地名、数值只作研究记录，**不得取用**（ML-COM1，见 `docs/RENAME_CHECKLIST.md`）。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a 9-era Pokémon chronicle overlay: quest-gated advance, stacking rule mutators, full-keep saves, ~1h dwell via activity targets only (no clock quest).

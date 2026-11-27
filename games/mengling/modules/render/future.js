@@ -5,10 +5,12 @@ import {
   getNatalBondMonId,
   perkCost,
   perkLevel,
+  rebirthHeadstart,
   resolveNatalBondCandidate,
 } from "../systems/rebirth.js";
 import { renderFutureStageHtml, setHtmlPreservingStage } from "./tab_stages.js";
 import { renderResSvg } from "./rpg_svg_icons.js";
+import { dailySpinOddsLine } from "../systems/gameplay_fun.js";
 
 export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }) {
   return function renderFutureShop() {
@@ -143,7 +145,8 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
         <div class="row">
           <div class="row__left">
             <div class="row__title row__titleLine">${renderResSvg("shinyCharm", 20)}<span>每日幸运转盘</span><span class="tag">每日 1 次</span></div>
-            <div class="row__desc">免费转一次：未来币或大灵果（加权随机，诚实表）。</div>
+            <div class="row__desc">免费转一次：未来币或大灵果。</div>
+            <div class="row__desc">${dailySpinOddsLine()}</div>
           </div>
           <div class="row__right">
             <button class="btn btn--primary btn--small" data-fc-daily-spin ${spinClaimed ? "disabled" : ""}>${spinClaimed ? "今日已转" : "免费转一次"}</button>
@@ -368,7 +371,7 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
     itemRows.push(`
       <div class="row">
         <div class="row__left">
-          <div class="row__title row__titleLine">${renderResSvg("masterball", 20)}<span>究极灵球</span><span class="tag">库存 ${fmt(state.res.masterball?.value ?? 0)}</span></div>
+          <div class="row__title row__titleLine">${renderResSvg("masterball", 20)}<span>星契灵球</span><span class="tag">库存 ${fmt(state.res.masterball?.value ?? 0)}</span></div>
           <div class="row__desc">价格：${masterballPrice} 未来币/个 · 100% 捕获任何萌灵</div>
         </div>
         <div class="row__right">
@@ -383,7 +386,7 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
     itemRows.push(`
       <div class="row">
         <div class="row__left">
-          <div class="row__title row__titleLine">${renderResSvg("ultraball", 20)}<span>高级灵球</span><span class="tag">库存 ${fmt(state.res.ultraball?.value ?? 0)}</span></div>
+          <div class="row__title row__titleLine">${renderResSvg("ultraball", 20)}<span>精制灵球</span><span class="tag">库存 ${fmt(state.res.ultraball?.value ?? 0)}</span></div>
           <div class="row__desc">价格：${ultraballPrice} 未来币/10个 · 捕获率 x2</div>
         </div>
         <div class="row__right">
@@ -471,7 +474,7 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
       <div class="row">
         <div class="row__left">
           <div class="row__title row__titleLine">${renderResSvg("bottleCap", 20)}<span>银桂冠</span><span class="tag">库存 ${fmt(state.res.bottleCap?.value ?? 0)}</span></div>
-          <div class="row__desc">价格：${bottleCapPrice} 未来币/个 · 单项个体值提升至 31</div>
+          <div class="row__desc">价格：${bottleCapPrice} 未来币/个 · 单项资质提升至 31</div>
         </div>
         <div class="row__right">
           <button class="btn btn--primary btn--small" data-fc-buy="bottleCap" data-fc-price="${bottleCapPrice}" data-fc-amount="1" ${canBuyBottleCap ? "" : "disabled"}>购买1个</button>
@@ -485,7 +488,7 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
       <div class="row">
         <div class="row__left">
           <div class="row__title row__titleLine">${renderResSvg("goldBottleCap", 20)}<span>金桂冠</span><span class="tag">库存 ${fmt(state.res.goldBottleCap?.value ?? 0)}</span></div>
-          <div class="row__desc">价格：${goldBottleCapPrice} 未来币/个 · 所有个体值提升至 31（6V）</div>
+          <div class="row__desc">价格：${goldBottleCapPrice} 未来币/个 · 所有资质提升至 31（满资质）</div>
         </div>
         <div class="row__right">
           <button class="btn btn--primary btn--small" data-fc-buy="goldBottleCap" data-fc-price="${goldBottleCapPrice}" data-fc-amount="1" ${canBuyGoldBottleCap ? "" : "disabled"}>购买1个</button>
@@ -739,6 +742,11 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
       if (!isFolded("rebirth")) {
         const essence = Math.max(0, Math.floor(state.meta?.legacy?.essence || 0));
         const rebirths = Math.max(0, Math.floor(state.era?.prestigeCount || 0));
+        const headstart = rebirthHeadstart(state);
+        const headstartTag =
+          rebirths > 0
+            ? `<span class="tag">熟路：产出 +${Math.round((headstart.prodMul - 1) * 100)}% · 捕获 +${Math.round(headstart.catchAdd * 100)}%</span>`
+            : "";
         const natalPerkOn = perkLevel(state, "natalBond") > 0;
         const lockedNatalId = getNatalBondMonId(state);
         const natalCand = resolveNatalBondCandidate(state);
@@ -746,7 +754,7 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
           ? `${natalCand.isShiny ? "★闪光 · " : ""}${natalCand.name || natalCand.pid}${natalCand.stars > 0 ? ` (${natalCand.stars}星)` : ""}`
           : "暂无可缔契萌灵";
         const natalSubText = !natalPerkOn
-          ? "点亮下方「本命灵契」后，可在转生时携带 1 只本命萌灵跨周目随行（重置为 Lv.1，完整保留闪光/星级/个体值/性格/特性/亲密）。"
+          ? "点亮下方「本命灵契」后，可在转生时携带 1 只本命萌灵跨周目随行（重置为 Lv.1，完整保留闪光/星级/资质/性格/特性/亲密）。"
           : lockedNatalId != null && natalCand && natalCand.id === lockedNatalId
             ? `已锁定随行本命（ID #${natalCand.id} · Lv.${natalCand.lvl || 1}），批量放生与手动放生均自动免疫保护。`
             : natalCand
@@ -755,7 +763,7 @@ export function createRenderFutureShop({ elFutureShop, ui, defs, fmt, getState }
         rows.push(`
           <div class="row row--full">
             <div class="row__left">
-              <div class="row__title row__titleLine">${renderResSvg("megaStone", 20)}<span>灵珀 ×${essence}</span><span class="tag">已轮回 ${rebirths} 次</span></div>
+              <div class="row__title row__titleLine">${renderResSvg("megaStone", 20)}<span>灵珀 ×${essence}</span><span class="tag">已轮回 ${rebirths} 次</span>${headstartTag}</div>
               <div class="row__desc">悖梦主线全清且持有闪光萌灵后，在捕捉页时代面板发起「时空歪曲」。灵珀升级轮回天赋，跨周目永久生效。</div>
             </div>
           </div>

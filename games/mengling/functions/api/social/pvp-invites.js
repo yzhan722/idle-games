@@ -1,5 +1,7 @@
 import { requireUser } from "../_auth.js";
 import { dbAll, dbFirst, getDb, handleOptions, json, nowMs } from "../_db.js";
+import { displayName } from "../../../modules/name_filter.js";
+import { allExceptBlocked } from "../_social_safety.js";
 
 export async function onRequest(context) {
   const req = context.request;
@@ -43,7 +45,7 @@ export async function onRequest(context) {
             player1_uid: r.player1_uid,
             player2_uid: r.player2_uid,
             winner_uid: r.winner_uid || null,
-            opponent_name: r.opponent_name || r.opponent_score_name || r.player2_uid,
+            opponent_name: displayName(r.opponent_name || r.opponent_score_name || r.player2_uid),
             battle_log: Array.isArray(battle_log) ? battle_log : [],
             created_at: Number(r.created_at) || 0,
           };
@@ -60,7 +62,7 @@ export async function onRequest(context) {
        FROM pvp_invites i
        LEFT JOIN users u ON u.uid = i.to_uid
        LEFT JOIN scores s ON s.uid = i.to_uid
-       WHERE i.from_uid = ? AND i.status = 'pending' AND i.expires_at > ?
+       WHERE i.from_uid = ? AND i.status IN ('pending', 'muted') AND i.expires_at > ?
        ORDER BY i.created_at DESC
        LIMIT 50`,
       [uid, now]
@@ -70,7 +72,7 @@ export async function onRequest(context) {
         invites: rows.map((r) => ({
           id: Number(r.id),
           to_uid: r.to_uid,
-          to_name: r.username || r.name || r.to_uid,
+          to_name: displayName(r.username || r.name || r.to_uid),
           expires_at: Number(r.expires_at) || 0,
         })),
       },
@@ -78,16 +80,17 @@ export async function onRequest(context) {
     );
   }
 
-  const rows = await dbAll(
+  // 屏蔽之前收到的邀请也不再显示：在 SQL 里先去掉再取 50 条
+  const rows = await allExceptBlocked(
     db,
     `SELECT i.id, i.from_uid, i.team_data, i.expires_at, u.username, s.name
      FROM pvp_invites i
      LEFT JOIN users u ON u.uid = i.from_uid
      LEFT JOIN scores s ON s.uid = i.from_uid
-     WHERE i.to_uid = ? AND i.status = 'pending' AND i.expires_at > ?
+     WHERE i.to_uid = ? AND i.status = 'pending' AND i.expires_at > ? /*notBlocked*/
      ORDER BY i.created_at DESC
      LIMIT 50`,
-    [uid, now]
+    { viewer: uid, column: "i.from_uid", before: [uid, now] }
   );
 
   return json(
@@ -101,7 +104,7 @@ export async function onRequest(context) {
         return {
           id: Number(r.id),
           from_uid: r.from_uid,
-          from_name: r.username || r.name || r.from_uid,
+          from_name: displayName(r.username || r.name || r.from_uid),
           team_data: Array.isArray(team_data) ? team_data : [],
           expires_at: Number(r.expires_at) || 0,
         };
