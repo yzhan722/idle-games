@@ -11,7 +11,8 @@
 | `games/cloud-isle-market` | 云屿小集（桌面挂机经营） | Godot 4.3 / GDScript | `cloud-isle-market`（旧本地名 maple-isle-idle） | subtree 全量 |
 | `games/worklife` | WorkLife 多职业放置 RPG | TS / React + Fastify | `worklife` | 快照压平（旧历史封存于原仓） |
 | `games/mob-control-3d` | 波波应援团：蒸汽糖果工坊（3D Pixar 倍增闯关放置） | TS / Three.js + Canvas 2.5D / Vite / Cloudflare Workers+Assets | 本地直建 `mob-control-3d` | 全量源码与精模资产 |
-| `games/ar-survivor` | AR 幸存者（网页割草） | JS / Cloudflare Workers+Assets | 本地直建 `ar-survivor`（原先无 git） | 快照 |
+| `games/changming-mountain` | 长明山（暂名，原创修仙放置小样） | TS / Vite / Canvas 2D | 本地直建 | 新建 |
+| `games/ar-survivor` | AR DeepSeek娘 · 实景桌宠养成（陪伴为主，打工割草为辅） | JS / Cloudflare Workers+Assets | 本地直建 `ar-survivor`（原先无 git） | 快照 |
 | `games/paper-crane-detective` | 沉默侦探：千纸鹤的约定（校园推理 AVG） | Ren'Py 8.5.3 / .rpy | 本地 `avg/` 改名迁入（原先无 git） | 快照（不含引擎 SDK） |
 | `games/world-history-atlas` | 世界历史疆域演化沙盒（BC 3000～AD 2026 博物历史图志） | HTML5 / Natural Earth 50m SVG / Vanilla ES6 | 本地 `apps/world-history-atlas` 迁入 | 快照（含全量编年史与校验器） |
 
